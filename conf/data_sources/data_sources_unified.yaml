@@ -1,0 +1,112 @@
+# Unified Data Source Configuration for fair-shares Pipeline
+# This single configuration file contains all available data sources for all emission categories
+# The filtering logic (build_data_config in src/fair_shares/library/utils/data/processing.py) will
+# select the appropriate subset based on user choices
+
+# Historical emissions data
+emissions:
+  primap-202503:
+    path: "data/emissions/primap-202503/Guetschow_et_al_2025-PRIMAP-hist_v2.6.1_final_no_rounding_13-Mar-2025.nc"
+    data_parameters:
+      available_categories:
+        [
+          co2-ffi,
+          co2-lulucf,
+          ch4-ffi,
+          ch4-afolu,
+          n2o,
+          all-ghg,
+          all-ghg-ex-co2-lulucf,
+        ]
+      world_key: "EARTH"
+      scenario: "HISTCR" # Can be "HISTTP" or "HISTCR"
+
+# GDP data
+gdp:
+  wdi-2025:
+    path_ppp: "data/gdp/wdi-2025/API_NY.GDP.MKTP.PP.CD_DS2_en_csv_v2_1090665.csv"
+    path_mer: "data/gdp/wdi-2025/API_NY.GDP.MKTP.CD_DS2_en_csv_v2_5607117.csv"
+    data_parameters:
+      gdp_variant: "PPP" # Choose between "PPP" or "MER"
+      world_key: "WLD"
+  imf-2025:
+    path_ppp: "data/gdp/imf-2025/imf-dm-export-20251119_PPP.xls"
+    path_mer: "data/gdp/imf-2025/imf-dm-export-20251119_MER.xls"
+    data_parameters:
+      gdp_variant: "PPP" # Choose between "PPP" or "MER"
+      world_key: "World"
+
+# Population data (combined historical and projected)
+population:
+  un-owid-2025:
+    path_historical: "data/population/un-owid-2025/population.csv"
+    path_projected: "data/population/un-owid-2025/UN_PPP2024_Output_PopTot.xlsx"
+    data_parameters:
+      projected_variant: "un-median-to-2100"
+      # IMPORTANT: The historical_world_key is used as the standard for combined population data
+      # This ensures consistency with the add_row_timeseries function which expects the historical world key
+      historical_world_key: "OWID_WRL"
+      projected_world_key: "World"
+
+# Gini data
+gini:
+  unu-wider-2025:
+    path: "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
+    data_parameters:
+      world_key: "WLD"
+      gini_year: 2020
+  wid-2025:
+    path: "data/gini/wid-2025/WID-20NOV2025.xlsx"
+    data_parameters:
+      world_key: "WLD"
+      gini_year: 2020
+
+# Target sources (e.g. ar6, rcbs) - for future emissions/budgets
+targets:
+  # IPCC AR6 scenarios from Gidden et al.
+  ar6:
+    path: "data/scenarios/ipcc_ar6_gidden/ar6_gidden.zip"
+    data_parameters:
+      available_categories: [co2-ffi, all-ghg, all-ghg-ex-co2-lulucf]
+      interpolation_method: "linear"
+      quantiles: [0.5]
+      world_key: "World"
+
+  # Remaining Carbon Budgets (only for co2-ffi)
+  rcbs:
+    path: "data/rcbs/rcbs.yaml"
+    data_parameters:
+      available_categories: [co2-ffi] # RCBs only available for CO2-FFI
+      # Adjustments (in Mt * CO2)
+      adjustments:
+        bunkers_2020_2100: 47000 # International shipping and aviation CO2 emissions 2020-2100
+        lulucf_2020_2100: 0.0 # Land use, land-use change and forestry CO2 emissions 2020-2100
+
+  # RCB-based Pathways (converts RCBs to emission pathways using a configurable generator)
+  rcb-pathways:
+    path: "data/rcbs/rcbs.yaml"
+    generator:
+      "exponential-decay" # Pathway generator method - currently supports: "exponential-decay"
+      # This parameter selects which algorithm to use for distributing
+      # the RCB over time (additional generators can be added in the future)
+    data_parameters:
+      available_categories: [co2-ffi] # Only CO2-FFI, derived from RCBs
+      interpolation_method: "linear"
+      quantiles: [0.5]
+      world_key: "World"
+      # Pathway generation parameters
+      pathway_parameters:
+        start_year: 2020
+        end_year: 2100
+      # RCB adjustments (same as rcbs)
+      adjustments:
+        bunkers_2020_2100: 47000
+        lulucf_2020_2100: 0.0
+
+# Global harmonisation year applied to all scenario pathways
+harmonisation_year: 2020
+
+# Region mapping table (unofficial)
+general:
+  region_mapping:
+    path: "data/regions/iso3c_region_mapping_20240319.csv"

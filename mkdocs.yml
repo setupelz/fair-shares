@@ -1,0 +1,215 @@
+site_name: fair-shares
+site_description: Python package for calculating fair shares of global climate mitigation effort
+site_author: The fair-shares Contributors
+site_url: https://setupelz.github.io/fair-shares/
+
+repo_name: setupelz/fair-shares
+repo_url: https://github.com/setupelz/fair-shares
+edit_uri: edit/main/docs/
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.instant
+    - navigation.instant.progress
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - navigation.tracking
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tooltips
+    - content.action.edit
+    - content.action.view
+  palette:
+    - media: "(prefers-color-scheme)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-auto
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to light mode
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [src]
+          options:
+            # Documentation display
+            show_source: true
+            show_root_heading: false
+            show_category_heading: false
+            show_root_toc_entry: true
+            show_symbol_type_heading: false
+            show_symbol_type_toc: false
+
+            # Signature configuration
+            show_signature: true
+            show_signature_annotations: true
+            separate_signature: true
+            signature_crossrefs: true
+
+            # Member configuration
+            members_order: source
+            show_bases: true
+            inherited_members: false
+            filters: ["!^_"]
+            show_if_no_docstring: false
+
+            # Docstring configuration
+            docstring_style: numpy
+            docstring_section_style: table
+            merge_init_into_class: true
+            show_submodules: false
+
+            # Heading configuration
+            heading_level: 2
+  - mkdocs-jupyter:
+      include_source: true
+      execute: false
+  - awesome-pages:
+      filename: .pages
+      collapse_single_pages: true
+      strict: false
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - footnotes
+  - meta
+  - def_list
+  - abbr
+  - pymdownx.arithmatex:
+      generic: true
+  - pymdownx.betterem:
+      smart_enable: all
+  - pymdownx.caret
+  - pymdownx.critic
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+      auto_title: true
+  - pymdownx.inlinehilite
+  - pymdownx.keys
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: setupelz
+      repo: fair-shares
+  - pymdownx.mark
+  - pymdownx.smartsymbols
+  - pymdownx.snippets:
+      check_paths: true
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.tabbed:
+      alternate_style: true
+      combine_header_slug: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.tilde
+  - toc:
+      permalink: true
+      title: On this page
+      toc_depth: 3
+
+nav:
+  - Home: index.md
+  - Quick Start: quickstart.md
+  - User Guide:
+      - user-guide/index.md
+      - Approach Catalog: user-guide/approach-catalog.md
+      - country-fair-shares: user-guide/country-fair-shares.md
+      - iamc-regional-fair-shares: user-guide/iamc-regional-fair-shares.md
+  - API Reference:
+      - api/index.md
+      - Allocations:
+          - Budget Functions: api/allocations/budgets.md
+          - Pathway Functions: api/allocations/pathways.md
+          - Allocation Manager: api/allocations/manager.md
+      - Utilities:
+          - Core: api/utils/core.md
+          - Data Processing: api/utils/data.md
+          - Math: api/utils/math.md
+          - Adjustments: api/utils/adjustments.md
+          - Validation: api/utils/validation.md
+      - Validation:
+          - Convergence: api/validation/convergence.md
+      - Configuration: api/config/models.md
+  - Scientific Documentation:
+      - science/index.md
+      - Allocation Approaches: science/allocations.md
+      - Climate Equity Concepts: science/climate-equity-concepts.md
+      - From Principle to Code: science/principle-to-code.md
+      - Parameter Effects Reference: science/parameter-effects.md
+      - Glossary: science/glossary.md
+      - Other Operations: science/other-operations.md
+      - References: science/references.md
+  - Developer Guide:
+      - dev-guide/index.md
+      - Contributing: CONTRIBUTING.md
+      - Adding Allocation Approaches: dev-guide/adding-approaches.md
+      - Adding Data Sources: dev-guide/adding-data-sources.md
+      - Docstring Template: dev-guide/docstring-template.md
+      - Testing Checklist: dev-guide/testing-checklist.md
+
+extra_css:
+  - stylesheets/extra.css
+
+extra_javascript:
+  # Order matters: collapsible must run first to manipulate DOM,
+  # then MathJax processes the final DOM structure
+  - javascripts/collapsible-api.js
+  - javascripts/mathjax.js
+  - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/setupelz/fair-shares
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/fair-shares/
+  version:
+    provider: mike
+  analytics:
+    provider: google
+    property: !ENV GOOGLE_ANALYTICS_KEY
+  consent:
+    title: Cookie consent
+    description: >-
+      We use cookies to recognize your repeated visits and preferences, as well
+      as to measure the effectiveness of our documentation and whether users
+      find what they search for. With your consent, you're helping us to
+      make our documentation better.
+    actions:
+      - accept
+      - reject
+    cookie:
+      name: mkdocs-consent
+      duration: 365

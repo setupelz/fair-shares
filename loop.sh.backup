@@ -1,0 +1,454 @@
+#!/bin/bash
+# Ralph Wiggum Loop - Autonomous AI Development
+# Based on methodology by Geoffrey Huntley (ghuntley.com/ralph)
+#
+# Usage:
+#   ./loop.sh plan          # Interactive planning session (single run)
+#   ./loop.sh plan 5        # Autonomous planning (5 iterations, non-interactive)
+#   ./loop.sh              # Build mode, unlimited iterations
+#   ./loop.sh 20           # Build mode, max 20 iterations
+#
+# Modes:
+#   PLAN  - Interactive session with human. Claude asks questions,
+#           you provide answers. Results in agreed IMPLEMENTATION_PLAN.md.
+#   BUILD - Autonomous loop. Claude works through the plan, commits
+#           changes, iterates until done or max iterations reached.
+#
+# Test Backpressure:
+#   After each build iteration, tests are run automatically. Results are
+#   fed into the next iteration so Claude can see and fix failures.
+#   Detects test command from: test.sh > Makefile > pyproject.toml > package.json
+#
+# Philosophy:
+#   "Let Ralph Ralph" - Trust the LLM to self-correct through iteration.
+#   Each iteration reads updated IMPLEMENTATION_PLAN.md, maintaining state
+#   across fresh context windows. Tests/builds provide backpressure.
+
+set -e
+
+#######################################
+# TEST DETECTION AND EXECUTION
+#######################################
+
+detect_test_command() {
+    # Returns the test command for this project, or empty if none found
+
+    # 1. Explicit test.sh script (highest priority)
+    if [[ -x "./test.sh" ]]; then
+        echo "./test.sh"
+        return
+    fi
+
+    # 2. Makefile with test target
+    if [[ -f "Makefile" ]] && grep -q "^test:" Makefile; then
+        echo "make test"
+        return
+    fi
+
+    # 3. Python project (pyproject.toml or setup.py)
+    if [[ -f "pyproject.toml" ]]; then
+        # Check if using uv
+        if [[ -f "uv.lock" ]]; then
+            echo "uv run pytest"
+        else
+            echo "python -m pytest"
+        fi
+        return
+    fi
+
+    # 4. Node.js project
+    if [[ -f "package.json" ]]; then
+        # Check if test script exists in package.json
+        if grep -q '"test"' package.json 2>/dev/null; then
+            echo "npm test"
+        fi
+        return
+    fi
+
+    # 5. Rust project
+    if [[ -f "Cargo.toml" ]]; then
+        echo "cargo test"
+        return
+    fi
+
+    # 6. Go project
+    if [[ -f "go.mod" ]]; then
+        echo "go test ./..."
+        return
+    fi
+
+    # No test command found
+    echo ""
+}
+
+run_tests() {
+    # Run tests and capture output
+    # Returns: 0 if tests pass (or no tests), 1 if tests fail
+    # Output is written to $TEST_OUTPUT_FILE
+
+    local test_cmd="$1"
+
+    if [[ -z "$test_cmd" ]]; then
+        echo "No tests configured" > "$TEST_OUTPUT_FILE"
+        return 0
+    fi
+
+    echo "🧪 Running: $test_cmd"
+
+    # Run tests, capture output, don't exit on failure
+    # Use eval to handle commands with arguments (e.g., "make test")
+    if eval "$test_cmd" > "$TEST_OUTPUT_FILE" 2>&1; then
+        echo "✅ Tests passed"
+        return 0
+    else
+        echo "❌ Tests failed"
+        return 1
+    fi
+}
+
+is_interactive() {
+    # Check if stdin is a terminal (TTY)
+    # Returns: 0 (true) if running interactively, 1 (false) if headless/piped
+    [[ -t 0 ]]
+}
+
+create_prompt_from_template() {
+    # Create a PROMPT file from template with project name substitution
+    # Args:
+    #   $1: mode (plan or build)
+    #   $2: template directory path
+    # Returns: 0 on success, 1 on failure
+
+    local mode="$1"
+    local template_dir="$2"
+    local template_file="$template_dir/PROMPT_${mode}_template.md"
+    local output_file="PROMPT_${mode}.md"
+    local project_name=$(basename "$(pwd)")
+
+    # Verify template exists
+    if [[ ! -f "$template_file" ]]; then
+        return 1
+    fi
+
+    # Create prompt file with project name substitution
+    sed "s/\[PROJECT_NAME\]/$project_name/g" "$template_file" > "$output_file"
+
+    return 0
+}
+
+# Parse arguments
+MODE="build"
+PROMPT_FILE="PROMPT_build.md"
+MAX_ITERATIONS=0
+INTERACTIVE=false
+
+if [ "$1" = "plan" ]; then
+    MODE="plan"
+    PROMPT_FILE="PROMPT_plan.md"
+    # Check if iterations specified (non-interactive mode)
+    if [[ "$2" =~ ^[0-9]+$ ]]; then
+        MAX_ITERATIONS=$2
+        INTERACTIVE=false
+    else
+        INTERACTIVE=true
+    fi
+elif [[ "$1" =~ ^[0-9]+$ ]]; then
+    MAX_ITERATIONS=$1
+fi
+
+BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+
+# Detect test command (for build mode)
+TEST_CMD=$(detect_test_command)
+TEST_OUTPUT_FILE=$(mktemp)
+CONSECUTIVE_FAILURES=0
+MAX_CONSECUTIVE_FAILURES=3  # Stop after this many consecutive test failures
+
+# Find script location and monorepo root
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Find monorepo root by walking up looking for tools/format-claude-output.py
+# (More specific than CLAUDE.md since projects also have CLAUDE.md)
+MONOREPO_ROOT="$SCRIPT_DIR"
+while [[ "$MONOREPO_ROOT" != "/" ]] && [[ ! -f "$MONOREPO_ROOT/tools/format-claude-output.py" ]]; do
+    MONOREPO_ROOT="$(dirname "$MONOREPO_ROOT")"
+done
+
+# Set formatter and template paths (works from both monorepo root and project directories)
+FORMATTER="$MONOREPO_ROOT/tools/format-claude-output.py"
+TEMPLATE_DIR="$MONOREPO_ROOT/config/project-template"
+
+# Header
+echo "═══════════════════════════════════════"
+echo "🤖 Ralph Wiggum - $(basename "$(pwd)")"
+echo "═══════════════════════════════════════"
+echo "Mode:       $MODE"
+echo "Prompt:     $PROMPT_FILE"
+echo "Branch:     $BRANCH"
+[ "$MODE" = "build" ] && [ $MAX_ITERATIONS -gt 0 ] && echo "Max Iter:   $MAX_ITERATIONS"
+if [[ "$MODE" = "build" ]] && [[ -n "$TEST_CMD" ]]; then
+    echo "Tests:      $TEST_CMD"
+elif [[ "$MODE" = "build" ]]; then
+    echo "Tests:      (none detected)"
+fi
+echo "═══════════════════════════════════════"
+echo ""
+
+# Verify prompt exists, create if missing
+if [ ! -f "$PROMPT_FILE" ]; then
+    # Check if template is available
+    if [[ -n "$TEMPLATE_DIR" ]] && [[ -f "$TEMPLATE_DIR/PROMPT_${MODE}_template.md" ]]; then
+        # Template found - offer to create
+        if is_interactive; then
+            # Interactive mode - ask user
+            echo "⚠️  $PROMPT_FILE not found"
+            read -p "Create from template? (y/N): " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                if create_prompt_from_template "$MODE" "$TEMPLATE_DIR"; then
+                    echo "✅ Created $PROMPT_FILE"
+                else
+                    echo "❌ Failed to create $PROMPT_FILE"
+                    exit 1
+                fi
+            else
+                echo "❌ Cannot proceed without $PROMPT_FILE"
+                exit 1
+            fi
+        else
+            # Headless mode - auto-create
+            if create_prompt_from_template "$MODE" "$TEMPLATE_DIR"; then
+                echo "✅ Auto-created $PROMPT_FILE from template"
+            else
+                echo "❌ Failed to create $PROMPT_FILE from template"
+                exit 1
+            fi
+        fi
+    else
+        # No template found - show original error
+        echo "❌ Error: $PROMPT_FILE not found"
+        echo ""
+        echo "Create it with:"
+        echo "  cp ../../../config/project-template/PROMPT_${MODE}_template.md $PROMPT_FILE"
+        exit 1
+    fi
+fi
+
+# Verify AGENTS.md exists (warning only)
+if [ ! -f "AGENTS.md" ] && [ ! -f "CLAUDE.md" ]; then
+    echo "⚠️  Warning: No AGENTS.md or CLAUDE.md found"
+    echo "   Consider adding project-specific build/test commands"
+    echo ""
+fi
+
+#######################################
+# PLAN MODE: Interactive or autonomous
+#######################################
+if [ "$MODE" = "plan" ]; then
+    if [ "$INTERACTIVE" = true ]; then
+        # Interactive planning - human in the loop
+        echo "📋 Starting interactive planning session..."
+        echo "   Claude will ask questions to refine the plan."
+        echo "   Type responses when prompted."
+        echo ""
+
+        # Run Claude interactively (NOT piped, NOT looped)
+        # Uses Opus for better reasoning during planning
+        claude --model opus --dangerously-skip-permissions --verbose "$(cat "$PROMPT_FILE")"
+
+        echo ""
+        echo "═══════════════════════════════════════"
+        echo "📋 Planning session complete"
+        echo "   Review: IMPLEMENTATION_PLAN.md"
+        echo "   Next:   ./loop.sh [iterations]"
+        echo "═══════════════════════════════════════"
+        exit 0
+    else
+        # Non-interactive planning - autonomous mode
+        echo "📋 Starting autonomous planning..."
+        echo "   Claude will create/update the implementation plan."
+        echo "   Max iterations: $MAX_ITERATIONS"
+        echo ""
+        # Fall through to build loop logic below, but with plan prompt
+    fi
+fi
+
+#######################################
+# AUTONOMOUS LOOP (build or non-interactive plan)
+#######################################
+if [ "$MODE" = "plan" ]; then
+    echo "📋 Running autonomous planning loop..."
+else
+    echo "🔨 Starting autonomous build loop..."
+fi
+echo "   Press Ctrl+C to stop gracefully"
+echo ""
+
+ITERATION=0
+PHASE_COMPLETE=false
+LAST_TEST_FAILED=false
+LAST_TEST_OUTPUT=""
+
+# Prepare base prompt content - inject autonomous mode header for non-interactive planning
+if [ "$MODE" = "plan" ] && [ "$INTERACTIVE" = false ]; then
+    BASE_PROMPT_CONTENT="AUTONOMOUS MODE - DO NOT ASK QUESTIONS
+
+You are running in autonomous/headless mode via Telegram. There is no human to answer questions.
+
+CRITICAL INSTRUCTIONS:
+- Do NOT use AskUserQuestion - it will fail
+- Do NOT ask for confirmation or clarification
+- Auto-select all specs marked '🚧 In Progress' or '📋 Planned'
+- Make reasonable assumptions for any ambiguity
+- Document assumptions in the plan
+- Just read specs → generate plan → write IMPLEMENTATION_PLAN.md → output ###PHASE_COMPLETE###
+
+---
+
+$(cat "$PROMPT_FILE")"
+else
+    BASE_PROMPT_CONTENT="$(cat "$PROMPT_FILE")"
+fi
+
+while true; do
+    # Build prompt with test feedback if previous tests failed
+    if [[ "$LAST_TEST_FAILED" = true ]] && [[ -n "$LAST_TEST_OUTPUT" ]]; then
+        PROMPT_CONTENT="⚠️ TESTS FAILED IN PREVIOUS ITERATION - FIX REQUIRED
+
+The following test failures occurred. Please analyze and fix them before continuing:
+
+\`\`\`
+$LAST_TEST_OUTPUT
+\`\`\`
+
+---
+
+$BASE_PROMPT_CONTENT"
+    else
+        PROMPT_CONTENT="$BASE_PROMPT_CONTENT"
+    fi
+    # Check iteration limit
+    if [ $MAX_ITERATIONS -gt 0 ] && [ $ITERATION -ge $MAX_ITERATIONS ]; then
+        echo ""
+        echo "✅ Reached max iterations: $MAX_ITERATIONS"
+        break
+    fi
+
+    # Check if phase was completed in previous iteration
+    if [ "$PHASE_COMPLETE" = true ]; then
+        echo ""
+        echo "✅ Phase complete - Ralph finished successfully"
+        break
+    fi
+
+    echo ""
+    echo "══════ Iteration $((ITERATION + 1)) ══════"
+    echo ""
+
+    # Run Claude and capture output, looking for completion signal
+    # Using tee to both display and capture output
+    OUTPUT_FILE=$(mktemp)
+
+    # Run Claude autonomously with piped prompt
+    # -p (headless mode): non-interactive operation
+    # --dangerously-skip-permissions: autonomous operation
+    #   ⚠️  USE IN SANDBOX ONLY! When compromised, minimize blast radius.
+    # --model opus: best reasoning for all tasks
+    # --output-format stream-json: structured output for formatting
+    if [[ -f "$FORMATTER" ]]; then
+        echo "$PROMPT_CONTENT" | claude -p \
+            --dangerously-skip-permissions \
+            --model opus \
+            --output-format stream-json \
+            --verbose 2>&1 | python3 "$FORMATTER" | tee "$OUTPUT_FILE"
+    else
+        echo "$PROMPT_CONTENT" | claude -p \
+            --dangerously-skip-permissions \
+            --model opus \
+            --verbose 2>&1 | tee "$OUTPUT_FILE"
+    fi
+
+    EXIT_CODE=${PIPESTATUS[1]}
+
+    # Check for phase completion signal in output
+    if grep -q "###PHASE_COMPLETE###" "$OUTPUT_FILE" 2>/dev/null; then
+        PHASE_COMPLETE=true
+        echo ""
+        echo "📍 Detected completion signal"
+    fi
+
+    # Clean up temp file
+    rm -f "$OUTPUT_FILE"
+
+    if [ $EXIT_CODE -eq 0 ]; then
+        echo ""
+        echo "✓ Iteration complete"
+    else
+        echo ""
+        echo "⚠ Iteration exited with code $EXIT_CODE"
+    fi
+
+    # Run tests after each build iteration (not during planning)
+    if [[ "$MODE" = "build" ]] && [[ -n "$TEST_CMD" ]]; then
+        echo ""
+        if run_tests "$TEST_CMD"; then
+            LAST_TEST_FAILED=false
+            LAST_TEST_OUTPUT=""
+            CONSECUTIVE_FAILURES=0
+        else
+            LAST_TEST_FAILED=true
+            # Capture last 100 lines of test output for Claude
+            LAST_TEST_OUTPUT=$(tail -100 "$TEST_OUTPUT_FILE")
+            CONSECUTIVE_FAILURES=$((CONSECUTIVE_FAILURES + 1))
+
+            echo ""
+            echo "📋 Test output (last 50 lines):"
+            echo "─────────────────────────────────"
+            tail -50 "$TEST_OUTPUT_FILE"
+            echo "─────────────────────────────────"
+
+            # Check consecutive failure limit
+            if [[ $CONSECUTIVE_FAILURES -ge $MAX_CONSECUTIVE_FAILURES ]]; then
+                echo ""
+                echo "🛑 Stopping: $CONSECUTIVE_FAILURES consecutive test failures"
+                echo "   Review test output and fix manually, then restart."
+                rm -f "$TEST_OUTPUT_FILE"
+                exit 1
+            fi
+
+            echo ""
+            echo "⚠️  Test failures will be fed to next iteration ($CONSECUTIVE_FAILURES/$MAX_CONSECUTIVE_FAILURES)"
+        fi
+    fi
+
+    # Push changes after each iteration
+    if git diff --quiet && git diff --cached --quiet; then
+        echo "  No changes to push"
+    else
+        echo "  Pushing changes..."
+        git push origin "$BRANCH" 2>/dev/null || \
+            git push -u origin "$BRANCH" 2>/dev/null || \
+            echo "  ⚠ Push failed (continuing anyway)"
+    fi
+
+    ITERATION=$((ITERATION + 1))
+
+    # Brief pause for operator to interrupt if needed
+    sleep 1
+done
+
+# Clean up temp file
+rm -f "$TEST_OUTPUT_FILE"
+
+echo ""
+echo "═══════════════════════════════════════"
+echo "🎉 Ralph finished after $ITERATION iterations"
+echo "═══════════════════════════════════════"
+echo ""
+echo "Next steps:"
+echo "  - Review: git log --oneline -10"
+echo "  - Status: cat IMPLEMENTATION_PLAN.md"
+if [[ -n "$TEST_CMD" ]]; then
+    echo "  - Tests:  $TEST_CMD"
+fi
+echo ""
