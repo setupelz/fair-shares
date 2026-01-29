@@ -2257,7 +2257,7 @@
 </tbody>
 </table>
 <p><strong>Key insight:</strong> Start with principles, not approaches. Working backward from favorable allocations undermines scientific legitimacy.</p>
-<p><strong>Resources:</strong> <a href="{DOCS_ROOT}/science/allocations/">Allocation Approaches</a>, <a href="{DOCS_ROOT}/user-guide/approach-catalog/">Approach Catalog</a>, <a href="{DOCS_ROOT}/science/parameter-effects/">Parameter Effects</a>, <a href="{DOCS_ROOT}/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
+<p><strong>Resources:</strong> <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a>, <a href="https://setupelz.github.io/fair-shares/user-guide/approach-catalog/">Approach Catalog</a>, <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a>, <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
 <hr />
 <h2 id="quick-reference-navigate-to-principle-sections">Quick Reference — Navigate to Principle Sections<a class="headerlink" href="#quick-reference-navigate-to-principle-sections" title="Permanent link">&para;</a></h2>
 <p>Use this table to jump to detailed sections on each principle. Each section explains what it means, what questions you must answer, available building blocks, and trade-offs to consider.</p>
@@ -2295,7 +2295,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>For implementation details:</strong> See <a href="{DOCS_ROOT}/science/allocations/">Allocation Approaches</a> for parameter specifications and function signatures.</p>
+<p><strong>For implementation details:</strong> See <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a> for parameter specifications and function signatures.</p>
 <hr />
 <h2 id="egalitarianism">Egalitarianism<a class="headerlink" href="#egalitarianism" title="Permanent link">&para;</a></h2>
 <p><strong>Egalitarianism</strong> is the ethical tradition grounding the principle of <strong>equal rights to the atmosphere</strong> (also called "equal per capita").</p>
@@ -2312,7 +2312,7 @@
 <li><strong>Equal per capita pathways</strong> - <code>equal_per_capita()</code> allocates annual emissions proportional to population share in each year (immediate equal shares, no convergence)</li>
 <li><strong>Cumulative per capita convergence pathways</strong> - <code>cumulative_per_capita_convergence()</code> creates pathways that preserve cumulative per capita shares by distributing them from current emissions over time. This is budget-preserving (same cumulative total as equal per capita budget) but can lead to steep curves when starting from current emissions. <strong>Not to be confused with <code>per-capita-convergence</code></strong>, which is NOT budget-preserving and includes grandfathering elements.</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/climate-equity-concepts/#equal-rights-to-atmosphere">Equal Rights to Atmosphere</a> for theory, <a href="{DOCS_ROOT}/science/allocations/">Allocation Approaches</a> for implementation.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#equal-rights-to-atmosphere">Equal Rights to Atmosphere</a> for theory, <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a> for implementation.</p>
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: equal_per_capita() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
@@ -2334,7 +2334,7 @@
 <li><strong>Adjusted pathways</strong> - <code>per_capita_adjusted()</code> applies responsibility weighting to annual pathway allocations (immediate adjustment, no convergence)</li>
 <li><strong>Climate debt accounting</strong> - Matthews (2016) methodology: debt = Σ [actual emissions - (world emissions × population fraction)]</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a> for theory, <a href="{DOCS_ROOT}/science/parameter-effects/#allocation_year-budget-first_allocation_year-pathway">Parameter Effects</a> for examples.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a> for theory, <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/#allocation_year-budget-first_allocation_year-pathway">Parameter Effects</a> for examples.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
@@ -2356,7 +2356,7 @@
 <li><strong>Income floor (<code>income_floor</code>)</strong> - In <code>*-gini-adjusted</code> approaches, exempts income below threshold from capability accounting</li>
 <li><strong>GDP per capita indicators</strong> - World Bank data with PPP adjustment available through fair-shares data sources</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/climate-equity-concepts/#ability-to-pay-capability">Ability to Pay</a> for theory, <a href="{DOCS_ROOT}/science/parameter-effects/#capability_weight">Parameter Effects</a> for examples.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay-capability">Ability to Pay</a> for theory, <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/#capability_weight">Parameter Effects</a> for examples.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
@@ -2377,7 +2377,7 @@
 <li><strong><code>*-gini-adjusted</code> approaches</strong> - Add subsistence protection through income floors and within-country inequality accounting</li>
 <li><strong>UNFCCC classification</strong> - Annex I vs. Non-Annex I countries as rough proxy for differentiation (though increasingly outdated)</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/climate-equity-concepts/#cbdr-rc">CBDR-RC</a> for theory, <a href="{DOCS_ROOT}/science/allocations/">Allocation Approaches</a> for implementation.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#cbdr-rc">CBDR-RC</a> for theory, <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a> for implementation.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py
      Legal basis: ICJ Advisory Opinion 2025 -->
 
@@ -2398,7 +2398,7 @@
 <li><strong>Gini-adjusted pathways</strong> - <code>per_capita_adjusted_gini()</code> applies subsistence protection to annual pathway allocations (immediate adjustment, no convergence)</li>
 <li><strong>Subsistence emissions accounting</strong> - Can be implemented through emission floors (not currently in core library but conceptually straightforward)</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury</a> for theory, <a href="{DOCS_ROOT}/science/parameter-effects/#income_floor">Parameter Effects</a> for examples.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury</a> for theory, <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/#income_floor">Parameter Effects</a> for examples.</p>
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted_gini() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
@@ -2428,7 +2428,7 @@
 <li><strong>Convergence parameters</strong> - <code>first_allocation_year</code>, <code>convergence_year</code>, adjustment weights control convergence trajectory</li>
 <li><strong>Adjusted convergence variants</strong> - <code>*-adjusted</code> and <code>*-gini-adjusted</code> versions available for convergence pathways, applying responsibility/capability logic to transition trajectories</li>
 </ul>
-<p><strong>See:</strong> <a href="{DOCS_ROOT}/science/allocations/#convergence-mechanism-pathways-only">Convergence Mechanism</a> for details.</p>
+<p><strong>See:</strong> <a href="https://setupelz.github.io/fair-shares/science/allocations/#convergence-mechanism-pathways-only">Convergence Mechanism</a> for details.</p>
 <!-- REFERENCE: cumulative_per_capita_convergence() in src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py -->
 
 <hr />

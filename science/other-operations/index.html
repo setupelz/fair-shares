@@ -1896,13 +1896,13 @@
 <li>Linearly interpolate for anchor year &lt; year &lt; convergence year</li>
 <li>Use original scenario values for years ≥ convergence year</li>
 </ol>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
 <h3 id="cumulative-peak-preservation">Cumulative Peak Preservation<a class="headerlink" href="#cumulative-peak-preservation" title="Permanent link">&para;</a></h3>
 <p>Preserves the peak cumulative emissions using time-varying scaling when <code>preserve_cumulative_peak=True</code>.</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
 <h3 id="net-negative-emissions-handling">Net-Negative Emissions Handling<a class="headerlink" href="#net-negative-emissions-handling" title="Permanent link">&para;</a></h3>
 <p>Sets post-net-zero emissions to NaN with warnings. Pre-net-zero emissions are preserved unchanged.</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::set_post_net_zero_emissions_to_nan</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::set_post_net_zero_emissions_to_nan</code></p>
 <hr />
 <h2 id="rcb-pathway-generation">RCB Pathway Generation<a class="headerlink" href="#rcb-pathway-generation" title="Permanent link">&para;</a></h2>
 <p>Converts fixed carbon budget values into annual emission pathways using normalized shifted exponential decay:</p>
@@ -1911,36 +1911,36 @@
 <li>Reaches exactly zero by end year</li>
 <li>Discrete sum equals the carbon budget</li>
 </ol>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/math/pathways.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/math/pathways.py</code></p>
 <hr />
 <h2 id="data-preprocessing">Data Preprocessing<a class="headerlink" href="#data-preprocessing" title="Permanent link">&para;</a></h2>
 <h3 id="interpolation">Interpolation<a class="headerlink" href="#interpolation" title="Permanent link">&para;</a></h3>
 <p>Fills missing values using linear or stepwise interpolation.</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::interpolate_scenarios_data</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::interpolate_scenarios_data</code></p>
 <h3 id="unit-conversion">Unit Conversion<a class="headerlink" href="#unit-conversion" title="Permanent link">&para;</a></h3>
 <p>Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/allocations/utils/unit_conversion.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/allocations/utils/unit_conversion.py</code></p>
 <hr />
 <h2 id="data-validation">Data Validation<a class="headerlink" href="#data-validation" title="Permanent link">&para;</a></h2>
 <h3 id="timeseriesdataframe-validation">TimeseriesDataFrame Validation<a class="headerlink" href="#timeseriesdataframe-validation" title="Permanent link">&para;</a></h3>
 <p>Validates structure (MultiIndex format) and content (non-negative values, complete time series).</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/validation/">Implementation →</a></strong> | <code>src/fair_shares/library/validation/pipeline_validation.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/validation/">Implementation →</a></strong> | <code>src/fair_shares/library/validation/pipeline_validation.py</code></p>
 <h3 id="cross-dataset-validation">Cross-Dataset Validation<a class="headerlink" href="#cross-dataset-validation" title="Permanent link">&para;</a></h3>
 <p>Verifies analysis countries + ROW = world totals, and ensures temporal/spatial alignment.</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/validation/">Implementation →</a></strong> | <code>src/fair_shares/library/validation/pipeline_validation.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/validation/">Implementation →</a></strong> | <code>src/fair_shares/library/validation/pipeline_validation.py</code></p>
 <hr />
 <h2 id="data-completeness">Data Completeness<a class="headerlink" href="#data-completeness" title="Permanent link">&para;</a></h2>
 <h3 id="analysis-country-selection">Analysis Country Selection<a class="headerlink" href="#analysis-country-selection" title="Permanent link">&para;</a></h3>
 <p>Identifies countries with complete data across all datasets and computes Rest of World totals for remaining countries.</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/completeness.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/completeness.py</code></p>
 <h3 id="world-total-extraction">World Total Extraction<a class="headerlink" href="#world-total-extraction" title="Permanent link">&para;</a></h3>
 <p>Extracts world totals for validation. Supports keys: "EARTH", "WLD", "World".</p>
-<p><strong><a href="{DOCS_ROOT}/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/completeness.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/completeness.py</code></p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="{DOCS_ROOT}/science/allocations/">Allocation Approaches</a></strong> — Design choices</li>
-<li><strong><a href="{DOCS_ROOT}/api/index/">API Reference</a></strong> — Function documentation</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></strong> — Design choices</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/api/index/">API Reference</a></strong> — Function documentation</li>
 </ul>
 
 

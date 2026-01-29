@@ -1892,8 +1892,8 @@
 <p>Each approach is registered in <code>allocations/registry.py</code>.</p>
 <p><strong>Essential Resources:</strong></p>
 <ul>
-<li><a href="{DOCS_ROOT}/dev-guide/docstring-template/">Docstring Template</a> - Required structure for all allocation approach docstrings</li>
-<li><a href="{DOCS_ROOT}/dev-guide/testing-checklist/">Testing Checklist</a> - Pre-merge validation checklist for new approaches</li>
+<li><a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> - Required structure for all allocation approach docstrings</li>
+<li><a href="https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/">Testing Checklist</a> - Pre-merge validation checklist for new approaches</li>
 </ul>
 <hr />
 <h2 id="before-you-begin-the-principles-first-requirement">Before You Begin: The Principles-First Requirement<a class="headerlink" href="#before-you-begin-the-principles-first-requirement" title="Permanent link">&para;</a></h2>
@@ -1912,14 +1912,14 @@
    (Is it a variant? A new principle? A combination?)</p>
 </li>
 </ol>
-<p>If you cannot answer these questions, read <a href="{DOCS_ROOT}/science/principle-to-code/">Principle-to-Code Workflow</a> before proceeding.</p>
+<p>If you cannot answer these questions, read <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle-to-Code Workflow</a> before proceeding.</p>
 <div class="admonition warning">
 <p class="admonition-title">Why Equity Grounding Matters</p>
 <p><strong>This is not optional.</strong> Allocation approaches without clear principled foundations cannot be properly documented, tested, or explained to users.</p>
 <p>Climate equity is inherently normative — every allocation approach embeds value judgments about fairness, responsibility, and capability. Without explicit grounding in equity principles:</p>
 <ul>
 <li><strong>Users cannot make informed choices</strong> — They need to understand what values each approach represents</li>
-<li><strong>Documentation becomes incomplete</strong> — The <a href="{DOCS_ROOT}/dev-guide/docstring-template/">Docstring Template</a> requires citing academic sources and explaining normative choices</li>
+<li><strong>Documentation becomes incomplete</strong> — The <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> requires citing academic sources and explaining normative choices</li>
 <li><strong>Testing becomes arbitrary</strong> — How do you validate behavior without knowing what the approach <em>should</em> do?</li>
 <li><strong>Maintenance becomes impossible</strong> — Future contributors cannot understand intent or make principled modifications</li>
 </ul>
@@ -2056,7 +2056,7 @@
 <li><strong>Validate inputs</strong> using <code>AllocationInputs</code> Pydantic model</li>
 <li><strong>Shares must sum to 1</strong> for each group (e.g., climate-assessment, quantile)</li>
 <li><strong>Validate outputs</strong> using <code>AllocationOutputs</code> model</li>
-<li><strong>Document thoroughly</strong> with academic citations (see <a href="{DOCS_ROOT}/dev-guide/docstring-template/">Docstring Template</a> for required structure)</li>
+<li><strong>Document thoroughly</strong> with academic citations (see <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> for required structure)</li>
 </ol>
 <hr />
 <h2 id="step-3-export-the-function">Step 3: Export the Function<a class="headerlink" href="#step-3-export-the-function" title="Permanent link">&para;</a></h2>
@@ -2128,11 +2128,11 @@
 </span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>    <span class="k">assert</span> <span class="n">result_low</span><span class="o">.</span><span class="n">approach</span> <span class="o">==</span> <span class="s2">&quot;my-new-budget&quot;</span>
 </span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>    <span class="k">assert</span> <span class="n">result_high</span><span class="o">.</span><span class="n">approach</span> <span class="o">==</span> <span class="s2">&quot;my-new-budget&quot;</span>
 </span></code></pre></div>
-<p><strong>Before merging</strong>, complete all validation steps in the <a href="{DOCS_ROOT}/dev-guide/testing-checklist/">Testing Checklist</a>.</p>
+<p><strong>Before merging</strong>, complete all validation steps in the <a href="https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/">Testing Checklist</a>.</p>
 <hr />
 <h2 id="step-6-document">Step 6: Document<a class="headerlink" href="#step-6-document" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Docstring</strong> - Follow the comprehensive structure in <a href="{DOCS_ROOT}/dev-guide/docstring-template/">Docstring Template</a></li>
+<li><strong>Docstring</strong> - Follow the comprehensive structure in <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a></li>
 <li>Include Mathematical Foundation with LaTeX equations</li>
 <li>Document all parameters with cross-references to parameter-effects.md</li>
 <li>Add Notes section with theoretical grounding and normative choices</li>
@@ -2196,7 +2196,7 @@
 </tr>
 </tbody>
 </table>
-<p>See <a href="{DOCS_ROOT}/api/utils/core/">Utils API</a> for full documentation.</p>
+<p>See <a href="https://setupelz.github.io/fair-shares/api/utils/core/">Utils API</a> for full documentation.</p>
 
 
 

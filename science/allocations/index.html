@@ -1929,7 +1929,7 @@
 
 <h1 id="allocation-approaches">Allocation Approaches<a class="headerlink" href="#allocation-approaches" title="Permanent link">&para;</a></h1>
 <p>Design and parameters for allocation approaches in fair-shares.</p>
-<p>For underlying principles, see <a href="{DOCS_ROOT}/science/climate-equity-concepts/">Climate Equity Concepts</a>. For mathematical formulations, see the API Reference for <a href="{DOCS_ROOT}/api/allocations/budgets/">budgets</a> and <a href="{DOCS_ROOT}/api/allocations/pathways/">pathways</a>.</p>
+<p>For underlying principles, see <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a>. For mathematical formulations, see the API Reference for <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">budgets</a> and <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/">pathways</a>.</p>
 <hr />
 <h2 id="overview">Overview<a class="headerlink" href="#overview" title="Permanent link">&para;</a></h2>
 <p>Allocation approaches distribute emissions among countries based on equity principles. fair-shares implements two categories:</p>
@@ -1966,7 +1966,7 @@
 <li><strong>AR6 pathways</strong> present ambiguity — how to allocate negative values while maintaining proportional fairness?</li>
 </ul>
 <p>fair-shares does not alter AR6 pathways. Instead, it sets post-net-zero emissions to NaN and reports unallocated quantities as a warning. Users must decide how to handle net-negative portions separately.</p>
-<p><strong>Converting RCBs to pathways:</strong> Use <code>generate_rcb_pathway_scenarios()</code> to convert any budget to a temporal breakdown (e.g., exponential decay over years). See <a href="{DOCS_ROOT}/science/other-operations/#rcb-pathway-generation">Other Operations: RCB Pathway Generation</a>.</p>
+<p><strong>Converting RCBs to pathways:</strong> Use <code>generate_rcb_pathway_scenarios()</code> to convert any budget to a temporal breakdown (e.g., exponential decay over years). See <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">Other Operations: RCB Pathway Generation</a>.</p>
 <!-- REFERENCE: generate_rcb_pathway_scenarios() in src/fair_shares/library/utils/math/pathways.py -->
 </details>
 <hr />
@@ -2023,11 +2023,11 @@
 <li>Reaches exactly zero by the end year</li>
 <li>Ensures discrete annual sums equal the budget</li>
 </ul>
-<p><strong>Configuration:</strong> Set <code>target: "rcb-pathways"</code> in your data source config. See <a href="{DOCS_ROOT}/user-guide/index/#rcb-pathway-generation">User Guide: Configuration</a> for setup details.</p>
-<p><strong>Technical details:</strong> <a href="{DOCS_ROOT}/science/other-operations/#rcb-pathway-generation">RCB Pathway Generation</a></p>
+<p><strong>Configuration:</strong> Set <code>target: "rcb-pathways"</code> in your data source config. See <a href="https://setupelz.github.io/fair-shares/user-guide/index/#rcb-pathway-generation">User Guide: Configuration</a> for setup details.</p>
+<p><strong>Technical details:</strong> <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">RCB Pathway Generation</a></p>
 <hr />
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
-<p>For real-world examples showing how these parameters affect allocation outcomes for different countries, see <a href="{DOCS_ROOT}/science/parameter-effects/">Parameter Effects Reference</a>.</p>
+<p>For real-world examples showing how these parameters affect allocation outcomes for different countries, see <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects Reference</a>.</p>
 <h3 id="allocation-year">Allocation Year<a class="headerlink" href="#allocation-year" title="Permanent link">&para;</a></h3>
 <p>Reference year for calculating cumulative per capita allocations.</p>
 <table>
@@ -2048,7 +2048,7 @@
 </tr>
 </tbody>
 </table>
-<p>Earlier allocation years account for historical emissions in the cumulative calculation. See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a>.</p>
+<p>Earlier allocation years account for historical emissions in the cumulative calculation. See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a>.</p>
 <h3 id="building-blocks">Building Blocks<a class="headerlink" href="#building-blocks" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
@@ -2199,8 +2199,8 @@
 <!-- REFERENCE: per_capita_adjusted_gini() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
 <p>Models national income distribution as log-normal and applies an income floor, excluding income below threshold when calculating capability. Higher Gini coefficients reduce the effective capability metric.</p>
-<p>See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury Emissions</a> for conceptual context.</p>
-<p><strong>Mathematical formulations:</strong> <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_gini_budget">Budget</a> | <a href="{DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted_gini">Pathway</a></p>
+<p>See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury Emissions</a> for conceptual context.</p>
+<p><strong>Mathematical formulations:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini">Pathway</a></p>
 <hr />
 <h2 id="maximum-deviation-constraint">Maximum Deviation Constraint<a class="headerlink" href="#maximum-deviation-constraint" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
@@ -2208,7 +2208,7 @@
 
 <p>Limits how far any country's allocation can deviate from equal per capita. Default: ±2 standard deviations.</p>
 <p>Parameter: <code>max_deviation_sigma</code></p>
-<p><strong>Implementation details:</strong> <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget">Budget</a> | <a href="{DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted">Pathway</a></p>
+<p><strong>Implementation details:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted">Pathway</a></p>
 <hr />
 <h2 id="weight-normalization">Weight Normalization<a class="headerlink" href="#weight-normalization" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
@@ -2218,7 +2218,7 @@
 <div class="language-text highlight"><span class="filename">Text Only</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Final = Equal-per-capita shares × [(responsibility_weight × responsibility_factor) + (capability_weight × capability_factor)]
 </span></code></pre></div>
 <p>Only the ratio between weights affects results; <code>(0.3, 0.7)</code> and <code>(0.15, 0.35)</code> produce identical allocations.</p>
-<p><strong>Mathematical specification:</strong> <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget">Budget</a> | <a href="{DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted">Pathway</a></p>
+<p><strong>Mathematical specification:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted">Pathway</a></p>
 <hr />
 <h2 id="dynamic-vs-preserved-shares">Dynamic vs Preserved Shares<a class="headerlink" href="#dynamic-vs-preserved-shares" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
@@ -2246,7 +2246,7 @@
 </tr>
 </tbody>
 </table>
-<p><strong>Mathematical specifications:</strong> <a href="{DOCS_ROOT}/api/allocations/budgets/#equal_per_capita_budget">Budget</a> | <a href="{DOCS_ROOT}/api/allocations/pathways/#equal_per_capita">Pathway</a></p>
+<p><strong>Mathematical specifications:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#equal_per_capita">Pathway</a></p>
 <hr />
 <h2 id="historical-responsibility">Historical Responsibility<a class="headerlink" href="#historical-responsibility" title="Permanent link">&para;</a></h2>
 <p>Two mechanisms:</p>
@@ -2254,8 +2254,8 @@
 <li><strong>Early allocation year:</strong> Set <code>allocation_year</code> to 1850 or 1990 (calculates cumulative per capita since that year)</li>
 <li><strong>Responsibility weight:</strong> Use <code>responsibility_weight</code> + <code>historical_responsibility_year</code> (multiplicative adjustment based on per-capita historical emissions)</li>
 </ol>
-<p>These can be combined. See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a> for conceptual foundations.</p>
-<p><strong>Mathematical details:</strong> <a href="{DOCS_ROOT}/api/allocations/budgets/">Budget</a> | <a href="{DOCS_ROOT}/api/allocations/pathways/">Pathway</a></p>
+<p>These can be combined. See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays</a> for conceptual foundations.</p>
+<p><strong>Mathematical details:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/">Pathway</a></p>
 <hr />
 <h2 id="convergence-mechanism-pathways-only">Convergence Mechanism (Pathways Only)<a class="headerlink" href="#convergence-mechanism-pathways-only" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: cumulative_per_capita_convergence() in src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py -->
@@ -2269,7 +2269,7 @@
 <li>Cumulative-constrained: total over horizon equals target share</li>
 <li>Automatic speed: minimum speed satisfying cumulative constraints</li>
 </ul>
-<p><strong><a href="{DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence">Mathematical derivation →</a></strong></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence">Mathematical derivation →</a></strong></p>
 <hr />
 <h2 id="strict-parameter-convergence-only">Strict Parameter (Convergence Only)<a class="headerlink" href="#strict-parameter-convergence-only" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: cumulative_per_capita_convergence() in src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py -->
@@ -2295,21 +2295,21 @@
 </tr>
 </tbody>
 </table>
-<p><strong><a href="{DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence">Implementation details →</a></strong></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence">Implementation details →</a></strong></p>
 <hr />
 <h2 id="per-capita-convergence-pcc">Per Capita Convergence (PCC)<a class="headerlink" href="#per-capita-convergence-pcc" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: per_capita_convergence() in src/fair_shares/library/allocations/pathways/per_capita_convergence.py -->
 
-<p>The <code>per-capita-convergence</code> approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements; see <a href="{DOCS_ROOT}/science/climate-equity-concepts/#grandfathering">Grandfathering</a> for context in the literature.</p>
-<p><strong><a href="{DOCS_ROOT}/api/allocations/pathways/">Formulation →</a></strong></p>
+<p>The <code>per-capita-convergence</code> approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements; see <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#grandfathering">Grandfathering</a> for context in the literature.</p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/">Formulation →</a></strong></p>
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="{DOCS_ROOT}/science/climate-equity-concepts/">Climate Equity Concepts</a>:</strong> Theoretical foundations and principles</li>
-<li><strong><a href="{DOCS_ROOT}/api/allocations/budgets/">API Reference: Budget Allocations</a>:</strong> Budget mathematical formulations</li>
-<li><strong><a href="{DOCS_ROOT}/api/allocations/pathways/">API Reference: Pathway Allocations</a>:</strong> Pathway mathematical formulations</li>
-<li><strong><a href="{DOCS_ROOT}/user-guide/country-fair-shares/">country-fair-shares Guide</a>:</strong> When to use each approach</li>
-<li><strong><a href="{DOCS_ROOT}/science/references/">References</a>:</strong> Complete bibliography</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a>:</strong> Theoretical foundations and principles</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">API Reference: Budget Allocations</a>:</strong> Budget mathematical formulations</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/">API Reference: Pathway Allocations</a>:</strong> Pathway mathematical formulations</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/">country-fair-shares Guide</a>:</strong> When to use each approach</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/science/references/">References</a>:</strong> Complete bibliography</li>
 </ul>
 
 

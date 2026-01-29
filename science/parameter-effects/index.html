@@ -1879,8 +1879,8 @@
 <p><strong>Key insight:</strong> For equal-per-capita allocation, the <code>allocation_year</code> has limited effect because population shares are relatively stable. The parameter's main effect is determining when the allocation "clock starts" - earlier years mean countries are responsible for their full historical emissions before that date.</p>
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-<p><strong>Mathematical detail:</strong> See <a href="{DOCS_ROOT}/api/allocations/budgets/#equal_per_capita_budget">equal_per_capita_budget API</a></p>
-<p><strong>Theoretical basis:</strong> See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#egalitarianism">Egalitarianism</a></p>
+<p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget">equal_per_capita_budget API</a></p>
+<p><strong>Theoretical basis:</strong> See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#egalitarianism">Egalitarianism</a></p>
 <hr />
 <h2 id="responsibility_weight">responsibility_weight<a class="headerlink" href="#responsibility_weight" title="Permanent link">&para;</a></h2>
 <p><strong>Effect:</strong> Controls the strength of historical responsibility adjustments. Higher values penalize countries with high cumulative historical emissions.</p>
@@ -1925,8 +1925,8 @@
 <p><strong>Key insight:</strong> Historical responsibility dramatically reduces shares for high-emitting developed countries (USA: 4.0% → 0.5%, Germany: 0.8% → 0.1%) while increasing shares for countries with lower historical emissions (India: 16.7% → 8.2%). The effect saturates between <code>weight=0.5</code> and <code>weight=1.0</code> in this example because historical emissions differences are so large.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-<p><strong>Mathematical detail:</strong> See <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget">per_capita_adjusted_budget API</a></p>
-<p><strong>Theoretical basis:</strong> See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays / Historical Responsibility</a></p>
+<p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">per_capita_adjusted_budget API</a></p>
+<p><strong>Theoretical basis:</strong> See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility">Polluter Pays / Historical Responsibility</a></p>
 <hr />
 <h2 id="capability_weight">capability_weight<a class="headerlink" href="#capability_weight" title="Permanent link">&para;</a></h2>
 <p><strong>Effect:</strong> Controls the strength of capability (ability to pay) adjustments. Higher values reduce allocations for wealthy countries.</p>
@@ -1971,8 +1971,8 @@
 <p><strong>Key insight:</strong> Capability adjustments have a smaller magnitude effect than historical responsibility adjustments. Wealthy countries see modest reductions (USA: 4.0% → 3.4%, Germany: 0.8% → 0.7%) while lower-GDP countries see small increases (India: 16.7% → 16.9%). The effect also saturates between <code>weight=0.5</code> and <code>weight=1.0</code>.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-<p><strong>Mathematical detail:</strong> See <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget">per_capita_adjusted_budget API</a></p>
-<p><strong>Theoretical basis:</strong> See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#ability-to-pay-capability">Ability to Pay (Capability)</a></p>
+<p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">per_capita_adjusted_budget API</a></p>
+<p><strong>Theoretical basis:</strong> See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay-capability">Ability to Pay (Capability)</a></p>
 <hr />
 <h2 id="income_floor">income_floor<a class="headerlink" href="#income_floor" title="Permanent link">&para;</a></h2>
 <p><strong>Effect:</strong> Sets a minimum income level for capability calculations, protecting subsistence needs. Income below this threshold is excluded from capability adjustments.</p>
@@ -2017,8 +2017,8 @@
 <p><strong>Key insight:</strong> Income floor effects are modest but principled. Higher floors slightly reduce the capability penalty for wealthy countries (USA: 3.4% → 3.1%) by recognizing that subsistence needs should not count as "ability to pay". The effect is nonlinear and depends on income distribution (captured by Gini coefficients).</p>
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-<p><strong>Mathematical detail:</strong> See <a href="{DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_gini_budget">per_capita_adjusted_gini_budget API</a></p>
-<p><strong>Theoretical basis:</strong> See <a href="{DOCS_ROOT}/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury Emissions</a></p>
+<p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget">per_capita_adjusted_gini_budget API</a></p>
+<p><strong>Theoretical basis:</strong> See <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions">Subsistence vs. Luxury Emissions</a></p>
 <hr />
 <h2 id="combining-parameters">Combining Parameters<a class="headerlink" href="#combining-parameters" title="Permanent link">&para;</a></h2>
 <p>Real allocation approaches combine multiple principles. Common patterns:</p>
@@ -2075,10 +2075,10 @@
 <hr />
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><a href="{DOCS_ROOT}/science/climate-equity-concepts/">Climate Equity Concepts</a> - Theoretical foundations for each parameter</li>
-<li><a href="{DOCS_ROOT}/science/principle-to-code/">Principle to Code</a> - How equity principles map to parameters</li>
-<li><a href="{DOCS_ROOT}/user-guide/approach-catalog/">Approach Catalog</a> - Pre-configured combinations for common scenarios</li>
-<li><a href="{DOCS_ROOT}/api/allocations/budgets/">API Documentation</a> - Mathematical definitions and validation rules</li>
+<li><a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a> - Theoretical foundations for each parameter</li>
+<li><a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle to Code</a> - How equity principles map to parameters</li>
+<li><a href="https://setupelz.github.io/fair-shares/user-guide/approach-catalog/">Approach Catalog</a> - Pre-configured combinations for common scenarios</li>
+<li><a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">API Documentation</a> - Mathematical definitions and validation rules</li>
 </ul>
 
 
