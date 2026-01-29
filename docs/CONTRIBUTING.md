@@ -424,7 +424,7 @@ Weights control the strength of inverse adjustments to population-based allocati
 
 Only the **ratio** between weights matters: `(0.3, 0.7)` and `(0.15, 0.35)` produce identical allocations.
 
-**Mathematical details:** See [Weight Normalization]({DOCS_ROOT}/science/allocations/#weight-normalization).
+**Mathematical details:** See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization).
 ```
 
 ### Example 2: Parameter Behavior

@@ -7,7 +7,7 @@ search:
 
 # Climate Equity Concepts
 
-Foundational concepts for understanding fair share allocation approaches. For implementation details, see [Allocation Approaches]({DOCS_ROOT}/science/allocations/). For mathematical formulations, see the API Reference for [budgets]({DOCS_ROOT}/api/allocations/budgets/) and [pathways]({DOCS_ROOT}/api/allocations/pathways/).
+Foundational concepts for understanding fair share allocation approaches. For implementation details, see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/). For mathematical formulations, see the API Reference for [budgets](https://setupelz.github.io/fair-shares/api/allocations/budgets/) and [pathways](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
 
 ---
 
@@ -38,7 +38,7 @@ Allocation approaches draw on traditions in distributive justice.
 
 **Derived Principle:** Equal rights to the atmosphere (equal per capita entitlement to atmospheric space).
 
-**Operationalized in:** `equal-per-capita-budget`, `equal-per-capita` pathway (see [Allocation Approaches]({DOCS_ROOT}/science/allocations/#example-configurations-budget))
+**Operationalized in:** `equal-per-capita-budget`, `equal-per-capita` pathway (see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/#example-configurations-budget))
 
 ### Sufficientarianism
 
@@ -46,7 +46,7 @@ Allocation approaches draw on traditions in distributive justice.
 
 **Rationale:** Provides threshold conception of harm that can address the non-identity problem: people are harmed if they fall below a sufficientarian threshold regardless of whether they would exist under alternative policies.
 
-**Operationalized in:** Gini-adjusted approaches with income floor parameter (see [Gini Adjustment]({DOCS_ROOT}/science/allocations/#gini-adjustment))
+**Operationalized in:** Gini-adjusted approaches with income floor parameter (see [Gini Adjustment](https://setupelz.github.io/fair-shares/science/allocations/#gini-adjustment))
 
 ### Capabilities Approach
 
@@ -54,7 +54,7 @@ Allocation approaches draw on traditions in distributive justice.
 
 **Rationale:** Proposed as framework to operationalize CBDR-RC by providing concrete means to assess country obligations and support needs.
 
-**Operationalized in:** The `capability_weight` parameter in `per-capita-adjusted` approaches operationalizes the narrower "ability to pay" principle using GDP-based indicators (see [Choosing an Allocation Approach]({DOCS_ROOT}/science/allocations/#parameters)).
+**Operationalized in:** The `capability_weight` parameter in `per-capita-adjusted` approaches operationalizes the narrower "ability to pay" principle using GDP-based indicators (see [Choosing an Allocation Approach](https://setupelz.github.io/fair-shares/science/allocations/#parameters)).
 
 ### Corrective Justice
 
@@ -62,7 +62,7 @@ Allocation approaches draw on traditions in distributive justice.
 
 **Rationale:** Applied to climate, developed countries violated this proviso by consuming atmospheric space such that others cannot develop using fossil fuels.
 
-**Operationalized in:** Historical responsibility adjustments in `per-capita-adjusted` approaches (see [Incorporating Historical Responsibility]({DOCS_ROOT}/science/allocations/#historical-responsibility))
+**Operationalized in:** Historical responsibility adjustments in `per-capita-adjusted` approaches (see [Incorporating Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility))
 
 ### Unjust Enrichment
 
@@ -76,7 +76,7 @@ Allocation approaches draw on traditions in distributive justice.
 
 ## Foundational Principles
 
-These principles translate ethical traditions into actionable allocation rules. For in-depth theoretical debates, see [References]({DOCS_ROOT}/science/references/).
+These principles translate ethical traditions into actionable allocation rules. For in-depth theoretical debates, see [References](https://setupelz.github.io/fair-shares/science/references/).
 
 ### Equal Rights to Atmosphere
 
@@ -84,7 +84,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** Since no person inherently deserves more access to atmospheric space than another, equal per capita distribution reflects fundamental equality of persons.
 
-**Operationalized in:** `equal-per-capita-budget` (see [Example Configurations]({DOCS_ROOT}/science/allocations/#example-configurations-budget))
+**Operationalized in:** `equal-per-capita-budget` (see [Example Configurations](https://setupelz.github.io/fair-shares/science/allocations/#example-configurations-budget))
 
 ### Polluter Pays (Historical Responsibility)
 
@@ -92,7 +92,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** CO₂ persists for centuries, meaning past emissions are not truly "past" but continue affecting the climate system [Shue 2015].
 
-**Operationalized in:** Two mechanisms. First, **early allocation year**: setting `allocation_year` to an early date (e.g., 1850) calculates "equal per capita since 1850" and works with any approach. Second, **responsibility weight**: using `responsibility_weight` in `per-capita-adjusted` approaches applies a multiplicative adjustment based on per-capita historical emissions. See [Incorporating Historical Responsibility]({DOCS_ROOT}/science/allocations/#historical-responsibility).
+**Operationalized in:** Two mechanisms. First, **early allocation year**: setting `allocation_year` to an early date (e.g., 1850) calculates "equal per capita since 1850" and works with any approach. Second, **responsibility weight**: using `responsibility_weight` in `per-capita-adjusted` approaches applies a multiplicative adjustment based on per-capita historical emissions. See [Incorporating Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility).
 
 ### Ability to Pay (Capability)
 
@@ -100,7 +100,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** Those with greater resources have greater ability to contribute without compromising basic needs. Wealthier nations have greater capacity to transform energy systems without compromising development goals [Caney 2010; Dooley 2021].
 
-**Operationalized in:** `per-capita-adjusted-budget` with `capability_weight` (see [Choosing an Allocation Approach]({DOCS_ROOT}/science/allocations/#parameters))
+**Operationalized in:** `per-capita-adjusted-budget` with `capability_weight` (see [Choosing an Allocation Approach](https://setupelz.github.io/fair-shares/science/allocations/#parameters))
 
 ### CBDR-RC
 
@@ -108,7 +108,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** Recognizes that while climate change is a global problem requiring collective action, countries have contributed differently to the problem and have different capacities to respond.
 
-**Operationalized in:** Multiple parameter combinations. The simplest is **early allocation year + capability adjustment**, which provides Differentiated Responsibilities via historical accounting and Respective Capabilities via `capability_weight` adjustment. See [Choosing an Allocation Approach]({DOCS_ROOT}/science/allocations/#parameters).
+**Operationalized in:** Multiple parameter combinations. The simplest is **early allocation year + capability adjustment**, which provides Differentiated Responsibilities via historical accounting and Respective Capabilities via `capability_weight` adjustment. See [Choosing an Allocation Approach](https://setupelz.github.io/fair-shares/science/allocations/#parameters).
 
 ### No-Harm Principle
 
@@ -132,7 +132,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** Constraining development pathways is inequitable when developed countries achieved prosperity through fossil fuels. This principle supports protecting emissions necessary for basic needs and development, undergirding the distinction between subsistence and luxury emissions.
 
-**Operationalized in:** Supports subsistence emissions protections in Gini-adjusted approaches (see [Gini Adjustment]({DOCS_ROOT}/science/allocations/#gini-adjustment)).
+**Operationalized in:** Supports subsistence emissions protections in Gini-adjusted approaches (see [Gini Adjustment](https://setupelz.github.io/fair-shares/science/allocations/#gini-adjustment)).
 
 ### Subsistence vs. Luxury Emissions
 
@@ -140,7 +140,7 @@ These principles translate ethical traditions into actionable allocation rules. 
 
 **Rationale:** Emissions required for basic survival (heating, cooking, essential transport) differ fundamentally from emissions associated with discretionary consumption. Mitigation burdens should fall primarily on luxury emissions.
 
-**Operationalized in:** Gini-adjusted approaches with income floor parameter (see [Gini Adjustment]({DOCS_ROOT}/science/allocations/#gini-adjustment))
+**Operationalized in:** Gini-adjusted approaches with income floor parameter (see [Gini Adjustment](https://setupelz.github.io/fair-shares/science/allocations/#gini-adjustment))
 
 ---
 
@@ -158,7 +158,7 @@ Multiple independent moral principles, though conceptually distinct, converge to
 
 ## Key Distinctions
 
-Methodological choices in fair shares analysis. See [Allocations]({DOCS_ROOT}/science/allocations/) for implementation details.
+Methodological choices in fair shares analysis. See [Allocations](https://setupelz.github.io/fair-shares/science/allocations/) for implementation details.
 
 ### Production vs. Consumption Accounting
 
@@ -196,7 +196,7 @@ Methodological choices in fair shares analysis. See [Allocations]({DOCS_ROOT}/sc
 
 ## Policy Implementation
 
-Fair share allocations increasingly inform climate litigation and policy [Rajamani 2024]. Courts now apply objective benchmarks (IPCC AR6 reduction pathways) to assess state obligations, with differentiated due diligence standards based on emissions and capacity. Many developed countries face negative remaining allocations under principled approaches aligned with 1.5°C [Pelz 2025a]. See [References]({DOCS_ROOT}/science/references/) for discussions of loss and damage (Okereke 2016), climate finance (Morrow 2017), and just transition frameworks (Muttitt 2020).
+Fair share allocations increasingly inform climate litigation and policy [Rajamani 2024]. Courts now apply objective benchmarks (IPCC AR6 reduction pathways) to assess state obligations, with differentiated due diligence standards based on emissions and capacity. Many developed countries face negative remaining allocations under principled approaches aligned with 1.5°C [Pelz 2025a]. See [References](https://setupelz.github.io/fair-shares/science/references/) for discussions of loss and damage (Okereke 2016), climate finance (Morrow 2017), and just transition frameworks (Muttitt 2020).
 
 ---
 
@@ -214,7 +214,7 @@ These approaches appear in climate policy discussions. The literature contains d
 - Morrow 2017 notes arguments for grandfathering appeal to efficiency and practicality rather than fairness principles
 - Dooley 2021 argues combining grandfathering with egalitarian approaches is inconsistent
 
-The `per-capita-convergence` approach includes grandfathering elements; see [PCC]({DOCS_ROOT}/science/allocations/#per-capita-convergence-pcc).
+The `per-capita-convergence` approach includes grandfathering elements; see [PCC](https://setupelz.github.io/fair-shares/science/allocations/#per-capita-convergence-pcc).
 
 ### BAU Deviation Framing
 
@@ -238,7 +238,7 @@ The `per-capita-convergence` approach includes grandfathering elements; see [PCC
 
 ## Philosophical Challenges
 
-Climate equity reasoning confronts persistent theoretical difficulties, notably the **non-identity problem** (if different policies had been pursued, different people would exist, complicating compensation claims) and **intergenerational justice** (whether current generations bear responsibility for ancestors' emissions). Fair-shares sidesteps these challenges through benefits-based framing (redistribution of undeserved advantages rather than compensation for harms) and sufficientarian thresholds (protecting basic rights regardless of counterfactual comparisons). For detailed discussion, see Meyer 2013, Caney 2009, and [References]({DOCS_ROOT}/science/references/).
+Climate equity reasoning confronts persistent theoretical difficulties, notably the **non-identity problem** (if different policies had been pursued, different people would exist, complicating compensation claims) and **intergenerational justice** (whether current generations bear responsibility for ancestors' emissions). Fair-shares sidesteps these challenges through benefits-based framing (redistribution of undeserved advantages rather than compensation for harms) and sufficientarian thresholds (protecting basic rights regardless of counterfactual comparisons). For detailed discussion, see Meyer 2013, Caney 2009, and [References](https://setupelz.github.io/fair-shares/science/references/).
 
 ---
 
@@ -258,7 +258,7 @@ See Klinsky 2018, Okereke 2016, Zimm 2024 for detailed discussion.
 
 ## Suggested Reading
 
-For deeper exploration of concepts introduced above, organized by topic. Full citations in [References]({DOCS_ROOT}/science/references/).
+For deeper exploration of concepts introduced above, organized by topic. Full citations in [References](https://setupelz.github.io/fair-shares/science/references/).
 
 ### Foundational Principles
 
@@ -328,15 +328,15 @@ For deeper exploration of concepts introduced above, organized by topic. Full ci
 
 ### Allocation Approaches
 
-- **[Allocations]({DOCS_ROOT}/science/allocations/):** Design choices for cumulative budget and annual trajectory allocations
-- **[Other Operations]({DOCS_ROOT}/science/other-operations/):** Supporting operations (harmonization, RCB pathways, validation)
+- **[Allocations](https://setupelz.github.io/fair-shares/science/allocations/):** Design choices for cumulative budget and annual trajectory allocations
+- **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/):** Supporting operations (harmonization, RCB pathways, validation)
 
 ### Implementation
 
-- **[API Reference: Budget Allocations]({DOCS_ROOT}/api/allocations/budgets/):** Mathematical formulations
-- **[API Reference: Pathway Allocations]({DOCS_ROOT}/api/allocations/pathways/):** Mathematical formulations
-- **[country-fair-shares Guide]({DOCS_ROOT}/user-guide/country-fair-shares/):** Practical guidance
+- **[API Reference: Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/):** Mathematical formulations
+- **[API Reference: Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/):** Mathematical formulations
+- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** Practical guidance
 
 ### Academic Literature
 
-- **[References]({DOCS_ROOT}/science/references/):** Complete bibliography with annotations
+- **[References](https://setupelz.github.io/fair-shares/science/references/):** Complete bibliography with annotations

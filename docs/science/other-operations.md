@@ -19,19 +19,19 @@ Aligns emission pathways with historical data at an anchor year, then converges 
 2. Linearly interpolate for anchor year < year < convergence year
 3. Use original scenario values for years ≥ convergence year
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py`
 
 ### Cumulative Peak Preservation
 
 Preserves the peak cumulative emissions using time-varying scaling when `preserve_cumulative_peak=True`.
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py`
 
 ### Net-Negative Emissions Handling
 
 Sets post-net-zero emissions to NaN with warnings. Pre-net-zero emissions are preserved unchanged.
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py::set_post_net_zero_emissions_to_nan`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py::set_post_net_zero_emissions_to_nan`
 
 ---
 
@@ -43,7 +43,7 @@ Converts fixed carbon budget values into annual emission pathways using normaliz
 2. Reaches exactly zero by end year
 3. Discrete sum equals the carbon budget
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/math/pathways.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/math/pathways.py`
 
 ---
 
@@ -53,13 +53,13 @@ Converts fixed carbon budget values into annual emission pathways using normaliz
 
 Fills missing values using linear or stepwise interpolation.
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py::interpolate_scenarios_data`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/processing.py::interpolate_scenarios_data`
 
 ### Unit Conversion
 
 Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/allocations/utils/unit_conversion.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/allocations/utils/unit_conversion.py`
 
 ---
 
@@ -69,13 +69,13 @@ Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).
 
 Validates structure (MultiIndex format) and content (non-negative values, complete time series).
 
-**[Implementation →]({DOCS_ROOT}/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
 
 ### Cross-Dataset Validation
 
 Verifies analysis countries + ROW = world totals, and ensures temporal/spatial alignment.
 
-**[Implementation →]({DOCS_ROOT}/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
 
 ---
 
@@ -85,17 +85,17 @@ Verifies analysis countries + ROW = world totals, and ensures temporal/spatial a
 
 Identifies countries with complete data across all datasets and computes Rest of World totals for remaining countries.
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
 
 ### World Total Extraction
 
 Extracts world totals for validation. Supports keys: "EARTH", "WLD", "World".
 
-**[Implementation →]({DOCS_ROOT}/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
+**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
 
 ---
 
 ## See Also
 
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** — Design choices
-- **[API Reference]({DOCS_ROOT}/api/index/)** — Function documentation
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** — Design choices
+- **[API Reference](https://setupelz.github.io/fair-shares/api/index/)** — Function documentation

@@ -84,7 +84,7 @@ Available sources are configured in `conf/data_sources/`.
 | `per-capita-adjusted`               | Adjusted for responsibility and capability                                |
 | `cumulative-per-capita-convergence` | Budget-preserving transition from current emissions to cumulative targets |
 
-For detailed explanations, see [Allocation Approaches]({DOCS_ROOT}/science/allocations/).
+For detailed explanations, see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/).
 
 ---
 
@@ -169,6 +169,6 @@ Both approaches run in a single pipeline execution. Results include an `approach
 
 ## See Also
 
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** - Theoretical foundations
-- **[API Reference]({DOCS_ROOT}/api/allocations/budgets/)** - Function signatures
-- **[Other Operations]({DOCS_ROOT}/science/other-operations/)** - RCB pathway generation, net-negative handling
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations
+- **[API Reference](https://setupelz.github.io/fair-shares/api/allocations/budgets/)** - Function signatures
+- **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)** - RCB pathway generation, net-negative handling

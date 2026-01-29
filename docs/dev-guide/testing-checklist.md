@@ -57,7 +57,7 @@ def test_my_new_allocation_with_real_data():
 
 Ensure comprehensive documentation following the docstring template:
 
-- [ ] **Docstring follows template**: See [docstring-template.md]({DOCS_ROOT}/dev-guide/docstring-template/) for required sections
+- [ ] **Docstring follows template**: See [docstring-template.md](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) for required sections
 - [ ] **Mathematical Foundation section**: Includes LaTeX equations defining the allocation formula
 - [ ] **All variables defined**: LaTeX equations define all symbols used (e.g., $A(g)$, $P(g, t)$)
 - [ ] **Parameter descriptions complete**: Each parameter documented with type, description, valid range, and cross-reference to parameter-effects.md
@@ -201,8 +201,8 @@ uv run python tools/docs-sync-check.py
 
 ## See Also
 
-- [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/) — Required docstring structure
-- [Adding New Approaches]({DOCS_ROOT}/dev-guide/adding-approaches/) — Complete workflow for new allocations
-- [Parameter Effects Reference]({DOCS_ROOT}/science/parameter-effects/) — Parameter documentation
-- [Principle-to-Code Guide]({DOCS_ROOT}/science/principle-to-code/) — Implementation patterns
-- [Allocations Overview]({DOCS_ROOT}/science/allocations/) — Theoretical grounding
+- [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) — Required docstring structure
+- [Adding New Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/) — Complete workflow for new allocations
+- [Parameter Effects Reference](https://setupelz.github.io/fair-shares/science/parameter-effects/) — Parameter documentation
+- [Principle-to-Code Guide](https://setupelz.github.io/fair-shares/science/principle-to-code/) — Implementation patterns
+- [Allocations Overview](https://setupelz.github.io/fair-shares/science/allocations/) — Theoretical grounding

@@ -35,8 +35,8 @@ science_url = DOCS_URLS["science"]["allocations"]
 Use the `{DOCS_ROOT}` placeholder pattern:
 
 ```markdown
-See [Allocation Approaches]({DOCS_ROOT}/science/allocations/) for details.
-[IAMC guide]({DOCS_ROOT}/user-guide/iamc-regional-fair-shares/#format)
+See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) for details.
+[IAMC guide](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/#format)
 ```
 
 **Important**: Use trailing slashes and no `.md` extension (MkDocs convention).
@@ -93,15 +93,15 @@ This is useful for:
 ### Correct
 
 ```markdown
-[Page]({DOCS_ROOT}/science/allocations/)
-[With anchor]({DOCS_ROOT}/user-guide/quickstart/#installation)
+[Page](https://setupelz.github.io/fair-shares/science/allocations/)
+[With anchor](https://setupelz.github.io/fair-shares/user-guide/quickstart/#installation)
 ```
 
 ### Incorrect
 
 ```markdown
-[Missing slash]({DOCS_ROOT}/science/allocations)
-[Has .md]({DOCS_ROOT}/science/allocations.md/)
+[Missing slash](https://setupelz.github.io/fair-shares/science/allocations)
+[Has .md](https://setupelz.github.io/fair-shares/science/allocations.md/)
 [Relative](../docs/science/allocations/)
 ```
 

@@ -43,9 +43,9 @@ _Example uses 1.5°C carbon budget (50% probability) allocated from 2025._
 
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-**Mathematical detail:** See [equal_per_capita_budget API]({DOCS_ROOT}/api/allocations/budgets/#equal_per_capita_budget)
+**Mathematical detail:** See [equal_per_capita_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget)
 
-**Theoretical basis:** See [Egalitarianism]({DOCS_ROOT}/science/climate-equity-concepts/#egalitarianism)
+**Theoretical basis:** See [Egalitarianism](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#egalitarianism)
 
 ---
 
@@ -73,9 +73,9 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-**Mathematical detail:** See [per_capita_adjusted_budget API]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget)
+**Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Polluter Pays / Historical Responsibility]({DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility)
+**Theoretical basis:** See [Polluter Pays / Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility)
 
 ---
 
@@ -103,9 +103,9 @@ _Example uses `allocation_year=2020`._
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-**Mathematical detail:** See [per_capita_adjusted_budget API]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget)
+**Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Ability to Pay (Capability)]({DOCS_ROOT}/science/climate-equity-concepts/#ability-to-pay-capability)
+**Theoretical basis:** See [Ability to Pay (Capability)](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay-capability)
 
 ---
 
@@ -133,9 +133,9 @@ _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
-**Mathematical detail:** See [per_capita_adjusted_gini_budget API]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_gini_budget)
+**Mathematical detail:** See [per_capita_adjusted_gini_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget)
 
-**Theoretical basis:** See [Subsistence vs. Luxury Emissions]({DOCS_ROOT}/science/climate-equity-concepts/#subsistence-vs-luxury-emissions)
+**Theoretical basis:** See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions)
 
 ---
 
@@ -215,7 +215,7 @@ When combining adjustments:
 
 ## See Also
 
-- [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/) - Theoretical foundations for each parameter
-- [Principle to Code]({DOCS_ROOT}/science/principle-to-code/) - How equity principles map to parameters
-- [Approach Catalog]({DOCS_ROOT}/user-guide/approach-catalog/) - Pre-configured combinations for common scenarios
-- [API Documentation]({DOCS_ROOT}/api/allocations/budgets/) - Mathematical definitions and validation rules
+- [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Theoretical foundations for each parameter
+- [Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - How equity principles map to parameters
+- [Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/) - Pre-configured combinations for common scenarios
+- [API Documentation](https://setupelz.github.io/fair-shares/api/allocations/budgets/) - Mathematical definitions and validation rules

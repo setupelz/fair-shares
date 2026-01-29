@@ -23,8 +23,8 @@ Each approach is registered in `allocations/registry.py`.
 
 **Essential Resources:**
 
-- [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/) - Required structure for all allocation approach docstrings
-- [Testing Checklist]({DOCS_ROOT}/dev-guide/testing-checklist/) - Pre-merge validation checklist for new approaches
+- [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) - Required structure for all allocation approach docstrings
+- [Testing Checklist](https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/) - Pre-merge validation checklist for new approaches
 
 ---
 
@@ -41,7 +41,7 @@ Every allocation approach in fair-shares operationalizes specific equity princip
 3. **How does it relate to existing approaches?**
    (Is it a variant? A new principle? A combination?)
 
-If you cannot answer these questions, read [Principle-to-Code Workflow]({DOCS_ROOT}/science/principle-to-code/) before proceeding.
+If you cannot answer these questions, read [Principle-to-Code Workflow](https://setupelz.github.io/fair-shares/science/principle-to-code/) before proceeding.
 
 !!! warning "Why Equity Grounding Matters"
 
@@ -50,7 +50,7 @@ If you cannot answer these questions, read [Principle-to-Code Workflow]({DOCS_RO
     Climate equity is inherently normative — every allocation approach embeds value judgments about fairness, responsibility, and capability. Without explicit grounding in equity principles:
 
     - **Users cannot make informed choices** — They need to understand what values each approach represents
-    - **Documentation becomes incomplete** — The [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/) requires citing academic sources and explaining normative choices
+    - **Documentation becomes incomplete** — The [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) requires citing academic sources and explaining normative choices
     - **Testing becomes arbitrary** — How do you validate behavior without knowing what the approach *should* do?
     - **Maintenance becomes impossible** — Future contributors cannot understand intent or make principled modifications
 
@@ -206,7 +206,7 @@ def my_new_budget(
 1. **Validate inputs** using `AllocationInputs` Pydantic model
 2. **Shares must sum to 1** for each group (e.g., climate-assessment, quantile)
 3. **Validate outputs** using `AllocationOutputs` model
-4. **Document thoroughly** with academic citations (see [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/) for required structure)
+4. **Document thoroughly** with academic citations (see [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) for required structure)
 
 ---
 
@@ -293,13 +293,13 @@ def test_my_new_budget_parameter_effect():
     assert result_high.approach == "my-new-budget"
 ```
 
-**Before merging**, complete all validation steps in the [Testing Checklist]({DOCS_ROOT}/dev-guide/testing-checklist/).
+**Before merging**, complete all validation steps in the [Testing Checklist](https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/).
 
 ---
 
 ## Step 6: Document
 
-1. **Docstring** - Follow the comprehensive structure in [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/)
+1. **Docstring** - Follow the comprehensive structure in [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/)
    - Include Mathematical Foundation with LaTeX equations
    - Document all parameters with cross-references to parameter-effects.md
    - Add Notes section with theoretical grounding and normative choices
@@ -328,4 +328,4 @@ def test_my_new_budget_parameter_effect():
 | `apply_deviation_constraint()`    | Limit extreme allocations                     |
 | `validate_weight_constraints()`   | Check weights sum correctly                   |
 
-See [Utils API]({DOCS_ROOT}/api/utils/core/) for full documentation.
+See [Utils API](https://setupelz.github.io/fair-shares/api/utils/core/) for full documentation.

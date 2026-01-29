@@ -9,7 +9,7 @@ search:
 
 Design and parameters for allocation approaches in fair-shares.
 
-For underlying principles, see [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/). For mathematical formulations, see the API Reference for [budgets]({DOCS_ROOT}/api/allocations/budgets/) and [pathways]({DOCS_ROOT}/api/allocations/pathways/).
+For underlying principles, see [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/). For mathematical formulations, see the API Reference for [budgets](https://setupelz.github.io/fair-shares/api/allocations/budgets/) and [pathways](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
 
 ---
 
@@ -39,7 +39,7 @@ All allocation approaches ensure shares sum to 1 in each year and ensure complet
 
     fair-shares does not alter AR6 pathways. Instead, it sets post-net-zero emissions to NaN and reports unallocated quantities as a warning. Users must decide how to handle net-negative portions separately.
 
-    **Converting RCBs to pathways:** Use `generate_rcb_pathway_scenarios()` to convert any budget to a temporal breakdown (e.g., exponential decay over years). See [Other Operations: RCB Pathway Generation]({DOCS_ROOT}/science/other-operations/#rcb-pathway-generation).
+    **Converting RCBs to pathways:** Use `generate_rcb_pathway_scenarios()` to convert any budget to a temporal breakdown (e.g., exponential decay over years). See [Other Operations: RCB Pathway Generation](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation).
 
     <!-- REFERENCE: generate_rcb_pathway_scenarios() in src/fair_shares/library/utils/math/pathways.py -->
 
@@ -77,15 +77,15 @@ The `rcb-pathways` target source converts the global remaining carbon budget (RC
 - Reaches exactly zero by the end year
 - Ensures discrete annual sums equal the budget
 
-**Configuration:** Set `target: "rcb-pathways"` in your data source config. See [User Guide: Configuration]({DOCS_ROOT}/user-guide/index/#rcb-pathway-generation) for setup details.
+**Configuration:** Set `target: "rcb-pathways"` in your data source config. See [User Guide: Configuration](https://setupelz.github.io/fair-shares/user-guide/index/#rcb-pathway-generation) for setup details.
 
-**Technical details:** [RCB Pathway Generation]({DOCS_ROOT}/science/other-operations/#rcb-pathway-generation)
+**Technical details:** [RCB Pathway Generation](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation)
 
 ---
 
 ## Parameters
 
-For real-world examples showing how these parameters affect allocation outcomes for different countries, see [Parameter Effects Reference]({DOCS_ROOT}/science/parameter-effects/).
+For real-world examples showing how these parameters affect allocation outcomes for different countries, see [Parameter Effects Reference](https://setupelz.github.io/fair-shares/science/parameter-effects/).
 
 ### Allocation Year
 
@@ -96,7 +96,7 @@ Reference year for calculating cumulative per capita allocations.
 | Budget   | `allocation_year`       |
 | Pathway  | `first_allocation_year` |
 
-Earlier allocation years account for historical emissions in the cumulative calculation. See [Polluter Pays]({DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility).
+Earlier allocation years account for historical emissions in the cumulative calculation. See [Polluter Pays](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility).
 
 ### Building Blocks
 
@@ -156,9 +156,9 @@ These can be combined. For example, CBDR-RC can be interpreted and operationalis
 
 Models national income distribution as log-normal and applies an income floor, excluding income below threshold when calculating capability. Higher Gini coefficients reduce the effective capability metric.
 
-See [Subsistence vs. Luxury Emissions]({DOCS_ROOT}/science/climate-equity-concepts/#subsistence-vs-luxury-emissions) for conceptual context.
+See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions) for conceptual context.
 
-**Mathematical formulations:** [Budget]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway]({DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted_gini)
+**Mathematical formulations:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
 
 ---
 
@@ -171,7 +171,7 @@ Limits how far any country's allocation can deviate from equal per capita. Defau
 
 Parameter: `max_deviation_sigma`
 
-**Implementation details:** [Budget]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway]({DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted)
+**Implementation details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted)
 
 ---
 
@@ -188,7 +188,7 @@ Final = Equal-per-capita shares × [(responsibility_weight × responsibility_fac
 
 Only the ratio between weights affects results; `(0.3, 0.7)` and `(0.15, 0.35)` produce identical allocations.
 
-**Mathematical specification:** [Budget]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway]({DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted)
+**Mathematical specification:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted)
 
 ---
 
@@ -204,7 +204,7 @@ Parameter: `preserve_allocation_year_shares`
 | Dynamic (default) | Cumulative population from allocation year | Recalculated each year based on current pop/GDP |
 | Preserved         | Population at allocation year only         | Fixed at first allocation year                  |
 
-**Mathematical specifications:** [Budget]({DOCS_ROOT}/api/allocations/budgets/#equal_per_capita_budget) | [Pathway]({DOCS_ROOT}/api/allocations/pathways/#equal_per_capita)
+**Mathematical specifications:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#equal_per_capita)
 
 ---
 
@@ -215,9 +215,9 @@ Two mechanisms:
 1. **Early allocation year:** Set `allocation_year` to 1850 or 1990 (calculates cumulative per capita since that year)
 2. **Responsibility weight:** Use `responsibility_weight` + `historical_responsibility_year` (multiplicative adjustment based on per-capita historical emissions)
 
-These can be combined. See [Polluter Pays]({DOCS_ROOT}/science/climate-equity-concepts/#polluter-pays-historical-responsibility) for conceptual foundations.
+These can be combined. See [Polluter Pays](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility) for conceptual foundations.
 
-**Mathematical details:** [Budget]({DOCS_ROOT}/api/allocations/budgets/) | [Pathway]({DOCS_ROOT}/api/allocations/pathways/)
+**Mathematical details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/)
 
 ---
 
@@ -235,7 +235,7 @@ Properties:
 - Cumulative-constrained: total over horizon equals target share
 - Automatic speed: minimum speed satisfying cumulative constraints
 
-**[Mathematical derivation →]({DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence)**
+**[Mathematical derivation →](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence)**
 
 ---
 
@@ -252,7 +252,7 @@ Parameter: `strict` (default: True)
 | Strict     | Raise error if no feasible convergence solution exists        |
 | Permissive | Accept approximate solutions, document deviations in warnings |
 
-**[Implementation details →]({DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence)**
+**[Implementation details →](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence)**
 
 ---
 
@@ -260,16 +260,16 @@ Parameter: `strict` (default: True)
 
 <!-- REFERENCE: per_capita_convergence() in src/fair_shares/library/allocations/pathways/per_capita_convergence.py -->
 
-The `per-capita-convergence` approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements; see [Grandfathering]({DOCS_ROOT}/science/climate-equity-concepts/#grandfathering) for context in the literature.
+The `per-capita-convergence` approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements; see [Grandfathering](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#grandfathering) for context in the literature.
 
-**[Formulation →]({DOCS_ROOT}/api/allocations/pathways/)**
+**[Formulation →](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**
 
 ---
 
 ## See Also
 
-- **[Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/):** Theoretical foundations and principles
-- **[API Reference: Budget Allocations]({DOCS_ROOT}/api/allocations/budgets/):** Budget mathematical formulations
-- **[API Reference: Pathway Allocations]({DOCS_ROOT}/api/allocations/pathways/):** Pathway mathematical formulations
-- **[country-fair-shares Guide]({DOCS_ROOT}/user-guide/country-fair-shares/):** When to use each approach
-- **[References]({DOCS_ROOT}/science/references/):** Complete bibliography
+- **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/):** Theoretical foundations and principles
+- **[API Reference: Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/):** Budget mathematical formulations
+- **[API Reference: Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/):** Pathway mathematical formulations
+- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** When to use each approach
+- **[References](https://setupelz.github.io/fair-shares/science/references/):** Complete bibliography

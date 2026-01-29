@@ -298,6 +298,6 @@ epc <- df_relative %>%
 
 ## See Also
 
-- **[User Guide]({DOCS_ROOT}/user-guide/)** - Workflows for running allocations
-- **[API Reference]({DOCS_ROOT}/api/)** - Function documentation
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** - Approach descriptions and parameters
+- **[User Guide](https://setupelz.github.io/fair-shares/user-guide/)** - Workflows for running allocations
+- **[API Reference](https://setupelz.github.io/fair-shares/api/)** - Function documentation
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Approach descriptions and parameters

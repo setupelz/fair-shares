@@ -72,6 +72,6 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ## See Also
 
-- **[Budget Allocations]({DOCS_ROOT}/api/budgets/)**: Low-level budget allocation functions
-- **[Pathway Allocations]({DOCS_ROOT}/api/pathways/)**: Low-level pathway allocation functions
-- **[country-fair-shares Guide]({DOCS_ROOT}/user-guide/country-fair-shares/)**: Choose and configure allocations
+- **[Budget Allocations](https://setupelz.github.io/fair-shares/api/budgets/)**: Low-level budget allocation functions
+- **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/pathways/)**: Low-level pathway allocation functions
+- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Choose and configure allocations

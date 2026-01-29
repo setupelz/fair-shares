@@ -10,7 +10,7 @@ search:
 
 This page provides a quick-reference overview of all 10 allocation approaches available in fair-shares. Each approach operationalizes different equity principles from the climate justice literature.
 
-For detailed mathematical formulations, see the [API Reference]({DOCS_ROOT}/api/index/). For theoretical grounding, see [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/) and [Allocation Approaches]({DOCS_ROOT}/science/allocations/).
+For detailed mathematical formulations, see the [API Reference](https://setupelz.github.io/fair-shares/api/index/). For theoretical grounding, see [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) and [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/).
 
 ---
 
@@ -36,9 +36,9 @@ Budget approaches allocate a cumulative emissions budget (e.g., a remaining carb
 
 | Approach                              | Operationalizes                         | Best For                                                                        | Links                                                                                                       |
 | ------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| **`equal-per-capita-budget`**         | Equal per capita                        | National targets based on population shares                                     | [API]({DOCS_ROOT}/api/allocations/budgets/#equal_per_capita_budget) · [Science]({DOCS_ROOT}/science/allocations/)         |
-| **`per-capita-adjusted-budget`**      | CBDR-RC, Capability                     | Differentiated responsibility with historical emissions and GDP adjustments     | [API]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_budget) · [Science]({DOCS_ROOT}/science/allocations/)      |
-| **`per-capita-adjusted-gini-budget`** | CBDR-RC, Capability, Sufficientarianism | Adjusted allocation accounting for intra-national inequality (Gini coefficient) | [API]({DOCS_ROOT}/api/allocations/budgets/#per_capita_adjusted_gini_budget) · [Science]({DOCS_ROOT}/science/allocations/) |
+| **`equal-per-capita-budget`**         | Equal per capita                        | National targets based on population shares                                     | [API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)         |
+| **`per-capita-adjusted-budget`**      | CBDR-RC, Capability                     | Differentiated responsibility with historical emissions and GDP adjustments     | [API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)      |
+| **`per-capita-adjusted-gini-budget`** | CBDR-RC, Capability, Sufficientarianism | Adjusted allocation accounting for intra-national inequality (Gini coefficient) | [API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) · [Science](https://setupelz.github.io/fair-shares/science/allocations/) |
 
 All budget approaches support Historical Responsibility via `allocation_year` (see above).
 
@@ -57,9 +57,9 @@ Pathway approaches allocate emissions over multiple years, producing annual emis
 
 | Approach                       | Operationalizes                         | Best For                                                   | Links                                                                                                 |
 | ------------------------------ | --------------------------------------- | ---------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
-| **`equal-per-capita`**         | Equal per capita                        | Pathways based on population shares                        | [API]({DOCS_ROOT}/api/allocations/pathways/#equal_per_capita) · [Science]({DOCS_ROOT}/science/allocations/)         |
-| **`per-capita-adjusted`**      | CBDR-RC, Capability                     | Pathways with historical emissions and GDP adjustments     | [API]({DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted) · [Science]({DOCS_ROOT}/science/allocations/)      |
-| **`per-capita-adjusted-gini`** | CBDR-RC, Capability, Sufficientarianism | Adjusted pathways accounting for intra-national inequality | [API]({DOCS_ROOT}/api/allocations/pathways/#per_capita_adjusted_gini) · [Science]({DOCS_ROOT}/science/allocations/) |
+| **`equal-per-capita`**         | Equal per capita                        | Pathways based on population shares                        | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#equal_per_capita) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)         |
+| **`per-capita-adjusted`**      | CBDR-RC, Capability                     | Pathways with historical emissions and GDP adjustments     | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)      |
+| **`per-capita-adjusted-gini`** | CBDR-RC, Capability, Sufficientarianism | Adjusted pathways accounting for intra-national inequality | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini) · [Science](https://setupelz.github.io/fair-shares/science/allocations/) |
 
 All Equal Per Capita approaches support Historical Responsibility via `allocation_year` (see above).
 
@@ -69,10 +69,10 @@ Convergence approaches allow countries to gradually transition from current emis
 
 | Approach                                              | Operationalizes                                                | Best For                                                              | Links                                                                                                                        |
 | ----------------------------------------------------- | -------------------------------------------------------------- | --------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| **`per-capita-convergence`**                          | Transition mechanism (not equity-based)\*                      | Comparing against grandfathering baselines                            | [API]({DOCS_ROOT}/api/allocations/pathways/#per_capita_convergence) · [Science]({DOCS_ROOT}/science/allocations/)                          |
-| **`cumulative-per-capita-convergence`**               | CBDR-RC, Cumulative accounting                                 | Transition pathways that account for cumulative historical emissions  | [API]({DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence) · [Science]({DOCS_ROOT}/science/allocations/)               |
-| **`cumulative-per-capita-convergence-adjusted`**      | CBDR-RC, Capability, Cumulative accounting                     | Cumulative convergence with responsibility and capability adjustments | [API]({DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted) · [Science]({DOCS_ROOT}/science/allocations/)      |
-| **`cumulative-per-capita-convergence-gini-adjusted`** | CBDR-RC, Capability, Sufficientarianism, Cumulative accounting | Cumulative convergence accounting for intra-national inequality       | [API]({DOCS_ROOT}/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted_gini) · [Science]({DOCS_ROOT}/science/allocations/) |
+| **`per-capita-convergence`**                          | Transition mechanism (not equity-based)\*                      | Comparing against grandfathering baselines                            | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_convergence) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)                          |
+| **`cumulative-per-capita-convergence`**               | CBDR-RC, Cumulative accounting                                 | Transition pathways that account for cumulative historical emissions  | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)               |
+| **`cumulative-per-capita-convergence-adjusted`**      | CBDR-RC, Capability, Cumulative accounting                     | Cumulative convergence with responsibility and capability adjustments | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted) · [Science](https://setupelz.github.io/fair-shares/science/allocations/)      |
+| **`cumulative-per-capita-convergence-gini-adjusted`** | CBDR-RC, Capability, Sufficientarianism, Cumulative accounting | Cumulative convergence accounting for intra-national inequality       | [API](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted_gini) · [Science](https://setupelz.github.io/fair-shares/science/allocations/) |
 
 All Convergence approaches (except `per-capita-convergence`) support Historical Responsibility via `allocation_year` (see above). The cumulative approaches additionally account for historical emissions through cumulative per-capita accounting.
 
@@ -82,7 +82,7 @@ All Convergence approaches (except `per-capita-convergence`) support Historical 
 
 ## Choosing an Approach
 
-Not sure which approach to use? See the [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/) guide for guidance on translating your ethical framework to code. See [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) for the principle-to-code mapping guide.
+Not sure which approach to use? See the [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) guide for guidance on translating your ethical framework to code. See [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) for the principle-to-code mapping guide.
 
 **Quick decision guide:**
 
@@ -112,9 +112,9 @@ print(list(approaches.keys()))
 
 ## Implementation Details
 
-For implementation patterns and adding new approaches, see the [Developer Guide]({DOCS_ROOT}/dev-guide/adding-approaches/).
+For implementation patterns and adding new approaches, see the [Developer Guide](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/).
 
 For common use cases and worked examples, see:
 
-- [Country Fair Shares]({DOCS_ROOT}/user-guide/country-fair-shares/)
-- [IAMC Regional Fair Shares]({DOCS_ROOT}/user-guide/iamc-regional-fair-shares/)
+- [Country Fair Shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)
+- [IAMC Regional Fair Shares](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/)

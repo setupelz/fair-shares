@@ -29,7 +29,7 @@
 #
 # **For model input preparation**, see notebook 401.
 #
-# [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) | [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
 
 # %%
 # Imports (run this first)

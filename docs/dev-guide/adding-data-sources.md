@@ -213,4 +213,4 @@ New data sources should:
 ## See Also
 
 - **Data Sources Config**: `conf/data_sources/data_sources_unified.yaml` in the repository
-- **[Validation Utilities]({DOCS_ROOT}/api/utils/validation/)** - Data validation functions
+- **[Validation Utilities](https://setupelz.github.io/fair-shares/api/utils/validation/)** - Data validation functions

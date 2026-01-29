@@ -46,6 +46,6 @@ All budget allocation approaches return a `BudgetAllocationResult` containing:
 
 ## See Also
 
-- **[Pathway Allocations]({DOCS_ROOT}/api/pathways/)**: Annual emission pathways
-- **[Scientific Documentation: Budget Allocations]({DOCS_ROOT}/science/allocations/)**: Theoretical foundations
-- **[country-fair-shares Guide]({DOCS_ROOT}/user-guide/country-fair-shares/)**: Conceptual overview
+- **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/pathways/)**: Annual emission pathways
+- **[Scientific Documentation: Budget Allocations](https://setupelz.github.io/fair-shares/science/allocations/)**: Theoretical foundations
+- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Conceptual overview

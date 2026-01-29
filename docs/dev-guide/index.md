@@ -116,8 +116,8 @@ Both return `relative_shares_cumulative_emission` (summing to 1) and methods to 
 
 ## Adding New Functionality
 
-- **[Adding Allocation Approaches]({DOCS_ROOT}/dev-guide/adding-approaches/)** - New equity principles
-- **[Adding Data Sources]({DOCS_ROOT}/dev-guide/adding-data-sources/)** - New datasets
+- **[Adding Allocation Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/)** - New equity principles
+- **[Adding Data Sources](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)** - New datasets
 
 ---
 
@@ -232,5 +232,5 @@ uv run python tools/docs-sync-check.py --verbose
 
 ## See Also
 
-- **[API Reference]({DOCS_ROOT}/api/index/)** - Function documentation
-- **[Scientific Documentation]({DOCS_ROOT}/science/allocations/)** - Theoretical foundations
+- **[API Reference](https://setupelz.github.io/fair-shares/api/index/)** - Function documentation
+- **[Scientific Documentation](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations

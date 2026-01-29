@@ -25,8 +25,8 @@
 #
 # **Before configuring, read:**
 #
-# - [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) - Principles-first workflow
-# - [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/) - Foundational concepts
+# - [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - Principles-first workflow
+# - [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Foundational concepts
 #
 # **Pre-configured examples:**
 #
@@ -95,7 +95,7 @@ project_root = here()
 #
 # Uncomment ONE option, run cell, skip to Step 3.
 #
-# See [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) for principle-approach mapping.
+# See [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) for principle-approach mapping.
 
 # %%
 # =============================================================================
@@ -172,7 +172,7 @@ project_root = here()
 # - `rcbs` - Remaining Carbon Budgets (cumulative, single-year)
 # - `ar6` - IPCC AR6 scenarios (time-series pathways)
 #
-# [Full guide]({DOCS_ROOT}/user-guide/country-fair-shares/)
+# [Full guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)
 
 # %%
 # CONFIGURE YOUR DATA SOURCES HERE
@@ -264,14 +264,14 @@ else:
 # 2. What weights? If combining principles, what relative importance?
 # 3. Subsistence protection? Should basic-needs emissions be excluded?
 #
-# See [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) for principle-approach mapping.
+# See [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) for principle-approach mapping.
 #
 # **Available approaches:**
 #
 # - Budget (`target="rcbs"`): `equal-per-capita-budget`, `per-capita-adjusted-budget`, `per-capita-adjusted-gini-budget`
 # - Pathway (`target="ar6"` or `"rcb-pathways"`): `equal-per-capita`, `per-capita-adjusted`, `cumulative-per-capita-convergence`, `*-gini-adjusted`
 #
-# See [Allocation Approaches]({DOCS_ROOT}/science/allocations/) for parameters.
+# See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) for parameters.
 
 # %%
 # CONFIGURE YOUR ALLOCATION APPROACHES HERE
@@ -817,7 +817,7 @@ print(f"Approaches: {', '.join(sorted(allocations.keys()))}")
 # - **Absolute values** (500 Mt) = Country's actual emission allowance
 # - Negative values = Fair share already exceeded under this climate target
 #
-# [Output guide]({DOCS_ROOT}/user-guide/custom-analysis.md/#output-files) | [Allocation concepts]({DOCS_ROOT}/science/allocations/)
+# [Output guide](https://setupelz.github.io/fair-shares/user-guide/custom-analysis.md/#output-files) | [Allocation concepts](https://setupelz.github.io/fair-shares/science/allocations/)
 #
 # ---
 #

@@ -47,6 +47,6 @@ Functions for calculating responsibility, capability, and Gini adjustments.
 
 ## See Also
 
-- **[Core Utilities]({DOCS_ROOT}/api/core/)**: Data manipulation functions
-- **[Budget Allocations]({DOCS_ROOT}/allocations/budgets/)**: Functions that use these adjustments
-- **[Pathway Allocations]({DOCS_ROOT}/allocations/pathways/)**: Functions that use these adjustments
+- **[Core Utilities](https://setupelz.github.io/fair-shares/api/core/)**: Data manipulation functions
+- **[Budget Allocations](https://setupelz.github.io/fair-shares/allocations/budgets/)**: Functions that use these adjustments
+- **[Pathway Allocations](https://setupelz.github.io/fair-shares/allocations/pathways/)**: Functions that use these adjustments

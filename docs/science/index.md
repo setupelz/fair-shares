@@ -18,14 +18,14 @@ Scientific foundations and theoretical background for fair-shares allocation app
 
     ### Key resources
 
-    - **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** — Design choices and rationale for each approach
-    - **[API Reference]({DOCS_ROOT}/api/index/)** — Function signatures, parameters, and usage details
-    - **[Parameter Effects]({DOCS_ROOT}/science/parameter-effects/)** — How configuration choices affect allocations
+    - **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** — Design choices and rationale for each approach
+    - **[API Reference](https://setupelz.github.io/fair-shares/api/index/)** — Function signatures, parameters, and usage details
+    - **[Parameter Effects](https://setupelz.github.io/fair-shares/science/parameter-effects/)** — How configuration choices affect allocations
 
     ### Additional resources
 
-    - [Other Operations]({DOCS_ROOT}/science/other-operations/) — Data processing utilities
-    - [Glossary]({DOCS_ROOT}/science/glossary/) — Technical terminology
+    - [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/) — Data processing utilities
+    - [Glossary](https://setupelz.github.io/fair-shares/science/glossary/) — Technical terminology
 
 === "I want to understand principles → code"
 
@@ -33,14 +33,14 @@ Scientific foundations and theoretical background for fair-shares allocation app
 
     ### Key resources
 
-    - **[Principle to Code]({DOCS_ROOT}/science/principle-to-code/)** — How to translate equity principles into allocation approaches
-    - **[Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/)** — Underlying principles: CBDR-RC, polluter pays, capability
-    - **[References]({DOCS_ROOT}/science/references/)** — Academic citations and further reading
+    - **[Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)** — How to translate equity principles into allocation approaches
+    - **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)** — Underlying principles: CBDR-RC, polluter pays, capability
+    - **[References](https://setupelz.github.io/fair-shares/science/references/)** — Academic citations and further reading
 
     ### Additional resources
 
-    - [Allocation Approaches]({DOCS_ROOT}/science/allocations/) — See principles operationalized
-    - [Glossary]({DOCS_ROOT}/science/glossary/) — Climate equity terminology
+    - [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) — See principles operationalized
+    - [Glossary](https://setupelz.github.io/fair-shares/science/glossary/) — Climate equity terminology
 
 === "I want to add new functionality"
 
@@ -48,11 +48,11 @@ Scientific foundations and theoretical background for fair-shares allocation app
 
     ### Key resources
 
-    - **[Principle to Code]({DOCS_ROOT}/science/principle-to-code/)** — Understand the equity grounding requirement
-    - **[Developer Guide]({DOCS_ROOT}/dev-guide/index/)** — Implementation patterns and contribution workflow
-    - **[Adding Approaches]({DOCS_ROOT}/dev-guide/adding-approaches/)** — Step-by-step guide for new approaches
+    - **[Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)** — Understand the equity grounding requirement
+    - **[Developer Guide](https://setupelz.github.io/fair-shares/dev-guide/index/)** — Implementation patterns and contribution workflow
+    - **[Adding Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/)** — Step-by-step guide for new approaches
 
     ### Additional resources
 
-    - [Docstring Template]({DOCS_ROOT}/dev-guide/docstring-template/) — Required documentation format
-    - [Testing Checklist]({DOCS_ROOT}/dev-guide/testing-checklist/) — Pre-submission verification
+    - [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) — Required documentation format
+    - [Testing Checklist](https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/) — Pre-submission verification

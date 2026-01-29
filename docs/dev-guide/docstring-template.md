@@ -398,7 +398,7 @@ Before committing, verify:
 
 ## See Also
 
-- [Testing Checklist]({DOCS_ROOT}/dev-guide/testing-checklist/) — Pre-merge validation steps
-- [Adding New Approaches]({DOCS_ROOT}/dev-guide/adding-approaches/) — Complete workflow for new allocations
-- [Parameter Effects Reference]({DOCS_ROOT}/science/parameter-effects/) — Parameter documentation to link to
-- [Principle-to-Code Guide]({DOCS_ROOT}/science/principle-to-code/) — Implementation patterns for equity principles
+- [Testing Checklist](https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/) — Pre-merge validation steps
+- [Adding New Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/) — Complete workflow for new allocations
+- [Parameter Effects Reference](https://setupelz.github.io/fair-shares/science/parameter-effects/) — Parameter documentation to link to
+- [Principle-to-Code Guide](https://setupelz.github.io/fair-shares/science/principle-to-code/) — Implementation patterns for equity principles

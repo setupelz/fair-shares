@@ -51,5 +51,5 @@ Functions for processing and transforming input datasets.
 
 ## See Also
 
-- **[Core Utilities]({DOCS_ROOT}/api/core/)**: General data manipulation functions
-- **[Math Utilities]({DOCS_ROOT}/api/math/)**: Convergence solver and adjustments
+- **[Core Utilities](https://setupelz.github.io/fair-shares/api/core/)**: General data manipulation functions
+- **[Math Utilities](https://setupelz.github.io/fair-shares/api/math/)**: Convergence solver and adjustments

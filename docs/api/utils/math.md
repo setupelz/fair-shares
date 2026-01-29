@@ -45,5 +45,5 @@ Mathematical functions for allocation calculations.
 
 ## See Also
 
-- **[Data Utilities]({DOCS_ROOT}/api/data/)**: Data processing for convergence
-- **[Convergence Validation]({DOCS_ROOT}/validation/convergence/)**: Convergence validation
+- **[Data Utilities](https://setupelz.github.io/fair-shares/api/data/)**: Data processing for convergence
+- **[Convergence Validation](https://setupelz.github.io/fair-shares/validation/convergence/)**: Convergence validation

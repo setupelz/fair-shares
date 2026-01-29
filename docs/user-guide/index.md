@@ -15,8 +15,8 @@ icon: material/book-open-page-variant
 
 | Workflow                                                      | Notebook                                 | Description                             |
 | ------------------------------------------------------------- | ---------------------------------------- | --------------------------------------- |
-| **[country-fair-shares]({DOCS_ROOT}/user-guide/country-fair-shares/)**             | `301_custom_fair_share_allocation.ipynb` | Country-level allocations with pipeline |
-| **[iamc-regional-fair-shares]({DOCS_ROOT}/user-guide/iamc-regional-fair-shares/)** | `401_iamc_fair_share_allocation.ipynb`   | IAMC model region allocations           |
+| **[country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**             | `301_custom_fair_share_allocation.ipynb` | Country-level allocations with pipeline |
+| **[iamc-regional-fair-shares](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/)** | `401_iamc_fair_share_allocation.ipynb`   | IAMC model region allocations           |
 
 Both workflows produce relative shares (0-1) and absolute emissions (Mt CO2e).
 
@@ -58,7 +58,7 @@ This is useful when you need pathway outputs for comparison with scenarios, star
 
 **Configuration:** Set `target: "rcb-pathways"` in your data source config. The generator defaults to `exponential-decay`.
 
-**See also:** [Other Operations: RCB Pathway Generation]({DOCS_ROOT}/science/other-operations/#rcb-pathway-generation)
+**See also:** [Other Operations: RCB Pathway Generation](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation)
 
 ---
 
@@ -100,9 +100,9 @@ flowchart TD
 
 Once you understand your needs and priorities, consult the science documentation to select an appropriate approach:
 
-- **[Approach Catalog]({DOCS_ROOT}/user-guide/approach-catalog/)** — Browse all available approaches with brief descriptions
-- **[Principle-to-Code Guide]({DOCS_ROOT}/science/principle-to-code/)** — Learn how ethical principles translate to implementation choices
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** — Understand the design and parameters of each approach
+- **[Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/)** — Browse all available approaches with brief descriptions
+- **[Principle-to-Code Guide](https://setupelz.github.io/fair-shares/science/principle-to-code/)** — Learn how ethical principles translate to implementation choices
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** — Understand the design and parameters of each approach
 
 The science documentation will help you understand how different approaches operationalize these principles, allowing you to make an informed choice based on your analytical goals.
 
@@ -110,6 +110,6 @@ The science documentation will help you understand how different approaches oper
 
 ## See Also
 
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** — Design and parameters
-- **[Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/)** — Theoretical foundations
-- **[API Reference]({DOCS_ROOT}/api/index/)** — Function documentation
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** — Design and parameters
+- **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)** — Theoretical foundations
+- **[API Reference](https://setupelz.github.io/fair-shares/api/index/)** — Function documentation

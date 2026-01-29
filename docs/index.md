@@ -13,9 +13,9 @@ Python library for calculating fair share allocations of global carbon budgets a
 
 | Goal                             | Start Here                                                           |
 | :------------------------------- | :------------------------------------------------------------------- |
-| Install and run first allocation | [Quick Start]({DOCS_ROOT}/quickstart/)                                         |
-| Allocate budgets to countries    | [country-fair-shares]({DOCS_ROOT}/user-guide/country-fair-shares/)             |
-| Work with IAMC model regions     | [iamc-regional-fair-shares]({DOCS_ROOT}/user-guide/iamc-regional-fair-shares/) |
-| Understand equity principles     | [Science]({DOCS_ROOT}/science/index/)                                          |
-| Explore function signatures      | [API Reference]({DOCS_ROOT}/api/index/)                                        |
-| Extend the library               | [Developer Guide]({DOCS_ROOT}/dev-guide/index/)                                |
+| Install and run first allocation | [Quick Start](https://setupelz.github.io/fair-shares/quickstart/)                                         |
+| Allocate budgets to countries    | [country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)             |
+| Work with IAMC model regions     | [iamc-regional-fair-shares](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/) |
+| Understand equity principles     | [Science](https://setupelz.github.io/fair-shares/science/index/)                                          |
+| Explore function signatures      | [API Reference](https://setupelz.github.io/fair-shares/api/index/)                                        |
+| Extend the library               | [Developer Guide](https://setupelz.github.io/fair-shares/dev-guide/index/)                                |

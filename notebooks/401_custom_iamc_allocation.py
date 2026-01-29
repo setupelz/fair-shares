@@ -24,8 +24,8 @@
 #
 # **Before configuring, read:**
 #
-# - [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/) - Principles-first workflow
-# - [Climate Equity Concepts]({DOCS_ROOT}/science/climate-equity-concepts/) - Foundational concepts
+# - [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - Principles-first workflow
+# - [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Foundational concepts
 #
 # **Pre-configured examples:**
 #
@@ -75,7 +75,7 @@ project_root = here()
 #
 # **For full control**: Continue with Steps 1-2 to customize your analysis.
 #
-# [Learn more about allocation approaches]({DOCS_ROOT}/science/allocations/)
+# [Learn more about allocation approaches](https://setupelz.github.io/fair-shares/science/allocations/)
 
 # %%
 # =============================================================================
@@ -109,7 +109,7 @@ project_root = here()
 # - `co2-ffi` - CO2 from fossil fuels and industry
 # - `all-ghg` - All greenhouse gases including land use
 #
-# [IAMC data guide]({DOCS_ROOT}/user-guide/country-fair-shares/#iamc-format)
+# [IAMC data guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/#iamc-format)
 
 # %%
 # CONFIGURE YOUR DATA SOURCE HERE
@@ -184,7 +184,7 @@ print("\nReady to proceed to Step 2.")
 # - Result: Annual emission allowances by region and year
 # - Use for: Year-by-year model constraints, visualizing trajectories
 #
-# [Budget vs pathway guide]({DOCS_ROOT}/science/allocations/)
+# [Budget vs pathway guide](https://setupelz.github.io/fair-shares/science/allocations/)
 
 # %%
 # Choose allocation type
@@ -209,14 +209,14 @@ print("\nReady to proceed to Step 3.")
 # 2. Relative weights? If combining principles, what balance?
 # 3. Subsistence protection? Exclude basic-needs emissions?
 #
-# See [From Principle to Code]({DOCS_ROOT}/science/principle-to-code/)
+# See [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 #
 # **Available approaches:**
 #
 # - Budget: `equal-per-capita-budget`, `per-capita-adjusted-budget`, `*-gini-budget`
 # - Pathway: `equal-per-capita`, `per-capita-adjusted`, `cumulative-per-capita-convergence`, `*-gini-adjusted`
 #
-# See [Allocation Approaches]({DOCS_ROOT}/science/allocations/) for parameters.
+# See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) for parameters.
 
 # %%
 # CONFIGURE YOUR ALLOCATION APPROACH HERE

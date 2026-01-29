@@ -38,4 +38,4 @@ uv run jupyter lab
 | country-fair-shares       | `notebooks/301_custom_fair_share_allocation.ipynb` |
 | iamc-regional-fair-shares | `notebooks/401_iamc_fair_share_allocation.ipynb`   |
 
-See [User Guide]({DOCS_ROOT}/user-guide/index/) for detailed workflow documentation.
+See [User Guide](https://setupelz.github.io/fair-shares/user-guide/index/) for detailed workflow documentation.

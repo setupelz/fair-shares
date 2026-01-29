@@ -12,7 +12,7 @@ The `401_custom_iamc_allocation.ipynb` notebook calculates fair share allocation
 - `402_example_iamc_budget_allocations.ipynb` - Budget allocation examples
 - `403_example_iamc_pathway_allocations.ipynb` - Pathway allocation examples
 
-Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use [country-fair-shares]({DOCS_ROOT}/user-guide/country-fair-shares/).
+Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use [country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/).
 
 ---
 
@@ -172,6 +172,6 @@ The notebook automatically handles different timestep patterns from IAMC models:
 
 ## See Also
 
-- **[country-fair-shares]({DOCS_ROOT}/user-guide/country-fair-shares/)** - Full pipeline for country-level analysis
-- **[Allocation Approaches]({DOCS_ROOT}/science/allocations/)** - Theoretical foundations
-- **[Budget Functions API]({DOCS_ROOT}/api/allocations/budgets/)** - Function signatures
+- **[country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)** - Full pipeline for country-level analysis
+- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations
+- **[Budget Functions API](https://setupelz.github.io/fair-shares/api/allocations/budgets/)** - Function signatures
