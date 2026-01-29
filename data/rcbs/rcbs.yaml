@@ -1,0 +1,33 @@
+# Remaining Carbon Budgets (RCBs) data
+# Each source includes:
+#   - baseline_year: The year from which the RCB is calculated
+#   - unit: The unit of the RCB values (typically Gt CO2)
+#   - scenarios: Temperature and probability combinations with their RCB values
+
+rcb_data:
+  lamboll_2023: # Lamboll et al, from "https://doi.org/10.1038/s41558-023-01848-5"
+    baseline_year: 2023
+    unit: "Gt * CO2"
+    scenarios:
+      "1.5p50": 247
+      "1.5p66": 60
+      "2p66": 944
+      "2p83": 504
+  
+  forster_2023: # Forster et al, from "https://doi.org/10.1038/s41558-023-01848-5"
+    baseline_year: 2023
+    unit: "Gt * CO2"
+    scenarios:
+      "1.5p50": 250
+      "1.5p66": 150
+      "2p66": 950
+      "2p83": 800
+  
+  ar6_2020: # AR6 WGI, from "https://www.ipcc.ch/report/ar6/wg1/"
+    baseline_year: 2020
+    unit: "Gt * CO2"
+    scenarios:
+      "1.5p50": 500
+      "1.5p66": 400
+      "2p66": 1150
+      "2p83": 900

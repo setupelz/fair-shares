@@ -1,0 +1,261 @@
+/* ============================================================================
+   List Spacing Adjustments
+   ============================================================================ */
+
+/* Slightly reduce spacing between list items */
+.md-content li {
+    margin-bottom: 0.3em;
+}
+
+/* Reduce padding for nested lists */
+.md-content ul ul,
+.md-content ol ol,
+.md-content ul ol,
+.md-content ol ul,
+.md-content dl ul,
+.md-content dl ol {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+/* Ensure proper spacing for list items with multiple paragraphs */
+.md-content li p {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+/* Reduce spacing for definition lists */
+.md-content dt {
+    margin-top: 0.3em;
+    margin-bottom: 0.1em;
+}
+
+.md-content dd {
+    margin-bottom: 0.2em;
+    margin-left: 1.5em;
+}
+
+
+/* ============================================================================
+   API Documentation (mkdocstrings)
+   ============================================================================ */
+
+/* Function/Class signature headings */
+.doc.doc-heading {
+    margin-top: 2em;
+    margin-bottom: 1em;
+    padding: 1em;
+    background-color: var(--md-code-bg-color);
+    border-left: 4px solid var(--md-primary-fg-color);
+    border-radius: 0.2em;
+}
+
+.doc.doc-heading code {
+    font-size: 1.0em;
+    font-weight: 700;
+    line-height: 1.6;
+    background-color: transparent;
+    padding: 0;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+}
+
+/* Ensure function name stands out */
+.doc.doc-heading .n {
+    font-weight: 700;
+}
+
+/* Clean up doc sections */
+.doc-section-title {
+    font-weight: 600;
+    font-size: 1.1em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    color: var(--md-primary-fg-color);
+}
+
+/* Parameter tables */
+.doc table {
+    margin: 1em 0;
+    font-size: 1em;
+}
+
+.doc table th {
+    background-color: var(--md-code-bg-color);
+    font-weight: 600;
+}
+
+.doc table td {
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+}
+
+.doc table tr {
+    line-height: 1.4;
+}
+
+/* Source code collapsible */
+.doc details.quote {
+    margin-top: 2em;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.2em;
+}
+
+.doc details.quote summary {
+    padding: 0.5em 1em;
+    background-color: var(--md-code-bg-color);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Mathematical Foundation details */
+.mathematical-foundation {
+    margin: 1.5em 0;
+    border: 2px solid var(--md-primary-fg-color--light);
+    border-radius: 0.3em;
+    background-color: var(--md-code-bg-color);
+}
+
+.mathematical-foundation summary {
+    padding: 1em;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.05em;
+    color: var(--md-primary-fg-color);
+}
+
+.mathematical-foundation > *:not(summary) {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+.mathematical-foundation > p:last-child,
+.mathematical-foundation > ul:last-child,
+.mathematical-foundation > div:last-child {
+    padding-bottom: 1em;
+}
+
+/* Ensure math equations have proper spacing */
+.arithmatex {
+    margin: 0.5em 0;
+}
+
+div.arithmatex {
+    margin: 1em 0;
+    overflow-x: auto;
+    text-align: center;
+}
+
+/* Collapsible API methods */
+.doc-method-collapsible {
+    margin: 1.5em 0;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.3em;
+}
+
+.doc-method-collapsible summary {
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.1em;
+    padding: 0.8em 1em;
+    background-color: var(--md-code-bg-color);
+    border-radius: 0.2em;
+    transition: background-color 0.2s;
+    user-select: none;
+}
+
+.doc-method-collapsible summary:hover {
+    background-color: var(--md-default-fg-color--lightest);
+}
+
+.doc-method-collapsible summary::marker {
+    color: var(--md-primary-fg-color);
+}
+
+.doc-method-collapsible[open] summary {
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.2em 0.2em 0 0;
+    margin-bottom: 1em;
+}
+
+.doc-method-content {
+    padding: 0 1em 1em 1em;
+}
+
+/* Collapsible parameter rows - minimal styling */
+.doc-param-collapsible-row {
+    border: none; /* Remove all borders */
+}
+
+.doc-param-collapsible-row td {
+    padding: 0 !important;
+}
+
+.doc-param-collapsible {
+    width: 100%;
+}
+
+/* Summary - clean and minimal */
+.doc-param-collapsible summary {
+    cursor: pointer;
+    padding: 0.5em 0 0.5em 1.2em; /* Reduced from 1em */
+    background-color: transparent;
+    transition: background-color 0.15s;
+    user-select: none;
+    list-style-position: outside;
+    margin-left: -0.2em; /* Pull disclosure triangle closer */
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Subtle hover - no background change */
+.doc-param-collapsible summary:hover {
+    background-color: transparent; /* Remove gray background */
+}
+
+/* Disclosure triangle - subtle gray instead of blue */
+.doc-param-collapsible summary::marker {
+    color: var(--md-default-fg-color--light); /* Gray, not blue */
+}
+
+/* Parameter name in summary */
+.doc-param-collapsible summary .param-name {
+    font-weight: 600;
+    color: var(--md-default-fg-color); /* Normal text color, not blue */
+}
+
+.doc-param-collapsible summary .param-name code {
+    font-weight: 600;
+    background-color: transparent;
+}
+
+/* Type annotation - subtle */
+.doc-param-collapsible summary .param-type {
+    color: var(--md-default-fg-color--light);
+    font-size: 0.9em;
+    margin-left: 0.3em;
+}
+
+/* Details panel - NO background, minimal padding */
+.doc-param-details {
+    padding: 0.5em 0 0.8em 1.5em; /* Reduced from 2.5em left */
+    background-color: transparent; /* Remove gray box */
+    border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+/* Description text */
+.doc-param-details .param-description {
+    margin-bottom: 0.5em;
+    line-height: 1.5;
+    color: var(--md-default-fg-color);
+}
+
+/* Default value */
+.doc-param-details .param-default {
+    font-size: 0.85em;
+    color: var(--md-default-fg-color--light);
+}
+
+.doc-param-details .param-default strong {
+    font-weight: 600;
+    color: var(--md-default-fg-color);
+}

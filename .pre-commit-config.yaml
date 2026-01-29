@@ -1,0 +1,38 @@
+# Inherits workspace-level hooks from ../../.pre-commit-config.yaml
+
+# config/prek/templates/python.yaml
+# Python project template - copy to project and customize
+
+repos:
+  # Fast formatting and linting with Ruff
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.1
+    hooks:
+      - id: ruff
+        args: ["--fix", "--exit-non-zero-on-fix"]
+      - id: ruff-format
+
+  # Type checking (disabled due to 700+ existing type errors - enable incrementally)
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.14.1
+  #   hooks:
+  #     - id: mypy
+  #       args: ["--ignore-missing-imports"]
+
+  # Docstring coverage
+  - repo: https://github.com/econchick/interrogate
+    rev: 1.7.0
+    hooks:
+      - id: interrogate
+        args: ["--fail-under=80", "--verbose"]
+        files: '^src/.*\.py$'
+
+  # Testing (optional, can be slow in Ralph loops)
+  # - repo: local
+  #   hooks:
+  #     - id: pytest
+  #       name: Run pytest
+  #       entry: pytest
+  #       language: system
+  #       pass_filenames: false
+  #       always_run: true
