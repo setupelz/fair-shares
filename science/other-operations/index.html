@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -1896,13 +1919,13 @@
 <li>Linearly interpolate for anchor year &lt; year &lt; convergence year</li>
 <li>Use original scenario values for years ≥ convergence year</li>
 </ol>
-<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/timeseries.py</code></p>
 <h3 id="cumulative-peak-preservation">Cumulative Peak Preservation<a class="headerlink" href="#cumulative-peak-preservation" title="Permanent link">&para;</a></h3>
 <p>Preserves the peak cumulative emissions using time-varying scaling when <code>preserve_cumulative_peak=True</code>.</p>
-<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/timeseries.py</code></p>
 <h3 id="net-negative-emissions-handling">Net-Negative Emissions Handling<a class="headerlink" href="#net-negative-emissions-handling" title="Permanent link">&para;</a></h3>
 <p>Sets post-net-zero emissions to NaN with warnings. Pre-net-zero emissions are preserved unchanged.</p>
-<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::set_post_net_zero_emissions_to_nan</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/dataframes.py::set_post_net_zero_emissions_to_nan</code></p>
 <hr />
 <h2 id="rcb-pathway-generation">RCB Pathway Generation<a class="headerlink" href="#rcb-pathway-generation" title="Permanent link">&para;</a></h2>
 <p>Converts fixed carbon budget values into annual emission pathways using normalized shifted exponential decay:</p>
@@ -1916,10 +1939,10 @@
 <h2 id="data-preprocessing">Data Preprocessing<a class="headerlink" href="#data-preprocessing" title="Permanent link">&para;</a></h2>
 <h3 id="interpolation">Interpolation<a class="headerlink" href="#interpolation" title="Permanent link">&para;</a></h3>
 <p>Fills missing values using linear or stepwise interpolation.</p>
-<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/data/processing.py::interpolate_scenarios_data</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/timeseries.py::interpolate_scenarios_data</code></p>
 <h3 id="unit-conversion">Unit Conversion<a class="headerlink" href="#unit-conversion" title="Permanent link">&para;</a></h3>
 <p>Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).</p>
-<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/allocations/utils/unit_conversion.py</code></p>
+<p><strong><a href="https://setupelz.github.io/fair-shares/api/utils/core/">Implementation →</a></strong> | <code>src/fair_shares/library/utils/units.py</code></p>
 <hr />
 <h2 id="data-validation">Data Validation<a class="headerlink" href="#data-validation" title="Permanent link">&para;</a></h2>
 <h3 id="timeseriesdataframe-validation">TimeseriesDataFrame Validation<a class="headerlink" href="#timeseriesdataframe-validation" title="Permanent link">&para;</a></h3>

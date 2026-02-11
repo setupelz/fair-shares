@@ -469,6 +469,8 @@
       
         
       
+        
+      
     
     
       
@@ -576,9 +578,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-allocation_year-parameter" class="md-nav__link">
+  <a href="#the-allocation-year-parameter" class="md-nav__link">
     <span class="md-ellipsis">
-      The allocation_year Parameter
+      The Allocation Year Parameter
     </span>
   </a>
   
@@ -695,6 +697,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -1617,9 +1640,9 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#the-allocation_year-parameter" class="md-nav__link">
+  <a href="#the-allocation-year-parameter" class="md-nav__link">
     <span class="md-ellipsis">
-      The allocation_year Parameter
+      The Allocation Year Parameter
     </span>
   </a>
   
@@ -1729,8 +1752,8 @@
 <p>This page provides a quick-reference overview of all 10 allocation approaches available in fair-shares. Each approach operationalizes different equity principles from the climate justice literature.</p>
 <p>For detailed mathematical formulations, see the <a href="https://setupelz.github.io/fair-shares/api/index/">API Reference</a>. For theoretical grounding, see <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a> and <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a>.</p>
 <hr />
-<h2 id="the-allocation_year-parameter">The <code>allocation_year</code> Parameter<a class="headerlink" href="#the-allocation_year-parameter" title="Permanent link">&para;</a></h2>
-<p>The <code>allocation_year</code> parameter applies to <strong>all approaches</strong> (except <code>per-capita-convergence</code>) and represents a fundamental debate in climate equity literature: <strong>when do allocations begin?</strong></p>
+<h2 id="the-allocation-year-parameter">The Allocation Year Parameter<a class="headerlink" href="#the-allocation-year-parameter" title="Permanent link">&para;</a></h2>
+<p>The allocation year applies to <strong>all approaches</strong> (except <code>per-capita-convergence</code>) and represents a fundamental debate in climate equity literature: <strong>when do allocations begin?</strong> In budget approaches, this parameter is called <code>allocation_year</code>; in pathway approaches, it is called <code>first_allocation_year</code>.</p>
 <ul>
 <li><strong>Early allocation_year (e.g., 1850, 1990)</strong>: Operationalizes historical responsibility by starting the "equal entitlement clock" earlier. Historical over-emitters have already consumed their fair share from that date forward.</li>
 <li><strong>Recent allocation_year (e.g., 2015, 2020)</strong>: Focuses on current/future population without accounting for historical emissions through this mechanism.</li>
@@ -1812,7 +1835,7 @@
 </tr>
 </tbody>
 </table>
-<p>All Equal Per Capita approaches support Historical Responsibility via <code>allocation_year</code> (see above).</p>
+<p>All Equal Per Capita approaches support Historical Responsibility via <code>first_allocation_year</code> (see above).</p>
 <h3 id="convergence-family">Convergence Family<a class="headerlink" href="#convergence-family" title="Permanent link">&para;</a></h3>
 <p>Convergence approaches allow countries to gradually transition from current emissions to their fair share target.</p>
 <table>
@@ -1851,7 +1874,7 @@
 </tr>
 </tbody>
 </table>
-<p>All Convergence approaches (except <code>per-capita-convergence</code>) support Historical Responsibility via <code>allocation_year</code> (see above). The cumulative approaches additionally account for historical emissions through cumulative per-capita accounting.</p>
+<p>All Convergence approaches (except <code>per-capita-convergence</code>) support Historical Responsibility via <code>first_allocation_year</code> (see above). The cumulative approaches additionally account for historical emissions through cumulative per-capita accounting.</p>
 <p><strong>Note on <code>per-capita-convergence</code>:</strong> This approach privileges current emission patterns during the transition period (grandfathering). It is <strong>not considered a fair share approach</strong> because it allocates more to currently high-emitting countries without equity-based justification. It is included for comparison purposes only.</p>
 <hr />
 <h2 id="choosing-an-approach">Choosing an Approach<a class="headerlink" href="#choosing-an-approach" title="Permanent link">&para;</a></h2>

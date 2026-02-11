@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -2297,7 +2320,7 @@ responsibility_weight &gt; 0.</p>
               <div class="doc-md-description">
                 <p>Weight for responsibility adjustment (0-1). Higher historical emissions
 -&gt; smaller allocation. Must satisfy:
-responsibility_weight + capability_weight ≤ 1.0
+responsibility_weight + capability_weight &lt;= 1.0
 See docs/science/parameter-effects.md#responsibility_weight for real
 allocation examples showing how this affects country shares</p>
               </div>
@@ -2317,7 +2340,7 @@ allocation examples showing how this affects country shares</p>
               <div class="doc-md-description">
                 <p>Weight for capability adjustment (0-1). Higher cumulative GDP per capita
 -&gt; smaller allocation. Must satisfy:
-responsibility_weight + capability_weight ≤ 1.0
+responsibility_weight + capability_weight &lt;= 1.0
 See docs/science/parameter-effects.md#capability_weight for real
 allocation examples showing how this affects country shares</p>
               </div>
@@ -2828,7 +2851,7 @@ adjusted to reflect income distribution within countries.</p>
             <td>
               <div class="doc-md-description">
                 <p>Weight for responsibility adjustment (0-1). Must satisfy:
-responsibility_weight + capability_weight ≤ 1.0</p>
+responsibility_weight + capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -2845,7 +2868,7 @@ responsibility_weight + capability_weight ≤ 1.0</p>
             <td>
               <div class="doc-md-description">
                 <p>Weight for capability adjustment (0-1). Must satisfy:
-responsibility_weight + capability_weight ≤ 1.0</p>
+responsibility_weight + capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -3666,7 +3689,7 @@ T_{\text{equal}}(g) - \sigma \, s \leq T_{\text{cum}}(g) \leq T_{\text{equal}}(g
               <div class="doc-md-description">
                 <p>Maximum allowed deviation from equal per capita baseline in terms of
 population-weighted standard deviations. If provided, constrains each
-group's share to be within ±max_deviation_sigma standard deviations
+group's share to be within &plusmn;max_deviation_sigma standard deviations
 from the baseline equal per capita share. If None, no constraint is applied.</p>
               </div>
             </td>
@@ -4083,7 +4106,7 @@ adjustment.</p>
               <div class="doc-md-description">
                 <p>Weight for responsibility adjustment (0-1). Higher historical emissions
 -&gt; smaller allocation. Must satisfy: responsibility_weight +
-capability_weight ≤ 1.0</p>
+capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -4100,7 +4123,7 @@ capability_weight ≤ 1.0</p>
             <td>
               <div class="doc-md-description">
                 <p>Weight for capability adjustment (0-1). Higher GDP -&gt; smaller allocation.
-Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight ≤ 1.0</p>
+Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -4371,7 +4394,7 @@ cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP</p>
     docs/science/principle-to-code.md#cbdr-rc</p>
 <p>This approach incorporates historical responsibility and capability adjustments
 to operationalize Common But Differentiated Responsibilities and Respective
-Capabilities (CBDR-RC). Higher past emissions and higher GDP → smaller allocation.</p>
+Capabilities (CBDR-RC). Higher past emissions and higher GDP -&gt; smaller allocation.</p>
 </details>
 
 <p><span class="doc-section-title">Examples:</span></p>
@@ -4722,7 +4745,7 @@ to reflect income distribution within countries.</p>
               <div class="doc-md-description">
                 <p>Weight for responsibility adjustment (0-1). Higher historical emissions
 -&gt; smaller allocation. Must satisfy: responsibility_weight +
-capability_weight ≤ 1.0</p>
+capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -4739,7 +4762,7 @@ capability_weight ≤ 1.0</p>
             <td>
               <div class="doc-md-description">
                 <p>Weight for capability adjustment (0-1). Higher GDP -&gt; smaller allocation.
-Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight ≤ 1.0</p>
+Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight &lt;= 1.0</p>
               </div>
             </td>
             <td>
@@ -5106,7 +5129,7 @@ distinction. High-inequality countries have reduced effective capability.</p>
 
 </div><h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>
-<li><strong><a href="https://setupelz.github.io/fair-shares/api/budgets/">Budget Allocations</a></strong>: Fixed cumulative budgets</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">Budget Allocations</a></strong>: Fixed cumulative budgets</li>
 <li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Scientific Documentation: Allocation Approaches</a></strong>: Theoretical foundations</li>
 <li><strong><a href="https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/">country-fair-shares Guide</a></strong>: Conceptual overview</li>
 </ul>

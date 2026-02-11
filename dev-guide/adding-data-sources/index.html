@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -1977,6 +2000,7 @@
 </span><span id="__span-1-10"><a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">co2-ffi</span>
 </span><span id="__span-1-11"><a id="__codelineno-1-11" name="__codelineno-1-11" href="#__codelineno-1-11"></a><span class="w">        </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">all-ghg</span>
 </span><span id="__span-1-12"><a id="__codelineno-1-12" name="__codelineno-1-12" href="#__codelineno-1-12"></a><span class="w">      </span><span class="nt">world_key</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;WORLD&quot;</span><span class="w"> </span><span class="c1"># How the source identifies global totals</span>
+</span><span id="__span-1-13"><a id="__codelineno-1-13" name="__codelineno-1-13" href="#__codelineno-1-13"></a><span class="w">      </span><span class="nt">scenario</span><span class="p">:</span><span class="w"> </span><span class="s">&quot;HISTCR&quot;</span><span class="w"> </span><span class="c1"># Historical scenario identifier</span>
 </span></code></pre></div>
 <h3 id="common-configuration-parameters">Common Configuration Parameters<a class="headerlink" href="#common-configuration-parameters" title="Permanent link">&para;</a></h3>
 <table>
@@ -2005,10 +2029,10 @@
 <h2 id="step-3-create-preprocessing-notebook">Step 3: Create Preprocessing Notebook<a class="headerlink" href="#step-3-create-preprocessing-notebook" title="Permanent link">&para;</a></h2>
 <p>Create a preprocessing notebook in the <code>1xx</code> series:</p>
 <div class="language-text highlight"><span class="filename">Text Only</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>notebooks/
-</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── 100_preprocess_emissions_primap.py       # Existing
-</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── 101_preprocess_gdp_wdi.py               # Existing
-</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── 102_preprocess_population_un_owid.py    # Existing
-</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├── 105_preprocess_my_source.py             # New notebook
+</span><span id="__span-2-2"><a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a>├── 101_data_preprocess_emiss_primap-202503.py       # Existing
+</span><span id="__span-2-3"><a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>├── 102_data_preprocess_gdp_wdi-2025.py              # Existing
+</span><span id="__span-2-4"><a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a>├── 103_data_preprocess_population_un-owid-2025.py   # Existing
+</span><span id="__span-2-5"><a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a>├── 1xx_data_preprocess_my_source.py                 # New notebook
 </span></code></pre></div>
 <h3 id="preprocessing-pattern">Preprocessing Pattern<a class="headerlink" href="#preprocessing-pattern" title="Permanent link">&para;</a></h3>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="sd">&quot;&quot;&quot;</span>
@@ -2110,17 +2134,17 @@
 </thead>
 <tbody>
 <tr>
-<td><code>100_preprocess_emissions_primap.py</code></td>
+<td><code>101_data_preprocess_emiss_primap-202503.py</code></td>
 <td>Emissions</td>
 <td>NetCDF processing, category mapping</td>
 </tr>
 <tr>
-<td><code>101_preprocess_gdp_wdi.py</code></td>
+<td><code>102_data_preprocess_gdp_wdi-2025.py</code></td>
 <td>GDP</td>
 <td>CSV processing, country code mapping</td>
 </tr>
 <tr>
-<td><code>102_preprocess_population_un_owid.py</code></td>
+<td><code>103_data_preprocess_population_un-owid-2025.py</code></td>
 <td>Population</td>
 <td>Combining historical and projected data</td>
 </tr>

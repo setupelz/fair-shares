@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -2038,18 +2061,20 @@
 </span><span id="__span-1-50"><a id="__codelineno-1-50" name="__codelineno-1-50" href="#__codelineno-1-50"></a>    <span class="n">relative_shares</span> <span class="o">=</span> <span class="n">calculate_shares</span><span class="p">(</span><span class="n">population_ts</span><span class="p">,</span> <span class="n">allocation_year</span><span class="p">,</span> <span class="n">my_parameter</span><span class="p">)</span>
 </span><span id="__span-1-51"><a id="__codelineno-1-51" name="__codelineno-1-51" href="#__codelineno-1-51"></a>
 </span><span id="__span-1-52"><a id="__codelineno-1-52" name="__codelineno-1-52" href="#__codelineno-1-52"></a>    <span class="c1"># Validate outputs</span>
-</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    <span class="n">AllocationOutputs</span><span class="p">(</span><span class="n">relative_shares</span><span class="o">=</span><span class="n">relative_shares</span><span class="p">)</span>
-</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>
-</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>    <span class="c1"># Return result</span>
-</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>    <span class="k">return</span> <span class="n">BudgetAllocationResult</span><span class="p">(</span>
-</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>        <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;my-new-budget&quot;</span><span class="p">,</span>
-</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>        <span class="n">emission_category</span><span class="o">=</span><span class="n">emission_category</span><span class="p">,</span>
-</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>        <span class="n">relative_shares_cumulative_emission</span><span class="o">=</span><span class="n">relative_shares</span><span class="p">,</span>
-</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>        <span class="n">parameters</span><span class="o">=</span><span class="p">{</span>
-</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>            <span class="s2">&quot;allocation_year&quot;</span><span class="p">:</span> <span class="n">allocation_year</span><span class="p">,</span>
-</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>            <span class="s2">&quot;my_parameter&quot;</span><span class="p">:</span> <span class="n">my_parameter</span><span class="p">,</span>
-</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>        <span class="p">},</span>
-</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>    <span class="p">)</span>
+</span><span id="__span-1-53"><a id="__codelineno-1-53" name="__codelineno-1-53" href="#__codelineno-1-53"></a>    <span class="n">AllocationOutputs</span><span class="p">(</span>
+</span><span id="__span-1-54"><a id="__codelineno-1-54" name="__codelineno-1-54" href="#__codelineno-1-54"></a>        <span class="n">shares</span><span class="o">=</span><span class="n">relative_shares</span><span class="p">,</span>
+</span><span id="__span-1-55"><a id="__codelineno-1-55" name="__codelineno-1-55" href="#__codelineno-1-55"></a>        <span class="n">dataset_name</span><span class="o">=</span><span class="s2">&quot;my-new-budget allocation&quot;</span><span class="p">,</span>
+</span><span id="__span-1-56"><a id="__codelineno-1-56" name="__codelineno-1-56" href="#__codelineno-1-56"></a>    <span class="p">)</span>
+</span><span id="__span-1-57"><a id="__codelineno-1-57" name="__codelineno-1-57" href="#__codelineno-1-57"></a>
+</span><span id="__span-1-58"><a id="__codelineno-1-58" name="__codelineno-1-58" href="#__codelineno-1-58"></a>    <span class="c1"># Return result</span>
+</span><span id="__span-1-59"><a id="__codelineno-1-59" name="__codelineno-1-59" href="#__codelineno-1-59"></a>    <span class="k">return</span> <span class="n">BudgetAllocationResult</span><span class="p">(</span>
+</span><span id="__span-1-60"><a id="__codelineno-1-60" name="__codelineno-1-60" href="#__codelineno-1-60"></a>        <span class="n">approach</span><span class="o">=</span><span class="s2">&quot;my-new-budget&quot;</span><span class="p">,</span>
+</span><span id="__span-1-61"><a id="__codelineno-1-61" name="__codelineno-1-61" href="#__codelineno-1-61"></a>        <span class="n">relative_shares_cumulative_emission</span><span class="o">=</span><span class="n">relative_shares</span><span class="p">,</span>
+</span><span id="__span-1-62"><a id="__codelineno-1-62" name="__codelineno-1-62" href="#__codelineno-1-62"></a>        <span class="n">parameters</span><span class="o">=</span><span class="p">{</span>
+</span><span id="__span-1-63"><a id="__codelineno-1-63" name="__codelineno-1-63" href="#__codelineno-1-63"></a>            <span class="s2">&quot;allocation_year&quot;</span><span class="p">:</span> <span class="n">allocation_year</span><span class="p">,</span>
+</span><span id="__span-1-64"><a id="__codelineno-1-64" name="__codelineno-1-64" href="#__codelineno-1-64"></a>            <span class="s2">&quot;my_parameter&quot;</span><span class="p">:</span> <span class="n">my_parameter</span><span class="p">,</span>
+</span><span id="__span-1-65"><a id="__codelineno-1-65" name="__codelineno-1-65" href="#__codelineno-1-65"></a>        <span class="p">},</span>
+</span><span id="__span-1-66"><a id="__codelineno-1-66" name="__codelineno-1-66" href="#__codelineno-1-66"></a>    <span class="p">)</span>
 </span></code></pre></div>
 <h3 id="key-implementation-details">Key Implementation Details<a class="headerlink" href="#key-implementation-details" title="Permanent link">&para;</a></h3>
 <ol>
@@ -2087,7 +2112,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="step-5-add-tests">Step 5: Add Tests<a class="headerlink" href="#step-5-add-tests" title="Permanent link">&para;</a></h2>
-<p>Create tests in <code>tests/test_allocations/</code>:</p>
+<p>Create tests in <code>tests/unit/allocations/</code>:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fair_shares.library.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_example_data</span>
 </span><span id="__span-4-2"><a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>
 </span><span id="__span-4-3"><a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>

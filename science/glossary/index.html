@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -2166,7 +2189,7 @@
 <dd>Exponent applied to responsibility adjustment. Values &gt; 1.0 increase non-linearity.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
 <dt><strong><code>responsibility_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
-<dd>Functional form for responsibility adjustment. Options: <code>"asinh"</code> (inverse hyperbolic sine), <code>"linear"</code>.</dd>
+<dd>Functional form for responsibility adjustment. Options: <code>"asinh"</code> (inverse hyperbolic sine), <code>"power"</code>.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
 </dl>
 <h3 id="capability-parameters">Capability Parameters<a class="headerlink" href="#capability-parameters" title="Permanent link">&para;</a></h3>
@@ -2178,13 +2201,13 @@
 <dd>Exponent applied to capability adjustment. Values &gt; 1.0 increase non-linearity.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
 <dt><strong><code>capability_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
-<dd>Functional form for capability adjustment. Options: <code>"asinh"</code>, <code>"linear"</code>.</dd>
+<dd>Functional form for capability adjustment. Options: <code>"asinh"</code>, <code>"power"</code>.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
 </dl>
 <h3 id="inequality-parameters">Inequality Parameters<a class="headerlink" href="#inequality-parameters" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>income_floor</code></strong> (type: <code>float</code>, range: <code>[0.0, ∞)</code>, default: <code>0.0</code>)</dt>
-<dd>Minimum income threshold (in GDP per capita units) below which Gini adjustment is not applied. Implements subsistence protection.</dd>
+<dd>Minimum income threshold (in GDP per capita units). Income below this level is excluded from capability calculations via the Gini adjustment. Implements subsistence protection.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a></dd>
 <dt><strong><code>max_gini_adjustment</code></strong> (type: <code>float</code>, range: <code>[0.0, 1.0]</code>, default: <code>0.8</code>)</dt>
 <dd>Maximum magnitude of Gini-based allocation adjustment. Caps the effect of within-country inequality.</dd>
@@ -2195,8 +2218,8 @@
 <dt><strong><code>max_deviation_sigma</code></strong> (type: <code>float | None</code>, default: <code>2.0</code>)</dt>
 <dd>Standard deviations from mean for outlier detection. If not <code>None</code>, constrains extreme allocations.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></dd>
-<dt><strong><code>preserve_allocation_year_shares</code></strong> (type: <code>bool</code>, default: <code>False</code>)</dt>
-<dd>If <code>True</code>, pathway allocations maintain allocation_year shares throughout (no dynamic convergence). Used for internal calculations.</dd>
+<dt><strong><code>preserve_allocation_year_shares</code></strong> / <strong><code>preserve_first_allocation_year_shares</code></strong> (type: <code>bool</code>, default: <code>False</code>)</dt>
+<dd>If <code>True</code>, allocations use population shares at the allocation year only, rather than recalculating dynamically. Budget approaches use <code>preserve_allocation_year_shares</code>; pathway approaches use <code>preserve_first_allocation_year_shares</code>.</dd>
 <dd>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></dd>
 </dl>
 <hr />

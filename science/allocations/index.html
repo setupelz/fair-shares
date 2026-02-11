@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -2214,17 +2237,17 @@
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
-<p>Combines responsibility and capability adjustments into a multiplier applied to the equal-per-capita baseline:</p>
-<div class="language-text highlight"><span class="filename">Text Only</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Final = Equal-per-capita shares × [(responsibility_weight × responsibility_factor) + (capability_weight × capability_factor)]
+<p>Combines responsibility and capability adjustments as multiplicative factors applied to the equal-per-capita baseline:</p>
+<div class="language-text highlight"><span class="filename">Text Only</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>Adjusted population = Population × responsibility_metric^(-w_r) × capability_metric^(-w_c)
 </span></code></pre></div>
-<p>Only the ratio between weights affects results; <code>(0.3, 0.7)</code> and <code>(0.15, 0.35)</code> produce identical allocations.</p>
+<p>Where <code>w_r</code> and <code>w_c</code> are the normalized responsibility and capability weights (divided by their sum). Only the ratio between weights affects results; <code>(0.3, 0.7)</code> and <code>(0.15, 0.35)</code> produce identical allocations because they normalize to the same values.</p>
 <p><strong>Mathematical specification:</strong> <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">Budget</a> | <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted">Pathway</a></p>
 <hr />
 <h2 id="dynamic-vs-preserved-shares">Dynamic vs Preserved Shares<a class="headerlink" href="#dynamic-vs-preserved-shares" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: equal_per_capita() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
-<p>Parameter: <code>preserve_allocation_year_shares</code></p>
+<p>Parameter: <code>preserve_allocation_year_shares</code> (budget) / <code>preserve_first_allocation_year_shares</code> (pathway)</p>
 <table>
 <thead>
 <tr>

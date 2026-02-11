@@ -15,6 +15,10 @@
         <link rel="canonical" href="https://setupelz.github.io/fair-shares/user-guide/output-schema/">
       
       
+        <link rel="prev" href="../iamc-regional-fair-shares/">
+      
+      
+        <link rel="next" href="../../api/">
       
       
       <link rel="icon" href="../../assets/images/favicon.png">
@@ -272,10 +276,12 @@
         
   
   
+    
+  
   
     
     
-      <li class="md-tabs__item">
+      <li class="md-tabs__item md-tabs__item--active">
         <a href="../" class="md-tabs__link">
           
   
@@ -446,6 +452,8 @@
       
   
   
+    
+  
   
   
     
@@ -461,21 +469,24 @@
       
         
       
+        
+      
     
     
+      
+        
+        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
       
         
         
-          
-        
-        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
         
           
           
@@ -493,13 +504,13 @@
             </a>
             
               
-              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="">
                 <span class="md-nav__icon md-icon"></span>
               </label>
             
           </div>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             User Guide
@@ -568,6 +579,255 @@
   
 
       </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Output Schema
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#output-files" class="md-nav__link">
+    <span class="md-ellipsis">
+      Output Files
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parquet-format-full-detail" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parquet Format (Full Detail)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parquet Format (Full Detail)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#identifier-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Identifier Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#data-source-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Source Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#parameter-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameter Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#year-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Year Columns
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#quality-columns" class="md-nav__link">
+    <span class="md-ellipsis">
+      Quality Columns
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#csv-format-simplified" class="md-nav__link">
+    <span class="md-ellipsis">
+      CSV Format (Simplified)
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="CSV Format (Simplified)">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#column-transformation" class="md-nav__link">
+    <span class="md-ellipsis">
+      Column Transformation
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#customizing-csv-output" class="md-nav__link">
+    <span class="md-ellipsis">
+      Customizing CSV Output
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Customizing CSV Output">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#custom-parameter-prefixes" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Parameter Prefixes
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#custom-approach-names" class="md-nav__link">
+    <span class="md-ellipsis">
+      Custom Approach Names
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#working-with-outputs" class="md-nav__link">
+    <span class="md-ellipsis">
+      Working with Outputs
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Working with Outputs">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#in-python-parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      In Python (Parquet)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#in-python-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      In Python (CSV)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#in-r-parquet" class="md-nav__link">
+    <span class="md-ellipsis">
+      In R (Parquet)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#in-excel-csv" class="md-nav__link">
+    <span class="md-ellipsis">
+      In Excel (CSV)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#see-also" class="md-nav__link">
+    <span class="md-ellipsis">
+      See Also
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1887,6 +2147,21 @@
 <td>Adjusted approaches</td>
 </tr>
 <tr>
+<td><code>responsibility-functional-form</code></td>
+<td>string</td>
+<td>Adjusted approaches</td>
+</tr>
+<tr>
+<td><code>capability-functional-form</code></td>
+<td>string</td>
+<td>Adjusted approaches</td>
+</tr>
+<tr>
+<td><code>max-deviation-sigma</code></td>
+<td>float</td>
+<td>All approaches (optional)</td>
+</tr>
+<tr>
 <td><code>income-floor</code></td>
 <td>float</td>
 <td>Gini-adjusted approaches</td>
@@ -1904,16 +2179,6 @@
 <tr>
 <td><code>convergence-speed</code></td>
 <td>float</td>
-<td>Convergence approaches</td>
-</tr>
-<tr>
-<td><code>max-convergence-speed</code></td>
-<td>float</td>
-<td>Convergence approaches</td>
-</tr>
-<tr>
-<td><code>strict</code></td>
-<td>bool</td>
 <td>Convergence approaches</td>
 </tr>
 </tbody>
@@ -2008,8 +2273,8 @@
 <td><code>PC-Adj-rw0.5-cw0.5</code></td>
 </tr>
 <tr>
-<td><code>approach="cumulative-per-capita-convergence"</code>, <code>strict=False</code></td>
-<td><code>CPCC-strictFalse</code></td>
+<td><code>approach="cumulative-per-capita-convergence"</code>, <code>convergence-speed=0.42</code></td>
+<td><code>CPCC-cs0.42</code></td>
 </tr>
 </tbody>
 </table>
@@ -2045,6 +2310,10 @@
 <tr>
 <td><code>cumulative-per-capita-convergence-adjusted</code></td>
 <td><code>CPCC-Adj</code></td>
+</tr>
+<tr>
+<td><code>cumulative-per-capita-convergence-gini-adjusted</code></td>
+<td><code>CPCC-Adj-Gini</code></td>
 </tr>
 <tr>
 <td><code>equal-per-capita-budget</code></td>
@@ -2106,16 +2375,40 @@
 <td><code>hr</code></td>
 </tr>
 <tr>
+<td><code>responsibility-per-capita</code></td>
+<td><code>rpc</code></td>
+</tr>
+<tr>
+<td><code>capability-per-capita</code></td>
+<td><code>cpc</code></td>
+</tr>
+<tr>
+<td><code>responsibility-exponent</code></td>
+<td><code>re</code></td>
+</tr>
+<tr>
+<td><code>capability-exponent</code></td>
+<td><code>ce</code></td>
+</tr>
+<tr>
+<td><code>responsibility-functional-form</code></td>
+<td><code>rff</code></td>
+</tr>
+<tr>
+<td><code>capability-functional-form</code></td>
+<td><code>cff</code></td>
+</tr>
+<tr>
+<td><code>max-deviation-sigma</code></td>
+<td><code>s</code></td>
+</tr>
+<tr>
 <td><code>income-floor</code></td>
 <td><code>if</code></td>
 </tr>
 <tr>
 <td><code>max-gini-adjustment</code></td>
 <td><code>ga</code></td>
-</tr>
-<tr>
-<td><code>strict</code></td>
-<td><code>strict</code></td>
 </tr>
 </tbody>
 </table>
@@ -2270,6 +2563,44 @@
       
         <footer class="md-footer">
   
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../iamc-regional-fair-shares/" class="md-footer__link md-footer__link--prev" aria-label="Previous: iamc-regional-fair-shares">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                iamc-regional-fair-shares
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../api/" class="md-footer__link md-footer__link--next" aria-label="Next: API Reference">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                API Reference
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
     
   
   <div class="md-footer-meta md-typeset">

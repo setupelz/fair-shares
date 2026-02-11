@@ -467,6 +467,8 @@
       
         
       
+        
+      
     
     
       
@@ -570,6 +572,27 @@
   
   <span class="md-ellipsis">
     iamc-regional-fair-shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
   </span>
   
 
@@ -1875,8 +1898,8 @@
 </tr>
 </tbody>
 </table>
-<p><em>Example uses 1.5°C carbon budget (50% probability) allocated from 2025.</em></p>
-<p><strong>Key insight:</strong> For equal-per-capita allocation, the <code>allocation_year</code> has limited effect because population shares are relatively stable. The parameter's main effect is determining when the allocation "clock starts" - earlier years mean countries are responsible for their full historical emissions before that date.</p>
+<p><em>Example uses 1.5°C carbon budget (50% probability). The <code>allocation_year</code> parameter is what varies across columns.</em></p>
+<p><strong>Key insight:</strong> For equal-per-capita allocation, the <code>allocation_year</code> determines the starting year for cumulative population accounting. Earlier allocation years use cumulative population over a longer historical period, which can shift shares if countries' relative population sizes have changed over time. The effect is limited here because global population shares are relatively stable across these periods.</p>
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 <p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget">equal_per_capita_budget API</a></p>
@@ -1922,7 +1945,7 @@
 </tbody>
 </table>
 <p><em>Example uses <code>allocation_year=2020</code>, <code>historical_responsibility_year=1990</code>.</em></p>
-<p><strong>Key insight:</strong> Historical responsibility dramatically reduces shares for high-emitting developed countries (USA: 4.0% → 0.5%, Germany: 0.8% → 0.1%) while increasing shares for countries with lower historical emissions (India: 16.7% → 8.2%). The effect saturates between <code>weight=0.5</code> and <code>weight=1.0</code> in this example because historical emissions differences are so large.</p>
+<p><strong>Key insight:</strong> Historical responsibility substantially reduces shares for high-emitting developed countries (USA: 4.0% to 0.5%, Germany: 0.8% to 0.1%). India's share also decreases (16.7% to 8.2%) because the adjustment redistributes toward countries with the lowest per capita historical emissions, which are not shown in this three-country excerpt. The effect saturates between <code>weight=0.5</code> and <code>weight=1.0</code> in this example because historical emissions differences are so large.</p>
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 <p><strong>Mathematical detail:</strong> See <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">per_capita_adjusted_budget API</a></p>
