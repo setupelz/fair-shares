@@ -1,0 +1,3 @@
+# Ignore API docs - mkdocstrings requires specific indentation format
+# that prettier would incorrectly normalize
+docs/api/**/*.md

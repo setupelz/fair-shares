@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways"
+version: 0.2.0
+date-released: 2025-01-20
+url: "https://github.com/setupelz/fair-shares"
+repository-code: "https://github.com/setupelz/fair-shares"
+license: BSD-3-Clause
+authors:
+  - family-names: "Pelz"
+    given-names: "Setu"
+  - family-names: "Holz"
+    given-names: "Ceecee"
+  - family-names: "Lewis"
+    given-names: "Jared"
+  - family-names: "Nicholls"
+    given-names: "Zebedee"
+keywords:
+  - climate change
+  - carbon budgets
+  - emissions pathways
+  - fair shares
+  - climate justice
+  - burden sharing
+type: software
+abstract: >
+  fair-shares distributes global emissions budgets and pathways among countries
+  using allocation approaches aligned with user-defined principles and norms.
+  It supports budget allocations (cumulative emission budgets) and pathway
+  allocations (annual emission shares).
