@@ -160,13 +160,20 @@
     makeParameterRowsCollapsible();
   }
 
-  // Re-typeset MathJax after DOM manipulation
-  function retypesetMath() {
-    if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-      MathJax.typesetPromise().catch(function (err) {
-        console.warn("MathJax typeset failed:", err);
-      });
+  // Re-typeset MathJax after DOM manipulation.
+  // Must clear first -- MathJax skips nodes it thinks are already processed,
+  // but content cloned into <details> while hidden renders with broken dimensions.
+  function retypesetMath(container) {
+    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return;
+    var args = container ? [[container]] : [];
+    try {
+      MathJax.typesetClear.apply(MathJax, args);
+    } catch (e) {
+      // typesetClear may not exist in all MathJax builds
     }
+    MathJax.typesetPromise.apply(MathJax, args).catch(function (err) {
+      console.warn("MathJax typeset failed:", err);
+    });
   }
 
   // Set up MathJax to run after DOM manipulation completes
@@ -190,14 +197,16 @@
     }
   }
 
-  // Also re-typeset when details elements are opened (for lazy rendering)
+  // Re-typeset math inside a <details> element when it's opened
   function setupDetailsToggleHandler() {
     document.addEventListener(
       "toggle",
       function (event) {
         if (event.target.tagName === "DETAILS" && event.target.open) {
-          // Small delay to let content render
-          setTimeout(retypesetMath, 50);
+          // Small delay to let content render, then re-typeset only this element
+          setTimeout(function () {
+            retypesetMath(event.target);
+          }, 50);
         }
       },
       true,

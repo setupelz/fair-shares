@@ -1919,12 +1919,9 @@
 <td><code>GDP\|PPP</code></td>
 <td>Capability adjustments (optional)</td>
 </tr>
-<tr>
-<td><code>Emissions\|Covered</code></td>
-<td>Actual emissions for budget subtraction</td>
-</tr>
 </tbody>
 </table>
+<p>An emissions variable is needed only if you're subtracting historical emissions to compute remaining budgets (see <a href="#preparing-remaining-budgets-for-iam-model-input">Preparing Remaining Budgets</a>). The variable name is configurable -- use whatever your IAMC data provides.</p>
 <hr />
 <h2 id="key-functions">Key Functions<a class="headerlink" href="#key-functions" title="Permanent link">&para;</a></h2>
 <!-- REFERENCE: Function implementations in src/fair_shares/library/utils/data/iamc.py
@@ -1990,33 +1987,7 @@
 <h2 id="preparing-remaining-budgets-for-iam-model-input">Preparing Remaining Budgets for IAM Model Input<a class="headerlink" href="#preparing-remaining-budgets-for-iam-model-input" title="Permanent link">&para;</a></h2>
 <p><strong>Use notebook 401</strong> for model input preparation. Notebooks 402/403 show allocation examples only.</p>
 <h3 id="understanding-timesteps-vs-periods">Understanding Timesteps vs Periods<a class="headerlink" href="#understanding-timesteps-vs-periods" title="Permanent link">&para;</a></h3>
-<p>IAM models (MESSAGE-ix, GCAM, REMIND) often use timestep labels that represent multi-year periods:</p>
-<table>
-<thead>
-<tr>
-<th>Model</th>
-<th>Timestep Label</th>
-<th>Period Represented</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>MESSAGE-ix</td>
-<td>2030</td>
-<td>2026-2030</td>
-</tr>
-<tr>
-<td>MESSAGE-ix</td>
-<td>2040</td>
-<td>2031-2040</td>
-</tr>
-<tr>
-<td>MESSAGE-ix</td>
-<td>2050</td>
-<td>2041-2050</td>
-</tr>
-</tbody>
-</table>
+<p>IAM models often use timestep labels that represent multi-year periods. For example, in MESSAGEix, timestep <code>2030</code> represents 2026-2030, <code>2040</code> represents 2031-2040, etc.</p>
 <p><strong>Critical:</strong> Your remaining budget must start from the first year of the first period, not the timestep label.</p>
 <h3 id="calculation-method">Calculation Method<a class="headerlink" href="#calculation-method" title="Permanent link">&para;</a></h3>
 <p>If allocating from 2015 and your first model period is 2026-2030:</p>
@@ -2027,7 +1998,7 @@
 <li>Run allocation from your allocation year (e.g., 2015)</li>
 <li>Subtract cumulative actual emissions from allocation year to (first period start - 1)</li>
 <li>Export remaining budget in Mt CO2e</li>
-<li>Use as cumulative emission constraint in your model (e.g., <code>bound_emission</code> in MESSAGE-ix)</li>
+<li>Use as cumulative emission constraint in your model (e.g., <code>bound_emission</code> in MESSAGEix)</li>
 </ol>
 <h3 id="example-workflow-in-notebook-401">Example Workflow in Notebook 401<a class="headerlink" href="#example-workflow-in-notebook-401" title="Permanent link">&para;</a></h3>
 <p>See "Step 7: Prepare for IAM Model Input" in notebook 401 for:</p>

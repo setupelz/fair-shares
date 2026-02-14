@@ -16,19 +16,19 @@ window.MathJax = {
     skipHtmlTags: ["script", "noscript", "style", "textarea", "pre"],
     ignoreHtmlClass: "tex2jax_ignore",
     processHtmlClass: "tex2jax_process",
-    // Process math in hidden elements (like closed <details>)
     renderActions: {
       addMenu: [0, "", ""],
     },
   },
   startup: {
     pageReady: () => {
-      // Delay initial typesetting slightly to let collapsible-api.js
-      // manipulate the DOM first (it runs on DOMContentLoaded)
+      // Delay initial typesetting to let collapsible-api.js manipulate
+      // the DOM first (it runs on DOMContentLoaded). Math inside closed
+      // <details> is rendered on toggle via collapsible-api.js.
       return new Promise((resolve) => {
         setTimeout(() => {
           MathJax.startup.defaultPageReady().then(resolve);
-        }, 100);
+        }, 200);
       });
     },
   },
