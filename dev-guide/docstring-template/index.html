@@ -2091,10 +2091,10 @@
 <ol>
 <li><strong>NEVER use scalar-only examples:</strong></li>
 </ol>
-<div class="language-pycon highlight"><span class="filename">Python Console Session</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go"># ❌ BAD - scalar only</span>
+<div class="language-pycon highlight"><span class="filename">Python Console Session</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a><span class="go"># BAD - scalar only</span>
 </span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">calculate_equal_per_capita</span><span class="p">(</span><span class="mi">100</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mi">1000</span><span class="p">)</span>
 </span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>
-</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="go"># ✅ GOOD - realistic DataFrame</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a><span class="go"># GOOD - realistic DataFrame</span>
 </span><span id="__span-5-5"><a id="__codelineno-5-5" name="__codelineno-5-5" href="#__codelineno-5-5"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">data</span> <span class="o">=</span> <span class="n">create_example_data</span><span class="p">()</span>
 </span><span id="__span-5-6"><a id="__codelineno-5-6" name="__codelineno-5-6" href="#__codelineno-5-6"></a><span class="gp">&gt;&gt;&gt; </span><span class="n">calculate_equal_per_capita</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">budget</span><span class="o">=</span><span class="mf">1000.0</span><span class="p">)</span>
 </span></code></pre></div>
@@ -2117,12 +2117,12 @@
 <li><strong>Approach catalog</strong> (<code>docs/user-guide/approach-catalog.md</code>) for comparison</li>
 </ul>
 <h2 id="anti-patterns-to-avoid">Anti-Patterns to Avoid<a class="headerlink" href="#anti-patterns-to-avoid" title="Permanent link">&para;</a></h2>
-<p>❌ <strong>Don't</strong> hide normative choices behind technical jargon:</p>
+<p><strong>Don't</strong> hide normative choices behind technical jargon:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a><span class="n">Notes</span>
 </span><span id="__span-6-2"><a id="__codelineno-6-2" name="__codelineno-6-2" href="#__codelineno-6-2"></a><span class="o">-----</span>
 </span><span id="__span-6-3"><a id="__codelineno-6-3" name="__codelineno-6-3" href="#__codelineno-6-3"></a><span class="n">Uses</span> <span class="n">standard</span> <span class="n">convergence</span> <span class="n">methodology</span><span class="o">.</span>
 </span></code></pre></div>
-<p>✅ <strong>Do</strong> make value judgments explicit:</p>
+<p><strong>Do</strong> make value judgments explicit:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a><span class="n">Notes</span>
 </span><span id="__span-7-2"><a id="__codelineno-7-2" name="__codelineno-7-2" href="#__codelineno-7-2"></a><span class="o">-----</span>
 </span><span id="__span-7-3"><a id="__codelineno-7-3" name="__codelineno-7-3" href="#__codelineno-7-3"></a><span class="o">**</span><span class="n">Normative</span> <span class="n">choices</span><span class="p">:</span><span class="o">**</span>
@@ -2131,10 +2131,10 @@
 </span><span id="__span-7-6"><a id="__codelineno-7-6" name="__codelineno-7-6" href="#__codelineno-7-6"></a>  <span class="o">-</span> <span class="o">*</span><span class="n">Implication</span><span class="o">*</span><span class="p">:</span> <span class="n">Countries</span> <span class="k">with</span> <span class="n">high</span> <span class="n">current</span> <span class="n">emissions</span> <span class="n">receive</span> <span class="n">larger</span>
 </span><span id="__span-7-7"><a id="__codelineno-7-7" name="__codelineno-7-7" href="#__codelineno-7-7"></a>    <span class="n">future</span> <span class="n">allocations</span><span class="p">,</span> <span class="n">which</span> <span class="n">lacks</span> <span class="n">ethical</span> <span class="n">basis</span> <span class="n">per</span> <span class="n">CBDR</span><span class="o">-</span><span class="n">RC</span> <span class="n">principles</span><span class="o">.</span>
 </span></code></pre></div>
-<p>❌ <strong>Don't</strong> omit the mathematical foundation:</p>
+<p><strong>Don't</strong> omit the mathematical foundation:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="sd">&quot;&quot;&quot;Allocates emissions based on population and other factors.&quot;&quot;&quot;</span>
 </span></code></pre></div>
-<p>✅ <strong>Do</strong> show the complete formula:</p>
+<p><strong>Do</strong> show the complete formula:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="sa">r</span><span class="s2">&quot;&quot;&quot;</span>
 </span><span id="__span-9-2"><a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="s2">Mathematical Foundation</span>
 </span><span id="__span-9-3"><a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="s2">-----------------------</span>
@@ -2145,13 +2145,13 @@
 </span><span id="__span-9-8"><a id="__codelineno-9-8" name="__codelineno-9-8" href="#__codelineno-9-8"></a>
 </span><span id="__span-9-9"><a id="__codelineno-9-9" name="__codelineno-9-9" href="#__codelineno-9-9"></a><span class="s2">Where $R(g)$ is the responsibility adjustment...</span>
 </span></code></pre></div>
-<p>❌ <strong>Don't</strong> use placeholder examples:</p>
+<p><strong>Don't</strong> use placeholder examples:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-10-1"><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="n">Examples</span>
 </span><span id="__span-10-2"><a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="o">--------</span>
 </span><span id="__span-10-3"><a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="n">my_function</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 </span><span id="__span-10-4"><a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="o">&gt;&gt;&gt;</span> <span class="c1"># TODO: Add example output</span>
 </span></code></pre></div>
-<p>✅ <strong>Do</strong> provide working, verified examples:</p>
+<p><strong>Do</strong> provide working, verified examples:</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-11-1"><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="n">Examples</span>
 </span><span id="__span-11-2"><a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="o">--------</span>
 </span><span id="__span-11-3"><a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="o">&gt;&gt;&gt;</span> <span class="kn">from</span><span class="w"> </span><span class="nn">fair_shares.library.utils</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_example_data</span>
@@ -2167,13 +2167,13 @@
 <h2 id="validation">Validation<a class="headerlink" href="#validation" title="Permanent link">&para;</a></h2>
 <p>Before committing, verify:</p>
 <ol>
-<li>✅ All sections present (use checklist from <code>testing-checklist.md</code>)</li>
-<li>✅ "Equity Principles Operationalized" section lists specific principles with citations</li>
-<li>✅ LaTeX equations render correctly in generated docs</li>
-<li>✅ All examples execute without errors: <code>uv run pytest --doctest-modules src/</code></li>
-<li>✅ Cross-references link to existing documentation sections</li>
-<li>✅ Parameter types match function signature</li>
-<li>✅ Normative choices section identifies at least one value judgment</li>
+<li>All sections present (use checklist from <code>testing-checklist.md</code>)</li>
+<li>"Equity Principles Operationalized" section lists specific principles with citations</li>
+<li>LaTeX equations render correctly in generated docs</li>
+<li>All examples execute without errors: <code>uv run pytest --doctest-modules src/</code></li>
+<li>Cross-references link to existing documentation sections</li>
+<li>Parameter types match function signature</li>
+<li>Normative choices section identifies at least one value judgment</li>
 </ol>
 <h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
 <ul>

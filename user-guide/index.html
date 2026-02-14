@@ -1542,36 +1542,12 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Configuration">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#rcb-pathway-generation" class="md-nav__link">
-    <span class="md-ellipsis">
-      RCB Pathway Generation
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
-  <a href="#which-approach-should-i-choose" class="md-nav__link">
+  <a href="#choosing-an-approach" class="md-nav__link">
     <span class="md-ellipsis">
-      Which Approach Should I Choose?
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#see-also" class="md-nav__link">
-    <span class="md-ellipsis">
-      See Also
+      Choosing an Approach
     </span>
   </a>
   
@@ -1655,7 +1631,7 @@
 </tr>
 <tr>
 <td>Absolute emissions</td>
-<td>Shares × global target in physical units</td>
+<td>Shares x global target in physical units</td>
 <td>Parquet, CSV</td>
 </tr>
 <tr>
@@ -1667,7 +1643,7 @@
 </table>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
-<p>Data sources are configured in <code>conf/data_sources/</code>. Available options:</p>
+<p>Data sources are configured in <code>conf/data_sources/</code>.</p>
 <table>
 <thead>
 <tr>
@@ -1698,61 +1674,19 @@
 </tr>
 </tbody>
 </table>
-<h3 id="rcb-pathway-generation">RCB Pathway Generation<a class="headerlink" href="#rcb-pathway-generation" title="Permanent link">&para;</a></h3>
-<p>The <code>rcb-pathways</code> target converts the global remaining carbon budget (RCB) into an annual emission pathway, which is then allocated among countries using pathway allocation approaches.</p>
-<p><strong>How it works:</strong></p>
-<ol>
-<li>The global remaining carbon budget (RCB) is converted to an annual emission pathway using normalized shifted exponential decay</li>
-<li>Pathway allocation approaches distribute the global pathway among countries (e.g., <code>equal-per-capita</code>)</li>
-<li>The pathway starts at historical emissions, reaches zero by the end year, and the discrete sum equals the carbon budget</li>
-</ol>
-<p>This is useful when you need pathway outputs for comparison with scenarios, starting from a global carbon budget constraint.</p>
-<p><strong>Configuration:</strong> Set <code>target: "rcb-pathways"</code> in your data source config. The generator defaults to <code>exponential-decay</code>.</p>
-<p><strong>See also:</strong> <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">Other Operations: RCB Pathway Generation</a></p>
+<p>The <code>rcb-pathways</code> target converts a global remaining carbon budget into an annual emission pathway using exponential decay, then allocates it among countries. Set <code>target: "rcb-pathways"</code> in your data source config. See <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">Other Operations</a> for details.</p>
 <hr />
-<h2 id="which-approach-should-i-choose">Which Approach Should I Choose?<a class="headerlink" href="#which-approach-should-i-choose" title="Permanent link">&para;</a></h2>
-<p>Start by clarifying your analytical needs and ethical priorities:</p>
-<pre class="mermaid"><code>flowchart TD
-    Start([Starting Point]) --&gt; Q1{What output format&lt;br/&gt;do you need?}
-
-    Q1 --&gt;|Annual emission pathways| Path[Pathway Approaches]
-    Q1 --&gt;|Total carbon budget| Budget[Budget Approaches]
-
-    Path --&gt; Principles1[Consider which principles&lt;br/&gt;matter for your analysis]
-    Budget --&gt; Principles2[Consider which principles&lt;br/&gt;matter for your analysis]
-
-    Principles1 --&gt; Questions
-    Principles2 --&gt; Questions
-
-    Questions[Key Principles to Consider:&lt;br/&gt;Equal per capita - equal entitlements?&lt;br/&gt;Historical Responsibility - account for past?&lt;br/&gt;Capability - adjust for economic capacity?&lt;br/&gt;Subsistence Protection - protect basic needs?]
-
-    Questions --&gt; Science[See Science Documentation&lt;br/&gt;for approach selection]
-
-    Science --&gt; Catalog[Approach Catalog]
-    Science --&gt; P2C[Principle-to-Code Guide]
-    Science --&gt; Alloc[Allocation Approaches]
-
-    style Questions fill:#fff4e6
-    style Science fill:#e1f5e1</code></pre>
-<p><strong>Understanding Your Needs:</strong></p>
+<h2 id="choosing-an-approach">Choosing an Approach<a class="headerlink" href="#choosing-an-approach" title="Permanent link">&para;</a></h2>
+<p>Two questions:</p>
 <ol>
-<li><strong>Output format:</strong> Do you need year-by-year emission pathways or a single total carbon budget?</li>
-<li><strong>Principles:</strong> Which principles are most relevant to your analysis?</li>
+<li><strong>Budget or pathway?</strong> Do you need a single cumulative target or year-by-year emissions?</li>
+<li><strong>Which principles?</strong> Equal entitlements, historical responsibility, capability, subsistence protection -- or some combination?</li>
 </ol>
-<p><strong>Next Steps:</strong></p>
-<p>Once you understand your needs and priorities, consult the science documentation to select an appropriate approach:</p>
+<p>Then:</p>
 <ul>
-<li><strong><a href="https://setupelz.github.io/fair-shares/user-guide/approach-catalog/">Approach Catalog</a></strong> — Browse all available approaches with brief descriptions</li>
-<li><strong><a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle-to-Code Guide</a></strong> — Learn how ethical principles translate to implementation choices</li>
-<li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></strong> — Understand the design and parameters of each approach</li>
-</ul>
-<p>The science documentation will help you understand how different approaches operationalize these principles, allowing you to make an informed choice based on your analytical goals.</p>
-<hr />
-<h2 id="see-also">See Also<a class="headerlink" href="#see-also" title="Permanent link">&para;</a></h2>
-<ul>
-<li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></strong> — Design and parameters</li>
-<li><strong><a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></strong> — Theoretical foundations</li>
-<li><strong><a href="https://setupelz.github.io/fair-shares/api/">API Reference</a></strong> — Function documentation</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/user-guide/approach-catalog/">Approach Catalog</a></strong> -- all 10 approaches at a glance</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle-to-Code</a></strong> -- how principles map to parameters</li>
+<li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></strong> -- design and parameter details</li>
 </ul>
 
 

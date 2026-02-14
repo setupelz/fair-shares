@@ -647,9 +647,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementation-details" class="md-nav__link">
+  <a href="#adding-approaches" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementation Details
+      Adding Approaches
     </span>
   </a>
   
@@ -1709,9 +1709,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#implementation-details" class="md-nav__link">
+  <a href="#adding-approaches" class="md-nav__link">
     <span class="md-ellipsis">
-      Implementation Details
+      Adding Approaches
     </span>
   </a>
   
@@ -1749,13 +1749,12 @@
 
 
 <h1 id="approach-catalog">Approach Catalog<a class="headerlink" href="#approach-catalog" title="Permanent link">&para;</a></h1>
-<p>This page provides a quick-reference overview of all 10 allocation approaches available in fair-shares. Each approach operationalizes different equity principles from the climate justice literature.</p>
-<p>For detailed mathematical formulations, see the <a href="https://setupelz.github.io/fair-shares/api/">API Reference</a>. For theoretical grounding, see <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a> and <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a>.</p>
+<p>All 10 allocation approaches at a glance. For math, see the <a href="https://setupelz.github.io/fair-shares/api/">API Reference</a>. For theory, see <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a>.</p>
 <hr />
 <h2 id="the-allocation-year-parameter">The Allocation Year Parameter<a class="headerlink" href="#the-allocation-year-parameter" title="Permanent link">&para;</a></h2>
 <p>The allocation year applies to <strong>all approaches</strong> (except <code>per-capita-convergence</code>) and represents a fundamental debate in climate equity literature: <strong>when do allocations begin?</strong> In budget approaches, this parameter is called <code>allocation_year</code>; in pathway approaches, it is called <code>first_allocation_year</code>.</p>
 <ul>
-<li><strong>Early allocation_year (e.g., 1850, 1990)</strong>: Operationalizes historical responsibility by starting the "equal entitlement clock" earlier. Historical over-emitters have already consumed their fair share from that date forward.</li>
+<li><strong>Early allocation_year (e.g., 1850, 1990)</strong>: Accounts for historical responsibility by starting the "equal entitlement clock" earlier. Historical over-emitters have already consumed their fair share from that date forward.</li>
 <li><strong>Recent allocation_year (e.g., 2015, 2020)</strong>: Focuses on current/future population without accounting for historical emissions through this mechanism.</li>
 </ul>
 <p>This is distinct from (and complementary to) other responsibility mechanisms like <code>responsibility_weight</code> or cumulative accounting. The choice of allocation year is a normative parameter—there is no neutral default.</p>
@@ -1770,7 +1769,7 @@
 <thead>
 <tr>
 <th>Approach</th>
-<th>Operationalizes</th>
+<th>Principles</th>
 <th>Best For</th>
 <th>Links</th>
 </tr>
@@ -1809,7 +1808,7 @@
 <thead>
 <tr>
 <th>Approach</th>
-<th>Operationalizes</th>
+<th>Principles</th>
 <th>Best For</th>
 <th>Links</th>
 </tr>
@@ -1842,7 +1841,7 @@
 <thead>
 <tr>
 <th>Approach</th>
-<th>Operationalizes</th>
+<th>Principles</th>
 <th>Best For</th>
 <th>Links</th>
 </tr>
@@ -1875,17 +1874,16 @@
 </tbody>
 </table>
 <p>All Convergence approaches (except <code>per-capita-convergence</code>) support Historical Responsibility via <code>first_allocation_year</code> (see above). The cumulative approaches additionally account for historical emissions through cumulative per-capita accounting.</p>
-<p><strong>Note on <code>per-capita-convergence</code>:</strong> This approach privileges current emission patterns during the transition period (grandfathering). It is <strong>not considered a fair share approach</strong> because it allocates more to currently high-emitting countries without equity-based justification. It is included for comparison purposes only.</p>
+<p><strong>Note on <code>per-capita-convergence</code>:</strong> This approach privileges current emission patterns during the transition period (grandfathering). It is not generally considered a fair share approach in the literature because it allocates more to currently high-emitting countries without equity-based justification (see Morrow 2017, Caney 2009). It is included for comparison with equity-based approaches.</p>
 <hr />
 <h2 id="choosing-an-approach">Choosing an Approach<a class="headerlink" href="#choosing-an-approach" title="Permanent link">&para;</a></h2>
-<p>Not sure which approach to use? See the <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a> guide for guidance on translating your ethical framework to code. See <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">From Principle to Code</a> for the principle-to-code mapping guide.</p>
-<p><strong>Quick decision guide:</strong></p>
 <ol>
-<li><strong>Budget vs Pathway?</strong> → Do you need a single cumulative target or year-by-year guidance?</li>
-<li><strong>Account for history?</strong> → Set early <code>allocation_year</code> (all approaches), and/or use cumulative approaches, and/or use <code>responsibility_weight</code></li>
-<li><strong>Account for capability?</strong> → Use <code>-adjusted</code> variants with <code>responsibility_weight</code> and <code>capability_weight</code></li>
-<li><strong>Account for inequality within countries?</strong> → Use <code>-gini</code> variants with Gini coefficient data</li>
+<li><strong>Budget vs Pathway?</strong> Do you need a single cumulative target or year-by-year guidance?</li>
+<li><strong>Account for history?</strong> Set early <code>allocation_year</code>, and/or use cumulative approaches, and/or use <code>responsibility_weight</code></li>
+<li><strong>Account for capability?</strong> Use <code>-adjusted</code> variants with <code>responsibility_weight</code> and <code>capability_weight</code></li>
+<li><strong>Account for inequality within countries?</strong> Use <code>-gini</code> variants</li>
 </ol>
+<p>See <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">From Principle to Code</a> for how principles map to parameters.</p>
 <hr />
 <h2 id="registry-reference">Registry Reference<a class="headerlink" href="#registry-reference" title="Permanent link">&para;</a></h2>
 <!-- This section links to the authoritative registry in the codebase -->
@@ -1898,13 +1896,8 @@
 </span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">approaches</span><span class="o">.</span><span class="n">keys</span><span class="p">()))</span>
 </span></code></pre></div>
 <hr />
-<h2 id="implementation-details">Implementation Details<a class="headerlink" href="#implementation-details" title="Permanent link">&para;</a></h2>
-<p>For implementation patterns and adding new approaches, see the <a href="https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/">Developer Guide</a>.</p>
-<p>For common use cases and worked examples, see:</p>
-<ul>
-<li><a href="https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/">Country Fair Shares</a></li>
-<li><a href="https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/">IAMC Regional Fair Shares</a></li>
-</ul>
+<h2 id="adding-approaches">Adding Approaches<a class="headerlink" href="#adding-approaches" title="Permanent link">&para;</a></h2>
+<p>See the <a href="https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/">Developer Guide</a>.</p>
 
 
 

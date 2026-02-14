@@ -2223,8 +2223,8 @@
   <h1>From Principle to Code</h1>
 
 <h2 id="why-principles-matter">Why Principles Matter<a class="headerlink" href="#why-principles-matter" title="Permanent link">&para;</a></h2>
-<p>Any allocation necessarily involves ethical choices. There is no value-neutral way to divide a constrained carbon budget—every approach embeds assumptions about what matters and who should bear costs. [Dooley 2021] explains this, explicitly rejecting the framing of "neutral" approaches: "There is no ethically neutral position in the climate context. Any form of climate action necessarily imposes burdens on some while conferring benefits on others. Value-neutral presentations place a gloss over deeply contested and irreducibly normative perspectives."</p>
-<p><strong>Normative transparency</strong> means making value judgments explicit. Fair-shares helps you operationalize the principles you choose, making your value judgments as visible and replicable as possible. This enables meaningful deliberation about principles and the formulas used to represent them.</p>
+<p>Any allocation of a constrained carbon budget involves choices about what matters and who bears costs. As Dooley 2021 argues, there is no value-neutral position in this context -- every approach embeds assumptions, whether or not they are made explicit.</p>
+<p>The goal of this tool is <strong>normative transparency</strong>: making value judgments visible and replicable so that they can be examined and debated. Fair-shares helps you operationalize the principles you choose, whatever those principles are.</p>
 <p><strong>Key insight</strong>: Define your principles first, then select the allocation approach that operationalizes those principles.</p>
 <hr />
 <h2 id="principles-first-workflow">Principles-First Workflow<a class="headerlink" href="#principles-first-workflow" title="Permanent link">&para;</a></h2>
@@ -2407,7 +2407,7 @@
 <hr />
 <h2 id="subsistence-protection">Subsistence Protection<a class="headerlink" href="#subsistence-protection" title="Permanent link">&para;</a></h2>
 <h3 id="what-it-means_4">What It Means<a class="headerlink" href="#what-it-means_4" title="Permanent link">&para;</a></h3>
-<p>Not all emissions are morally equivalent. Emissions required for meeting basic needs (survival emissions) should be protected from mitigation burdens, while luxury emissions from high consumption can be restricted. Income below development thresholds should not count toward mitigation capacity. This principle has moral priority across multiple philosophical traditions—rights-based, utilitarian, contractarian, and egalitarian—yet is often excluded from quantified approaches despite being foundational to UNFCCC's right to development.</p>
+<p>This principle holds that not all emissions are morally equivalent. Emissions required for meeting basic needs (survival emissions) should be protected from mitigation burdens, while luxury emissions from high consumption can be restricted (Shue 2014). Income below development thresholds should not count toward mitigation capacity. The literature notes that this principle finds support across multiple philosophical traditions -- rights-based, utilitarian, contractarian, and egalitarian -- yet is often excluded from quantified approaches despite being foundational to UNFCCC's right to development.</p>
 <ol>
 <li><strong>Development threshold</strong> - What income level defines subsistence vs. luxury? GDR framework uses $7,500/year (2010 PPP).</li>
 <li><strong>Emissions vs. income protection</strong> - Should you exempt subsistence emissions (energy for cooking, heating, basic mobility) or subsistence income (capacity to purchase any goods, including mitigation)?</li>
@@ -2478,7 +2478,7 @@
 <li><code>preserve_allocation_year_shares=False</code> → Shares adjust with population changes</li>
 </ul>
 <p><strong>Distributional outcome:</strong> Countries with high population shares (India, China) receive proportionally large allocations. Historical emissions and GDP do not affect shares.</p>
-<p><strong>Ethical stance:</strong> The atmosphere is a global commons to be shared equally among all living persons.</p>
+<p><strong>Underlying reasoning:</strong> The atmosphere is treated as a global commons to be shared equally among all living persons.</p>
 <hr />
 <h3 id="example-2-strong-cbdr-rc-responsibility-dominant">Example 2: Strong CBDR-RC (Responsibility Dominant)<a class="headerlink" href="#example-2-strong-cbdr-rc-responsibility-dominant" title="Permanent link">&para;</a></h3>
 <p><strong>Value judgment:</strong> Historical responsibility is the primary basis for differentiation. Countries that caused the climate problem through cumulative emissions should bear proportionally greater mitigation burdens. Equal per capita provides the baseline, but historical excess emissions strongly reduce allocation.</p>
@@ -2502,7 +2502,7 @@
 <li><code>capability_weight=0.0</code> → GDP does not affect allocation</li>
 </ul>
 <p><strong>Distributional outcome:</strong> Industrialized countries with high cumulative emissions (US, EU, Russia) receive very small or negative allocations. Countries with low historical emissions receive allocations above current emissions.</p>
-<p><strong>Ethical stance:</strong> The polluter pays principle is paramount. Those who benefited from fossil-fueled development owe restitution through reduced future allocations.</p>
+<p><strong>Underlying reasoning:</strong> The polluter pays principle is paramount. Those who benefited from fossil-fueled development owe restitution through reduced future allocations.</p>
 <hr />
 <h3 id="example-3-balanced-cbdr-rc-with-subsistence-protection">Example 3: Balanced CBDR-RC with Subsistence Protection<a class="headerlink" href="#example-3-balanced-cbdr-rc-with-subsistence-protection" title="Permanent link">&para;</a></h3>
 <p><strong>Value judgment:</strong> Both historical responsibility and economic capability matter for differentiation, and basic needs emissions should be protected from capability assessments. This configuration operationalizes "equity" as a multidimensional concept combining polluter-pays, ability-to-pay, and subsistence protection principles.</p>
@@ -2529,7 +2529,7 @@
 <li>Gini data configured → Within-country inequality reduces effective capability</li>
 </ul>
 <p><strong>Distributional outcome:</strong> Industrialized countries with high emissions AND high GDP (US, EU) face strong reductions. Least developed countries receive allocations above current emissions, protected by subsistence floor.</p>
-<p><strong>Ethical stance:</strong> Climate equity is multidimensional. Historical harm creates obligations, current wealth determines capacity, and basic needs must be met before assessing mitigation capacity.</p>
+<p><strong>Underlying reasoning:</strong> Climate equity is multidimensional. Historical harm creates obligations, current wealth determines capacity, and basic needs must be met before assessing mitigation capacity.</p>
 <hr />
 <h3 id="example-4-immediate-pathway-with-capability-adjustment">Example 4: Immediate Pathway with Capability Adjustment<a class="headerlink" href="#example-4-immediate-pathway-with-capability-adjustment" title="Permanent link">&para;</a></h3>
 <p><strong>Value judgment:</strong> Annual emissions should reflect fair shares immediately, not gradually converge. Economic capability should reduce allocations in each year, creating differentiated annual trajectories without grandfathering. This is a pathway approach (year-by-year allocations) but NOT a convergence approach (no gradual transition from current emissions).</p>
@@ -2554,7 +2554,7 @@
 <li>Immediate allocation → No grandfathering, high emitters get reduced shares immediately</li>
 </ul>
 <p><strong>Distributional outcome:</strong> High-GDP, high-historical-emission countries (US, EU) face immediate strong reductions from current emissions. Low-income countries receive allocations above current emissions immediately. Year-by-year adjustments track population and GDP changes dynamically.</p>
-<p><strong>Ethical stance:</strong> Fair shares should apply immediately, not phased in over time. Annual allocations respect both historical responsibility and current capacity without rewarding past excess through convergence.</p>
+<p><strong>Underlying reasoning:</strong> Fair shares should apply immediately, not phased in over time. Annual allocations respect both historical responsibility and current capacity without rewarding past excess through convergence.</p>
 <p><strong>Contrast with convergence:</strong> This approach allocates fair shares immediately; convergence (Example 5) gradually transitions from current to fair shares, preserving inequality during the transition period.</p>
 <!-- REFERENCE: per_capita_adjusted() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
@@ -2583,7 +2583,7 @@
 <li>Cumulative constraint → Total pathway emissions respect global budget</li>
 </ul>
 <p><strong>Distributional outcome:</strong> Countries transition from current emissions toward cumulative per capita targets while preserving cumulative shares. High-emission countries have downward trajectories; low-emission countries have upward trajectories. Starting from current emissions means high emitters receive higher near-term allocations, but cumulative totals are budget-preserving (unlike <code>per-capita-convergence</code> which is NOT budget-preserving).</p>
-<p><strong>Ethical stance:</strong> Cumulative per capita shares are the fair target, but immediate redistribution is impractical. Transition pathways balance long-term equity with near-term feasibility while preserving cumulative budgets.</p>
+<p><strong>Underlying reasoning:</strong> Cumulative per capita shares are the fair target, but immediate redistribution is impractical. Transition pathways balance long-term equity with near-term feasibility while preserving cumulative budgets.</p>
 <p><strong>Contrast with immediate pathways:</strong> Cumulative per capita convergence creates gradual transitions from current emissions (preserving near-term inequality) while respecting cumulative budget constraints. Immediate pathways (Example 4) allocate fair shares from the start.</p>
 <hr />
 <h3 id="example-6-development-first-minimal-differentiation">Example 6: Development-First (Minimal Differentiation)<a class="headerlink" href="#example-6-development-first-minimal-differentiation" title="Permanent link">&para;</a></h3>
@@ -2611,7 +2611,7 @@
 <li>Gini data configured → Within-country inequality affects effective capability</li>
 </ul>
 <p><strong>Distributional outcome:</strong> Least developed countries receive allocations well above current emissions. High-income countries face strong capability reductions but light responsibility penalties.</p>
-<p><strong>Ethical stance:</strong> The right to development takes precedence. Wealthy countries should lead mitigation because they have the capacity. Subsistence protection ensures development needs are met before mitigation burdens are assessed.</p>
+<p><strong>Underlying reasoning:</strong> The right to development takes precedence. Wealthy countries should lead mitigation because they have the capacity. Subsistence protection ensures development needs are met before mitigation burdens are assessed.</p>
 <!-- REFERENCE: Configuration format matches AllocationManager in src/fair_shares/library/allocations/manager.py
      Budget approaches: src/fair_shares/library/allocations/budgets/per_capita.py
      Pathway approaches: src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py
@@ -2620,7 +2620,7 @@
 
 <hr />
 <h3 id="what-this-tool-cannot-tell-you">What This Tool Cannot Tell You<a class="headerlink" href="#what-this-tool-cannot-tell-you" title="Permanent link">&para;</a></h3>
-<p>Fair-shares operationalizes principles—it cannot tell you which principles matter. The following questions require normative judgment:</p>
+<p>Fair-shares operationalizes principles -- it cannot tell you which principles to adopt. The following questions require normative judgment, and the literature contains diverse positions on each:</p>
 <ol>
 <li>
 <p><strong>Which principles are morally relevant?</strong> — Should historical responsibility matter? Should capability determine obligations? These are philosophical questions about justice.</p>
