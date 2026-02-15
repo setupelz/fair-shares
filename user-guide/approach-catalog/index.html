@@ -471,6 +471,8 @@
       
         
       
+        
+      
     
     
       
@@ -718,6 +720,29 @@
   
   <span class="md-ellipsis">
     Output Schema
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3.08L19 12c-2.59 0-4.8 1.64-5.64 3.94L12 16c-4.42 0-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4h1c0 1.05.27 2.04.75 2.9L12 21c-4.42 0-8-1.79-8-4zm14 7.08-2.75-3 1.16-1.16L18 18.5l3.59-3.58 1.16 1.41z"/></svg>
+  
+  <span class="md-ellipsis">
+    Data Sources & Licensing
   </span>
   
 
@@ -1726,71 +1751,63 @@
 
 
 <h1 id="approach-catalog">Approach Catalog<a class="headerlink" href="#approach-catalog" title="Permanent link">&para;</a></h1>
-<p>All 10 allocation approaches at a glance.</p>
+<p>All allocation approaches at a glance.</p>
 <ul>
-<li><strong>For principle definitions</strong>: <a href="../../science/climate-equity-concepts/">Climate Equity Concepts</a></li>
-<li><strong>For math</strong>: <a href="../../api/allocations/budgets/">API Reference</a></li>
-<li><strong>For configuration</strong>: <a href="../../science/principle-to-code/">Principle to Code</a></li>
+<li><strong>Which principles does each approach implement?</strong> See <a href="../../science/climate-equity-concepts/">Climate Equity Concepts</a></li>
+<li><strong>How do I configure an approach for specific principles?</strong> See <a href="../../science/principle-to-code/">Principle to Code</a></li>
+<li><strong>What's the math?</strong> See <a href="../../api/allocations/budgets/">API Reference</a></li>
 </ul>
 <hr />
 <h2 id="the-allocation-year-parameter">The Allocation Year Parameter<a class="headerlink" href="#the-allocation-year-parameter" title="Permanent link">&para;</a></h2>
 <p>When <code>allocation_year</code> (budget) or <code>first_allocation_year</code> (pathway) is set in the past, past emissions are subtracted from the budget before allocation. Countries have different <strong>remaining allocations</strong> depending on historical emissions.</p>
-<p>See <a href="../../science/principle-to-code/#historical-responsibility">Historical Responsibility in Principle to Code</a> for configuration details.</p>
+<p>See <a href="../../science/principle-to-code/#historical-responsibility">Principle to Code</a> for configuration details.</p>
 <hr />
 <h2 id="budget-approaches">Budget Approaches<a class="headerlink" href="#budget-approaches" title="Permanent link">&para;</a></h2>
-<p>Allocate a cumulative emissions budget at a single point in time. All approaches incorporate <a href="../../science/climate-equity-concepts/#historical-responsibility">historical responsibility</a> via <code>allocation_year</code>.</p>
+<p>Allocate a cumulative emissions budget at a single point in time.</p>
 <table>
 <thead>
 <tr>
 <th>Approach</th>
-<th>Principles</th>
-<th>Best For</th>
+<th>Use Case</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong><code>equal-per-capita-budget</code></strong></td>
-<td><a href="../../science/climate-equity-concepts/#equal-per-capita-entitlement">Equal per capita</a></td>
-<td>Population-proportional national targets</td>
+<td>Population-proportional targets</td>
 </tr>
 <tr>
 <td><strong><code>per-capita-adjusted-budget</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#ability-to-pay">Capability</a> weights</td>
-<td>Differentiated by GDP and emissions intensity</td>
+<td>Additional weighting by emissions history and GDP</td>
 </tr>
 <tr>
 <td><strong><code>per-capita-adjusted-gini-budget</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#protection-of-basic-needs">Subsistence protection</a></td>
 <td>Accounts for within-country inequality</td>
 </tr>
 </tbody>
 </table>
 <hr />
 <h2 id="pathway-approaches">Pathway Approaches<a class="headerlink" href="#pathway-approaches" title="Permanent link">&para;</a></h2>
-<p>Allocate emissions over multiple years, producing annual shares. All approaches (except <code>per-capita-convergence</code>) incorporate <a href="../../science/climate-equity-concepts/#historical-responsibility">historical responsibility</a> via <code>first_allocation_year</code>.</p>
+<p>Allocate emissions over multiple years, producing annual shares.</p>
 <h3 id="equal-per-capita-family">Equal Per Capita Family<a class="headerlink" href="#equal-per-capita-family" title="Permanent link">&para;</a></h3>
 <table>
 <thead>
 <tr>
 <th>Approach</th>
-<th>Principles</th>
-<th>Best For</th>
+<th>Use Case</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong><code>equal-per-capita</code></strong></td>
-<td><a href="../../science/climate-equity-concepts/#equal-per-capita-entitlement">Equal per capita</a></td>
 <td>Year-by-year population shares</td>
 </tr>
 <tr>
 <td><strong><code>per-capita-adjusted</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#ability-to-pay">Capability</a> weights</td>
-<td>Differentiated annual pathways</td>
+<td>Additional weighting by emissions history and GDP</td>
 </tr>
 <tr>
 <td><strong><code>per-capita-adjusted-gini</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#protection-of-basic-needs">Subsistence protection</a></td>
 <td>Accounts for within-country inequality</td>
 </tr>
 </tbody>
@@ -1801,29 +1818,24 @@
 <thead>
 <tr>
 <th>Approach</th>
-<th>Principles</th>
-<th>Best For</th>
+<th>Use Case</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td><strong><code>per-capita-convergence</code></strong></td>
-<td>Includes <a href="../../science/climate-equity-concepts/#grandfathering">grandfathering</a></td>
 <td>Comparison baseline (not a fair share approach)</td>
 </tr>
 <tr>
 <td><strong><code>cumulative-per-capita-convergence</code></strong></td>
-<td><a href="../../science/climate-equity-concepts/#overview">CBDR-RC</a>, cumulative accounting</td>
 <td>Budget-preserving transitions</td>
 </tr>
 <tr>
 <td><strong><code>cumulative-per-capita-convergence-adjusted</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#ability-to-pay">Capability</a></td>
-<td>With responsibility/capability weights</td>
+<td>Additional weighting by emissions history and GDP</td>
 </tr>
 <tr>
 <td><strong><code>cumulative-per-capita-convergence-gini-adjusted</code></strong></td>
-<td>Above + <a href="../../science/climate-equity-concepts/#protection-of-basic-needs">Subsistence protection</a></td>
 <td>Accounts for within-country inequality</td>
 </tr>
 </tbody>
@@ -1859,10 +1871,7 @@
 <p>See <a href="../../science/principle-to-code/">Principle to Code</a> for detailed configuration.</p>
 <hr />
 <h2 id="registry-reference">Registry Reference<a class="headerlink" href="#registry-reference" title="Permanent link">&para;</a></h2>
-<!-- This section links to the authoritative registry in the codebase -->
-
-<p>All approaches are registered in <a href="https://github.com/setupelz/fair-shares/blob/main/src/fair_shares/library/allocations/registry.py"><code>src/fair_shares/library/allocations/registry.py</code></a>. The registry maps approach names (kebab-case) to implementation functions.</p>
-<p>To get a list of all available approaches programmatically:</p>
+<p>All approaches are registered in <a href="https://github.com/setupelz/fair-shares/blob/main/src/fair_shares/library/allocations/registry.py"><code>src/fair_shares/library/allocations/registry.py</code></a>.</p>
 <div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">from</span><span class="w"> </span><span class="nn">fair_shares.library.allocations.registry</span><span class="w"> </span><span class="kn">import</span> <span class="n">get_allocation_functions</span>
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
 </span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">approaches</span> <span class="o">=</span> <span class="n">get_allocation_functions</span><span class="p">()</span>
@@ -1870,7 +1879,7 @@
 </span></code></pre></div>
 <hr />
 <h2 id="adding-approaches">Adding Approaches<a class="headerlink" href="#adding-approaches" title="Permanent link">&para;</a></h2>
-<p>See the <a href="https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/">Developer Guide</a>.</p>
+<p>See the <a href="../../dev-guide/adding-approaches/">Developer Guide</a>.</p>
 
 
 

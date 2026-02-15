@@ -471,6 +471,8 @@
       
         
       
+        
+      
     
     
       
@@ -596,6 +598,29 @@
   
   <span class="md-ellipsis">
     Output Schema
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="data-sources/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3.08L19 12c-2.59 0-4.8 1.64-5.64 3.94L12 16c-4.42 0-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4h1c0 1.05.27 2.04.75 2.9L12 21c-4.42 0-8-1.79-8-4zm14 7.08-2.75-3 1.16-1.16L18 18.5l3.59-3.58 1.16 1.41z"/></svg>
+  
+  <span class="md-ellipsis">
+    Data Sources & Licensing
   </span>
   
 
@@ -1504,9 +1529,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#outputs" class="md-nav__link">
+  <a href="#outputs-provenance" class="md-nav__link">
     <span class="md-ellipsis">
-      Outputs
+      Outputs &amp; Provenance
     </span>
   </a>
   
@@ -1606,7 +1631,8 @@
 </table>
 <p>Both workflows produce relative shares (0-1) and absolute emissions (Mt CO2e).</p>
 <hr />
-<h2 id="outputs">Outputs<a class="headerlink" href="#outputs" title="Permanent link">&para;</a></h2>
+<h2 id="outputs-provenance">Outputs &amp; Provenance<a class="headerlink" href="#outputs-provenance" title="Permanent link">&para;</a></h2>
+<p>All outputs include <strong>full parameter provenance</strong> for reproducibility:</p>
 <table>
 <thead>
 <tr>
@@ -1631,8 +1657,20 @@
 <td>Results across multiple approaches/parameters</td>
 <td>CSV (wide)</td>
 </tr>
+<tr>
+<td>Parameter manifest</td>
+<td>All parameter combinations used</td>
+<td>CSV</td>
+</tr>
 </tbody>
 </table>
+<p><strong>Parquet files contain complete metadata:</strong></p>
+<ul>
+<li>Every parameter value (weights, years, functional forms)</li>
+<li>Data source identifiers (<code>emissions-source</code>, <code>gdp-source</code>, <code>population-source</code>, etc.)</li>
+<li>Approach names and configuration</li>
+</ul>
+<p>This enables exact reproduction and comparison of results. See <strong><a href="output-schema/">Output Schema</a></strong> for full column documentation.</p>
 <hr />
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Data sources are configured in <code>conf/data_sources/</code>.</p>
@@ -1666,6 +1704,7 @@
 </tr>
 </tbody>
 </table>
+<p>All bundled data is permissively licensed (CC-BY-4.0 or similar). See <strong><a href="data-sources/">Data Sources &amp; Licensing</a></strong> for attribution requirements.</p>
 <h3 id="target-sources">Target Sources<a class="headerlink" href="#target-sources" title="Permanent link">&para;</a></h3>
 <p>fair-shares currently supports three target sources:</p>
 <table>

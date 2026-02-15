@@ -471,6 +471,8 @@
       
         
       
+        
+      
     
     
       
@@ -773,6 +775,29 @@
   
   <span class="md-ellipsis">
     Output Schema
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3.08L19 12c-2.59 0-4.8 1.64-5.64 3.94L12 16c-4.42 0-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4h1c0 1.05.27 2.04.75 2.9L12 21c-4.42 0-8-1.79-8-4zm14 7.08-2.75-3 1.16-1.16L18 18.5l3.59-3.58 1.16 1.41z"/></svg>
+  
+  <span class="md-ellipsis">
+    Data Sources & Licensing
   </span>
   
 
@@ -1845,6 +1870,10 @@
 <li><code>403_example_iamc_pathway_allocations.ipynb</code> - Pathway allocation examples</li>
 </ul>
 <p>Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use <a href="https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/">country-fair-shares</a>.</p>
+<div class="admonition info">
+<p class="admonition-title">Regions come from your data</p>
+</div>
+<p>The library uses <strong>whatever regions are in your IAMC input file</strong>. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.</p>
 <hr />
 <h2 id="data-requirements">Data Requirements<a class="headerlink" href="#data-requirements" title="Permanent link">&para;</a></h2>
 <h3 id="iamc-format">IAMC Format<a class="headerlink" href="#iamc-format" title="Permanent link">&para;</a></h3>
@@ -2005,6 +2034,7 @@
 <li><strong><a href="https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/">country-fair-shares</a></strong> - Full pipeline for country-level analysis</li>
 <li><strong><a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></strong> - Theoretical foundations</li>
 <li><strong><a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/">Budget Functions API</a></strong> - Function signatures</li>
+<li><strong><a href="../data-sources/">Data Sources &amp; Licensing</a></strong> - Bundled data and attribution requirements</li>
 </ul>
 
 
