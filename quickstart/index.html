@@ -501,9 +501,27 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#notebook-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notebook Format
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-notebooks" class="md-nav__link">
     <span class="md-ellipsis">
       Running Notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing-make" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing Make
     </span>
   </a>
   
@@ -1602,9 +1620,27 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#notebook-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      Notebook Format
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#running-notebooks" class="md-nav__link">
     <span class="md-ellipsis">
       Running Notebooks
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#installing-make" class="md-nav__link">
+    <span class="md-ellipsis">
+      Installing Make
     </span>
   </a>
   
@@ -1647,6 +1683,7 @@
 <li>Python 3.11+</li>
 <li>Git</li>
 <li><a href="https://github.com/astral-sh/uv">uv</a></li>
+<li><code>make</code> (optional but recommended — see <a href="#installing-make">Installing Make</a> below)</li>
 </ul>
 <h2 id="installation">Installation<a class="headerlink" href="#installation" title="Permanent link">&para;</a></h2>
 <div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/setupelz/fair-shares.git
@@ -1656,8 +1693,27 @@
 <p>Verify:</p>
 <div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-1-1"><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/unit
 </span></code></pre></div>
+<h2 id="notebook-format">Notebook Format<a class="headerlink" href="#notebook-format" title="Permanent link">&para;</a></h2>
+<p>This project uses <a href="https://jupytext.readthedocs.io/">jupytext</a> to store notebooks as plain Python files (<code>.py</code>) in the <code>py:percent</code> format. This means:</p>
+<ul>
+<li><strong><code>.py</code> files</strong> are the source format — version-controlled, clean diffs, easy to edit in any IDE</li>
+<li><strong><code>.ipynb</code> files</strong> are generated from the <code>.py</code> files — used for interactive execution in JupyterLab</li>
+</ul>
+<p>After cloning (or pulling new changes), sync the <code>.ipynb</code> files:</p>
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>make<span class="w"> </span>sync-ipynb
+</span></code></pre></div>
+<details class="note">
+<summary>Without <code>make</code></summary>
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-3-1"><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a>uv<span class="w"> </span>run<span class="w"> </span>jupytext<span class="w"> </span>--sync<span class="w"> </span>notebooks/*.py
+</span><span id="__span-3-2"><a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a>uv<span class="w"> </span>run<span class="w"> </span>jupytext<span class="w"> </span>--set-formats<span class="w"> </span>ipynb,py:percent<span class="w"> </span>notebooks/*.py
+</span></code></pre></div>
+</details>
+<div class="admonition tip">
+<p class="admonition-title">Tip</p>
+<p>You don't <em>need</em> <code>.ipynb</code> files — you can run the <code>.py</code> files directly with <code>uv run python notebooks/301_custom_fair_share_allocation.py</code>. The <code>.ipynb</code> format is only needed if you want the interactive JupyterLab experience.</p>
+</div>
 <h2 id="running-notebooks">Running Notebooks<a class="headerlink" href="#running-notebooks" title="Permanent link">&para;</a></h2>
-<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-2-1"><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a>uv<span class="w"> </span>run<span class="w"> </span>jupyter<span class="w"> </span>lab
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-4-1"><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>uv<span class="w"> </span>run<span class="w"> </span>jupyter<span class="w"> </span>lab
 </span></code></pre></div>
 <table>
 <thead>
@@ -1678,6 +1734,33 @@
 </tbody>
 </table>
 <p>See <a href="https://setupelz.github.io/fair-shares/user-guide/">User Guide</a> for detailed workflow documentation.</p>
+<h2 id="installing-make">Installing Make<a class="headerlink" href="#installing-make" title="Permanent link">&para;</a></h2>
+<p><code>make</code> is a standard build tool used to run project commands conveniently. It is optional — every <code>make</code> target has an equivalent <code>uv</code> command shown in the <a href="https://github.com/setupelz/fair-shares/blob/main/Makefile">Makefile</a>.</p>
+<div class="tabbed-set tabbed-alternate" data-tabs="1:4"><input checked="checked" id="__tabbed_1_1" name="__tabbed_1" type="radio" /><input id="__tabbed_1_2" name="__tabbed_1" type="radio" /><input id="__tabbed_1_3" name="__tabbed_1" type="radio" /><input id="__tabbed_1_4" name="__tabbed_1" type="radio" /><div class="tabbed-labels"><label for="__tabbed_1_1">macOS</label><label for="__tabbed_1_2">Linux (Debian/Ubuntu)</label><label for="__tabbed_1_3">Linux (Fedora/RHEL)</label><label for="__tabbed_1_4">Windows</label></div>
+<div class="tabbed-content">
+<div class="tabbed-block">
+<p>Already installed with Xcode Command Line Tools:
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>xcode-select<span class="w"> </span>--install
+</span></code></pre></div></p>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-6-1"><a id="__codelineno-6-1" name="__codelineno-6-1" href="#__codelineno-6-1"></a>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>make
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-7-1"><a id="__codelineno-7-1" name="__codelineno-7-1" href="#__codelineno-7-1"></a>sudo<span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>make
+</span></code></pre></div>
+</div>
+<div class="tabbed-block">
+<p>Install via <a href="https://chocolatey.org/install">Chocolatey</a>:
+<div class="language-powershell highlight"><span class="filename">PowerShell</span><pre><span></span><code><span id="__span-8-1"><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="n">choco</span> <span class="n">install</span> <span class="n">make</span>
+</span></code></pre></div></p>
+<p>Or via <a href="https://learn.microsoft.com/en-us/windows/package-manager/winget/">winget</a>:
+<div class="language-powershell highlight"><span class="filename">PowerShell</span><pre><span></span><code><span id="__span-9-1"><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="n">winget</span> <span class="n">install</span> <span class="n">GnuWin32</span><span class="p">.</span><span class="n">Make</span>
+</span></code></pre></div></p>
+</div>
+</div>
+</div>
 
 
 

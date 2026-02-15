@@ -1542,6 +1542,21 @@
     </span>
   </a>
   
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#target-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Target Sources
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
 </li>
       
         <li class="md-nav__item">
@@ -1654,7 +1669,7 @@
 <tbody>
 <tr>
 <td>Target</td>
-<td><code>rcbs</code> (budgets), <code>ar6</code> (pathways), <code>rcb-pathways</code></td>
+<td><code>rcbs</code>, <code>ar6</code>, <code>rcb-pathways</code></td>
 </tr>
 <tr>
 <td>Emissions</td>
@@ -1674,7 +1689,43 @@
 </tr>
 </tbody>
 </table>
-<p>The <code>rcb-pathways</code> target converts a global remaining carbon budget into an annual emission pathway using exponential decay, then allocates it among countries. Set <code>target: "rcb-pathways"</code> in your data source config. See <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">Other Operations</a> for details.</p>
+<h3 id="target-sources">Target Sources<a class="headerlink" href="#target-sources" title="Permanent link">&para;</a></h3>
+<p>fair-shares currently supports three target sources:</p>
+<table>
+<thead>
+<tr>
+<th>Target</th>
+<th>Type</th>
+<th>Allocation Functions</th>
+<th>Use When</th>
+<th>Output</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>rcbs</code></td>
+<td>Budget</td>
+<td>Budget approaches</td>
+<td>Calculating cumulative national budget allocations</td>
+<td>Single value per country</td>
+</tr>
+<tr>
+<td><code>ar6</code></td>
+<td>Pathway</td>
+<td>Pathway approaches</td>
+<td>Allocating annual emissions following AR6 scenarios</td>
+<td>Time series of annual values</td>
+</tr>
+<tr>
+<td><code>rcb-pathways</code></td>
+<td>Hybrid</td>
+<td>Pathway approaches</td>
+<td>Using budget data but need year-by-year pathways</td>
+<td>Budget → global pathway → allocated annually</td>
+</tr>
+</tbody>
+</table>
+<p><strong><code>rcb-pathways</code> workflow:</strong> First converts a global remaining carbon budget into a global annual emission pathway (using exponential decay), then allocates that pathway among countries using pathway allocation functions. See <a href="https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation">Other Operations</a> for details on pathway generation.</p>
 <hr />
 <h2 id="choosing-an-approach">Choosing an Approach<a class="headerlink" href="#choosing-an-approach" title="Permanent link">&para;</a></h2>
 <p>Two questions:</p>
