@@ -1323,8 +1323,6 @@
       
         
       
-        
-      
     
     
       
@@ -1462,9 +1460,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#before-you-begin-the-principles-first-requirement" class="md-nav__link">
+  <a href="#before-you-begin" class="md-nav__link">
     <span class="md-ellipsis">
-      Before You Begin: The Principles-First Requirement
+      Before You Begin
     </span>
   </a>
   
@@ -1594,6 +1592,15 @@
   <a href="#common-utilities" class="md-nav__link">
     <span class="md-ellipsis">
       Common Utilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Before Merging
     </span>
   </a>
   
@@ -1652,27 +1659,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../testing-checklist/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Testing Checklist
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1718,9 +1704,9 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#before-you-begin-the-principles-first-requirement" class="md-nav__link">
+  <a href="#before-you-begin" class="md-nav__link">
     <span class="md-ellipsis">
-      Before You Begin: The Principles-First Requirement
+      Before You Begin
     </span>
   </a>
   
@@ -1850,6 +1836,15 @@
   <a href="#common-utilities" class="md-nav__link">
     <span class="md-ellipsis">
       Common Utilities
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#before-merging" class="md-nav__link">
+    <span class="md-ellipsis">
+      Before Merging
     </span>
   </a>
   
@@ -1913,68 +1908,26 @@
 </tbody>
 </table>
 <p>Each approach is registered in <code>allocations/registry.py</code>.</p>
-<p><strong>Essential Resources:</strong></p>
-<ul>
-<li><a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> - Required structure for all allocation approach docstrings</li>
-<li><a href="https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/">Testing Checklist</a> - Pre-merge validation checklist for new approaches</li>
-</ul>
 <hr />
-<h2 id="before-you-begin-the-principles-first-requirement">Before You Begin: The Principles-First Requirement<a class="headerlink" href="#before-you-begin-the-principles-first-requirement" title="Permanent link">&para;</a></h2>
-<p>Every allocation approach in fair-shares operationalizes specific equity principles. Before writing code, you must be able to answer:</p>
+<h2 id="before-you-begin">Before You Begin<a class="headerlink" href="#before-you-begin" title="Permanent link">&para;</a></h2>
+<p>Every allocation approach operationalizes specific equity principles. Before writing code, you should be able to explain:</p>
 <ol>
-<li>
-<p><strong>What equity principle(s) does this approach implement?</strong>
-   (e.g., equal rights to atmosphere, CBDR-RC, capability, subsistence protection)</p>
-</li>
-<li>
-<p><strong>What value judgments are embedded in the approach?</strong>
-   (e.g., start date for historical responsibility, income thresholds)</p>
-</li>
-<li>
-<p><strong>How does it relate to existing approaches?</strong>
-   (Is it a variant? A new principle? A combination?)</p>
-</li>
+<li>What equity principle(s) it implements</li>
+<li>What value judgments are embedded</li>
+<li>How it relates to existing approaches</li>
 </ol>
-<p>If you cannot answer these questions, read <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle-to-Code Workflow</a> before proceeding.</p>
-<div class="admonition warning">
-<p class="admonition-title">Why Equity Grounding Matters</p>
-<p><strong>This is not optional.</strong> Allocation approaches without clear principled foundations cannot be properly documented, tested, or explained to users.</p>
-<p>Climate equity is inherently normative — every allocation approach embeds value judgments about fairness, responsibility, and capability. Without explicit grounding in equity principles:</p>
-<ul>
-<li><strong>Users cannot make informed choices</strong> — They need to understand what values each approach represents</li>
-<li><strong>Documentation becomes incomplete</strong> — The <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> requires citing academic sources and explaining normative choices</li>
-<li><strong>Testing becomes arbitrary</strong> — How do you validate behavior without knowing what the approach <em>should</em> do?</li>
-<li><strong>Maintenance becomes impossible</strong> — Future contributors cannot understand intent or make principled modifications</li>
-</ul>
-<p>The fair-shares project exists to operationalize climate equity principles transparently. Approaches that hide their value judgments undermine this core mission.</p>
-</div>
+<p>If unclear, read <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Principle-to-Code</a> first.</p>
 <hr />
 <h2 id="contribution-workflow">Contribution Workflow<a class="headerlink" href="#contribution-workflow" title="Permanent link">&para;</a></h2>
-<p>Follow this workflow when adding a new allocation approach:</p>
-<pre class="mermaid"><code>flowchart TD
-    A[Identify Principles] --&gt; B[Design Approach]
-    B --&gt; C[Write Docstring FIRST]
-    C --&gt; D[Implement Function]
-    D --&gt; E[Add Tests]
-    E --&gt; F[Register in Registry]
-    F --&gt; G[Document in Science Docs]
-
-    C --&gt; C1{Docstring Complete?}
-    C1 --&gt;|No| C2[Add: Equity Grounding&lt;br/&gt;Mathematical Foundation&lt;br/&gt;Parameter Effects&lt;br/&gt;Examples]
-    C2 --&gt; C
-    C1 --&gt;|Yes| D
-
-    E --&gt; E1{Tests Pass?}
-    E1 --&gt;|No| E2[Fix Implementation]
-    E2 --&gt; E
-    E1 --&gt;|Yes| F
-
-    style C fill:#ffeb3b
-    style C1 fill:#fff59d
-    style C2 fill:#fff59d</code></pre>
+<pre class="mermaid"><code>flowchart LR
+    A[Identify Principles] --&gt; B[Implement Function]
+    B --&gt; C[Add Tests]
+    C --&gt; D[Register]
+    D --&gt; E[Update Docs if Needed]</code></pre>
 <p><strong>Key principles:</strong></p>
 <ol>
-<li><strong>Docstring before implementation</strong> - Writing the docstring first forces you to clarify the equity grounding, mathematical foundation, and parameter effects before coding</li>
+<li><strong>Know your principles first</strong> - You should be able to explain what equity principle the approach implements before writing code</li>
+<li><strong>Docstrings include math</strong> - Document the mathematical foundation in the docstring (see existing approaches for examples)</li>
 <li><strong>Tests validate behavior</strong> - Tests should verify both correctness and that parameters have expected effects</li>
 <li><strong>Registration makes it discoverable</strong> - Until registered, the approach cannot be used via the high-level API</li>
 </ol>
@@ -2153,17 +2106,18 @@
 </span><span id="__span-4-38"><a id="__codelineno-4-38" name="__codelineno-4-38" href="#__codelineno-4-38"></a>    <span class="k">assert</span> <span class="n">result_low</span><span class="o">.</span><span class="n">approach</span> <span class="o">==</span> <span class="s2">&quot;my-new-budget&quot;</span>
 </span><span id="__span-4-39"><a id="__codelineno-4-39" name="__codelineno-4-39" href="#__codelineno-4-39"></a>    <span class="k">assert</span> <span class="n">result_high</span><span class="o">.</span><span class="n">approach</span> <span class="o">==</span> <span class="s2">&quot;my-new-budget&quot;</span>
 </span></code></pre></div>
-<p><strong>Before merging</strong>, complete all validation steps in the <a href="https://setupelz.github.io/fair-shares/dev-guide/testing-checklist/">Testing Checklist</a>.</p>
+<p><strong>Key test assertions:</strong></p>
+<ul>
+<li>Shares sum to 1.0: <code>abs(shares.sum() - 1.0) &lt; 1e-10</code></li>
+<li>Approach name matches registry key</li>
+<li>Parameters stored in result object</li>
+</ul>
 <hr />
 <h2 id="step-6-document">Step 6: Document<a class="headerlink" href="#step-6-document" title="Permanent link">&para;</a></h2>
 <ol>
-<li><strong>Docstring</strong> - Follow the comprehensive structure in <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a></li>
-<li>Include Mathematical Foundation with LaTeX equations</li>
-<li>Document all parameters with cross-references to parameter-effects.md</li>
-<li>Add Notes section with theoretical grounding and normative choices</li>
-<li>Provide working Examples using <code>create_example_data()</code></li>
+<li><strong>Docstring</strong> - See <a href="https://setupelz.github.io/fair-shares/dev-guide/docstring-template/">Docstring Template</a> for required sections</li>
 <li><strong>Science docs</strong> - Add to <code>docs/science/allocations.md</code> if introducing new principle</li>
-<li><strong>API docs</strong> - Will auto-generate from docstrings via mkdocstrings</li>
+<li><strong>API docs</strong> - Auto-generated from docstrings</li>
 </ol>
 <hr />
 <h2 id="existing-implementations-as-examples">Existing Implementations as Examples<a class="headerlink" href="#existing-implementations-as-examples" title="Permanent link">&para;</a></h2>
@@ -2222,6 +2176,18 @@
 </tbody>
 </table>
 <p>See <a href="https://setupelz.github.io/fair-shares/api/utils/core/">Utils API</a> for full documentation.</p>
+<hr />
+<h2 id="before-merging">Before Merging<a class="headerlink" href="#before-merging" title="Permanent link">&para;</a></h2>
+<div class="language-bash highlight"><span class="filename">Bash</span><pre><span></span><code><span id="__span-5-1"><a id="__codelineno-5-1" name="__codelineno-5-1" href="#__codelineno-5-1"></a>uv<span class="w"> </span>run<span class="w"> </span>pytest<span class="w"> </span>tests/<span class="w"> </span>-v<span class="w">                    </span><span class="c1"># Run tests</span>
+</span><span id="__span-5-2"><a id="__codelineno-5-2" name="__codelineno-5-2" href="#__codelineno-5-2"></a>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>check<span class="w"> </span>src/<span class="w"> </span>tests/<span class="w">              </span><span class="c1"># Lint</span>
+</span><span id="__span-5-3"><a id="__codelineno-5-3" name="__codelineno-5-3" href="#__codelineno-5-3"></a>uv<span class="w"> </span>run<span class="w"> </span>ruff<span class="w"> </span>format<span class="w"> </span>src/<span class="w"> </span>tests/<span class="w">             </span><span class="c1"># Format</span>
+</span><span id="__span-5-4"><a id="__codelineno-5-4" name="__codelineno-5-4" href="#__codelineno-5-4"></a>uv<span class="w"> </span>run<span class="w"> </span>mkdocs<span class="w"> </span>build<span class="w"> </span>--strict<span class="w">               </span><span class="c1"># Check docs build</span>
+</span></code></pre></div>
+<p><strong>Common issues:</strong></p>
+<ul>
+<li><strong>Shares don't sum to 1.0</strong> — Check for division by zero or NaN values</li>
+<li><strong>Missing year columns</strong> — Use <code>ensure_string_year_columns()</code> on input DataFrames</li>
+</ul>
 
 
 

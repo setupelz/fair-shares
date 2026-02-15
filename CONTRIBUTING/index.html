@@ -1323,8 +1323,6 @@
       
         
       
-        
-      
     
     
       
@@ -1465,15 +1463,6 @@
 </li>
         
           <li class="md-nav__item">
-  <a href="#dont-invent-formulas" class="md-nav__link">
-    <span class="md-ellipsis">
-      Don't invent formulas
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
   <a href="#test-code-examples" class="md-nav__link">
     <span class="md-ellipsis">
       Test code examples
@@ -1590,27 +1579,6 @@
 
               
             
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../dev-guide/testing-checklist/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Testing Checklist
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
           </ul>
         </nav>
       
@@ -1678,15 +1646,6 @@
   <a href="#ground-technical-claims" class="md-nav__link">
     <span class="md-ellipsis">
       Ground technical claims
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#dont-invent-formulas" class="md-nav__link">
-    <span class="md-ellipsis">
-      Don't invent formulas
     </span>
   </a>
   
@@ -1809,10 +1768,6 @@
 <div class="language-markdown highlight"><span class="filename">Markdown</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>&lt;!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py
 </span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>     Mathematical details: docs/science/allocations.md --&gt;
 </span></code></pre></div>
-<h3 id="dont-invent-formulas">Don't invent formulas<a class="headerlink" href="#dont-invent-formulas" title="Permanent link">&para;</a></h3>
-<p>The allocation system uses multiplicative adjustments, not additive components. This is the most common documentation error:</p>
-<p><strong>Wrong:</strong> "With weights (0.5, 0.3, 0.2), the allocation is 50% population, 30% responsibility, 20% capability"</p>
-<p><strong>Right:</strong> "Weights control the strength of inverse adjustments to population-based allocation. See <code>docs/science/allocations.md</code> for mathematical details."</p>
 <h3 id="test-code-examples">Test code examples<a class="headerlink" href="#test-code-examples" title="Permanent link">&para;</a></h3>
 <p>Run every code example before documenting it. Verify output matches claims. Check that comments are accurate -- especially parameter explanations.</p>
 <h3 id="build-locally">Build locally<a class="headerlink" href="#build-locally" title="Permanent link">&para;</a></h3>

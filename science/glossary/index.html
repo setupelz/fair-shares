@@ -1473,66 +1473,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Equity Principles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cbdr-rc" class="md-nav__link">
-    <span class="md-ellipsis">
-      CBDR-RC
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#egalitarianism-ethical-tradition" class="md-nav__link">
-    <span class="md-ellipsis">
-      Egalitarianism (Ethical Tradition)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#equal-rights-to-atmosphere-principle" class="md-nav__link">
-    <span class="md-ellipsis">
-      Equal Rights to Atmosphere (Principle)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#grandfathering" class="md-nav__link">
-    <span class="md-ellipsis">
-      Grandfathering
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#historical-responsibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      Historical Responsibility
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#subsistence-protection" class="md-nav__link">
-    <span class="md-ellipsis">
-      Subsistence Protection
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -1613,8 +1553,6 @@
       
         
           
-        
-      
         
       
         
@@ -1751,27 +1689,6 @@
   
   <span class="md-ellipsis">
     Docstring Template
-  </span>
-  
-
-      </a>
-    </li>
-  
-
-              
-            
-              
-                
-  
-  
-  
-  
-    <li class="md-nav__item">
-      <a href="../../dev-guide/testing-checklist/" class="md-nav__link">
-        
-  
-  <span class="md-ellipsis">
-    Testing Checklist
   </span>
   
 
@@ -2000,66 +1917,6 @@
     </span>
   </a>
   
-    <nav class="md-nav" aria-label="Equity Principles">
-      <ul class="md-nav__list">
-        
-          <li class="md-nav__item">
-  <a href="#cbdr-rc" class="md-nav__link">
-    <span class="md-ellipsis">
-      CBDR-RC
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#egalitarianism-ethical-tradition" class="md-nav__link">
-    <span class="md-ellipsis">
-      Egalitarianism (Ethical Tradition)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#equal-rights-to-atmosphere-principle" class="md-nav__link">
-    <span class="md-ellipsis">
-      Equal Rights to Atmosphere (Principle)
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#grandfathering" class="md-nav__link">
-    <span class="md-ellipsis">
-      Grandfathering
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#historical-responsibility" class="md-nav__link">
-    <span class="md-ellipsis">
-      Historical Responsibility
-    </span>
-  </a>
-  
-</li>
-        
-          <li class="md-nav__item">
-  <a href="#subsistence-protection" class="md-nav__link">
-    <span class="md-ellipsis">
-      Subsistence Protection
-    </span>
-  </a>
-  
-</li>
-        
-      </ul>
-    </nav>
-  
 </li>
       
         <li class="md-nav__item">
@@ -2106,121 +1963,95 @@
 <p>This page provides definitions for key terms used throughout the fair-shares documentation and codebase.</p>
 <hr />
 <h2 id="allocation-approaches">Allocation Approaches<a class="headerlink" href="#allocation-approaches" title="Permanent link">&para;</a></h2>
-<p>All approach names use <code>kebab-case</code> notation. See the <a href="https://setupelz.github.io/fair-shares/user-guide/approach-catalog/">Approach Catalog</a> for complete details.</p>
+<p>All approach names use <code>kebab-case</code> notation. For complete details, see the <a href="../../user-guide/approach-catalog/">Approach Catalog</a>.</p>
+<div class="admonition info">
+<p class="admonition-title">Key concept: allocation_year</p>
+<p>All approaches incorporate historical responsibility via <code>allocation_year</code> (budget) or <code>first_allocation_year</code> (pathway). When set in the past, emissions from that year to present are subtracted, leaving different <strong>remaining allocations</strong> for each country. The <code>*-adjusted</code> approaches add further weighting on top of this mechanism.</p>
+</div>
 <h3 id="budget-approaches">Budget Approaches<a class="headerlink" href="#budget-approaches" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>equal-per-capita-budget</code></strong></dt>
-<dd>Allocates a cumulative carbon budget proportional to population shares at the allocation year. Operationalizes the equal rights to atmosphere principle without historical responsibility or capability adjustments.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Egalitarianism</a></dd>
+<dd>Population-proportional allocation. Historical accountability via <code>allocation_year</code> only.</dd>
 <dt><strong><code>per-capita-adjusted-budget</code></strong></dt>
-<dd>Allocates a cumulative carbon budget based on population, adjusted by historical responsibility and economic capability. Operationalizes CBDR-RC principles.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">CBDR-RC</a></dd>
+<dd>Adds <code>responsibility_weight</code> and <code>capability_weight</code> adjustments. CBDR-RC.</dd>
 <dt><strong><code>per-capita-adjusted-gini-budget</code></strong></dt>
-<dd>Allocates a cumulative carbon budget with responsibility and capability adjustments, accounting for intra-national inequality via the Gini coefficient. Operationalizes capability (ability to pay) with subsistence protection.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a></dd>
+<dd>Adds Gini adjustment for within-country inequality. Subsistence protection.</dd>
 </dl>
 <h3 id="pathway-approaches-standard">Pathway Approaches (Standard)<a class="headerlink" href="#pathway-approaches-standard" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>equal-per-capita</code></strong></dt>
-<dd>Allocates annual emissions along a pathway proportional to population shares. Equal rights to atmosphere principle applied year-by-year.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#equal_per_capita">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Egalitarianism</a></dd>
+<dd>Annual population-proportional shares. Historical accountability via <code>first_allocation_year</code>.</dd>
 <dt><strong><code>per-capita-adjusted</code></strong></dt>
-<dd>Allocates annual emissions along a pathway with historical responsibility and capability adjustments. CBDR-RC principles applied year-by-year.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">CBDR-RC</a></dd>
+<dd>Annual shares with responsibility/capability adjustments. CBDR-RC.</dd>
 <dt><strong><code>per-capita-adjusted-gini</code></strong></dt>
-<dd>Allocates annual emissions along a pathway with responsibility, capability, and inequality adjustments. Includes subsistence protection.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a></dd>
+<dd>Annual shares with Gini adjustment. Subsistence protection.</dd>
 </dl>
 <h3 id="pathway-approaches-convergence">Pathway Approaches (Convergence)<a class="headerlink" href="#pathway-approaches-convergence" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>per-capita-convergence</code></strong></dt>
-<dd>Transitions from current emission patterns toward equal per capita emissions by a convergence year. <strong>Note:</strong> Privileges current emission patterns during transition and is not considered a fair share approach.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_convergence">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Convergence</a></dd>
+<dd>Gradual transition to equal per capita. <strong>Not a fair share approach</strong>—includes grandfathering.</dd>
 <dt><strong><code>cumulative-per-capita-convergence</code></strong></dt>
-<dd>Budget-preserving convergence approach that distributes equal cumulative per capita shares from current emissions over time. Preserves cumulative per capita totals while creating smooth transition pathways. Can lead to steep curves when starting from current emissions. <strong>This is a fair share approach</strong> (unlike <code>per-capita-convergence</code> which includes grandfathering).</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence">API Reference</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
-<dt><strong><code>cumulative-per-capita-convergence-adjusted</code></strong></dt>
-<dd>Cumulative convergence approach with additional historical responsibility and capability adjustments via weighting parameters.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted">API Reference</a></dd>
-<dt><strong><code>cumulative-per-capita-convergence-gini-adjusted</code></strong></dt>
-<dd>Cumulative convergence approach with responsibility, capability, and inequality adjustments.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence_adjusted_gini">API Reference</a></dd>
+<dd>Budget-preserving convergence. Distributes cumulative per capita shares over time. <strong>Fair share approach.</strong></dd>
+<dt><strong><code>cumulative-per-capita-convergence-adjusted</code></strong> / <strong><code>-gini-adjusted</code></strong></dt>
+<dd>Convergence with responsibility/capability/Gini adjustments.</dd>
 </dl>
+<p>See: <a href="../../api/allocations/budgets/">API Reference</a> · <a href="../principle-to-code/">From Principle to Code</a></p>
 <hr />
 <h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<p>For detailed parameter effects and examples, see <a href="../parameter-effects/">Parameter Effects</a>.</p>
 <h3 id="core-parameters">Core Parameters<a class="headerlink" href="#core-parameters" title="Permanent link">&para;</a></h3>
 <dl>
-<dt><strong><code>allocation_year</code></strong> (type: <code>int</code>)</dt>
-<dd>The year when entitlements begin. Operationalizes historical responsibility: earlier years imply historical over-emitters have already consumed their fair share from that date forward. No neutral default—this is a normative choice.</dd>
-<dd>Constraints: Must be ≥ <code>historical_responsibility_year</code> if responsibility adjustment is used</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
+<dt><strong><code>allocation_year</code></strong> / <strong><code>first_allocation_year</code></strong> (type: <code>int</code>)</dt>
+<dd>Start year for cumulative accounting. Past emissions subtracted → different remaining allocations. No neutral default.</dd>
+<dd>Budget approaches use <code>allocation_year</code>; pathway approaches use <code>first_allocation_year</code>.</dd>
 <dt><strong><code>convergence_year</code></strong> (type: <code>int</code>)</dt>
-<dd>Target year by which per capita emissions converge to equality. Used only in convergence approaches.</dd>
-<dd>Constraints: Must be &gt; <code>allocation_year</code></dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Convergence</a></dd>
+<dd>Target year for per capita convergence. Must be &gt; allocation year. Convergence approaches only.</dd>
 <dt><strong><code>emission_category</code></strong> (type: <code>str</code>)</dt>
-<dd>The emission species being allocated (e.g., <code>"CO2"</code>, <code>"Kyoto GHG"</code>). Must match data sources.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></dd>
+<dd>Emission species (e.g., <code>"CO2"</code>, <code>"Kyoto GHG"</code>). Must match data sources.</dd>
 <dt><strong><code>group_level</code></strong> (type: <code>str</code>, default: <code>"iso3c"</code>)</dt>
-<dd>MultiIndex level representing countries/regions (typically <code>"iso3c"</code> for ISO 3166-1 alpha-3 codes).</dd>
-<dd>See: <a href="#timeseriesdataframe">TimeseriesDataFrame</a></dd>
+<dd>Index level for countries/regions (ISO 3166-1 alpha-3 codes).</dd>
 </dl>
 <h3 id="adjustment-weights">Adjustment Weights<a class="headerlink" href="#adjustment-weights" title="Permanent link">&para;</a></h3>
-<p>All weights must satisfy: <code>responsibility_weight + capability_weight ≤ 1.0</code></p>
+<p>Constraint: <code>responsibility_weight + capability_weight ≤ 1.0</code></p>
 <dl>
-<dt><strong><code>responsibility_weight</code></strong> (type: <code>float</code>, range: <code>[0.0, 1.0]</code>, default: <code>0.0</code>)</dt>
-<dd>Weight for historical responsibility adjustment. Reduces allocation for countries with higher historical emissions.</dd>
-<dd>Constraints: <code>0.0 ≤ responsibility_weight ≤ 1.0</code>, requires <code>country_actual_emissions_ts</code> if &gt; 0</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
-<dt><strong><code>capability_weight</code></strong> (type: <code>float</code>, range: <code>[0.0, 1.0]</code>, default: <code>0.0</code>)</dt>
-<dd>Weight for capability (ability to pay) adjustment. Reduces allocation for countries with higher GDP per capita.</dd>
-<dd>Constraints: <code>0.0 ≤ capability_weight ≤ 1.0</code>, requires <code>gdp_ts</code> if &gt; 0</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
+<dt><strong><code>responsibility_weight</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Weight for historical emissions adjustment. Higher = more reduction for high emitters.</dd>
+<dt><strong><code>capability_weight</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Weight for GDP-based adjustment. Higher = more reduction for wealthy countries.</dd>
 </dl>
 <h3 id="responsibility-parameters">Responsibility Parameters<a class="headerlink" href="#responsibility-parameters" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>historical_responsibility_year</code></strong> (type: <code>int</code>, default: <code>1990</code>)</dt>
-<dd>Starting year for cumulative historical emissions accounting. Must be ≤ <code>allocation_year</code>.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
+<dd>Start year for cumulative emissions in responsibility calculation. Must be ≤ <code>allocation_year</code>.</dd>
 <dt><strong><code>responsibility_per_capita</code></strong> (type: <code>bool</code>, default: <code>True</code>)</dt>
-<dd>If <code>True</code>, calculate responsibility adjustment using per capita emissions. If <code>False</code>, use absolute emissions.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
+<dd>Per capita (True) or absolute (False) emissions for responsibility calculation.</dd>
 <dt><strong><code>responsibility_exponent</code></strong> (type: <code>float</code>, default: <code>1.0</code>)</dt>
-<dd>Exponent applied to responsibility adjustment. Values &gt; 1.0 increase non-linearity.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
+<dd>Exponent for responsibility adjustment. &gt;1.0 increases non-linearity.</dd>
 <dt><strong><code>responsibility_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
-<dd>Functional form for responsibility adjustment. Options: <code>"asinh"</code> (inverse hyperbolic sine), <code>"power"</code>.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a></dd>
+<dd>Functional form: <code>"asinh"</code> or <code>"power"</code>.</dd>
 </dl>
 <h3 id="capability-parameters">Capability Parameters<a class="headerlink" href="#capability-parameters" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>capability_per_capita</code></strong> (type: <code>bool</code>, default: <code>True</code>)</dt>
-<dd>If <code>True</code>, calculate capability adjustment using GDP per capita. If <code>False</code>, use absolute GDP.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
+<dd>Per capita (True) or absolute (False) GDP for capability calculation.</dd>
 <dt><strong><code>capability_exponent</code></strong> (type: <code>float</code>, default: <code>1.0</code>)</dt>
-<dd>Exponent applied to capability adjustment. Values &gt; 1.0 increase non-linearity.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
+<dd>Exponent for capability adjustment. &gt;1.0 increases non-linearity.</dd>
 <dt><strong><code>capability_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
-<dd>Functional form for capability adjustment. Options: <code>"asinh"</code>, <code>"power"</code>.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Capability</a></dd>
+<dd>Functional form: <code>"asinh"</code> or <code>"power"</code>.</dd>
 </dl>
 <h3 id="inequality-parameters">Inequality Parameters<a class="headerlink" href="#inequality-parameters" title="Permanent link">&para;</a></h3>
 <dl>
-<dt><strong><code>income_floor</code></strong> (type: <code>float</code>, range: <code>[0.0, ∞)</code>, default: <code>0.0</code>)</dt>
-<dd>Minimum income threshold (in GDP per capita units). Income below this level is excluded from capability calculations via the Gini adjustment. Implements subsistence protection.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/parameter-effects/">Parameter Effects</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a></dd>
-<dt><strong><code>max_gini_adjustment</code></strong> (type: <code>float</code>, range: <code>[0.0, 1.0]</code>, default: <code>0.8</code>)</dt>
-<dd>Maximum magnitude of Gini-based allocation adjustment. Caps the effect of within-country inequality.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a></dd>
+<dt><strong><code>income_floor</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Income below this threshold excluded from capability (subsistence protection).</dd>
+<dt><strong><code>max_gini_adjustment</code></strong> (type: <code>float</code>, default: <code>0.8</code>)</dt>
+<dd>Maximum Gini-based adjustment magnitude.</dd>
 </dl>
 <h3 id="constraint-parameters">Constraint Parameters<a class="headerlink" href="#constraint-parameters" title="Permanent link">&para;</a></h3>
 <dl>
 <dt><strong><code>max_deviation_sigma</code></strong> (type: <code>float | None</code>, default: <code>2.0</code>)</dt>
-<dd>Standard deviations from mean for outlier detection. If not <code>None</code>, constrains extreme allocations.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></dd>
+<dd>Outlier constraint (standard deviations from mean).</dd>
 <dt><strong><code>preserve_allocation_year_shares</code></strong> / <strong><code>preserve_first_allocation_year_shares</code></strong> (type: <code>bool</code>, default: <code>False</code>)</dt>
-<dd>If <code>True</code>, allocations use population shares at the allocation year only, rather than recalculating dynamically. Budget approaches use <code>preserve_allocation_year_shares</code>; pathway approaches use <code>preserve_first_allocation_year_shares</code>.</dd>
-<dd>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Allocation Approaches</a></dd>
+<dd>Fix population shares at allocation year rather than recalculating dynamically.</dd>
 </dl>
 <hr />
 <h2 id="result-types">Result Types<a class="headerlink" href="#result-types" title="Permanent link">&para;</a></h2>
@@ -2281,42 +2112,27 @@
 <p>See: <a href="https://pandas.pydata.org/docs/user_guide/advanced.html">pandas MultiIndex documentation</a></p>
 <hr />
 <h2 id="equity-principles">Equity Principles<a class="headerlink" href="#equity-principles" title="Permanent link">&para;</a></h2>
-<h3 id="cbdr-rc">CBDR-RC<a class="headerlink" href="#cbdr-rc" title="Permanent link">&para;</a></h3>
-<p><strong>Common But Differentiated Responsibilities and Respective Capabilities</strong>. Foundational principle of the UNFCCC recognizing that:</p>
-<ol>
-<li>All countries share responsibility for addressing climate change</li>
-<li>Historical emissions and economic capacity create differentiated responsibilities</li>
-<li>Developed countries should take the lead given their historical contribution and greater means</li>
-</ol>
-<p>Operationalized via <code>responsibility_weight</code> and <code>capability_weight</code> parameters.</p>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">CBDR-RC</a> · <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
-<h3 id="egalitarianism-ethical-tradition">Egalitarianism (Ethical Tradition)<a class="headerlink" href="#egalitarianism-ethical-tradition" title="Permanent link">&para;</a></h3>
-<p>A framework of distributive justice that emphasizes equal treatment and equal rights among all persons. In climate equity, egalitarianism grounds the principle of equal rights to the atmosphere.</p>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Egalitarianism</a> · <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
-<h3 id="equal-rights-to-atmosphere-principle">Equal Rights to Atmosphere (Principle)<a class="headerlink" href="#equal-rights-to-atmosphere-principle" title="Permanent link">&para;</a></h3>
-<p>The principle that every person has an equal per capita entitlement to atmospheric space. Derives from egalitarian ethical tradition. Every person has an equal claim to emit greenhouse gases.</p>
-<p>Operationalized by setting <code>responsibility_weight = 0</code> and <code>capability_weight = 0</code>.</p>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Egalitarianism</a> · <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
-<h3 id="grandfathering">Grandfathering<a class="headerlink" href="#grandfathering" title="Permanent link">&para;</a></h3>
-<p>Allocates future entitlements based on current emission shares. Widely critiqued in the climate equity literature as lacking ethical basis, since it rewards past over-consumption (see Morrow 2017, Caney 2009). The <code>per-capita-convergence</code> approach contains grandfathering elements and is included for comparison with equity-based approaches.</p>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#approaches-debated-in-the-literature">Approaches Debated in the Literature</a> · <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Per-capita Convergence</a></p>
-<h3 id="historical-responsibility">Historical Responsibility<a class="headerlink" href="#historical-responsibility" title="Permanent link">&para;</a></h3>
-<p>The principle that countries should bear differentiated responsibilities based on their cumulative historical emissions. Past emissions have consumed limited atmospheric capacity.</p>
-<p>Operationalized via:</p>
-<ul>
-<li><code>allocation_year</code> (earlier years = more historical responsibility)</li>
-<li><code>responsibility_weight</code> (direct adjustment based on historical emissions)</li>
-<li>Cumulative approaches (e.g., <code>cumulative-per-capita-convergence</code>)</li>
-</ul>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Historical Responsibility</a> · <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
-<h3 id="subsistence-protection">Subsistence Protection<a class="headerlink" href="#subsistence-protection" title="Permanent link">&para;</a></h3>
-<p>The principle that basic needs for development should be protected when allocating emission rights. Poor populations should not be penalized for within-country inequality.</p>
-<p>Operationalized via:</p>
-<ul>
-<li><code>income_floor</code> (exempts low-income populations from Gini adjustment)</li>
-<li>Gini-adjusted approaches (account for intra-national inequality)</li>
-</ul>
-<p>See: <a href="https://setupelz.github.io/fair-shares/science/principle-to-code/">Subsistence Protection</a> · <a href="https://setupelz.github.io/fair-shares/science/climate-equity-concepts/">Climate Equity Concepts</a></p>
+<p>Brief definitions. For detailed explanations and operationalization, see <a href="../climate-equity-concepts/">Climate Equity Concepts</a> and <a href="../principle-to-code/">From Principle to Code</a>.</p>
+<dl>
+<dt><strong>CBDR-RC</strong></dt>
+<dd>Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity.</dd>
+<dd>See: <a href="../climate-equity-concepts/#overview">Climate Equity Concepts</a></dd>
+<dt><strong>Egalitarianism</strong></dt>
+<dd>Ethical tradition grounding equal per capita entitlement to atmospheric space.</dd>
+<dd>See: <a href="../climate-equity-concepts/#equal-per-capita-entitlement">Climate Equity Concepts</a></dd>
+<dt><strong>Equal per capita</strong></dt>
+<dd>Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is incorporated via <code>allocation_year</code> (past emissions subtracted), not via weight adjustments.</dd>
+<dd>See: <a href="../principle-to-code/#equal-per-capita">From Principle to Code</a></dd>
+<dt><strong>Grandfathering</strong></dt>
+<dd>Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis. <code>per-capita-convergence</code> includes grandfathering elements.</dd>
+<dd>See: <a href="../climate-equity-concepts/#grandfathering">Climate Equity Concepts</a></dd>
+<dt><strong>Historical responsibility</strong></dt>
+<dd>Past emissions reduce remaining fair share. Primary mechanism: <code>allocation_year</code> (earlier = more subtracted). Secondary: <code>responsibility_weight</code> in <code>*-adjusted</code> approaches.</dd>
+<dd>See: <a href="../principle-to-code/#historical-responsibility">From Principle to Code</a></dd>
+<dt><strong>Subsistence protection</strong></dt>
+<dd>Basic needs emissions protected from mitigation burdens. Operationalized via <code>income_floor</code> and Gini adjustments.</dd>
+<dd>See: <a href="../principle-to-code/#subsistence-protection">From Principle to Code</a></dd>
+</dl>
 <hr />
 <h2 id="abbreviations">Abbreviations<a class="headerlink" href="#abbreviations" title="Permanent link">&para;</a></h2>
 <dl>
