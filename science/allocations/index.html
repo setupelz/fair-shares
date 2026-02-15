@@ -1994,12 +1994,13 @@
 </details>
 <hr />
 <h2 id="target-source-options">Target Source Options<a class="headerlink" href="#target-source-options" title="Permanent link">&para;</a></h2>
-<p>fair-shares supports three target sources for allocation calculations:</p>
+<p>fair-shares currently supports three target sources for allocation calculations:</p>
 <table>
 <thead>
 <tr>
 <th>Target</th>
 <th>Type</th>
+<th>Allocation Functions</th>
 <th>Use When</th>
 <th>Output</th>
 </tr>
@@ -2008,20 +2009,23 @@
 <tr>
 <td><code>rcbs</code></td>
 <td>Budget</td>
+<td>Budget approaches</td>
 <td>Calculating cumulative national budget allocations</td>
 <td>Single value per country</td>
 </tr>
 <tr>
 <td><code>ar6</code></td>
 <td>Pathway</td>
+<td>Pathway approaches</td>
 <td>Allocating annual emissions following AR6 scenarios</td>
 <td>Time series of annual values</td>
 </tr>
 <tr>
 <td><code>rcb-pathways</code></td>
 <td>Hybrid</td>
-<td>Using budget approaches but need year-by-year pathways</td>
-<td>Budget allocated, then to annual path</td>
+<td>Pathway approaches</td>
+<td>Using budget data but need year-by-year pathways</td>
+<td>Budget to global pathway to allocated annually</td>
 </tr>
 </tbody>
 </table>
