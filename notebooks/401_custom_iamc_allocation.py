@@ -42,6 +42,7 @@
 # Imports (run this first)
 import matplotlib.pyplot as plt
 import pandas as pd
+import pyam
 from pyprojroot import here
 
 # Import fair-shares library components
@@ -58,7 +59,6 @@ from fair_shares.library.allocations.pathways import (
     per_capita_adjusted,
     per_capita_adjusted_gini,
 )
-from fair_shares.library.utils import ensure_string_year_columns
 from fair_shares.library.utils.data.iamc import load_iamc_data
 
 # Set matplotlib style
@@ -110,29 +110,43 @@ EMISSIONS_VARIABLE = "Emissions|Covered"  # The emissions being allocated
 EARLIEST_DATA_YEAR = 2015  # Must be <= allocation_year in Step 3
 MODEL_HORIZON_YEAR = 2100  # Last year in your optimisation framework
 
-# Load the data file to get region list
-df = pd.read_excel(DATA_FILE)
-df = ensure_string_year_columns(df)
-regions = [r for r in df["region"].unique() if r != "World"]
+# Model/scenario selection
+# If your data contains multiple models or scenarios, specify which to use.
+# Supports exact names or pyam wildcards (e.g. "MESSAGE*", "*Baseline*").
+# Leave as None if your file has exactly one model and scenario.
+MODEL_FILTER = None
+SCENARIO_FILTER = None
 
-print(f"Data file: {DATA_FILE}")
-print(f"Regions found: {len(regions)}")
-print(f"Regions: {', '.join(sorted(regions))}")
+# %%
+# Inspect your data file — pyam handles column case automatically
+_preview = pyam.IamDataFrame(DATA_FILE)
+
+print("Your data contains:")
+print(f"  Models:    {_preview.model}")
+print(f"  Scenarios: {_preview.scenario}")
+print(f"  Regions:   {len(_preview.region)} regions")
+print(f"  Variables: {_preview.variable}")
+print(f"  Years:     {min(_preview.year)}–{max(_preview.year)}")
+
+regions = [r for r in _preview.region if r != "World"]
+print(f"\nUsing {len(regions)} regions: {', '.join(sorted(regions))}")
 
 # %%
 # Load IAMC data with required variables
 data = load_iamc_data(
-    data_file=DATA_FILE,
+    data_file=_preview,
     population_variable=POPULATION_VARIABLE,
     gdp_variable=GDP_VARIABLE,
     emissions_variable=EMISSIONS_VARIABLE,
     regions=regions,
     allocation_start_year=EARLIEST_DATA_YEAR,
     budget_end_year=MODEL_HORIZON_YEAR,
+    model_filter=MODEL_FILTER,
+    scenario_filter=SCENARIO_FILTER,
     expand_to_annual=True,
 )
 
-print("\nYes Data loaded successfully!")
+print("\nData loaded successfully!")
 print(f"Variables: {data['metadata']['variables_loaded']}")
 print(f"Time range: {data['metadata']['year_range']}")
 
@@ -141,6 +155,9 @@ population_ts = data["population"].rename_axis(index={"region": "iso3c"})
 gdp_ts = data["gdp"].rename_axis(index={"region": "iso3c"})
 if "emissions" in data:
     emissions_ts = data["emissions"].rename_axis(index={"region": "iso3c"})
+    # Add emission-category index level expected by allocation functions
+    emissions_ts["emission-category"] = EMISSIONS_VARIABLE
+    emissions_ts = emissions_ts.set_index("emission-category", append=True)
 else:
     emissions_ts = None
 
@@ -205,7 +222,9 @@ approach = "equal-per-capita-budget"  # EDIT THIS
 # - Subsistence protection: Set income_floor, max_gini_adjustment
 
 approach_params = {
-    # Allocation year (required) - when the allocation begins
+    # Allocation year (required) — the year your allocation begins.
+    # Always use "allocation_year" here. The notebook automatically maps it
+    # to `first_allocation_year` for pathway approaches (Step 4).
     "allocation_year": 2015,
     # Example parameters (uncomment and edit as needed):
     # "responsibility_weight": 0.5,
@@ -268,107 +287,79 @@ print(f"Type: {allocation_type}")
 print(f"Allocation year: {allocation_year}")
 print("")
 
-# Select the appropriate allocation function
+# Resolve approach name to function (approach names are kebab-case for reporting, functions are snake_case)
+_all_approaches = {
+    **{
+        f.__name__.replace("_", "-"): f
+        for f in [
+            equal_per_capita_budget,
+            per_capita_adjusted_budget,
+            per_capita_adjusted_gini_budget,
+            equal_per_capita,
+            per_capita_adjusted,
+            per_capita_adjusted_gini,
+            cumulative_per_capita_convergence,
+            cumulative_per_capita_convergence_adjusted,
+            cumulative_per_capita_convergence_adjusted_gini,
+        ]
+    },
+}
+if approach not in _all_approaches:
+    raise ValueError(
+        f"Unknown approach: '{approach}'\n"
+        f"Available: {', '.join(sorted(_all_approaches))}"
+    )
+allocation_func = _all_approaches[approach]
+
+# Build kwargs — filter allocation_year (already mapped to the right param name)
+extra_params = {k: v for k, v in approach_params.items() if k != "allocation_year"}
+
+kwargs = {
+    "population_ts": population_ts,
+    "emission_category": EMISSIONS_VARIABLE,
+    "group_level": "iso3c",
+    **extra_params,
+}
+
 if allocation_type == "budget":
-    if approach == "equal-per-capita-budget":
-        allocation_func = equal_per_capita_budget
-    elif approach == "per-capita-adjusted-budget":
-        allocation_func = per_capita_adjusted_budget
-    elif approach == "per-capita-adjusted-gini-budget":
-        allocation_func = per_capita_adjusted_gini_budget
-    else:
-        raise ValueError(f"Unknown budget approach: {approach}")
-
-    # Build kwargs based on approach
-    kwargs = {
-        "population_ts": population_ts,
-        "allocation_year": allocation_year,
-        "emission_category": EMISSIONS_VARIABLE,
-        "preserve_allocation_year_shares": False,
-        "group_level": "iso3c",
-        **approach_params,
-    }
-
-    # Add optional parameters for adjusted approaches
-    if approach != "equal-per-capita-budget":
-        if "capability_weight" in approach_params:
-            kwargs["gdp_ts"] = gdp_ts
-        if "gini" in approach:
-            kwargs["gini_s"] = data.get("gini")
-        if "responsibility_weight" in approach_params:
-            kwargs["country_actual_emissions_ts"] = emissions_ts
-
-    # Run budget allocation
-    result = allocation_func(**kwargs)
-
-    # Extract shares
-    shares = result.relative_shares_cumulative_emission[str(allocation_year)]
-    shares = shares.droplevel(["unit", "emission-category"])
-
-    print("\nRegional Budget Shares:\n")
-    print(f"{'Region':8s} {'Share':>10s}")
-    print("-" * 20)
-    for region in sorted(shares.index):
-        print(f"{region:8s} {shares[region]*100:9.2f}%")
-
+    kwargs["allocation_year"] = allocation_year
+    kwargs["preserve_allocation_year_shares"] = False
 elif allocation_type == "pathway":
-    if approach == "equal-per-capita":
-        allocation_func = equal_per_capita
-    elif approach == "per-capita-adjusted":
-        allocation_func = per_capita_adjusted
-    elif approach == "per-capita-adjusted-gini":
-        allocation_func = per_capita_adjusted_gini
-    elif approach == "cumulative-per-capita-convergence":
-        allocation_func = cumulative_per_capita_convergence
-    elif approach == "cumulative-per-capita-convergence-adjusted":
-        allocation_func = cumulative_per_capita_convergence_adjusted
-    elif approach == "cumulative-per-capita-convergence-gini-adjusted":
-        allocation_func = cumulative_per_capita_convergence_adjusted_gini
-    else:
-        raise ValueError(f"Unknown pathway approach: {approach}")
-
-    # Build kwargs based on approach
-    kwargs = {
-        "population_ts": population_ts,
-        "first_allocation_year": allocation_year,
-        "emission_category": EMISSIONS_VARIABLE,
-        "group_level": "iso3c",
-        **approach_params,
-    }
-
-    # Add preserve parameter for non-convergence approaches
+    kwargs["first_allocation_year"] = allocation_year
     if "convergence" not in approach:
         kwargs["preserve_first_allocation_year_shares"] = False
 
-    # Add optional parameters based on approach
-    if approach != "equal-per-capita":
-        if "capability_weight" in approach_params:
-            kwargs["gdp_ts"] = gdp_ts
-        if "gini" in approach:
-            kwargs["gini_s"] = data.get("gini")
-        if "responsibility_weight" in approach_params:
-            kwargs["country_actual_emissions_ts"] = emissions_ts
+# Add optional data based on what the approach needs
+if "capability_weight" in approach_params:
+    kwargs["gdp_ts"] = gdp_ts
+if "gini" in approach:
+    kwargs["gini_s"] = data.get("gini")
+if "responsibility_weight" in approach_params:
+    kwargs["country_actual_emissions_ts"] = emissions_ts
+if "convergence" in approach:
+    world_emissions_ts = emissions_ts[
+        emissions_ts.index.get_level_values("iso3c") == "World"
+    ]
+    kwargs["world_scenario_emissions_ts"] = world_emissions_ts
+    kwargs["country_actual_emissions_ts"] = emissions_ts
 
-    # Convergence approaches require world scenario emissions (required parameters, not optional)
-    if "convergence" in approach:
-        world_emissions_ts = emissions_ts[
-            emissions_ts.index.get_level_values("iso3c") == "World"
-        ]
-        kwargs["world_scenario_emissions_ts"] = world_emissions_ts
-        kwargs["country_actual_emissions_ts"] = emissions_ts  # Required for convergence
+# Run allocation
+result = allocation_func(**kwargs)
 
-    # Run pathway allocation
-    result = allocation_func(**kwargs)
-
-    # Extract shares for first year
+# Extract shares
+if allocation_type == "budget":
+    shares = result.relative_shares_cumulative_emission[str(allocation_year)]
+    label = "Regional Budget Shares"
+else:
     shares = result.relative_shares_pathway_emissions[str(allocation_year)]
-    shares = shares.droplevel(["unit", "emission-category"])
+    label = f"Regional Pathway Shares (year {allocation_year})"
+shares = shares.droplevel(["unit", "emission-category"])
 
-    print(f"\nRegional Pathway Shares (year {allocation_year}):\n")
-    print(f"{'Region':8s} {'Share':>10s}")
-    print("-" * 20)
-    for region in sorted(shares.index):
-        print(f"{region:8s} {shares[region]*100:9.2f}%")
+print(f"\n{label}:\n")
+print(f"{'Region':8s} {'Share':>10s}")
+print("-" * 20)
+for region in sorted(shares.index):
+    print(f"{region:8s} {shares[region]*100:9.2f}%")
 
 print("\n" + "=" * 70)
 print("ALLOCATION COMPLETED SUCCESSFULLY!")
@@ -499,8 +490,8 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
             "Ensure EMISSIONS_VARIABLE is set to load emissions data."
         )
 
-    # Load actual emissions from the original file
-    emissions_df = df[df["variable"] == EMISSIONS_VARIABLE].set_index("region")
+    # Use pyam-loaded emissions data
+    emissions_df = emissions_ts.droplevel(["unit", "emission-category"])
 
     # Calculate global cumulative budget from scenario
     print("\n" + "=" * 70)
@@ -511,7 +502,7 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
     )
 
     regional_cumulative = calculate_cumulative_emissions(
-        emissions_ts=emissions_df.reset_index().set_index("region"),
+        emissions_ts=emissions_df,
         start_year=allocation_year,
         end_year=MODEL_HORIZON_YEAR,
         unit_conversion=1.0 / 1000,  # Mt to Gt
@@ -539,7 +530,7 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
     print("\nThese emissions have ALREADY OCCURRED. They must be subtracted.\n")
 
     actual_emissions = calculate_cumulative_emissions(
-        emissions_ts=emissions_df.reset_index().set_index("region"),
+        emissions_ts=emissions_df,
         start_year=allocation_year,
         end_year=FIRST_PERIOD_START - 1,
         unit_conversion=1.0 / 1000,  # Mt to Gt

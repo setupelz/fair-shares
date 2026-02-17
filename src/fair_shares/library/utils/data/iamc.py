@@ -203,6 +203,29 @@ def load_iamc_data(
     if scenario_filter:
         df = df.filter(scenario=scenario_filter)
 
+    # Guard: require exactly one model/scenario combination
+    if len(df.model) > 1 or len(df.scenario) > 1:
+        lines = [
+            f"Data contains {len(df.model)} model(s) × "
+            f"{len(df.scenario)} scenario(s):",
+        ]
+        for m in df.model:
+            for s in df.scenario:
+                lines.append(f"  • {m} | {s}")
+        lines.append("")
+        lines.append("This function requires exactly one model/scenario combination.")
+        lines.append("Filter when calling load_iamc_data():")
+        lines.append(f'    model_filter="{df.model[0]}",')
+        lines.append(f'    scenario_filter="{df.scenario[0]}"')
+        lines.append("")
+        lines.append("Or use pyam directly:")
+        lines.append('    df = pyam.IamDataFrame("your_file.xlsx")')
+        lines.append(
+            f'    df = df.filter(model="{df.model[0]}", '
+            f'scenario="{df.scenario[0]}")'
+        )
+        raise IAMCDataError("\n".join(lines))
+
     # Determine regions to include
     if regions is None:
         # Auto-detect: exclude "World" and similar global aggregates
