@@ -28,6 +28,39 @@ Verify:
 uv run pytest tests/unit
 ```
 
+### Anaconda / Conda
+
+If you use Anaconda or Miniconda, skip the `uv` prerequisite. Use `conda` to create the environment and `pip` to install:
+
+```bash
+conda create -n fair-shares python=3.11
+conda activate fair-shares
+pip install -e .
+```
+
+Verify:
+
+```bash
+pytest tests/unit
+```
+
+Sync notebooks (replaces `make sync-ipynb`, which requires `uv`):
+
+```bash
+jupytext --sync notebooks/*.py
+jupytext --set-formats ipynb,py:percent notebooks/*.py
+```
+
+Then launch JupyterLab:
+
+```bash
+jupyter lab
+```
+
+!!! note
+
+    `make` targets that call `uv` (e.g. `make sync-ipynb`, `make test`) will not work in a conda environment. Use the equivalent commands shown above instead.
+
 ## Notebook Format
 
 This project uses [jupytext](https://jupytext.readthedocs.io/) to store notebooks as plain Python files (`.py`) in the `py:percent` format. This means:
