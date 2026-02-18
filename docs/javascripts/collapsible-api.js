@@ -160,63 +160,9 @@
     makeParameterRowsCollapsible();
   }
 
-  // Re-typeset MathJax after DOM manipulation.
-  // Must clear first -- MathJax skips nodes it thinks are already processed,
-  // but content cloned into <details> while hidden renders with broken dimensions.
-  function retypesetMath(container) {
-    if (typeof MathJax === "undefined" || !MathJax.typesetPromise) return;
-    var args = container ? [[container]] : [];
-    try {
-      MathJax.typesetClear.apply(MathJax, args);
-    } catch (e) {
-      // typesetClear may not exist in all MathJax builds
-    }
-    MathJax.typesetPromise.apply(MathJax, args).catch(function (err) {
-      console.warn("MathJax typeset failed:", err);
-    });
-  }
-
-  // Set up MathJax to run after DOM manipulation completes
-  function setupMathJaxHook() {
-    // If MathJax is already loaded and ready, typeset now
-    if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-      retypesetMath();
-    } else {
-      // MathJax not loaded yet - set up a hook to run when it's ready
-      // MathJax 3 fires 'ready' promise after startup
-      var checkInterval = setInterval(function () {
-        if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
-          clearInterval(checkInterval);
-          retypesetMath();
-        }
-      }, 100);
-      // Stop checking after 10 seconds to prevent infinite loop
-      setTimeout(function () {
-        clearInterval(checkInterval);
-      }, 10000);
-    }
-  }
-
-  // Re-typeset math inside a <details> element when it's opened
-  function setupDetailsToggleHandler() {
-    document.addEventListener(
-      "toggle",
-      function (event) {
-        if (event.target.tagName === "DETAILS" && event.target.open) {
-          // Small delay to let content render, then re-typeset only this element
-          setTimeout(function () {
-            retypesetMath(event.target);
-          }, 50);
-        }
-      },
-      true,
-    );
-  }
-
   // Main initialization function
   function init() {
     makeMethodsCollapsible();
-    setupMathJaxHook();
   }
 
   // Run immediately if DOM is already ready, otherwise wait for DOMContentLoaded
@@ -225,24 +171,31 @@
     document.readyState === "interactive"
   ) {
     init();
-    setupDetailsToggleHandler();
   } else {
     document.addEventListener("DOMContentLoaded", function () {
       init();
-      setupDetailsToggleHandler();
     });
   }
 
   // Handle MkDocs Material instant navigation (pages loaded via AJAX)
-  // The event is dispatched after new content is loaded
   if (typeof document$ !== "undefined") {
     document$.subscribe(function () {
       init();
+      // Re-typeset math after instant navigation rebuilds the DOM
+      if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+        MathJax.typesetPromise().catch(function (err) {
+          console.warn("MathJax typeset failed:", err);
+        });
+      }
     });
   } else {
-    // Fallback: listen for the custom event that Material dispatches
     document.addEventListener("DOMContentSwitch", function () {
       init();
+      if (typeof MathJax !== "undefined" && MathJax.typesetPromise) {
+        MathJax.typesetPromise().catch(function (err) {
+          console.warn("MathJax typeset failed:", err);
+        });
+      }
     });
   }
 })();

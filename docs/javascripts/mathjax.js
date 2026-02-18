@@ -22,13 +22,34 @@ window.MathJax = {
   },
   startup: {
     pageReady: () => {
-      // Delay initial typesetting to let collapsible-api.js manipulate
-      // the DOM first (it runs on DOMContentLoaded). Math inside closed
-      // <details> is rendered on toggle via collapsible-api.js.
       return new Promise((resolve) => {
-        setTimeout(() => {
-          MathJax.startup.defaultPageReady().then(resolve);
-        }, 200);
+        function doTypeset() {
+          // Open all collapsibles so MathJax has valid layout dimensions
+          var allDetails = document.querySelectorAll(
+            "details.doc-method-collapsible, details.mathematical-foundation",
+          );
+          allDetails.forEach(function (d) {
+            d.setAttribute("open", "");
+          });
+
+          MathJax.startup.defaultPageReady().then(function () {
+            // Close method collapsibles after render (leave mathematical-foundation open)
+            document
+              .querySelectorAll("details.doc-method-collapsible")
+              .forEach(function (d) {
+                d.removeAttribute("open");
+              });
+            resolve();
+          });
+        }
+        // Gate on DOMContentLoaded so collapsible-api.js has finished
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", doTypeset, {
+            once: true,
+          });
+        } else {
+          doTypeset();
+        }
       });
     },
   },
