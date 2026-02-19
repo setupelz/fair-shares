@@ -184,9 +184,6 @@ extra_css:
   - stylesheets/extra.css
 
 extra_javascript:
-  # Order matters: collapsible must run first to manipulate DOM,
-  # then MathJax processes the final DOM structure
-  - javascripts/collapsible-api.js
   - javascripts/mathjax.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js
 
