@@ -117,6 +117,10 @@ MODEL_HORIZON_YEAR = 2100  # Last year in your optimisation framework
 MODEL_FILTER = None
 SCENARIO_FILTER = None
 
+# Label for this allocation run — used to organise output files.
+# Outputs go to: output/iamc/{data_file_stem}/{ALLOCATION_LABEL}/
+ALLOCATION_LABEL = "my_iamc_analysis"  # EDIT THIS: name your analysis
+
 # %%
 # Inspect your data file — pyam handles column case automatically
 _preview = pyam.IamDataFrame(DATA_FILE)
@@ -420,10 +424,9 @@ else:
 
 # %%
 # Export to CSV
-output_file = (
-    project_root / "output" / f"iamc_{allocation_type}_allocation_{approach}.csv"
-)
-output_file.parent.mkdir(parents=True, exist_ok=True)
+output_dir = project_root / "output" / "iamc" / DATA_FILE.stem / ALLOCATION_LABEL
+output_dir.mkdir(parents=True, exist_ok=True)
+output_file = output_dir / f"iamc_{allocation_type}_allocation_{approach}.csv"
 
 # Create output dataframe
 if allocation_type == "budget":
@@ -442,9 +445,10 @@ print(f"\nResults exported to: {output_file}")
 # Convert allocations to remaining budgets for your IAM model (MESSAGE-ix, GCAM, etc.).
 #
 # **Understanding timesteps vs periods:**
-# - IAM models often use timestep labels (e.g., 2030) that represent multi-year periods
-# - Example: MESSAGEix timestep "2030" represents period 2026-2030
-# - Your remaining budget should start from the first year of the period, not the timestep label
+# - IAM models label timesteps by the *last* year of each period
+# - Example: MESSAGEix timestep "2030" with 5-year periods covers 2026–2030
+# - The remaining budget must start from the *first* year of that period (2026), not the label
+# - First year is derived: `FIRST_MODEL_TIMESTEP - TIMESTEP_LENGTH + 1`
 #
 # **Calculation:**
 # ```
@@ -468,14 +472,14 @@ elif allocation_type != "budget":
         "For pathway allocations, use the exports from Step 6 directly."
     )
 else:
-    # Model timestep configuration
-    FIRST_MODEL_TIMESTEP = 2030  # The timestep label in your model
-    FIRST_PERIOD_START = 2026  # First year of the period
-    FIRST_PERIOD_END = 2030  # Last year of the period
+    # Model timestep configuration (feel free to adjust to your setup)
+    FIRST_MODEL_TIMESTEP = 2030  # Timestep label in your model (= last year of period)
+    TIMESTEP_LENGTH = 5  # Years per period (e.g. 5 for MESSAGEix)
+    FIRST_PERIOD_START = FIRST_MODEL_TIMESTEP - TIMESTEP_LENGTH + 1  # Derived: 2026
 
     print("Model Configuration:")
-    print(f"  First timestep: {FIRST_MODEL_TIMESTEP}")
-    print(f"  Period: {FIRST_PERIOD_START}-{FIRST_PERIOD_END}")
+    print(f"  First timestep: {FIRST_MODEL_TIMESTEP} ({TIMESTEP_LENGTH}-year period)")
+    print(f"  Period starts:  {FIRST_PERIOD_START}")
     print(f"  Allocation starts: {allocation_year}")
     print(f"  Subtract emissions: {allocation_year}-{FIRST_PERIOD_START-1}")
 
@@ -565,11 +569,9 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
         for region in exhausted.index:
             print(f"   {region}: {remaining[region]:.2f} Gt (overshoot)")
 
-    # Export remaining budget
+    # Export remaining budget (same folder as Step 6 output)
     output_file_remaining = (
-        project_root
-        / "output"
-        / f"iamc_remaining_budget_from_{FIRST_PERIOD_START}_{approach}.csv"
+        output_dir / f"iamc_remaining_budget_from_{FIRST_PERIOD_START}_{approach}.csv"
     )
     remaining_df = pd.DataFrame(
         {"region": remaining.index, "remaining_budget_gtco2e": remaining.values}
