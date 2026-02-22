@@ -13,7 +13,13 @@ from fair_shares.library.exceptions import AllocationError
 
 
 def list_pathway_generators() -> list[str]:
-    """List available pathway generation methods."""
+    """List available pathway generation methods.
+
+    Returns
+    -------
+    list[str]
+        Available generators: []
+    """
     return ["exponential-decay"]
 
 
@@ -251,10 +257,12 @@ def generate_rcb_pathway_scenarios(
     end_year : int
         Last year of pathways (typically 2100).
     emission_category : str
-        Emission category to process (e.g., "co2-ffi").
+        Emission category to process. Available categories depend on the
+        data source; see ``available_categories`` in
+        ``conf/data_sources/data_sources_unified.yaml``.
     generator : str, optional
         Name of the pathway generator to use. Default is "exponential-decay".
-        Currently supported: "exponential-decay".
+        Use ``list_pathway_generators()`` to see available options.
 
     Returns
     -------
@@ -273,12 +281,13 @@ def generate_rcb_pathway_scenarios(
         generation fails.
     """
     # Select pathway generator function
+    available = list_pathway_generators()
     if generator == "exponential-decay":
         pathway_func = calculate_exponential_decay_pathway
     else:
         raise AllocationError(
             f"Unknown pathway generator: '{generator}'. "
-            f"Supported generators: ['exponential-decay']"
+            f"Supported generators: {available}"
         )
 
     # Filter RCBs to emission category

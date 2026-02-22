@@ -1053,15 +1053,12 @@ def cumulative_per_capita_convergence_adjusted_gini(
 
     **Gini Adjustment Process**
 
-    GDP is adjusted for within-country income inequality:
-
-    $$
-    \text{GDP}^{\text{adj}}(g, t) = \text{GDP}(g, t) \times (1 - \text{income-share-floor})
-    $$
-
-    Where the income share floor is calculated from the Gini coefficient and income floor
-    parameters. The adjustment reduces GDP for high-inequality countries, reflecting that
-    their wealth is concentrated among fewer people.
+    GDP is adjusted using the Greenhouse Development Rights (GDR) framework:
+    only income above a development threshold counts as capability. When
+    combined with the income floor, higher inequality means more national
+    income sits above the threshold — increasing measured capability.
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for the full mathematical derivation.
 
     **Responsibility Adjustment**
 
@@ -1106,15 +1103,12 @@ def cumulative_per_capita_convergence_adjusted_gini(
 
     **Gini Adjustment Effect**
 
-    The Gini adjustment effectively reduces the GDP (and thus capability) of
-    countries with high inequality, giving them larger emission allocations. This
-    reflects that high-inequality countries have less capacity to pay because a
-    larger share of their population has income below the capability threshold.
-
-    For example, if country A and country B both have cumulative GDP per capita
-    of $500,000, but country A has a Gini coefficient of 0.25 (low inequality)
-    and country B has 0.50 (high inequality), country B's adjusted GDP will be
-    lower, resulting in a larger emission allocation.
+    When combined with the income floor, higher inequality means more national
+    income sits above the development threshold, creating larger per-person
+    excesses. Countries with high inequality and high GDP thus receive smaller
+    emission allocations (higher measured capability = more ability to pay).
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for worked examples.
 
     **Deviation Constraint**
 
@@ -1170,8 +1164,8 @@ def cumulative_per_capita_convergence_adjusted_gini(
         is excluded
         from capability calculations. Default: 7500.0
     max_gini_adjustment
-        Maximum reduction factor from Gini adjustment (0-1). Limits how much inequality
-        can reduce effective GDP. Default: 0.8
+        Maximum reduction factor from GDR threshold adjustment (0-1). Limits how much
+        the development threshold deduction can reduce effective GDP. Default: 0.8
     max_deviation_sigma
         Maximum allowed deviation from equal per capita baseline in terms of
         population-weighted standard deviations. If None, no constraint is applied.
@@ -1213,7 +1207,8 @@ def cumulative_per_capita_convergence_adjusted_gini(
     This approach extends the adjusted convergence method by incorporating
     Gini-adjusted GDP to account for income inequality within countries. The
     ``income_floor`` parameter implements the subsistence vs. luxury emissions
-    distinction. High-inequality countries have reduced effective capability.
+    distinction. When combined with the income floor, higher inequality means
+    more national income sits above the threshold — increasing measured capability.
 
     Examples
     --------
@@ -1265,7 +1260,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     ...     )
     ... )
     Converting units...
-    >>> # Countries with high inequality get more generous allocations
+    >>> # With income floor, high inequality means more income above threshold
     >>> result_custom_gini.approach
     'cumulative-per-capita-convergence-gini-adjusted'
     """

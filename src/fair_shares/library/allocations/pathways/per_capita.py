@@ -880,23 +880,12 @@ def per_capita_adjusted_gini(
 
     **Gini Adjustment Process**
 
-    GDP is adjusted for each country at each year to reflect income inequality:
-
-    $$
-    \text{GDP}^{\text{adj}}(g, t) = \text{GDP}(g, t) \times (1 - \text{income-share-floor})
-    $$
-
-    Where:
-
-    - $\text{GDP}^{\text{adj}}(g, t)$: Gini-adjusted GDP of country $g$ in year $t$
-    - $\text{GDP}(g, t)$: Unadjusted GDP of country $g$ in year $t$
-    - $\text{income-share-floor}$: Share of income below the income floor threshold
-
-    The income share floor is calculated from:
-
-    - $\text{Gini}(g)$: Gini coefficient for country $g$ (0 to 1, higher = more inequality)
-    - $F$: Income floor parameter (income below this threshold is excluded from capability)
-    - $\alpha$: Maximum Gini adjustment factor (prevents excessive reductions)
+    GDP is adjusted using the Greenhouse Development Rights (GDR) framework:
+    only income above a development threshold counts as capability. When
+    combined with the income floor, higher inequality means more national
+    income sits above the threshold — increasing measured capability.
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for the full mathematical derivation.
 
     **Capability Adjustment with Gini-Adjusted GDP**
 
@@ -923,15 +912,12 @@ def per_capita_adjusted_gini(
 
     **Gini Adjustment Effect**
 
-    The Gini adjustment effectively reduces the GDP (and thus capability) of
-    countries with high inequality, giving them larger emission allocations. This
-    reflects that high-inequality countries have less capacity to pay because a
-    larger share of their population has income below the capability threshold.
-
-    For example, if country A and country B both have GDP per capita of $20,000,
-    but country A has a Gini coefficient of 0.25 (low inequality) and country B
-    has 0.50 (high inequality), country B's adjusted GDP will be lower, resulting
-    in a larger emission allocation.
+    When combined with the income floor, higher inequality means more national
+    income sits above the development threshold, creating larger per-person
+    excesses. Countries with high inequality and high GDP thus receive smaller
+    emission allocations (higher measured capability = more ability to pay).
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for worked examples.
 
     Parameters
     ----------
@@ -976,8 +962,8 @@ def per_capita_adjusted_gini(
         See docs/science/parameter-effects.md#income_floor for real allocation
         examples showing how this affects country shares
     max_gini_adjustment
-        Maximum reduction factor from Gini adjustment (0-1). Limits how much
-        inequality can reduce effective GDP. Default: 0.8
+        Maximum reduction factor from GDR threshold adjustment (0-1). Limits how
+        much the development threshold deduction can reduce effective GDP. Default: 0.8
     max_deviation_sigma
         Maximum allowed deviation from equal per capita baseline. If None, no
         constraint is applied.
@@ -999,15 +985,16 @@ def per_capita_adjusted_gini(
     Notes
     -----
     This approach extends capability-based allocation by incorporating intra-national
-    inequality. The Gini adjustment recognizes that GDP per capita may overstate
-    the capability of high-inequality countries, where national income is
-    concentrated among fewer people.
+    inequality via the GDR development threshold framework. Only income above the
+    development threshold counts toward capability. When combined with the income
+    floor, higher inequality means more national income sits above the threshold.
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for the mathematical formulation.
 
     **When to Use**
 
-    - When capability assessment should reflect actual income distribution
-    - When addressing concerns that high-inequality countries may have
-      overstated capability based on GDP averages
+    - When capability assessment should account for income distribution within countries
+    - When the development threshold (income floor) should affect capability measurement
     - For comprehensive allocation incorporating population, historical
       responsibility, and inequality-adjusted capability
 

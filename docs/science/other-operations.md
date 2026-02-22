@@ -27,9 +27,11 @@ Preserves the peak cumulative emissions using time-varying scaling when `preserv
 
 **[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/timeseries.py`
 
-### Net-Negative Emissions Handling
+### Post-Net-Zero Handling in Global Pathways
 
-Sets post-net-zero emissions to NaN with warnings. Pre-net-zero emissions are preserved unchanged.
+Some AR6 scenario pathways have the **global** emission trajectory going net-negative (i.e., the world as a whole achieves net-negative emissions). The allocation framework cannot meaningfully distribute negative global emissions across countries, so years after the global pathway crosses zero are set to NaN and reported.
+
+This is a preprocessing step applied to global scenario pathways before allocation. Pre-net-zero years are preserved unchanged.
 
 **[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/dataframes.py::set_post_net_zero_emissions_to_nan`
 
@@ -37,13 +39,20 @@ Sets post-net-zero emissions to NaN with warnings. Pre-net-zero emissions are pr
 
 ## RCB Pathway Generation
 
-Converts fixed carbon budget values into annual emission pathways using normalized shifted exponential decay:
+Converts the **global** remaining carbon budget into a **global** annual emission pathway. This is a prerequisite step before country-level pathway allocation — it does not produce country pathways directly.
 
-1. Pathway starts at historical emissions
-2. Reaches exactly zero by end year
-3. Discrete sum equals the carbon budget
+### How it works
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/math/pathways.py`
+1. Takes the global RCB (in Mt CO₂) and current global emissions as inputs
+2. Generates a single global pathway using normalized shifted exponential decay
+3. The pathway starts at current global emissions and reaches exactly zero at the end year (default 2100)
+4. The discrete annual sum equals the original carbon budget by construction
+
+Country allocations happen **after** this step, using pathway allocation approaches (e.g., `equal-per-capita`, `per-capita-adjusted`). The pathway shape does not prescribe country net-zero years — those emerge from the allocation step. When a country's allocated share approaches zero, that approximates their implied net-zero year.
+
+The default generator is `exponential-decay` (shifted exponential). The `generator` parameter supports extensibility — other functional forms can be added without changing the allocation pipeline.
+
+**[API Reference →](https://setupelz.github.io/fair-shares/api/utils/math/#rcb-pathway-generation)**
 
 ---
 

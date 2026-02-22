@@ -51,13 +51,13 @@ _Example uses 1.5°C carbon budget (50% probability). The `allocation_year` para
 
 ## responsibility_weight
 
-**Effect:** Controls the strength of historical responsibility adjustments. Higher values penalize countries with high cumulative historical emissions.
+**Effect:** Activates historical responsibility adjustments. Weights are **relative** — only the ratio of `responsibility_weight` to `capability_weight` matters (see [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)).
 
 **Direction:**
 
-- `weight=0.0` → No historical responsibility adjustment (equal per capita)
-- `weight=0.5` → Moderate adjustment based on historical emissions
-- `weight=1.0` → Full adjustment (maximum penalty for historical emissions)
+- Both weights `0.0` → No adjustment (equal per capita)
+- `responsibility_weight > 0, capability_weight = 0` → Responsibility is the sole adjustment
+- Both non-zero → Balanced by their ratio (e.g., 0.7:0.3 = 70% responsibility, 30% capability)
 
 **Example:** `per-capita-adjusted-budget` varying `responsibility_weight` (with `capability_weight=0.0`)
 
@@ -69,7 +69,7 @@ _Example uses 1.5°C carbon budget (50% probability). The `allocation_year` para
 
 _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
-**Key insight:** Historical responsibility substantially reduces shares for high-emitting developed countries (USA: 4.0% to 0.5%, Germany: 0.8% to 0.1%). India's share also decreases (16.7% to 8.2%) because the adjustment redistributes toward countries with the lowest per capita historical emissions, which are not shown in this three-country excerpt. The effect saturates between `weight=0.5` and `weight=1.0` in this example because historical emissions differences are so large.
+**Key insight:** Historical responsibility substantially reduces shares for high-emitting developed countries (USA: 4.0% to 0.5%, Germany: 0.8% to 0.1%). India's share also decreases (16.7% to 8.2%) because the adjustment redistributes toward countries with the lowest per capita historical emissions, which are not shown in this three-country excerpt. Note that `weight=0.5` and `weight=1.0` produce identical results here because `capability_weight=0.0` in both cases — any non-zero value with the other at zero normalizes to 100% weighting for that adjustment.
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
@@ -81,13 +81,13 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 ## capability_weight
 
-**Effect:** Controls the strength of capability (ability to pay) adjustments. Higher values reduce allocations for wealthy countries.
+**Effect:** Activates capability (ability to pay) adjustments. Like `responsibility_weight`, this is **relative** — only the ratio between the two weights matters.
 
 **Direction:**
 
-- `weight=0.0` → No capability adjustment (equal per capita)
-- `weight=0.5` → Moderate adjustment based on GDP per capita
-- `weight=1.0` → Full adjustment (maximum reduction for high GDP)
+- Both weights `0.0` → No adjustment (equal per capita)
+- `capability_weight > 0, responsibility_weight = 0` → Capability is the sole adjustment
+- Both non-zero → Balanced by their ratio
 
 **Example:** `per-capita-adjusted-budget` varying `capability_weight` (with `responsibility_weight=0.0`)
 
@@ -99,7 +99,7 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 _Example uses `allocation_year=2020`._
 
-**Key insight:** Capability adjustments have a smaller magnitude effect than historical responsibility adjustments. Wealthy countries see modest reductions (USA: 4.0% → 3.4%, Germany: 0.8% → 0.7%) while lower-GDP countries see small increases (India: 16.7% → 16.9%). The effect also saturates between `weight=0.5` and `weight=1.0`.
+**Key insight:** Capability adjustments have a smaller magnitude effect than historical responsibility adjustments. Wealthy countries see modest reductions (USA: 4.0% → 3.4%, Germany: 0.8% → 0.7%) while lower-GDP countries see small increases (India: 16.7% → 16.9%). As with responsibility above, `weight=0.5` and `weight=1.0` are identical here because the other weight is zero — both normalize to 100% capability weighting.
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
@@ -111,13 +111,15 @@ _Example uses `allocation_year=2020`._
 
 ## income_floor
 
-**Effect:** Sets a minimum income level for capability calculations, protecting subsistence needs. Income below this threshold is excluded from capability adjustments.
+**Effect:** Sets a development threshold for capability calculations, following the Greenhouse Development Rights framework (Baer et al. 2009). For every person, only their income **above** this threshold counts towards "capability" or "ability to pay". Income up to the threshold is considered necessary for basic human development.
 
 **Direction:**
 
-- `floor=0` → All income counts toward capability
-- `floor=7500` → Moderate protection for basic needs
-- `floor=15000` → Strong protection for basic needs
+- `floor=0` → All income counts toward capability (no development protection)
+- `floor=7500` → $7,500/year (2010 PPP) — GDR framework default, the level at which basic development indicators (nutrition, infant mortality, education) are broadly met
+- `floor=15000` → $15,000/year (2010 PPP) — strong protection for basic needs
+
+Higher floors increase the exempt portion, reducing measured capability for all countries and increasing their allocated share of emissions. The effect is largest for middle-income countries where a significant fraction of the population clusters around the threshold.
 
 **Example:** `per-capita-adjusted-gini-budget` varying `income_floor` (with `capability_weight=0.5`)
 
@@ -129,13 +131,39 @@ _Example uses `allocation_year=2020`._
 
 _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
-**Key insight:** Income floor effects are modest but principled. Higher floors slightly reduce the capability penalty for wealthy countries (USA: 3.4% → 3.1%) by recognizing that subsistence needs should not count as "ability to pay". The effect is nonlinear and depends on income distribution (captured by Gini coefficients).
+**Key insight:** Income floor effects are modest but principled. Higher floors slightly reduce measured capability for wealthy countries (USA: 3.4% → 3.2%) by excluding subsistence income from "ability to pay." The effect is nonlinear and depends on income distribution (captured by Gini coefficients).
 
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 **Mathematical detail:** See [per_capita_adjusted_gini_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget)
 
 **Theoretical basis:** See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions)
+
+---
+
+## Understanding Weights vs Exponents
+
+Two distinct parameter types control adjustments. They are often confused:
+
+| Parameter                 | Default | Meaning of default               | What it controls                                           |
+| ------------------------- | ------- | -------------------------------- | ---------------------------------------------------------- |
+| `responsibility_weight`   | 0.0     | Both at 0.0 → no adjustments     | Relative importance of responsibility vs capability        |
+| `capability_weight`       | 0.0     | Both at 0.0 → no adjustments     | Relative importance of capability vs responsibility        |
+| `responsibility_exponent` | 1.0     | **Standard** proportional effect | Shape of the responsibility function (1=linear, 2=squared) |
+| `capability_exponent`     | 1.0     | **Standard** proportional effect | Shape of the capability function (1=linear, 2=squared)     |
+
+**Key distinction:** Weights are **relative** — only the ratio between `responsibility_weight` and `capability_weight` matters. Setting either to any non-zero value (with the other at zero) gives that adjustment 100% of the weighting. Exponents control the functional _shape_ of each adjustment independently.
+
+### "If you want X, set Y" guide
+
+| Goal                                   | Parameters                                               |
+| -------------------------------------- | -------------------------------------------------------- |
+| Pure equal per capita (no adjustments) | `responsibility_weight=0.0, capability_weight=0.0`       |
+| Historical responsibility only         | `responsibility_weight=1.0, capability_weight=0.0`       |
+| Balanced CBDR-RC                       | `responsibility_weight=0.5, capability_weight=0.5`       |
+| Responsibility-heavy CBDR-RC           | `responsibility_weight=0.7, capability_weight=0.3`       |
+| Ability to pay only                    | `responsibility_weight=0.0, capability_weight=1.0`       |
+| Stronger-than-linear responsibility    | `responsibility_weight=0.5, responsibility_exponent=2.0` |
 
 ---
 
@@ -189,9 +217,9 @@ Adjusts for wealth while protecting subsistence needs.
 
 ## Understanding Parameter Interactions
 
-### Weight Saturation
+### Weight Normalization in Examples
 
-As shown in the examples above, adjustment weights often saturate - differences between `weight=0.5` and `weight=1.0` can be minimal when underlying data differences are large.
+In the examples above, `weight=0.5` and `weight=1.0` produce identical results because the other weight is zero in both cases — both normalize to 100% weighting for that adjustment. To see the effect of different weight ratios, vary both weights simultaneously (e.g., compare 0.7:0.3 vs 0.3:0.7).
 
 ### Parameter Sensitivity Ranking
 

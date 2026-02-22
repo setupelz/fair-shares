@@ -33,11 +33,11 @@ graph LR
 
 ### Emission Category
 
-| Category                | Description                           |
-| ----------------------- | ------------------------------------- |
-| `co2-ffi` **(default)** | CO2 from fossil fuels and industry    |
-| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO2 from land use  |
-| `all-ghg`               | All greenhouse gases including LULUCF |
+| Category                | Description                           | Notes                                 |
+| ----------------------- | ------------------------------------- | ------------------------------------- |
+| `co2-ffi` **(default)** | CO₂ from fossil fuels and industry    |                                       |
+| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | Avoids LULUCF measurement uncertainty |
+| `all-ghg`               | All greenhouse gases including LULUCF | Uses GWP100 AR6 values                |
 
 ### Target Source
 

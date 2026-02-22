@@ -43,6 +43,32 @@ Mathematical functions for allocation calculations.
         heading_level: 4
         show_source: false
 
+## RCB Pathway Generation
+
+### calculate_exponential_decay_pathway
+
+::: fair_shares.library.utils.calculate_exponential_decay_pathway
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
+### generate_rcb_pathway_scenarios
+
+::: fair_shares.library.utils.generate_rcb_pathway_scenarios
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
+### list_pathway_generators
+
+::: fair_shares.library.utils.math.pathways.list_pathway_generators
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
 ## See Also
 
 - **[Data Utilities](https://setupelz.github.io/fair-shares/api/utils/data/)**: Data processing for convergence

@@ -180,11 +180,11 @@ CBDR-RC combines historical responsibility with capability. The question is how 
 
 ### Building Blocks
 
-| Element         | Parameter/Function                  | Effect                                         |
-| --------------- | ----------------------------------- | ---------------------------------------------- |
-| Income floor    | `income_floor` in `*-gini-adjusted` | Exempts income below threshold from capability |
-| Gini adjustment | Automatic when Gini data configured | High Gini → effective capability lower         |
-| Gini pathway    | `per_capita_adjusted_gini()`        | Subsistence protection in annual allocations   |
+| Element         | Parameter/Function                  | Effect                                                                                  |
+| --------------- | ----------------------------------- | --------------------------------------------------------------------------------------- |
+| Income floor    | `income_floor` in `*-gini-adjusted` | Exempts income below threshold from capability                                          |
+| Gini adjustment | Automatic when Gini data configured | With income floor, high Gini → more income above threshold → higher measured capability |
+| Gini pathway    | `per_capita_adjusted_gini()`        | Subsistence protection in annual allocations                                            |
 
 **See also**: [Parameter Effects: income_floor](parameter-effects.md#income_floor)
 
@@ -324,7 +324,7 @@ allocations = {
 - `allocation_year=2000` → Past emissions (2000-present) subtracted; moderate historical accounting
 - `responsibility_weight=0.5`, `capability_weight=0.5` → Balanced approach
 - `income_floor=7500` → Income below subsistence exempt from capability (GDR threshold, 2010 PPP)
-- Gini data configured → Within-country inequality reduces effective capability
+- Gini data configured → Combined with the income floor, higher inequality means more income above the threshold, increasing measured capability
 
 **Distributional outcome:** Industrialized countries with high emissions AND high GDP have smaller remaining allocations after subtracting 2000-present emissions, further reduced by capability adjustment. Least developed countries retain most of their fair share, protected by subsistence floor.
 
@@ -431,7 +431,7 @@ allocations = {
 
 - `allocation_year=1990` → Past emissions (1990-present) subtracted from budget
 - `responsibility_weight=0.2`, `capability_weight=0.8` → Capability matters more than historical excess
-- `income_floor=10000` → Higher than GDR threshold (7500)—broader subsistence definition
+- `income_floor=10000` → Higher than GDR threshold ($7,500/year 2010 PPP)—broader subsistence definition
 - Gini data configured → Within-country inequality affects effective capability
 
 **Distributional outcome:** Least developed countries retain most of their remaining allocation. High-income countries have reduced remaining allocations (from subtracting 1990-present emissions), further reduced by strong capability weighting.

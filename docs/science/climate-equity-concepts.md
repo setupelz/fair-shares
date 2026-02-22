@@ -30,6 +30,8 @@ Allocation approaches operationalize principles drawn from several traditions in
 | **Ability to pay**               | Should wealthier countries bear more of the burden?       | Capabilities approach [Caney 2010; Baer 2009]                    | `capability_weight` in `per-capita-adjusted`                        |
 | **Protection of basic needs**    | Should subsistence emissions be shielded from mitigation? | Sufficientarianism, right to development [Shue 2014; Meyer 2013] | Gini-adjusted approaches with income floor                          |
 
+These principles are often in tension with each other and may lead to conflicting allocations. The tool operationalizes each principle without making normative claims about which should take priority — that is a political and ethical judgment for users.
+
 These principles are often combined. **CBDR-RC** (Common But Differentiated Responsibilities and Respective Capabilities), the cornerstone of the UNFCCC [Okereke 2016; Rajamani 2021], combines historical responsibility with ability to pay. The Paris Agreement added "in light of different national circumstances" [Rajamani 2021]. In fair-shares, CBDR-RC can be operationalized through parameter combinations such as early allocation year + capability adjustment (see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/#parameters)).
 
 **Additional influences:** Unjust enrichment [Heyward 2021; Pickering 2012] provides independent grounding for historical responsibility — including cases where past emitters could not have known the consequences. The no-harm principle and duty to preserve physical preconditions [Shue 2015] provide general justification for mitigation action without mapping to specific allocation formulas. Prioritarianism and limitarianism inform theoretical debates but are not directly operationalized.
@@ -61,6 +63,8 @@ Grounded in the capabilities approach (following Sen and Nussbaum), which focuse
 ### Protection of Basic Needs
 
 Grounded in sufficientarianism — ensuring everyone meets a basic threshold of well-being [Meyer 2013; Zimm 2024] — and the right to development [Okereke 2016]. The literature distinguishes between subsistence emissions (necessary for basic needs) and luxury emissions (discretionary consumption), arguing they are not morally equivalent [Shue 2014; Baer 2009].
+
+**Important clarification:** In fair-shares, the income floor modifies _capability calculations_ — how we assess a country's ability to bear mitigation costs. It does not create emission entitlements or exempt any country from the global net-zero constraint. The tension between subsistence protection and net-zero targets is an important caveat in the literature (see Shue 2014).
 
 **Operationalized in:** Gini-adjusted approaches with income floor parameter (see [Gini Adjustment](https://setupelz.github.io/fair-shares/science/allocations/#gini-adjustment))
 
@@ -104,11 +108,11 @@ Methodological choices in fair shares analysis. See [Allocations](https://setupe
 
 ### Within-Country Inequality
 
-| Aspect           | Without Adjustment                                              | With Gini Adjustment                                                                                              |
-| ---------------- | --------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| **Definition**   | Uses national average GDP per capita as capability indicator    | Adjusts GDP per capita using Gini coefficient to reflect distribution                                             |
-| **Rationale**    | Simpler; data widely available                                  | More accurate picture of actual population circumstances                                                          |
-| **Implications** | Treats high-inequality countries as more capable than warranted | Recognizes that two countries with same GDP per capita but different Gini have different distributional realities |
+| Aspect           | Without Adjustment                                                                                                         | With Gini Adjustment                                                                                              |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| **Definition**   | Uses national average GDP per capita as capability indicator                                                               | Adjusts GDP per capita using Gini coefficient to reflect distribution                                             |
+| **Rationale**    | Simpler; data widely available                                                                                             | More accurate picture of actual population circumstances                                                          |
+| **Implications** | Does not account for income distribution; countries with same average GDP but different inequality are treated identically | Recognizes that two countries with same GDP per capita but different Gini have different distributional realities |
 
 ---
 

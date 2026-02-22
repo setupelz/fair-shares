@@ -142,35 +142,96 @@ def calculate_gini_adjusted_gdp(
     total_populations: np.ndarray,
     max_adjustment: float = 0.8,
 ) -> np.ndarray:
-    """
-    Gini-adjusted GDP calculation using log-normal distribution and an income floor.
+    r"""
+    Gini-adjusted GDP (capability) using the GDR development threshold.
 
-    Adjusts GDP to account for within-country income inequality by removing the
-    portion of GDP below a specified income floor. See docs/science/allocations.md
-    for theoretical grounding.
+    Implements the Greenhouse Development Rights (GDR) framework approach to
+    national capability (Baer et al. 2009): only income **above** a development
+    threshold counts as "ability to pay" for climate action.
 
-    Mathematical approach:
-    - Models income distribution as log-normal with parameters derived from Gini
-    - Calculates proportion of population below income floor using CDF
-    - Estimates income share below floor using Lorenz curve properties
-    - Removes this share from total GDP
+    For each individual, their first ``income_floor`` of annual income is exempt —
+    it's needed for basic human development. Only the excess above the floor
+    contributes to national capability.
+
+    Mathematical Foundation
+    -----------------------
+
+    Income is modelled as log-normal, parameterised by the Gini coefficient $G$:
+
+    $$
+    \sigma = \sqrt{2} \cdot \Phi^{-1}\!\left(\frac{1 + G}{2}\right)
+    \qquad
+    \mu = \ln(\text{mean}) - \frac{\sigma^2}{2}
+    $$
+
+    The proportion of the population below the floor is:
+
+    $$
+    p = \Phi\!\left(\frac{\ln(\text{floor}) - \mu}{\sigma}\right)
+    $$
+
+    The income share of people below the floor (Lorenz curve) is:
+
+    $$
+    L(p) = \Phi\!\left(\Phi^{-1}(p) - \sigma\right)
+    $$
+
+    National capability (aggregate above-threshold income):
+
+    $$
+    \text{capability} = \underbrace{\text{GDP} \times (1 - L(p))}_{\text{income of above-threshold people}}
+    \;-\; \underbrace{\text{floor} \times (1 - p) \times N}_{\text{their exempt income (up to floor)}}
+    $$
+
+    Where $N$ is the total population.
+
+    Effect of Inequality
+    --------------------
+
+    When combined with an income floor, higher Gini **always increases**
+    measured capability: inequality concentrates income in the upper tail,
+    so more national income sits above the development threshold:
+
+    | Scenario (floor = $7,500/yr) | Gini 0.30 | Gini 0.60 | Direction     |
+    | ---------------------------- | --------- | --------- | ------------- |
+    | Rich (mean $20k)             | 63% of GDP | 70% of GDP | ↑ moderate   |
+    | Poor (mean $3k)              | 1.6% of GDP | 21.5% of GDP | ↑ dramatic |
+
+    For poor countries, inequality is the only mechanism that creates any
+    above-threshold income at all. At perfect equality with mean $3k, nobody
+    exceeds $7,500 so capability is near zero.
 
     Parameters
     ----------
     total_gdps
-        Array of total GDP values for each country
+        Array of total GDP values for each country.
     gini_coefficients
-        Array of Gini coefficients for each country
+        Array of Gini coefficients (0-1) for each country.
     income_floor
-        Income floor value (absolute value in currency units per capita per year)
+        Development threshold in currency units per capita per year.
+        GDR default: $7,500/year (2010 PPP).
     total_populations
-        Array of total population values for each country
+        Array of total population values for each country.
     max_adjustment
-        Maximum adjustment allowed as proportion of total GDP (default: 0.8)
+        Maximum adjustment allowed as proportion of total GDP (default: 0.8).
+        Prevents extreme reductions for countries with very high inequality.
+        Note: with the GDR formula, higher inequality actually increases
+        capability; extreme reductions are more likely for low-income,
+        low-inequality countries where most people are near the threshold.
 
     Returns
     -------
-    Array of adjusted GDP values for each country
+    np.ndarray
+        Array of adjusted GDP values (capability) for each country.
+
+    References
+    ----------
+    Baer, P., Athanasiou, T., Kartha, S., & Kemp-Benedict, E. (2009).
+    *Greenhouse Development Rights: A proposal for a fair global climate
+    treaty.* Ethics, Place & Environment, 12(3), 267-281.
+
+    See also: `Climate Equity Reference Calculator
+    <https://calculator.climateequityreference.org/>`_
     """
     # Validation checks
     if income_floor < 0:
@@ -211,8 +272,17 @@ def calculate_gini_adjusted_gdp(
     # Calculate income shares below floor using Lorenz function for each country
     floor_income_shares = norm.cdf(norm.ppf(floor_proportions) - sigmas_2d)
 
-    # Calculate adjusted GDPs for each country
-    adjusted_total_gdps = total_gdps * (1 - floor_income_shares)
+    # Calculate adjusted GDPs for each country (GDR capability calculation)
+    # Step 1: Total income of above-threshold people
+    above_threshold_income = total_gdps * (1 - floor_income_shares)
+    # Step 2: Subtract the threshold amount for each above-threshold person
+    # (their income up to the threshold is exempt, like a tax-free allowance)
+    above_threshold_fractions = 1 - floor_proportions
+    threshold_deduction = income_floor * above_threshold_fractions * total_populations
+    adjusted_total_gdps = above_threshold_income - threshold_deduction
+
+    # Ensure non-negative (can happen with extreme parameters)
+    adjusted_total_gdps = np.maximum(adjusted_total_gdps, 0.0)
 
     # Apply maximum adjustment cap
     min_allowed_gdps = total_gdps * (1 - max_adjustment)
@@ -261,6 +331,9 @@ def apply_gini_adjustment(
 ) -> TimeseriesDataFrame | pd.Series:
     """
     Apply Gini adjustment to GDP data for all groups.
+
+    Wrapper that applies ``calculate_gini_adjusted_gdp`` across all countries
+    in a DataFrame or Series, handling MultiIndex grouping and Gini lookup.
 
     Parameters
     ----------

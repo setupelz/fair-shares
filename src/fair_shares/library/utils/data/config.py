@@ -52,9 +52,10 @@ def build_source_id(
     gini : str
         Gini source identifier
     target : str
-        Target source (e.g., "ar6", "rcbs", "rcb-pathways")
+        Target source type. One of: "rcbs", "ar6", "rcb-pathways".
     emission_category : str
-        Emission category (e.g., "co2-ffi", "all-ghg")
+        Emission category. Available categories are defined per target in
+        ``conf/data_sources/data_sources_unified.yaml``.
     rcb_generator : str | None, optional
         RCB pathway generator name (only used for target="rcb-pathways")
 
@@ -126,7 +127,10 @@ def build_data_config(
     Parameters
     ----------
     emission_category : Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"]
-        Emission category to filter for
+        Emission category to filter for. Options:
+        - "co2-ffi": CO2 from fossil fuels and industry
+        - "all-ghg": All greenhouse gases including LULUCF (GWP100 AR6)
+        - "all-ghg-ex-co2-lulucf": All GHGs excluding CO2 from land use
     active_sources : dict[str, str]
         Dictionary of active source names with keys:
         - "emissions": emissions source (e.g., "primap-202503")
@@ -352,7 +356,8 @@ def validate_data_source_config(
     Parameters
     ----------
     emission_category : str
-        Emission category to validate (e.g., "co2-ffi", "all-ghg")
+        Emission category to validate. One of: "co2-ffi", "all-ghg",
+        "all-ghg-ex-co2-lulucf".
     active_sources : dict[str, str]
         Dictionary with keys: "emissions", "gdp", "population", "gini", "target"
     verbose : bool, default=True

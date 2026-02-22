@@ -19,6 +19,14 @@ Functions for calculating responsibility, capability, and Gini adjustments.
 
 ## Gini Adjustments
 
+### calculate_gini_adjusted_gdp
+
+::: fair_shares.library.utils.calculate_gini_adjusted_gdp
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
 ### apply_gini_adjustment
 
 ::: fair_shares.library.utils.apply_gini_adjustment

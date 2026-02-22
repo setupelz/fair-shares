@@ -26,9 +26,9 @@ All allocation approaches ensure shares sum to 1 in each year and ensure complet
 
 ### Budget vs Pathway: Choosing Based on Your Needs
 
-**In brief:** Both produce the same cumulative allocations. Choose based on whether you need year-by-year breakdowns.
+**In brief:** Both produce compatible cumulative allocations. Choose based on whether you need year-by-year breakdowns.
 
-**Why they're equivalent:** For emission pathways that never go negative (emissions always ≥0), the cumulative sum of annual allocations equals the budget allocation. fair-shares ensures this by design.
+**Why they're compatible:** For emission pathways that never go negative (emissions always >= 0), the cumulative sum of annual allocations is consistent with the budget allocation, fair-shares ensures this cumulative consistency by design.
 
 ??? note "Technical note: The net-negative emissions exception"
 
@@ -57,25 +57,24 @@ fair-shares currently supports three target sources for allocation calculations:
 
 ### RCB-to-Pathway Conversion
 
-The `rcb-pathways` target source converts the global remaining carbon budget (RCB) into an annual emission pathway, which can then be allocated using pathway allocation approaches. This approach:
+The `rcb-pathways` target source converts the **global** remaining carbon budget (RCB) into a **global** annual emission pathway, which can then be allocated to countries using pathway allocation approaches. This is a two-step process:
 
-1. **Generates a global pathway** from the remaining carbon budget using normalized shifted exponential decay
+1. **Generates a global pathway** from the remaining carbon budget using normalized shifted exponential decay (a global operation -- no country allocations at this stage)
 2. **Applies pathway allocation approaches** to distribute the global pathway among countries (e.g., `equal-per-capita`, `per-capita-adjusted`)
-3. **Preserves cumulative totals** — the sum of annual pathway emissions equals the original carbon budget
+3. **Preserves cumulative totals** -- the sum of annual pathway emissions equals the original carbon budget
 
-**Why use this?** You want to start from a global carbon budget but need year-by-year emission trajectories for:
-
-- Integration with IAMs (Integrated Assessment Models)
-- Policy roadmaps requiring annual targets
-- Comparison with AR6 scenario pathways
-
-**Mathematical approach:** Uses `generate_rcb_pathway_scenarios()` which creates an exponential decay curve that:
+The global pathway:
 
 <!-- REFERENCE: generate_rcb_pathway_scenarios() in src/fair_shares/library/utils/math/pathways.py -->
 
-- Starts at historical emissions in the allocation year
-- Reaches exactly zero by the end year
+- Starts at global historical emissions in the allocation year
+- Reaches exactly zero by the end year (default 2100)
 - Ensures discrete annual sums equal the budget
+- The `generator` parameter supports future extensibility with alternative functional forms
+
+!!! note "Country net-zero years emerge from allocation, not pathway shape"
+
+    The global pathway shape described above does not directly prescribe when individual countries reach net-zero. Country net-zero timing emerges from the allocation step: pathway allocation approaches distribute annual emissions to countries, and countries whose allocation nears zero early in the pathway are effectively at their net-zero year. For example, under a 1.5 deg C budget with strong responsibility weighting, a high-emitting developed country might receive an allocation that reaches near-zero (or a very small % of current emissions) well before 2100 -- this can be considered their implied net-zero year in policy translation.
 
 **Configuration:** Set `target: "rcb-pathways"` in your data source config. See [User Guide: Configuration](https://setupelz.github.io/fair-shares/user-guide/#rcb-pathway-generation) for setup details.
 
@@ -154,11 +153,13 @@ These can be combined. For example, CBDR-RC can be interpreted and operationalis
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted_gini() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
-Models national income distribution as log-normal and applies an income floor, excluding income below threshold when calculating capability. Higher Gini coefficients reduce the effective capability metric.
+Implements the Greenhouse Development Rights (GDR) framework approach to national capability: only income **above** a development threshold counts as "ability to pay." The income floor works like a tax-free personal allowance — each person's first $7,500/year (default, 2010 PPP) of income is exempt from capability calculations.
+
+Income distribution is modelled as log-normal, parameterised by each country's Gini coefficient. When combined with the income floor, higher inequality means more national income sits above the development threshold — increasing measured capability.
 
 See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions) for conceptual context.
 
-**Mathematical formulations:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
+**Mathematical formulations:** [GDR capability calculation](https://setupelz.github.io/fair-shares/api/utils/adjustments/#calculate_gini_adjusted_gdp) | [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
 
 ---
 

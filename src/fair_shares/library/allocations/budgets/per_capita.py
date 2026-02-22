@@ -842,16 +842,12 @@ def per_capita_adjusted_gini_budget(
 
     **Gini Adjustment Process**
 
-    GDP is adjusted for within-country income inequality using the Gini coefficient.
-    This process modifies the GDP values used in capability calculations:
-
-    $$
-    \text{GDP}^{\text{adj}}(g, t) = \text{GDP}(g, t) \times (1 - \text{income-share-floor})
-    $$
-
-    Where the income share floor is calculated from the Gini coefficient and income floor
-    parameters. The adjustment reduces GDP for high-inequality countries, reflecting that
-    their wealth is concentrated among fewer people.
+    GDP is adjusted using the Greenhouse Development Rights (GDR) framework:
+    only income above a development threshold counts as capability. When
+    combined with the income floor, higher inequality means more national
+    income sits above the threshold — increasing measured capability.
+    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    for the full mathematical derivation.
 
     **Responsibility Adjustment**
 
@@ -882,12 +878,13 @@ def per_capita_adjusted_gini_budget(
     Where:
 
     - $C_{\text{Gini}}(g, t)$: Gini-adjusted capability factor (inverse - higher adjusted GDP = lower allocation)
-    - $\text{GDP}^{\text{adj}}(g, t)$: Gini-adjusted GDP (reduced for high-inequality countries)
+    - $\text{GDP}^{\text{adj}}(g, t)$: Gini-adjusted GDP (see :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`)
     - $w_c$: Normalized capability weight
     - $e_c$: Capability exponent
 
-    The Gini adjustment effectively reduces capability for high-inequality countries,
-    giving them larger emission allocations than unadjusted GDP would suggest.
+    When combined with the income floor, higher inequality means more income
+    above the development threshold, giving high-inequality countries smaller
+    emission allocations than unadjusted GDP would suggest.
 
     Two allocation modes are supported based on
     :code:`preserve_allocation_year_shares`:
@@ -1021,7 +1018,7 @@ def per_capita_adjusted_gini_budget(
     0.5...
     >>> result_full.parameters["capability_weight"]  # doctest: +ELLIPSIS
     0.5...
-    >>> # High inequality countries get higher allocations than GDP alone suggests
+    >>> # With income floor, high inequality means more income above threshold
     >>> shares_full = result_full.relative_shares_cumulative_emission
     >>> bool(abs(shares_full["2030"].sum() - 1.0) < 1e-10)
     True
