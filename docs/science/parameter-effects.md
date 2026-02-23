@@ -22,30 +22,30 @@ All examples use real data from PRIMAP (emissions), UN/OWID (population), World 
 
 ## allocation_year (Budget) / first_allocation_year (Pathway)
 
-**Effect:** Earlier allocation years increase the weight of historical population patterns. For equal-per-capita approaches, this affects shares based on when countries had different population distributions.
+**Effect:** Earlier allocation years account for more historical emissions in the cumulative budget calculation, dramatically reducing the remaining allocation for high historical emitters.
 
 **Direction:**
 
-- Earlier years → Allocations reflect historical population distributions
-- Later years → Allocations reflect current population distributions
+- Earlier years → More historical emissions subtracted → High emitters may go negative
+- Later years → Less history considered → Allocations closer to current population shares
 
-**Example:** `equal-per-capita-budget` with varying `allocation_year`
+**Example:** `equal-per-capita-budget` with varying `allocation_year`, showing remaining budget from 2020
 
 | Country | allocation_year=2020 | allocation_year=1990 | allocation_year=1900 |
 | ------- | -------------------- | -------------------- | -------------------- |
-| USA     | 4.0%                 | 4.1%                 | 4.4%                 |
-| India   | 16.7%                | 16.9%                | 16.7%                |
-| Germany | 0.8%                 | 0.9%                 | 1.2%                 |
+| USA     | +12.3 GtCO2          | -119.9 GtCO2         | -329.2 GtCO2         |
+| India   | +51.2 GtCO2          | +155.3 GtCO2         | +271.2 GtCO2         |
+| Germany | +2.4 GtCO2           | -15.9 GtCO2          | -66.2 GtCO2          |
 
-_Example uses 1.5°C carbon budget (50% probability). The `allocation_year` parameter is what varies across columns._
+_Example uses 1.5°C carbon budget (50% probability). Remaining budget = (cumulative population share × global budget from allocation_year) minus actual emissions from allocation_year to 2020._
 
-**Key insight:** For equal-per-capita allocation, the `allocation_year` determines the starting year for cumulative population accounting. Earlier allocation years use cumulative population over a longer historical period, which can shift shares if countries' relative population sizes have changed over time. The effect is limited here because global population shares are relatively stable across these periods.
+**Key insight:** The `allocation_year` is a highly consequential normative choice. With `allocation_year=2020`, no historical emissions are considered and all countries have positive remaining budgets. With `allocation_year=1990`, the USA and Germany have already exceeded their equal per capita share and show negative remaining budgets.
 
 <!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 **Mathematical detail:** See [equal_per_capita_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget)
 
-**Theoretical basis:** See [Egalitarianism](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#egalitarianism)
+**Theoretical basis:** See [Equal Per Capita Entitlement](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#equal-per-capita-entitlement) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility)
 
 ---
 
@@ -75,7 +75,7 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Polluter Pays / Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility)
+**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility)
 
 ---
 
@@ -105,7 +105,7 @@ _Example uses `allocation_year=2020`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Ability to Pay (Capability)](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay-capability)
+**Theoretical basis:** See [Ability to Pay](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay)
 
 ---
 
@@ -137,7 +137,7 @@ _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
 **Mathematical detail:** See [per_capita_adjusted_gini_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget)
 
-**Theoretical basis:** See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions)
+**Theoretical basis:** See [Protection of Basic Needs](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#protection-of-basic-needs)
 
 ---
 

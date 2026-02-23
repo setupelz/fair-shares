@@ -58,6 +58,14 @@ def my_new_allocation(
     -------
     BudgetAllocationResult
         Container with relative shares for cumulative emissions budget allocation.
+
+    See Also
+    --------
+    `Climate Equity Concepts <https://setupelz.github.io/fair-shares/science/climate-equity-concepts/>`_
+        Normative foundations and equity principles underlying allocation approaches.
+    `Entry Points Framework <https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#entry-points-framework>`_
+        Five-stage structure for transparent fair share documentation: foundational principles,
+        allocation quantity, allocation approach, indicators, implications for all others [Pelz 2025b].
     """
     pass
 ```

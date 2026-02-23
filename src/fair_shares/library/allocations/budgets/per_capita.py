@@ -671,6 +671,8 @@ def per_capita_adjusted_budget(
         Functional form for capability: "asinh" or "power"
     max_deviation_sigma
         Maximum allowed deviation from equal per capita in standard deviations.
+        Constrains allocations to remain within a statistically reasonable range of
+        the equal per capita baseline, preventing extreme adjustments.
         If None, no constraint is applied
     preserve_allocation_year_shares
         If False (default), shares are calculated using cumulative adjusted
@@ -928,13 +930,18 @@ def per_capita_adjusted_gini_budget(
     capability_functional_form
         Functional form for capability: "asinh" or "power"
     income_floor
-        Minimum income floor for Gini adjustment calculations.
+        Income floor for Gini adjustment (in USD PPP per capita). Income below
+        this threshold is excluded from capability calculations, implementing the
+        Greenhouse Development Rights development threshold: individuals below this
+        income level are exempt from climate obligations [Baer 2013].
         See docs/science/parameter-effects.md#income_floor for real allocation
         examples showing how this affects country shares
     max_gini_adjustment
         Maximum allowed Gini adjustment factor
     max_deviation_sigma
         Maximum allowed deviation from equal per capita in standard deviations.
+        Constrains allocations to remain within a statistically reasonable range of
+        the equal per capita baseline, preventing extreme adjustments.
         If None, no constraint is applied
     preserve_allocation_year_shares
         If False (default), shares are calculated using cumulative adjusted

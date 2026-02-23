@@ -117,6 +117,16 @@ results = manager.run_parameter_grid(
 
 ## Adding New Functionality
 
+All allocation approaches in this library can be linked to specific (sets of) equity principles. Before contributing new approaches, review the [Climate Equity Concepts](../science/climate-equity-concepts.md) documentation to understand the normative foundations.
+
+Use the **Entry Points Framework** when considering any new approach: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b].
+
+In particular, avoid:
+
+- **Claiming value neutrality** — all allocation choices embed normative judgments [Dooley 2021; Kartha 2018]
+- **Including grandfathering** — it has no philosophical support and contradicts equity purposes [Dooley 2021; Kartha 2018]
+- **Combining contradictory principles** — produces incoherent results [Dooley 2021]
+
 - **[Adding Allocation Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/)** - New equity principles
 - **[Adding Data Sources](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)** - New datasets
 

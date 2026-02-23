@@ -190,6 +190,16 @@ active_sources = {
 
 ---
 
+## Normative Implications
+
+Some data source choices carry normative weight. Contributors should document the rationale for their data source choices. For example, some decision points include:
+
+- **GDP:** PPP vs. MER measurement can significantly affect allocation results — PPP tends to raise developing-country capacity shares [Pelz 2025b].
+- **Emissions:** Production vs. consumption accounting embeds different theories of responsibility. Production accounting (territorial) excludes embedded imports; consumption accounting includes them.
+- **Population:** Projection method choices (UN median, SSP scenarios) affect per capita allocations, particularly for countries with high projected growth.
+
+---
+
 ## Validation Requirements
 
 New data sources should:

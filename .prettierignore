@@ -1,3 +1,7 @@
 # Ignore API docs - mkdocstrings requires specific indentation format
 # that prettier would incorrectly normalize
 docs/api/**/*.md
+
+# Ignore dev-guide docs - MkDocs admonitions require specific indentation
+# that prettier would incorrectly normalize
+docs/dev-guide/**/*.md

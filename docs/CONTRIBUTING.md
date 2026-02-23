@@ -13,7 +13,7 @@ If you can't explain something accurately in simple terms, link to the authorita
 | Layer            | Location                   | Source of truth for                                             |
 | ---------------- | -------------------------- | --------------------------------------------------------------- |
 | **Docstrings**   | `src/fair_shares/library/` | What the code does (LaTeX math, parameters, return types)       |
-| **Science docs** | `docs/science/`            | Why it works this way (principles, citations, design rationale) |
+| **Science docs** | `docs/science/`            | Why it works this way (equity principles and normative foundations, citations, design rationale) |
 | **User guides**  | `docs/user-guide/`         | How to use it (workflows, examples, quick reference)            |
 | **API docs**     | `docs/api/`                | Auto-generated from docstrings via mkdocstrings                 |
 
@@ -60,5 +60,6 @@ Check for broken links, missing front matter, and syntax warnings.
 
 1. Read the code -- docstrings in `src/` are authoritative
 2. Check `docs/science/allocations.md` for theoretical grounding
-3. Run a test to verify behavior
-4. Tag maintainers for review
+3. Read `docs/science/climate-equity-concepts.md` to understand the normative foundations
+4. Run a test to verify behavior
+5. Tag maintainers for review

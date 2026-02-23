@@ -24,6 +24,17 @@ Allocation approaches distribute emissions among countries based on equity princ
 
 All allocation approaches ensure shares sum to 1 in each year and ensure complete global coverage.
 
+!!! warning "Value neutrality is impossible in equity analysis"
+
+    No allocation approach is normatively neutral. Every choice about base year, indicator, weighting, or approach inclusion reflects value judgments about fairness [Dooley 2021; Kartha 2018].
+
+    Two specific pitfalls to avoid:
+
+    - Do not claim comprehensiveness through approach averaging. Averaging contradictory approaches (e.g., averaging grandfathering with equal per capita) does not produce a neutral result — it produces an incoherent one.
+    - Do not combine contradictory principles into composite indices.
+
+    The appropriate role of analysis is to clarify the ethical underpinnings and consequences of normative choices — not to make those choices on behalf of users [Kartha 2018].
+
 ### Budget vs Pathway: Choosing Based on Your Needs
 
 **In brief:** Both produce compatible cumulative allocations. Choose based on whether you need year-by-year breakdowns.
@@ -95,7 +106,7 @@ Reference year for calculating cumulative per capita allocations.
 | Budget   | `allocation_year`       |
 | Pathway  | `first_allocation_year` |
 
-Earlier allocation years account for historical emissions in the cumulative calculation. See [Polluter Pays](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility).
+Earlier allocation years account for historical emissions in the cumulative calculation. See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility).
 
 ### Building Blocks
 
@@ -216,7 +227,7 @@ Two mechanisms:
 1. **Early allocation year:** Set `allocation_year` to 1850 or 1990 (calculates cumulative per capita since that year)
 2. **Responsibility weight:** Use `responsibility_weight` + `historical_responsibility_year` (multiplicative adjustment based on per-capita historical emissions)
 
-These can be combined. See [Polluter Pays](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#polluter-pays-historical-responsibility) for conceptual foundations.
+These can be combined. See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility) for conceptual foundations.
 
 **Mathematical details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/)
 

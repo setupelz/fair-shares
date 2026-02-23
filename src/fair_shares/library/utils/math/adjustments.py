@@ -326,7 +326,7 @@ def calculate_capability_adjustment_data(
     max_gini_adjustment: float = 0.8,
 ) -> pd.Series:
     """
-    Calculate capability data (cumulative GDP or GDP per capita).
+    Calculate economic capability data (GDP-based proxy for the Ability to Pay Principle).
 
     Returns the raw capability data, NOT an adjustment factor.
     The caller applies the inverse to reduce allocations for higher capability.
@@ -353,7 +353,9 @@ def calculate_capability_adjustment_data(
         Optional Gini coefficient data for inequality adjustment.
         When provided, GDP is adjusted to reflect income distribution.
     income_floor
-        Income floor for Gini adjustment (in GDP units). Default: 0.0
+        Income floor for Gini adjustment (in USD PPP per capita). Income below this
+        threshold is excluded from capability calculations, implementing the Greenhouse
+        Development Rights development threshold [Baer 2013]. Default: 0.0
     max_gini_adjustment
         Maximum reduction factor from Gini adjustment (0-1). Default: 0.8
 

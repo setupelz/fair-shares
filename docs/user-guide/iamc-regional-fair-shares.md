@@ -14,6 +14,9 @@ The `401_custom_iamc_allocation.ipynb` notebook calculates fair share allocation
 
 Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use [country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/).
 
+!!! note "Entry Points Framework"
+    Fair share quantification involves five structured decision stages [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for the full framework.
+
 !!! info "Regions come from your data"
 The library uses **whatever regions are in your IAMC input file**. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.
 
@@ -114,6 +117,9 @@ result = per_capita_adjusted_budget(
 )
 ```
 
+!!! note "Capability-only is a minimal example"
+Setting `responsibility_weight=0.0` produces a capability-only configuration for illustration. The normatively recommended configuration typically includes both responsibility and capability components — see [Principle to Code](../science/principle-to-code.md) for guidance.
+
 ---
 
 ## Preparing Remaining Budgets for IAM Model Input
@@ -153,7 +159,7 @@ See "Step 7: Prepare for IAM Model Input" in notebook 401 for:
 
 - Emissions must be annual (use `expand_to_annual=True` when loading data)
 - Units should match your model (typically Mt CO2e)
-- Negative remaining budgets indicate the region has exceeded its allocation
+- Negative remaining budgets indicate the region has exceeded its allocation — see [Negative Allocations](#negative-allocations) below
 
 ---
 
@@ -165,6 +171,20 @@ The notebook automatically handles different timestep patterns from IAMC models:
 - **5-year intervals** (2020, 2025, 2030, ...) - Interpolates to annual when `expand_to_annual=True`
 - **10-year intervals** (2020, 2030, 2040, ...) - Interpolates to annual when `expand_to_annual=True`
 - **Mixed patterns** - Handles non-uniform timesteps automatically
+
+---
+
+## Negative Allocations
+
+Under principled approaches (e.g., ECPC from 1990), some developed regions will have exhausted their fair share and will show negative remaining allocations. For example, EU27 has a negative remaining allocation as of 2023 under 1.5°C budgets [Pelz 2025b].
+
+Negative allocations are a feature, not a bug — they underscore the importance of minimizing overshoot duration and magnitude [Pelz 2025a]. They signal:
+
+- **Highest possible domestic ambition** — emissions reductions should be as deep and fast as possible
+- **Carbon Dioxide Removal (CDR)** — negative allocations may call for net-negative targets in model runs
+- **International support and cooperation** — regions that have exceeded their share have corresponding obligations to support others
+
+Do not interpret negative allocations as prescriptive about timing or mechanism — they provide versatility for how regions respond. Transparently communicate negative allocations rather than clipping to zero, as the signal is normatively meaningful [Pelz 2025a; Pelz 2025b].
 
 ---
 

@@ -208,6 +208,14 @@ See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide
 
 Brief definitions. For detailed explanations and operationalization, see [Climate Equity Concepts](climate-equity-concepts.md) and [From Principle to Code](principle-to-code.md).
 
+**Carbon Debt**
+: Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. Matthews [2016] calculates debts against an equal per capita benchmark; Pelz [2025a] introduces a net-zero framing. [Pickering 2012; Pelz 2025a; Matthews 2016]
+: See: [Climate Equity Concepts](climate-equity-concepts.md#scientific-foundations)
+
+**Cascading Biases**
+: Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. Kartha [2018] identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches). [Kartha 2018]
+: See: [Climate Equity Concepts](climate-equity-concepts.md#grandfathering)
+
 **CBDR-RC**
 : Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity.
 : See: [Climate Equity Concepts](climate-equity-concepts.md#overview)
@@ -228,6 +236,10 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 : Past emissions reduce remaining fair share. Primary mechanism: `allocation_year` (earlier = more subtracted). Secondary: `responsibility_weight` in `*-adjusted` approaches.
 : See: [From Principle to Code](principle-to-code.md#historical-responsibility)
 
+**Negative Allocation**
+: When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b]
+: See: [Allocation Approaches](allocations.md) · [Guidance](climate-equity-concepts.md)
+
 **Subsistence protection**
 : Basic needs emissions protected from mitigation burdens. Operationalized via `income_floor` and Gini adjustments.
 : See: [From Principle to Code](principle-to-code.md#subsistence-protection)
@@ -244,6 +256,9 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 
 **BAU**
 : Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued in the literature as inconsistent with CBDR-RC (see Kartha 2018).
+
+**ECPC**
+: Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis, with past emissions subtracted from future entitlements.
 
 **GDP**
 : Gross Domestic Product. Economic output measure used for capability adjustments.

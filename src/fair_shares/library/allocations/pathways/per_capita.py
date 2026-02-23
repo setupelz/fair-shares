@@ -741,8 +741,10 @@ def per_capita_adjusted(
         Functional form for capability adjustment ('asinh', 'power', 'linear').
         Default: 'power'
     max_deviation_sigma
-        Maximum allowed deviation from equal per capita baseline. If None, no
-        constraint is applied.
+        Maximum allowed deviation from equal per capita baseline. Constrains
+        allocations to remain within a statistically reasonable range of the equal
+        per capita baseline, preventing extreme adjustments. If None, no constraint
+        is applied.
     preserve_first_allocation_year_shares
         If False (default), shares are calculated at each year. If True, shares
         calculated at first_allocation_year are preserved across all periods.
@@ -763,9 +765,11 @@ def per_capita_adjusted(
     This approach operationalizes Common But Differentiated Responsibilities and
     Respective Capabilities (CBDR-RC) by combining:
 
-    - **Historical Responsibility**: Adjusts allocations based on cumulative
-      historical emissions
-    - **Capability**: Adjusts based on economic resources and ability to pay
+    - **Historical Responsibility (Polluter Pays Principle)**: Adjusts allocations
+      based on cumulative historical emissions — countries that contributed more to
+      the problem bear greater obligations
+    - **Capability (Ability to Pay Principle)**: Adjusts based on economic resources
+      — countries with greater capacity bear greater obligations
 
     Parameter choices involve normative judgments that should be made transparently:
 
@@ -957,16 +961,20 @@ def per_capita_adjusted_gini(
     capability_functional_form
         Functional form for capability adjustment. Default: 'power'
     income_floor
-        Income floor for Gini adjustment (in USD). Income below this threshold is
-        excluded from capability calculations. Default: 7500.0
+        Income floor for Gini adjustment (in USD PPP per capita). Income below
+        this threshold is excluded from capability calculations, implementing the
+        Greenhouse Development Rights development threshold: individuals below this
+        income level are exempt from climate obligations [Baer 2013]. Default: 7500.0
         See docs/science/parameter-effects.md#income_floor for real allocation
         examples showing how this affects country shares
     max_gini_adjustment
         Maximum reduction factor from GDR threshold adjustment (0-1). Limits how
         much the development threshold deduction can reduce effective GDP. Default: 0.8
     max_deviation_sigma
-        Maximum allowed deviation from equal per capita baseline. If None, no
-        constraint is applied.
+        Maximum allowed deviation from equal per capita baseline. Constrains
+        allocations to remain within a statistically reasonable range of the equal
+        per capita baseline, preventing extreme adjustments. If None, no constraint
+        is applied.
     preserve_first_allocation_year_shares
         If False (default), shares are calculated at each year. If True, shares
         calculated at first_allocation_year are preserved across all periods.

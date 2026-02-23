@@ -31,7 +31,15 @@ Every allocation approach operationalizes specific equity principles. Before wri
 2. What value judgments are embedded
 3. How it relates to existing approaches
 
-If unclear, read [Principle-to-Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) first.
+If unclear, read [Principle-to-Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) first. For the normative foundations underlying allocation approaches, see [Climate Equity Concepts](../science/climate-equity-concepts.md).
+
+!!! warning "Value neutrality"
+    Do not present the approach as value-neutral — all allocation choices embed normative judgments [Dooley 2021; Kartha 2018].
+
+Use the Entry Points Framework to structure your normative documentation: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b]. See [Climate Equity Concepts](../science/climate-equity-concepts.md).
+
+!!! warning "Grandfathering"
+    Grandfathering-based allocation — assigning shares proportional to current emissions — has no support in the equity literature and contradicts the normative foundations of this project [Dooley 2021; Kartha 2018]. Contraction-and-convergence approaches that begin from current national emissions levels embed grandfathering during the convergence period and should be treated with the same caution [Kartha 2018]. New approaches should be grounded in defensible equity principles documented in [Climate Equity Concepts](../science/climate-equity-concepts.md).
 
 ---
 
@@ -268,6 +276,12 @@ def test_my_new_budget_parameter_effect():
 1. **Docstring** - See [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) for required sections
 2. **Science docs** - Add to `docs/science/allocations.md` if introducing new principle
 3. **API docs** - Auto-generated from docstrings
+
+Please consider the following:
+
+- Explicit statement or link to documentation regarding normative foundations
+- Indicator choices and justifications
+- Implications for all parties, not just a focus country
 
 ---
 

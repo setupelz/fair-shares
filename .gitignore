@@ -183,3 +183,6 @@ loop.sh
 format-output.py
 /.claude
 /.playwright-mcp
+
+# Untracked analysis notebooks
+notebooks/404_*

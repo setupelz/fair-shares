@@ -1,5 +1,5 @@
 """
-RCB (Remaining Carbon Budget) processing utilities.
+Remaining Carbon Budget (RCB) processing utilities.
 
 Functions for parsing RCB scenario strings and converting RCB values between
 different baseline years with adjustments for bunkers and LULUCF.

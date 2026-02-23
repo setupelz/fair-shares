@@ -20,6 +20,8 @@ All allocation approaches at a glance.
 
 When `allocation_year` (budget) or `first_allocation_year` (pathway) is set in the past, past emissions are subtracted from the budget before allocation. Countries have different **remaining allocations** depending on historical emissions.
 
+The choice of start date is normatively significant: 1850 captures the full industrial era, 1950 tracks post-war growth, and 1990 corresponds to the IPCC First Assessment Report — widely treated in the equity literature as the "excusable ignorance" threshold, beyond which responsibility for emissions harm is difficult to deny [Baer 2013; Pelz 2025b].
+
 See [Principle to Code](../science/principle-to-code.md#historical-responsibility) for configuration details.
 
 ---
@@ -31,8 +33,8 @@ Allocate a cumulative emissions budget at a single point in time.
 | Approach                              | Use Case                                          |
 | ------------------------------------- | ------------------------------------------------- |
 | **`equal-per-capita-budget`**         | Population-proportional targets                   |
-| **`per-capita-adjusted-budget`**      | Additional weighting by emissions history and GDP |
-| **`per-capita-adjusted-gini-budget`** | Accounts for within-country inequality            |
+| **`per-capita-adjusted-budget`**      | Additional weighting by emissions history (historical responsibility) and GDP (ability to pay) |
+| **`per-capita-adjusted-gini-budget`** | Accounts for within-country inequality                                                         |
 
 ---
 
@@ -42,22 +44,24 @@ Allocate emissions over multiple years, producing annual shares.
 
 ### Equal Per Capita Family
 
+These approaches implement Equal Cumulative Per Capita (ECPC) allocation when an `allocation_year` in the past is used, ensuring historical emissions count against each country's share.
+
 | Approach                       | Use Case                                          |
 | ------------------------------ | ------------------------------------------------- |
 | **`equal-per-capita`**         | Year-by-year population shares                    |
-| **`per-capita-adjusted`**      | Additional weighting by emissions history and GDP |
-| **`per-capita-adjusted-gini`** | Accounts for within-country inequality            |
+| **`per-capita-adjusted`**      | Additional weighting by emissions history (historical responsibility) and GDP (ability to pay) |
+| **`per-capita-adjusted-gini`** | Accounts for within-country inequality                                                         |
 
 ### Convergence Family
 
 Gradual transition from current emissions to fair share target.
 
-| Approach                                              | Use Case                                          |
-| ----------------------------------------------------- | ------------------------------------------------- |
-| **`per-capita-convergence`**                          | Comparison baseline (not a fair share approach)   |
-| **`cumulative-per-capita-convergence`**               | Budget-preserving transitions                     |
-| **`cumulative-per-capita-convergence-adjusted`**      | Additional weighting by emissions history and GDP |
-| **`cumulative-per-capita-convergence-gini-adjusted`** | Accounts for within-country inequality            |
+| Approach                                              | Use Case                                                                                                                                                             |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`per-capita-convergence`**                          | Comparison baseline (not a fair share approach) — convergence from current emission levels embeds implicit grandfathering during the transition period [Kartha 2018] |
+| **`cumulative-per-capita-convergence`**               | Budget-preserving transitions                                                                                                                                        |
+| **`cumulative-per-capita-convergence-adjusted`**      | Additional weighting by emissions history and GDP                                                                                                                    |
+| **`cumulative-per-capita-convergence-gini-adjusted`** | Accounts for within-country inequality                                                                                                                               |
 
 ---
 
@@ -66,11 +70,14 @@ Gradual transition from current emissions to fair share target.
 | Question                               | Answer                      |
 | -------------------------------------- | --------------------------- |
 | Single target or year-by-year?         | Budget vs Pathway           |
-| Account for history?                   | Set early `allocation_year` |
-| Account for capability?                | Use `-adjusted` variants    |
+| Account for history (historical responsibility)? | Set early `allocation_year` |
+| Account for capability (ability to pay)?         | Use `-adjusted` variants    |
 | Account for within-country inequality? | Use `-gini` variants        |
 
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
+
+!!! tip "Entry Points Framework"
+    Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b]. Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for the full framework.
 
 ---
 

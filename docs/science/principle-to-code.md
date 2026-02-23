@@ -454,7 +454,7 @@ Fair-shares operationalizes principles -- it cannot tell you which principles to
 
 2. **Where do thresholds come from?** — Income floors, responsibility start dates, convergence years involve value judgments about development rights and transition feasibility.
 
-3. **What happens with negative remaining allocations?** — When `allocation_year` is in the past, high historical emitters may have already exceeded their fair share—their remaining allocation is negative (carbon debt). What this means in practice (accelerated domestic mitigation, financial transfers, CDR obligations) requires political specification.
+3. **What happens with negative remaining allocations?** — When `allocation_year` is in the past, high historical emitters may have already exceeded their fair share — their remaining allocation is negative (carbon debt). Negative allocations communicate the scale of exceedance and create a signal for what is required. They imply the need for highest possible domestic ambition, negative emissions targets (carbon dioxide removal), and international support for others. The priority is to minimize the duration and magnitude of overshoot [Pelz 2025b; Pelz 2025a]. What specific obligations follow (accelerated domestic mitigation, financial transfers, CDR investments) requires political specification, but the tool transparently surfaces the normative implication.
 
 4. **Is convergence ethically acceptable?** — Convergence embeds grandfathering, rewarding past high emissions. The tool provides pure per-capita-convergence approaches for transparency, not endorsement. This is distinct from cumulative-per-capita-convergence, which starts with current per capita emissions but converges to cumulative per capita shares over time.
 

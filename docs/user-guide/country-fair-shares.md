@@ -60,6 +60,9 @@ Available sources are configured in `conf/data_sources/`.
 
 ---
 
+!!! note "Entry Points Framework"
+    Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for details.
+
 ## Step 2: Allocation Approaches
 
 <!-- REFERENCE: Approach implementations in src/fair_shares/library/allocations/
@@ -70,6 +73,8 @@ Available sources are configured in `conf/data_sources/`.
 
 ### Budget Approaches (for `target="rcbs"`)
 
+These implement Equal Cumulative Per Capita (ECPC) allocation when `allocation_year` is set to a historical start year (e.g., 1990). The choice of start year is normatively significant — 1990 corresponds to the IPCC First Assessment Report and the "excusable ignorance" threshold in the equity literature [Baer 2013; Pelz 2025b].
+
 | Approach                          | Description                                    |
 | --------------------------------- | ---------------------------------------------- |
 | `equal-per-capita-budget`         | Equal share per person                         |
@@ -78,15 +83,15 @@ Available sources are configured in `conf/data_sources/`.
 
 ### Pathway Approaches (for `target="ar6"` or `target="rcb-pathways"`)
 
-| Approach                                          | Description                                                               |
-| ------------------------------------------------- | ------------------------------------------------------------------------- |
-| `equal-per-capita`                                | Equal share per person per year                                           |
-| `per-capita-adjusted`                             | Adjusted for responsibility and capability                                |
-| `per-capita-adjusted-gini`                        | Further adjusted for within-country inequality                            |
-| `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only)   |
-| `cumulative-per-capita-convergence`               | Budget-preserving transition from current emissions to cumulative targets |
-| `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with responsibility and capability adjustments     |
-| `cumulative-per-capita-convergence-gini-adjusted` | Cumulative convergence accounting for intra-national inequality           |
+| Approach                                          | Description                                                                                                                                                                         |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `equal-per-capita`                                | Equal share per person per year                                                                                                                                                     |
+| `per-capita-adjusted`                             | Adjusted for responsibility and capability                                                                                                                                          |
+| `per-capita-adjusted-gini`                        | Further adjusted for within-country inequality                                                                                                                                      |
+| `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only — convergence from current levels embeds implicit grandfathering during the transition period [Kartha 2018]) |
+| `cumulative-per-capita-convergence`               | Budget-preserving transition from current emissions to cumulative targets                                                                                                           |
+| `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with responsibility and capability adjustments                                                                                                               |
+| `cumulative-per-capita-convergence-gini-adjusted` | Cumulative convergence accounting for intra-national inequality                                                                                                                     |
 
 For detailed explanations, see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/).
 
@@ -135,6 +140,9 @@ Results are saved to `output/{source_id}/allocations/{allocation_folder}/`:
 
 - **Relative shares**: Country fractions summing to 1.0 per year
 - **Absolute emissions**: Relative share × global target in physical units
+
+!!! note "Negative allocations under principled approaches"
+Under approaches like ECPC from 1990, some developed regions have already exhausted their fair share and will show negative remaining allocations. This is a feature, not a bug — it signals the need for maximum domestic ambition and active support for international cooperation to compensate for past overshoot.
 
 ---
 

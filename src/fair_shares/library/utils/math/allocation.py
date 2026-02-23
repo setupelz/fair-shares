@@ -50,6 +50,10 @@ def calculate_relative_adjustment(
 
     Notes
     -----
+    This function operationalizes both the Polluter Pays Principle (via historical
+    responsibility adjustments) and the Ability to Pay Principle (via economic
+    capability adjustments).
+
     Negative or NaN values are clamped to 1.0 before transformation to avoid
     numerical issues and ensure valid results for all inputs.
     """

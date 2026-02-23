@@ -76,7 +76,7 @@ fair-shares currently supports three target sources:
 Two questions:
 
 1. **Budget or pathway?** Do you need a single cumulative target or year-by-year emissions?
-2. **Which principles?** Equal entitlements, historical responsibility, capability, subsistence protection -- or some combination?
+2. **Which principles?** Equal entitlements, historical responsibility (cumulative emissions), capability (ability to pay) -- or some combination? Note: "subsistence protection" as a live approach choice has diminished operational value — Shue later acknowledged that what the poor need is energy, not emissions rights. The more relevant operational concept is the GDR development threshold [Baer 2013], which exempts individuals below a development income threshold (~$8,500 PPP) from obligations.
 
 Then:
 

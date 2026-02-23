@@ -125,7 +125,8 @@ print("Data loaded successfully!")
 # %% [markdown]
 # ## Example 1: allocation_year Effects
 #
-# Show how different allocation years affect shares for equal-per-capita-budget
+# Show how different allocation years affect remaining budgets from 2020.
+# The main effect is historical emissions subtraction, not population shifts.
 
 
 # %%
@@ -149,30 +150,53 @@ def get_country_shares(
 # Countries to compare
 example_countries = ["USA", "IND", "DEU"]
 
-# Test different allocation years
-# Note: allocation_year must be >= 1900 due to validation constraints
+# Test different allocation years — show remaining budget from 2020
 allocation_years = [2020, 1990, 1900]
-allocation_year_results = {}
+allocation_year_remaining = {}
 
 for year in allocation_years:
+    # Global budget from allocation_year
+    year_budget = calculate_budget_from_rcb(
+        rcb_value=rcb_value,
+        allocation_year=year,
+        world_scenario_emissions_ts=world_emissions_df,
+        verbose=False,
+    )
+
+    # Get population shares
     result = equal_per_capita_budget(
         population_ts=population_ts,
         allocation_year=year,
         emission_category=emission_category,
     )
-    allocation_year_results[year] = get_country_shares(result, example_countries)
+    shares = result.relative_shares_cumulative_emission
+
+    # Remaining budget = (share × global budget) - actual emissions to 2020
+    country_remaining = {}
+    for c in example_countries:
+        share = float(shares.loc[c].values[0])
+        alloc = share * year_budget  # in Mt
+        emiss_cols = [
+            str(y) for y in range(year, 2020) if str(y) in emissions_ts.columns
+        ]
+        if c in emissions_ts.index.get_level_values("iso3c") and emiss_cols:
+            actual = float(emissions_ts.loc[c][emiss_cols].sum(axis=1).values[0])
+        else:
+            actual = 0.0
+        country_remaining[c] = (alloc - actual) / 1e3  # Mt to Gt
+    allocation_year_remaining[year] = country_remaining
 
 # Create markdown table
-print("## allocation_year Effects\n")
+print("## allocation_year Effects (Remaining Budget from 2020)\n")
 print(
     "| Country | allocation_year=2020 | allocation_year=1990 | allocation_year=1900 |"
 )
 print("|---------|---------------------|---------------------|---------------------|")
 for country in example_countries:
     country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
-    shares = [allocation_year_results[year][country] for year in allocation_years]
+    remaining = [allocation_year_remaining[year][country] for year in allocation_years]
     print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% | {shares[2]:.1f}% |"
+        f"| {country_name} | {remaining[0]:+.1f} GtCO2 | {remaining[1]:+.1f} GtCO2 | {remaining[2]:+.1f} GtCO2 |"
     )
 print()
 
