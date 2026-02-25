@@ -148,6 +148,7 @@ data = load_iamc_data(
     model_filter=MODEL_FILTER,
     scenario_filter=SCENARIO_FILTER,
     expand_to_annual=True,
+    interpolation_method="linear",
 )
 
 print("\nData loaded successfully!")

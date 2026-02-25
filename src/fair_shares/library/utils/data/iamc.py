@@ -559,15 +559,17 @@ def calculate_cumulative_emissions(
     unit_conversion: float = 1.0 / 1000,  # Default: Mt to Gt
 ) -> pd.Series:
     """
-    Calculate cumulative emissions over a time period from timeseries data.
+    Calculate cumulative emissions over a time period from annual timeseries data.
 
-    For timestep data (e.g., 5-year intervals), this function correctly accounts
-    for the period each value represents using backward fill logic.
+    Expects annual data (e.g., expanded via ``expand_to_annual`` with linear
+    interpolation). Each year column represents the annual rate for that year,
+    and the cumulative is simply the sum of those annual values.
 
     Parameters
     ----------
     emissions_ts
-        Emissions timeseries DataFrame with year columns and region index
+        Emissions timeseries DataFrame with annual year columns and region index.
+        Should be expanded to annual resolution before calling this function.
     start_year
         First year to include in cumulative sum
     end_year
@@ -591,7 +593,6 @@ def calculate_cumulative_emissions(
     ...     unit_conversion=1.0 / 1000,  # Mt to Gt
     ... )  # doctest: +SKIP
     """
-    # Get year columns in range
     year_cols = [
         str(y)
         for y in range(start_year, end_year + 1)
@@ -604,30 +605,7 @@ def calculate_cumulative_emissions(
             f"Available years: {[c for c in emissions_ts.columns if c.isdigit()]}"
         )
 
-    # Calculate cumulative for each region
-    cumulative = pd.Series(index=emissions_ts.index, dtype=float)
-
-    for idx in emissions_ts.index:
-        total = 0
-        prev_year = None
-
-        for year_str in year_cols:
-            year = int(year_str)
-            annual_rate = emissions_ts.loc[idx, year_str]
-
-            # Calculate years in this period (backward fill logic)
-            if prev_year is None:
-                years_in_period = 1  # First year
-            else:
-                years_in_period = year - prev_year
-
-            # Add cumulative emissions for this period
-            total += annual_rate * years_in_period * unit_conversion
-            prev_year = year
-
-        cumulative[idx] = total
-
-    return cumulative
+    return emissions_ts[year_cols].sum(axis=1) * unit_conversion
 
 
 def calculate_world_total_timeseries(
