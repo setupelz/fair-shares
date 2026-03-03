@@ -163,6 +163,10 @@ variable_mappings = {
         "emission": "CO2",
         "category": ["1", "2"],  # Energy + IPPU
     },
+    "co2": {
+        "emission": "CO2",
+        "category": ["1", "2", "M.LULUCF"],  # Total CO2: Energy + IPPU + LULUCF
+    },
     "co2-lulucf": {
         "emission": "CO2",
         "category": ["M.LULUCF"],  # LULUCF

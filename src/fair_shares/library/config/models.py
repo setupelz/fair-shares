@@ -115,6 +115,42 @@ class GiniSourceConfig(BaseModel):
         return validate_path_exists(v, "Gini data file")
 
 
+class DataSourceRef(BaseModel):
+    """Reference to a data file used for timeseries-based RCB adjustments."""
+
+    path: str = Field(
+        ..., description="Path to the data file (relative to project root)"
+    )
+
+
+class AdjustmentsConfig(BaseModel):
+    """RCB adjustment configuration — timeseries-based (NGHGI-consistent)."""
+
+    lulucf_nghgi: DataSourceRef = Field(
+        ..., description="NGHGI-reported LULUCF CO2 timeseries (Grassi et al.)"
+    )
+    bunkers: DataSourceRef = Field(
+        ..., description="International bunker fuel CO2 timeseries (GCB2024)"
+    )
+    ar6_constants_path: str = Field(
+        "data/rcbs/ar6_category_constants.yaml",
+        description=(
+            "Path to auto-generated AR6 category constants file (relative to "
+            "project root). Contains per-category net-zero years computed from "
+            "Gidden et al. AR6 reanalysis by the RCB preprocessing notebook."
+        ),
+    )
+    precautionary_lulucf: bool = Field(
+        True,
+        description=(
+            "If true (default), BM LULUCF sinks cannot increase the fossil "
+            "budget for co2-ffi. Sources still reduce it. Implements "
+            "max(0, BM_cumulative) so uncertain future reforestation does not "
+            "inflate the fossil budget."
+        ),
+    )
+
+
 class TargetDataParameters(BaseModel):
     """Parameters for target data source (AR6 scenarios or remaining carbon budgets)."""
 
@@ -126,7 +162,7 @@ class TargetDataParameters(BaseModel):
     )
     quantiles: list[float] | None = Field(None, description="Available quantiles")
     world_key: str | None = Field(None, description="Key for world/global data")
-    adjustments: dict[str, float] | None = Field(
+    adjustments: AdjustmentsConfig | None = Field(
         None, description="Adjustments for RCB processing (bunkers, lulucf, etc.)"
     )
 
@@ -159,8 +195,8 @@ class GeneralConfig(BaseModel):
 class DataSourcesConfig(BaseModel):
     """Top-level configuration for all data sources."""
 
-    emission_category: Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"] = Field(
-        ..., description="Emission category for this configuration"
+    emission_category: Literal["co2-ffi", "co2", "all-ghg", "all-ghg-ex-co2-lulucf"] = (
+        Field(..., description="Emission category for this configuration")
     )
     emissions: dict[str, EmissionsSourceConfig] = Field(
         ..., description="Available emissions data sources"

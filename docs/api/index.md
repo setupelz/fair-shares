@@ -16,7 +16,7 @@ Documentation generated from docstrings.
 | **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**      | Annual pathway allocation functions    |
 | **[Allocation Manager](https://setupelz.github.io/fair-shares/api/allocations/manager/)**        | High-level batch allocation interface  |
 | **[Core Utilities](https://setupelz.github.io/fair-shares/api/utils/core/)**                     | Data manipulation functions            |
-| **[Data Utilities](https://setupelz.github.io/fair-shares/api/utils/data/)**                     | Data processing and convergence prep   |
+| **[Data Utilities](https://setupelz.github.io/fair-shares/api/utils/data/)**                     | Data processing, NGHGI corrections, RCB processing |
 | **[Math Utilities](https://setupelz.github.io/fair-shares/api/utils/math/)**                     | Convergence solver and adjustments     |
 | **[Adjustments](https://setupelz.github.io/fair-shares/api/utils/adjustments/)**                 | Adjustment calculation functions       |
 | **[Validation](https://setupelz.github.io/fair-shares/api/utils/validation/)**                   | Input validation                       |

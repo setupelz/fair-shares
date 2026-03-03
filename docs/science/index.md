@@ -18,6 +18,6 @@ icon: material/flask
 - **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)** -- Ethical traditions and foundational principles
 - **[From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)** -- How equity principles translate to implementation choices
 - **[Parameter Effects](https://setupelz.github.io/fair-shares/science/parameter-effects/)** -- How parameter choices affect allocations, with real data examples
-- **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)** -- RCB pathway generation, net-negative handling, harmonization
+- **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)** -- NGHGI-consistent RCB corrections, pathway generation, harmonization
 - **[Glossary](https://setupelz.github.io/fair-shares/science/glossary/)** -- Terminology
 - **[References](https://setupelz.github.io/fair-shares/science/references/)** -- Bibliography

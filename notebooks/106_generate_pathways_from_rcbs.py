@@ -43,7 +43,6 @@ from fair_shares.library.utils import (
     build_source_id,
     ensure_string_year_columns,
     generate_rcb_pathway_scenarios,
-    process_rcb_to_2020_baseline,
 )
 
 # %% tags=["parameters"]
@@ -80,7 +79,7 @@ else:
     print("Running interactively - build desired config")
 
     # Interactive development configuration
-    emission_category = "co2-ffi"  # RCB-pathways only support co2-ffi
+    emission_category = "co2-ffi"  # or "co2"
     active_sources = {
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
@@ -113,11 +112,11 @@ print(f"Project root: {project_root}")
 # Extract config values
 emission_category = config["emission_category"]
 
-# RCB-pathways are only available for co2-ffi
-if emission_category != "co2-ffi":
+# RCB-pathways are only available for co2-ffi and co2
+if emission_category not in ("co2-ffi", "co2"):
     raise ConfigurationError(
-        f"RCB-pathway allocations only support 'co2-ffi' emission category. "
-        f"Got: {emission_category}. Please use target: 'ar6' or 'cr'"
+        f"RCB-pathway allocations only support 'co2-ffi' and 'co2' emission "
+        f"categories. Got: {emission_category}. Please use target: 'ar6'"
         f" in your configuration for other emission categories."
     )
 
@@ -142,14 +141,18 @@ print(f"  Generator: {generator}")
 print(f"  Start year: {start_year}")
 print(f"  End year: {end_year}")
 
-# Get RCB adjustments
-rcb_adjustments = rcb_pathways_config.get("data_parameters", {}).get("adjustments", {})
-bunkers_2020_2100 = rcb_adjustments.get("bunkers_2020_2100", 0.0)
-lulucf_2020_2100 = rcb_adjustments.get("lulucf_2020_2100", 0.0)
+# Get RCB adjustment configuration (NGHGI-consistent timeseries)
+from fair_shares.library.config.models import AdjustmentsConfig
 
-print("\nRCB adjustments:")
-print(f"  Bunkers (2020-2100): {bunkers_2020_2100:,.0f} Mt CO2")
-print(f"  LULUCF (2020-2100): {lulucf_2020_2100:,.0f} Mt CO2")
+rcb_data_parameters = rcb_pathways_config.get("data_parameters", {})
+rcb_adjustments_raw = rcb_data_parameters.get("adjustments", {})
+adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
+
+print("\nRCB adjustments (NGHGI-consistent, Weber et al. 2026):")
+print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
+print(f"  Bunkers source: {adjustments_config.bunkers.path}")
+print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
+print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 
 # %%
 # Construct paths to intermediate data
@@ -257,76 +260,22 @@ print(f"  Start year emissions ({start_year}): {start_emissions:,.0f} Mt CO2")
 
 # %% [markdown]
 # ## Process RCB data to 2020 baseline
+#
+# Uses `load_and_process_rcbs` — the same NGHGI-consistent pipeline as
+# notebook 100. This ensures per-category net-zero years, Gidden LULUCF
+# shift in the rebase, and the precautionary BM LULUCF cap are all applied.
 
 # %%
-print("\nProcessing RCBs with adjustments:")
-print("  Target baseline year: 2020")
-print(f"  Bunkers adjustment: {bunkers_2020_2100:,.0f} Mt CO2")
-print(f"  LULUCF adjustment: {lulucf_2020_2100:,.0f} Mt CO2")
+from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 
-# Create a list to store all RCB records
-rcb_records = []
-
-# Process each source
-for source_key, source_data in rcb_data["rcb_data"].items():
-    print(f"\n  Processing source: {source_key}")
-
-    # Extract metadata from source
-    baseline_year = source_data.get("baseline_year")
-    unit = source_data.get("unit", "Gt CO2")
-    scenarios = source_data.get("scenarios", {})
-
-    # Validate required fields
-    if baseline_year is None:
-        raise ConfigurationError(
-            f"RCB source '{source_key}' missing required field 'baseline_year'"
-        )
-    if not scenarios:
-        raise ConfigurationError(f"RCB source '{source_key}' has no scenarios defined")
-
-    print(f"    Baseline year: {baseline_year}, Scenarios: {len(scenarios)}")
-
-    # Process each scenario for this source
-    for scenario, rcb_value in scenarios.items():
-        # Parse scenario string into climate assessment and quantile
-        # Format: "TEMPpPROB" (e.g., "1.5p50" -> 1.5C warming, 50% probability)
-        parts = scenario.split("p")
-        if len(parts) == 2:
-            temperature = parts[0]
-            probability = parts[1]
-            climate_assessment = f"{temperature}C"
-            quantile = str(int(probability) / 100)
-        else:
-            raise ValueError(f"Invalid RCB scenario format: {scenario}")
-
-        # Process RCB to 2020 baseline
-        result = process_rcb_to_2020_baseline(
-            rcb_value=rcb_value,
-            rcb_unit=unit,
-            rcb_baseline_year=baseline_year,
-            world_co2_ffi_emissions=world_emissions_df,
-            bunkers_2020_2100=bunkers_2020_2100,
-            lulucf_2020_2100=lulucf_2020_2100,
-            target_baseline_year=2020,
-            source_name=source_key,
-            scenario=scenario,
-            verbose=False,
-        )
-
-        # Create record with parsed climate assessment and quantile
-        record = {
-            "source": source_key,
-            "scenario": scenario,
-            "climate-assessment": climate_assessment,
-            "quantile": quantile,
-            "emission-category": emission_category,
-            "rcb_2020_mt": result["rcb_2020_mt"],
-        }
-
-        rcb_records.append(record)
-
-# Convert to DataFrame
-rcbs_df = pd.DataFrame(rcb_records)
+rcbs_df = load_and_process_rcbs(
+    rcb_yaml_path=rcb_yaml_path,
+    world_emissions_df=world_emissions_df,
+    emission_category=emission_category,
+    adjustments_config=adjustments_config,
+    project_root=project_root,
+    verbose=True,
+)
 
 print(f"\nProcessed {len(rcbs_df)} RCB records")
 print("\nRCB scenarios:")

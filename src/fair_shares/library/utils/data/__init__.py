@@ -56,6 +56,21 @@ from .iamc import (
     load_iamc_data,
 )
 
+# NGHGI correction module
+from .nghgi import (
+    build_nghgi_world_co2_timeseries,
+    compute_bunker_deduction,
+    compute_cumulative_emissions,
+    compute_lulucf_convention_gap,
+    compute_lulucf_deduction,
+    find_net_zero_year,
+    load_ar6_category_constants,
+    load_bunker_timeseries,
+    load_gidden_lulucf_components,
+    load_nghgi_lulucf_historical,
+    map_scenario_to_ar6_category,
+)
+
 # New pipeline module - preferred import location
 from .pipeline import (
     build_data_paths,
@@ -85,16 +100,22 @@ __all__ = [
     "broadcast_shares_to_periods",
     "build_data_config",
     "build_data_paths",
+    "build_nghgi_world_co2_timeseries",
     "build_result_dataframe",
     "build_source_id",
     "build_source_id_from_config",
     "calculate_budget_from_rcb",
     "calculate_initial_shares",
+    "compute_bunker_deduction",
+    "compute_cumulative_emissions",
+    "compute_lulucf_convention_gap",
+    "compute_lulucf_deduction",
     "derive_probability_based_categories",
     "determine_processing_categories",
     "execute_snakemake_setup",
     "expand_to_annual",
     "filter_time_columns",
+    "find_net_zero_year",
     "generate_parquet_readme",
     "generate_snakemake_command",
     "get_available_regions",
@@ -106,7 +127,12 @@ __all__ = [
     "get_year_coverage",
     "harmonize_to_historical_with_convergence",
     "interpolate_scenarios_data",
+    "load_ar6_category_constants",
+    "load_bunker_timeseries",
+    "load_gidden_lulucf_components",
     "load_iamc_data",
+    "load_nghgi_lulucf_historical",
+    "map_scenario_to_ar6_category",
     "normalize_metadata_column",
     "normalize_metadata_columns",
     "parse_rcb_scenario",

@@ -75,6 +75,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format.
 
 **[Truccone-Borgogno 2022]** Santiago Truccone-Borgogno. "Climate Justice and the Duty of Restitution." _Moral Philosophy and Politics_. DOI: 10.1515/mopp-2021-0071
 
+**[Weber 2026]** Konstantin Weber, Cyril Brunner, and Reto Knutti. "Tracking country-level mitigation progress using NGHGI-consistent carbon budgets." _Nature Communications_. DOI: 10.1038/s41467-026-69078-9
+
 **[Winkler 2020]** Harald Winkler. "Putting equity into practice in the global stocktake under the Paris Agreement." _Climate Policy_. DOI: 10.1080/14693062.2019.1680337
 
 **[Zimm 2024]** Caroline Zimm, Kian Mintz-Woo, Elina Brutschin, Susanne Hanger-Kopp, Roman Hoffmann, Jarmo S. Kikstra, Michael Kuhn, Jihoon Min, Raya Muttarak, Shonali Pachauri, Omkar Patange, Keywan Riahi, and Thomas Schinko. "Justice considerations in climate research." _Nature Climate Change_. DOI: 10.1038/s41558-023-01869-0

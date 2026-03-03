@@ -257,6 +257,12 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 **BAU**
 : Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued in the literature as inconsistent with CBDR-RC (see Kartha 2018).
 
+**Bookkeeping (BM)**
+: LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: [NGHGI-Consistent RCB Corrections](other-operations.md#why-two-lulucf-conventions-matter)
+
+**Bunker fuels**
+: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026].
+
 **ECPC**
 : Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis, with past emissions subtracted from future entitlements.
 
@@ -278,11 +284,17 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 **Mt CO2/yr**
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
+**NGHGI**
+: National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
+
+**NGHGI-BM convention gap**
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~100 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
 
 **RCB**
-: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C).
+: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
 
 **SSP**
 : Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).

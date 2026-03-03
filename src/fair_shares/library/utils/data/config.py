@@ -113,7 +113,7 @@ def build_source_id_from_config(config: dict[str, Any]) -> str:
 
 
 def build_data_config(
-    emission_category: Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"],
+    emission_category: Literal["co2-ffi", "co2", "all-ghg", "all-ghg-ex-co2-lulucf"],
     active_sources: dict[str, str],
     config_path: Path | None = None,
     harmonisation_year: int | None = None,
@@ -126,9 +126,10 @@ def build_data_config(
 
     Parameters
     ----------
-    emission_category : Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"]
+    emission_category : Literal["co2-ffi", "co2", "all-ghg", "all-ghg-ex-co2-lulucf"]
         Emission category to filter for. Options:
         - "co2-ffi": CO2 from fossil fuels and industry
+        - "co2": Total CO2 (fossil + LULUCF, NGHGI-consistent)
         - "all-ghg": All greenhouse gases including LULUCF (GWP100 AR6)
         - "all-ghg-ex-co2-lulucf": All GHGs excluding CO2 from land use
     active_sources : dict[str, str]

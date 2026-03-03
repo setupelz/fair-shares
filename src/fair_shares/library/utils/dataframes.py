@@ -561,6 +561,11 @@ def determine_processing_categories(
         process_categories = [requested_category]
         create_all_other = False
         final_categories = [requested_category]
+    elif requested_category == "co2":
+        # Total CO2 needs FFI + LULUCF components for NGHGI correction
+        process_categories = ["co2", "co2-ffi", "co2-lulucf"]
+        create_all_other = False
+        final_categories = ["co2", "co2-ffi", "co2-lulucf"]
     else:
         # Need all-ghg to create all-other
         process_categories = [requested_category, "all-ghg"]

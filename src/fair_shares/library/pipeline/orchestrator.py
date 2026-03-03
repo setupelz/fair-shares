@@ -9,7 +9,6 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-import yaml
 from pyprojroot import here
 
 from ..exceptions import ConfigurationError, DataLoadingError
@@ -19,7 +18,6 @@ from ..utils import (
     ensure_string_year_columns,
     get_complete_iso3c_timeseries,
     get_world_totals_timeseries,
-    process_rcb_to_2020_baseline,
     set_post_net_zero_emissions_to_nan,
 )
 from ..validation import (
@@ -339,10 +337,10 @@ def run_rcb_preprocessing(
         DataLoadingError: If required data files missing
     """
     # Validate emission category for RCBs
-    if emission_category != "co2-ffi":
+    if emission_category not in ("co2-ffi", "co2"):
         raise ConfigurationError(
-            f"RCB-based budget allocations only support 'co2-ffi' emission category. "
-            f"Got: {emission_category}. Please use target: 'ar6' or 'cr' "
+            f"RCB-based budget allocations only support 'co2-ffi' and 'co2' emission "
+            f"categories. Got: {emission_category}. Please use target: 'ar6' "
             f"in your configuration for other emission categories."
         )
 
@@ -415,6 +413,29 @@ def run_rcb_preprocessing(
     validate_all_datasets_totals(
         emissions_complete, gdp_complete, population_complete, gini_complete
     )
+
+    # For total CO2, construct NGHGI-consistent world timeseries
+    if emission_category == "co2":
+        # Build AdjustmentsConfig for loading shared timeseries
+        from ..config.models import AdjustmentsConfig
+        from ..preprocessing.rcbs import _load_shared_timeseries
+        from ..utils.data.nghgi import build_nghgi_world_co2_timeseries
+
+        rcb_config = config["targets"]["rcbs"]
+        rcb_data_params = rcb_config.get("data_parameters", {})
+        rcb_adjustments_raw = rcb_data_params.get("adjustments", {})
+        adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
+
+        nghgi_ts, bunker_ts = _load_shared_timeseries(
+            adjustments_config, orch.project_root, verbose=True
+        )
+
+        world_emiss["co2"] = build_nghgi_world_co2_timeseries(
+            fossil_ts=world_emiss["co2-ffi"],
+            nghgi_ts=nghgi_ts,
+            bunker_ts=bunker_ts,
+            bm_lulucf_ts=world_emiss["co2-lulucf"],
+        )
 
     # Save processed data
     orch.save_processed_data(
@@ -530,95 +551,36 @@ def _process_and_save_rcbs(
 ) -> None:
     """Process RCB data and save to CSV.
 
+    Delegates to load_and_process_rcbs() which handles both legacy scalar
+    constants and timeseries-based NGHGI-consistent adjustments.
+
     Args:
         orch: Orchestrator instance
         config: Configuration dict
         world_emissions: World emissions DataFrame for baseline
     """
+    from ..config.models import AdjustmentsConfig
+    from ..preprocessing.rcbs import load_and_process_rcbs
+
     # Get RCB config
     rcb_config = config["targets"]["rcbs"]
     rcb_yaml_path = orch.project_root / rcb_config.get("path")
 
-    if not rcb_yaml_path.exists():
-        raise DataLoadingError(f"RCB YAML file not found: {rcb_yaml_path}")
-
-    with open(rcb_yaml_path) as f:
-        rcb_data = yaml.safe_load(f)
-
-    # Get adjustment parameters
+    # Build AdjustmentsConfig from the YAML config dict
     rcb_data_params = rcb_config.get("data_parameters", {})
-    rcb_adjustments = rcb_data_params.get("adjustments", {})
-    bunkers_2020_2100 = rcb_adjustments.get("bunkers_2020_2100")
-    lulucf_2020_2100 = rcb_adjustments.get("lulucf_2020_2100")
+    rcb_adjustments_raw = rcb_data_params.get("adjustments", {})
+    adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
-    # Ensure string year columns
-    world_emissions = ensure_string_year_columns(world_emissions)
-
-    # Process each RCB source
-    rcb_records = []
-
-    for source_key, source_data in rcb_data["rcb_data"].items():
-        baseline_year = source_data.get("baseline_year")
-        unit = source_data.get("unit", "Gt CO2")
-        scenarios = source_data.get("scenarios", {})
-
-        # Validate required fields
-        if baseline_year is None:
-            raise ConfigurationError(
-                f"RCB source '{source_key}' missing required field 'baseline_year'"
-            )
-        if not scenarios:
-            raise ConfigurationError(
-                f"RCB source '{source_key}' has no scenarios defined"
-            )
-
-        # Process each scenario
-        for scenario, rcb_value in scenarios.items():
-            # Parse scenario format (e.g., "1.5p50")
-            parts = scenario.split("p")
-            if len(parts) != 2:
-                raise ValueError(f"Invalid RCB scenario format: {scenario}")
-
-            temperature = parts[0]
-            probability = parts[1]
-            climate_assessment = f"{temperature}C"
-            quantile = str(int(probability) / 100)
-
-            # Process to 2020 baseline
-            result = process_rcb_to_2020_baseline(
-                rcb_value=rcb_value,
-                rcb_unit=unit,
-                rcb_baseline_year=baseline_year,
-                world_co2_ffi_emissions=world_emissions,
-                bunkers_2020_2100=bunkers_2020_2100,
-                lulucf_2020_2100=lulucf_2020_2100,
-                target_baseline_year=2020,
-                source_name=source_key,
-                scenario=scenario,
-                verbose=False,
-            )
-
-            # Create record
-            record = {
-                "source": source_key,
-                "scenario": scenario,
-                "climate-assessment": climate_assessment,
-                "quantile": quantile,
-                "emission-category": orch.emission_category,
-                "baseline_year": baseline_year,
-                "rcb_original_value": result["rcb_original_value"],
-                "rcb_original_unit": result["rcb_original_unit"],
-                "rcb_2020_mt": result["rcb_2020_mt"],
-                "emissions_adjustment_mt": result["emissions_adjustment_mt"],
-                "bunkers_adjustment_mt": result["bunkers_adjustment_mt"],
-                "lulucf_adjustment_mt": result["lulucf_adjustment_mt"],
-                "total_adjustment_mt": result["total_adjustment_mt"],
-            }
-
-            rcb_records.append(record)
+    rcb_df = load_and_process_rcbs(
+        rcb_yaml_path=rcb_yaml_path,
+        world_emissions_df=world_emissions,
+        emission_category=orch.emission_category,
+        adjustments_config=adjustments_config,
+        project_root=orch.project_root,
+        verbose=False,
+    )
 
     # Save to CSV
-    rcb_df = pd.DataFrame(rcb_records)
     rcb_output_path = orch.processed_intermediate_dir / "rcbs.csv"
     rcb_df.to_csv(rcb_output_path, index=False)
 

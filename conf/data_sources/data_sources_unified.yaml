@@ -11,6 +11,7 @@ emissions:
       available_categories:
         [
           co2-ffi,
+          co2,
           co2-lulucf,
           ch4-ffi,
           ch4-afolu,
@@ -72,15 +73,19 @@ targets:
       quantiles: [0.5]
       world_key: "World"
 
-  # Remaining Carbon Budgets (only for co2-ffi)
+  # Remaining Carbon Budgets (CO2 — fossil + LULUCF after NGHGI corrections)
   rcbs:
     path: "data/rcbs/rcbs.yaml"
     data_parameters:
-      available_categories: [co2-ffi] # RCBs only available for CO2-FFI
+      available_categories: [co2-ffi, co2]
       # Adjustments (in Mt * CO2)
-      adjustments:
-        bunkers_2020_2100: 47000 # International shipping and aviation CO2 emissions 2020-2100
-        lulucf_2020_2100: 0.0 # Land use, land-use change and forestry CO2 emissions 2020-2100
+      adjustments: &rcb_adjustments
+        lulucf_nghgi:
+          path: "data/lulucf/grassi-2023/NGHGI_LULUCF_1990-2022.xlsx"
+        bunkers:
+          path: "data/bunkers/gcb-2024/National_Fossil_Carbon_Emissions_2024v1.0.xlsx"
+        ar6_constants_path: "data/rcbs/ar6_category_constants.yaml"
+        precautionary_lulucf: true
 
   # RCB-based Pathways (converts RCBs to emission pathways using a configurable generator)
   rcb-pathways:
@@ -90,7 +95,7 @@ targets:
       # This parameter selects which algorithm to use for distributing
       # the RCB over time (additional generators can be added in the future)
     data_parameters:
-      available_categories: [co2-ffi] # Only CO2-FFI, derived from RCBs
+      available_categories: [co2-ffi, co2] # CO2-FFI and total CO2 (after NGHGI corrections)
       interpolation_method: "linear"
       quantiles: [0.5]
       world_key: "World"
@@ -99,9 +104,7 @@ targets:
         start_year: 2020
         end_year: 2100
       # RCB adjustments (same as rcbs)
-      adjustments:
-        bunkers_2020_2100: 47000
-        lulucf_2020_2100: 0.0
+      adjustments: *rcb_adjustments
 
 # Global harmonisation year applied to all scenario pathways
 harmonisation_year: 2020

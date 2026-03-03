@@ -50,7 +50,6 @@ from fair_shares.library.utils import (
     ensure_string_year_columns,
     get_complete_iso3c_timeseries,
     get_world_totals_timeseries,
-    process_rcb_to_2020_baseline,
 )
 from fair_shares.library.validation import (
     validate_all_datasets_totals,
@@ -94,7 +93,7 @@ else:
     print("Running interactively - build desired config")
 
     # Interactive development configuration
-    emission_category = "co2-ffi"  # RCBs only support co2-ffi
+    emission_category = "co2-ffi"  # or "co2"
     active_sources = {
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
@@ -142,11 +141,11 @@ final_categories = processing_info["final"]
 
 print(f"Final emission categories: {final_categories}")
 
-# RCBs are only available when the emission category is "co2-ffi"
-if emission_category != "co2-ffi":
+# RCBs are only available for co2-ffi and co2
+if emission_category not in ("co2-ffi", "co2"):
     raise ConfigurationError(
-        f"RCB-based budget allocations only support 'co2-ffi' emission category. "
-        f"Got: {emission_category}. Please use target: 'ar6' or 'cr'"
+        f"RCB-based budget allocations only support 'co2-ffi' and 'co2' emission "
+        f"categories. Got: {emission_category}. Please use target: 'ar6'"
         f" in your configuration for other emission categories."
     )
 
@@ -169,15 +168,19 @@ population_historical_world_key = population_data_parameters.get("historical_wor
 population_projected_world_key = population_data_parameters.get("projected_world_key")
 rcb_yaml_path = project_root / rcb_config.get("path")
 
-# Get RCB adjustment parameters (bunkers and LULUCF emissions)
-rcb_data_parameters = rcb_config.get("data_parameters", {})
-rcb_adjustments = rcb_data_parameters.get("adjustments", {})
-bunkers_2020_2100 = rcb_adjustments.get("bunkers_2020_2100")
-lulucf_2020_2100 = rcb_adjustments.get("lulucf_2020_2100")
+# Get RCB adjustment configuration (NGHGI-consistent timeseries)
+# Import here (not top-level) to avoid circular import — utils must initialise first
+from fair_shares.library.config.models import AdjustmentsConfig
 
-print("RCB adjustments:")
-print(f"  Bunkers (2020-2100): {bunkers_2020_2100} Mt CO2")
-print(f"  LULUCF (2020-2100): {lulucf_2020_2100} Mt CO2")
+rcb_data_parameters = rcb_config.get("data_parameters", {})
+rcb_adjustments_raw = rcb_data_parameters.get("adjustments", {})
+adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
+
+print("RCB adjustments (NGHGI-consistent, Weber et al. 2026):")
+print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
+print(f"  Bunkers source: {adjustments_config.bunkers.path}")
+print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
+print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 
 # %%
 # Construct source-specific intermediate dirs from active sources and data
@@ -532,6 +535,223 @@ for category in final_categories:
 print("World emissions (historical) saved")
 
 # %% [markdown]
+# ## Compute AR6 category constants from Gidden reanalysis
+#
+# Extracts scenario-specific net-zero years from the Gidden et al. AR6
+# reanalysis data, for each AR6 warming category (C1, C2, C3).
+#
+# **Why this matters:** Weber (2026) integrates LULUCF and bunker deductions
+# "until net zero CO₂ is reached" — which is scenario-specific. Using a
+# single end year (e.g. 2100) over-integrates by 30-50 years for stricter
+# categories.
+#
+# **Outputs:** `data/rcbs/ar6_category_constants.yaml` with per-category:
+# - `net_zero_year_nghgi`: first year median NGHGI-convention CO₂ ≤ 0
+# - `net_zero_year_scientific`: first year median BM-convention CO₂ ≤ 0
+# - `n_scenarios`: number of scenarios in the category
+
+# %%
+from fair_shares.library.utils.data.nghgi import (
+    _AFOLU_INDIRECT_VAR,
+    _is_year,
+)
+
+gidden_path = project_root / "data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx"
+meta_path = project_root / "data/scenarios/ipcc_ar6_gidden/metadata_ar6_gidden.xlsx"
+ar6_constants_output_path = project_root / "data/rcbs/ar6_category_constants.yaml"
+
+print(f"Gidden data: {gidden_path}")
+print(f"Metadata: {meta_path}")
+print(f"Output: {ar6_constants_output_path}")
+
+# %%
+print("Loading metadata...")
+ar6_meta_df = pd.read_excel(meta_path, sheet_name="meta", header=0)
+print(f"  {len(ar6_meta_df)} scenarios total")
+print(f"  Categories: {sorted(ar6_meta_df['Category'].dropna().unique())}")
+
+# %%
+print("Loading Gidden data (this may take a moment)...")
+ar6_data_df = pd.read_excel(gidden_path, sheet_name="data", header=0)
+print(f"  {len(ar6_data_df)} rows")
+print(f"  Variables: {ar6_data_df['Variable'].nunique()}")
+
+# %% [markdown]
+# ### Discover available CO₂ variables
+
+# %%
+co2_vars = sorted(
+    ar6_data_df[ar6_data_df["Variable"].str.contains("Emissions|CO2", regex=False)][
+        "Variable"
+    ].unique()
+)
+print(f"Found {len(co2_vars)} CO2-related variables:")
+for v in co2_vars:
+    print(f"  {v}")
+
+# %% [markdown]
+# ### Define variable names and compute net-zero years
+#
+# In the Gidden AR6 reanalysis (OSCAR v3.2):
+# - `Emissions|CO2` uses BM convention (fossil + direct LULUCF only)
+# - NGHGI-consistent total = `Emissions|CO2` + `AFOLU|Indirect`
+#
+# We compute both net-zero years:
+# - **Scientific (BM)**: year when `Emissions|CO2` median ≤ 0
+# - **NGHGI**: year when (`Emissions|CO2` + `AFOLU|Indirect`) median ≤ 0
+
+# %%
+_OSCAR_PREFIX = "AR6 Reanalysis|OSCARv3.2|"
+_TOTAL_CO2_VAR = f"{_OSCAR_PREFIX}Emissions|CO2"
+
+# Verify variables exist
+for var_name, label in [
+    (_TOTAL_CO2_VAR, "Total CO2 (BM)"),
+    (_AFOLU_INDIRECT_VAR, "AFOLU|Indirect"),
+]:
+    n_rows = (ar6_data_df["Variable"] == var_name).sum()
+    if n_rows == 0:
+        alt_vars = [v for v in co2_vars if var_name.split("|")[-1] in v]
+        raise ValueError(
+            f"Variable '{var_name}' ({label}) not found in data. "
+            f"Similar variables: {alt_vars}"
+        )
+    print(f"  {label}: {n_rows} rows for '{var_name}'")
+
+
+# %%
+from fair_shares.library.utils.data.nghgi import find_net_zero_year
+
+# %%
+# Year columns and World filter
+ar6_year_cols = [c for c in ar6_data_df.columns if _is_year(c)]
+ar6_year_ints = sorted(int(c) for c in ar6_year_cols)
+print(f"Year range in data: {min(ar6_year_ints)}-{max(ar6_year_ints)}")
+
+world_mask = ar6_data_df["Region"] == "World"
+print(f"World rows: {world_mask.sum()} of {len(ar6_data_df)}")
+
+# %%
+categories = ["C1", "C2", "C3"]
+ar6_results = {}
+
+for cat in categories:
+    print(f"\n{'=' * 60}")
+    print(f"Category {cat}")
+    print(f"{'=' * 60}")
+
+    cat_meta = ar6_meta_df[ar6_meta_df["Category"] == cat]
+    n_scenarios = len(cat_meta)
+    cat_pairs = set(zip(cat_meta["model"], cat_meta["scenario"]))
+    print(f"  {n_scenarios} scenarios")
+
+    data_pairs = pd.MultiIndex.from_frame(ar6_data_df[["Model", "Scenario"]])
+    cat_mi = pd.MultiIndex.from_tuples(list(cat_pairs))
+    mask_cat = data_pairs.isin(cat_mi)
+
+    # Scientific convention (BM): Emissions|CO2
+    mask_total = ar6_data_df["Variable"] == _TOTAL_CO2_VAR
+    bm_rows = ar6_data_df[world_mask & mask_cat & mask_total]
+    print(f"  BM total CO2 rows: {len(bm_rows)}")
+
+    bm_median = bm_rows[ar6_year_cols].median(axis=0)
+    bm_median.index = bm_median.index.astype(int)
+    bm_median = bm_median.sort_index()
+
+    nz_scientific = find_net_zero_year(bm_median)
+    print(f"  Scientific NZ year: {nz_scientific}")
+
+    # NGHGI convention: Emissions|CO2 + AFOLU|Indirect
+    mask_indirect = ar6_data_df["Variable"] == _AFOLU_INDIRECT_VAR
+    indirect_rows = ar6_data_df[world_mask & mask_cat & mask_indirect]
+    print(f"  AFOLU|Indirect rows: {len(indirect_rows)}")
+
+    bm_indexed = bm_rows.set_index(["Model", "Scenario"])[ar6_year_cols].rename(
+        columns=str
+    )
+    indirect_indexed = indirect_rows.set_index(["Model", "Scenario"])[
+        ar6_year_cols
+    ].rename(columns=str)
+
+    common_idx = bm_indexed.index.intersection(indirect_indexed.index)
+    print(f"  Scenarios with both variables: {len(common_idx)}")
+
+    nghgi_total = bm_indexed.loc[common_idx] + indirect_indexed.loc[common_idx]
+    nghgi_median = nghgi_total.median(axis=0)
+    nghgi_median.index = nghgi_median.index.astype(int)
+    nghgi_median = nghgi_median.sort_index()
+
+    nz_nghgi = find_net_zero_year(nghgi_median)
+    print(f"  NGHGI NZ year: {nz_nghgi}")
+
+    # Verification: print key years around NZ
+    for label, median_ts, nz_year in [
+        ("Scientific", bm_median, nz_scientific),
+        ("NGHGI", nghgi_median, nz_nghgi),
+    ]:
+        if nz_year:
+            window = range(
+                max(nz_year - 3, min(ar6_year_ints)),
+                min(nz_year + 4, max(ar6_year_ints) + 1),
+            )
+            vals = {y: f"{median_ts.get(y, float('nan')):.0f}" for y in window}
+            print(f"  {label} around NZ: {vals}")
+
+    ar6_results[cat] = {
+        "net_zero_year_nghgi": nz_nghgi,
+        "net_zero_year_scientific": nz_scientific,
+        "n_scenarios": n_scenarios,
+    }
+
+# %% [markdown]
+# ### Summary and save AR6 constants
+
+# %%
+print("\nAR6 Category Constants:")
+print("-" * 50)
+for cat, vals in sorted(ar6_results.items()):
+    print(
+        f"  {cat}: NGHGI NZ={vals['net_zero_year_nghgi']}, "
+        f"Scientific NZ={vals['net_zero_year_scientific']}, "
+        f"n={vals['n_scenarios']}"
+    )
+
+# Sanity checks
+for cat, vals in ar6_results.items():
+    nz_nghgi = vals["net_zero_year_nghgi"]
+    nz_sci = vals["net_zero_year_scientific"]
+
+    if nz_nghgi is None:
+        print(f"  WARNING: {cat} NGHGI total CO2 never reaches zero!")
+    if nz_sci is None:
+        print(f"  WARNING: {cat} scientific total CO2 never reaches zero!")
+    if nz_nghgi and nz_sci and nz_nghgi > nz_sci:
+        print(
+            f"  NOTE: {cat} NGHGI NZ ({nz_nghgi}) > scientific NZ ({nz_sci}) — "
+            "expected since NGHGI LULUCF sink is larger"
+        )
+
+# %%
+yaml_header = (
+    "# AR6 category constants — auto-generated by notebook 100_data_preprocess_rcbs\n"
+    "# Source: Gidden et al. AR6 reanalysis (OSCARv3.2)\n"
+    "# DO NOT EDIT MANUALLY — re-run the notebook to regenerate\n"
+    "#\n"
+    "# net_zero_year_nghgi: first year category-median NGHGI-convention CO2 <= 0\n"
+    "# net_zero_year_scientific: first year category-median BM-convention CO2 <= 0\n"
+    "# n_scenarios: number of AR6 scenarios in this category\n"
+)
+
+with open(ar6_constants_output_path, "w") as f:
+    f.write(yaml_header)
+    yaml.dump(ar6_results, f, default_flow_style=False, sort_keys=True)
+
+print(f"\nSaved to: {ar6_constants_output_path}")
+
+with open(ar6_constants_output_path) as f:
+    print(f.read())
+
+# %% [markdown]
 # ## Load and process RCB data
 
 # %%
@@ -554,94 +774,31 @@ if rcb_data["rcb_data"]:
 
 # %% [markdown]
 # ## Process RCB data to 2020 baseline
+#
+# Delegates to `load_and_process_rcbs()` which handles NGHGI-consistent
+# timeseries-based adjustments (LULUCF deduction + bunker subtraction)
+# with per-category net-zero years following Weber et al. (2026).
 
 # %%
+from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
+
 # Get world emissions timeseries for RCB processing
 world_emissions_df = world_emiss[emission_category]
 world_emissions_df = ensure_string_year_columns(world_emissions_df)
 
-print("\nProcessing RCBs with adjustments:")
-print("  Target baseline year: 2020")
-print(f"  Bunkers adjustment: {bunkers_2020_2100} Mt CO2e")
-print(f"  LULUCF adjustment: {lulucf_2020_2100} Mt CO2e")
-
-# Create a list to store all RCB records
-rcb_records = []
-
-# Process each source
-for source_key, source_data in rcb_data["rcb_data"].items():
-    print(f"\n  Processing source: {source_key}")
-
-    # Extract metadata from source
-    baseline_year = source_data.get("baseline_year")
-    unit = source_data.get("unit", "Gt CO2")
-    scenarios = source_data.get("scenarios", {})
-
-    # Validate required fields
-    if baseline_year is None:
-        raise ConfigurationError(
-            f"RCB source '{source_key}' missing required field 'baseline_year'"
-        )
-    if not scenarios:
-        raise ConfigurationError(f"RCB source '{source_key}' has no scenarios defined")
-
-    print(f"    Baseline year: {baseline_year}")
-    print(f"    Unit: {unit}")
-    print(f"    Scenarios: {len(scenarios)}")
-
-    # Process each scenario for this source
-    for scenario, rcb_value in scenarios.items():
-        # Parse scenario string into climate assessment and quantile
-        # Format: "TEMPpPROB" (e.g., "1.5p50" -> 1.5C warming, 50% probability)
-        parts = scenario.split("p")
-        if len(parts) == 2:
-            temperature = parts[0]
-            probability = parts[1]
-            climate_assessment = f"{temperature}C"
-            quantile = str(int(probability) / 100)
-        else:
-            raise ValueError(f"Invalid RCB scenario format: {scenario}")
-
-        # Process RCB to 2020 baseline
-        result = process_rcb_to_2020_baseline(
-            rcb_value=rcb_value,
-            rcb_unit=unit,
-            rcb_baseline_year=baseline_year,
-            world_co2_ffi_emissions=world_emissions_df,
-            bunkers_2020_2100=bunkers_2020_2100,
-            lulucf_2020_2100=lulucf_2020_2100,
-            target_baseline_year=2020,
-            source_name=source_key,
-            scenario=scenario,
-            verbose=True,
-        )
-
-        # Create record with parsed climate assessment and quantile
-        record = {
-            "source": source_key,
-            "scenario": scenario,
-            "climate-assessment": climate_assessment,
-            "quantile": quantile,
-            "emission-category": emission_category,
-            "baseline_year": baseline_year,
-            "rcb_original_value": result["rcb_original_value"],
-            "rcb_original_unit": result["rcb_original_unit"],
-            "rcb_2020_mt": result["rcb_2020_mt"],
-            "emissions_adjustment_mt": result["emissions_adjustment_mt"],
-            "bunkers_adjustment_mt": result["bunkers_adjustment_mt"],
-            "lulucf_adjustment_mt": result["lulucf_adjustment_mt"],
-            "total_adjustment_mt": result["total_adjustment_mt"],
-        }
-
-        rcb_records.append(record)
+rcb_df = load_and_process_rcbs(
+    rcb_yaml_path=rcb_yaml_path,
+    world_emissions_df=world_emissions_df,
+    emission_category=emission_category,
+    adjustments_config=adjustments_config,
+    project_root=project_root,
+    verbose=True,
+)
 
 # %% [markdown]
 # ## Save processed RCB data
 
 # %%
-# Convert to DataFrame
-rcb_df = pd.DataFrame(rcb_records)
-
 # Display the processed data
 print("\nProcessed RCB data:")
 print(rcb_df.to_string(index=False))
