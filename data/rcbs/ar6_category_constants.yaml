@@ -2,18 +2,34 @@
 # Source: Gidden et al. AR6 reanalysis (OSCARv3.2)
 # DO NOT EDIT MANUALLY — re-run the notebook to regenerate
 #
-# net_zero_year_nghgi: first year category-median NGHGI-convention CO2 <= 0
-# net_zero_year_scientific: first year category-median BM-convention CO2 <= 0
-# n_scenarios: number of AR6 scenarios in this category
+# Per-scenario NZ years are in ar6_scenario_nz_years.parquet
+#
+# nz_year_median: median per-scenario total CO2 NZ year
+#   (used as bunker integration bound)
+# nz_year_min/q25/q75/max: distribution of per-scenario NZ years
+# n_scenarios: total scenarios in category
+# n_reaching_nz: scenarios reaching NZ before 2100
 C1:
+  n_reaching_nz: 70
   n_scenarios: 70
-  net_zero_year_nghgi: 2047
-  net_zero_year_scientific: 2050
+  nz_year_max: 2075
+  nz_year_median: 2050
+  nz_year_min: 2034
+  nz_year_q25: 2046
+  nz_year_q75: 2054
 C2:
+  n_reaching_nz: 106
   n_scenarios: 106
-  net_zero_year_nghgi: 2054
-  net_zero_year_scientific: 2058
+  nz_year_max: 2078
+  nz_year_median: 2057
+  nz_year_min: 2040
+  nz_year_q25: 2052
+  nz_year_q75: 2062
 C3:
+  n_reaching_nz: 191
   n_scenarios: 231
-  net_zero_year_nghgi: 2067
-  net_zero_year_scientific: 2070
+  nz_year_max: 2100
+  nz_year_median: 2070
+  nz_year_min: 2044
+  nz_year_q25: 2063
+  nz_year_q75: 2081

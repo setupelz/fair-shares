@@ -181,6 +181,9 @@ print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
 print(f"  Bunkers source: {adjustments_config.bunkers.path}")
 print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
 print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
+print("  Gidden AR6 reanalysis: data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx")
+print("    (used for per-scenario LULUCF future projections and net-zero years)")
+# NOTE: Partially hard-coded at the moment, might need a slight change.
 
 # %%
 # Construct source-specific intermediate dirs from active sources and data
@@ -535,104 +538,47 @@ for category in final_categories:
 print("World emissions (historical) saved")
 
 # %% [markdown]
-# ## Compute AR6 category constants from Gidden reanalysis
+# ## Compute per-scenario net-zero years from Gidden reanalysis
 #
-# Extracts scenario-specific net-zero years from the Gidden et al. AR6
-# reanalysis data, for each AR6 warming category (C1, C2, C3).
+# For each AR6 warming category (C1, C2, C3), extracts the **per-scenario**
+# total CO₂ net-zero year from the Gidden et al. AR6 reanalysis (OSCAR v3.2).
 #
 # **Why this matters:** Weber (2026) integrates LULUCF and bunker deductions
-# "until net zero CO₂ is reached" — which is scenario-specific. Using a
+# "until net zero CO2 is reached" — which is scenario-specific. Using a
 # single end year (e.g. 2100) over-integrates by 30-50 years for stricter
 # categories.
 #
-# **Outputs:** `data/rcbs/ar6_category_constants.yaml` with per-category:
-# - `net_zero_year_nghgi`: first year median NGHGI-convention CO₂ ≤ 0
-# - `net_zero_year_scientific`: first year median BM-convention CO₂ ≤ 0
-# - `n_scenarios`: number of scenarios in the category
+# **Outputs:**
+# - `data/rcbs/ar6_scenario_nz_years.parquet` — per-scenario net-zero years
+# - `data/rcbs/ar6_category_constants.yaml` — category-level summary statistics
+#   (median net-zero year used for bunker integration bounds)
 
 # %%
 from fair_shares.library.utils.data.nghgi import (
-    _AFOLU_INDIRECT_VAR,
-    _is_year,
+    load_gidden_per_scenario_nz_years,
 )
 
 gidden_path = project_root / "data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx"
 meta_path = project_root / "data/scenarios/ipcc_ar6_gidden/metadata_ar6_gidden.xlsx"
 ar6_constants_output_path = project_root / "data/rcbs/ar6_category_constants.yaml"
+ar6_nz_years_output_path = project_root / "data/rcbs/ar6_scenario_nz_years.parquet"
 
 print(f"Gidden data: {gidden_path}")
 print(f"Metadata: {meta_path}")
-print(f"Output: {ar6_constants_output_path}")
-
-# %%
-print("Loading metadata...")
-ar6_meta_df = pd.read_excel(meta_path, sheet_name="meta", header=0)
-print(f"  {len(ar6_meta_df)} scenarios total")
-print(f"  Categories: {sorted(ar6_meta_df['Category'].dropna().unique())}")
-
-# %%
-print("Loading Gidden data (this may take a moment)...")
-ar6_data_df = pd.read_excel(gidden_path, sheet_name="data", header=0)
-print(f"  {len(ar6_data_df)} rows")
-print(f"  Variables: {ar6_data_df['Variable'].nunique()}")
+print(f"Constants output: {ar6_constants_output_path}")
+print(f"Per-scenario output: {ar6_nz_years_output_path}")
 
 # %% [markdown]
-# ### Discover available CO₂ variables
-
-# %%
-co2_vars = sorted(
-    ar6_data_df[ar6_data_df["Variable"].str.contains("Emissions|CO2", regex=False)][
-        "Variable"
-    ].unique()
-)
-print(f"Found {len(co2_vars)} CO2-related variables:")
-for v in co2_vars:
-    print(f"  {v}")
-
-# %% [markdown]
-# ### Define variable names and compute net-zero years
+# ### Load per-scenario net-zero years
 #
-# In the Gidden AR6 reanalysis (OSCAR v3.2):
-# - `Emissions|CO2` uses BM convention (fossil + direct LULUCF only)
-# - NGHGI-consistent total = `Emissions|CO2` + `AFOLU|Indirect`
-#
-# We compute both net-zero years:
-# - **Scientific (BM)**: year when `Emissions|CO2` median ≤ 0
-# - **NGHGI**: year when (`Emissions|CO2` + `AFOLU|Indirect`) median ≤ 0
-
-# %%
-_OSCAR_PREFIX = "AR6 Reanalysis|OSCARv3.2|"
-_TOTAL_CO2_VAR = f"{_OSCAR_PREFIX}Emissions|CO2"
-
-# Verify variables exist
-for var_name, label in [
-    (_TOTAL_CO2_VAR, "Total CO2 (BM)"),
-    (_AFOLU_INDIRECT_VAR, "AFOLU|Indirect"),
-]:
-    n_rows = (ar6_data_df["Variable"] == var_name).sum()
-    if n_rows == 0:
-        alt_vars = [v for v in co2_vars if var_name.split("|")[-1] in v]
-        raise ValueError(
-            f"Variable '{var_name}' ({label}) not found in data. "
-            f"Similar variables: {alt_vars}"
-        )
-    print(f"  {label}: {n_rows} rows for '{var_name}'")
-
-
-# %%
-from fair_shares.library.utils.data.nghgi import find_net_zero_year
-
-# %%
-# Year columns and World filter
-ar6_year_cols = [c for c in ar6_data_df.columns if _is_year(c)]
-ar6_year_ints = sorted(int(c) for c in ar6_year_cols)
-print(f"Year range in data: {min(ar6_year_ints)}-{max(ar6_year_ints)}")
-
-world_mask = ar6_data_df["Region"] == "World"
-print(f"World rows: {world_mask.sum()} of {len(ar6_data_df)}")
+# Uses `load_gidden_per_scenario_nz_years` which finds the first year where
+# `Emissions|CO2` (= fossil + BM LULUCF) ≤ 0 for each (model, scenario) pair.
+# This is the total CO₂ net-zero year used as the LULUCF integration bound.
+# Scenarios that never reach net-zero are assigned 2100.
 
 # %%
 categories = ["C1", "C2", "C3"]
+all_nz_dfs = []
 ar6_results = {}
 
 for cat in categories:
@@ -640,113 +586,122 @@ for cat in categories:
     print(f"Category {cat}")
     print(f"{'=' * 60}")
 
-    cat_meta = ar6_meta_df[ar6_meta_df["Category"] == cat]
-    n_scenarios = len(cat_meta)
-    cat_pairs = set(zip(cat_meta["model"], cat_meta["scenario"]))
-    print(f"  {n_scenarios} scenarios")
+    nz_years = load_gidden_per_scenario_nz_years(gidden_path, cat)
+    n_total = len(nz_years)
+    n_at_2100 = (nz_years == 2100).sum()
+    n_reaching_nz = n_total - n_at_2100
 
-    data_pairs = pd.MultiIndex.from_frame(ar6_data_df[["Model", "Scenario"]])
-    cat_mi = pd.MultiIndex.from_tuples(list(cat_pairs))
-    mask_cat = data_pairs.isin(cat_mi)
+    # Summary statistics
+    median_nz = int(nz_years.median())
+    min_nz = int(nz_years.min())
+    max_nz = int(nz_years.max())
+    q25_nz = int(nz_years.quantile(0.25))
+    q75_nz = int(nz_years.quantile(0.75))
 
-    # Scientific convention (BM): Emissions|CO2
-    mask_total = ar6_data_df["Variable"] == _TOTAL_CO2_VAR
-    bm_rows = ar6_data_df[world_mask & mask_cat & mask_total]
-    print(f"  BM total CO2 rows: {len(bm_rows)}")
+    print(f"  Total scenarios: {n_total}")
+    print(f"  Scenarios reaching net-zero before 2100: {n_reaching_nz}")
+    print(f"  Scenarios assigned 2100 (never reach NZ): {n_at_2100}")
+    print("  Net-zero year distribution:")
+    print(f"    Min:    {min_nz}")
+    print(f"    Q25:    {q25_nz}")
+    print(f"    Median: {median_nz}")
+    print(f"    Q75:    {q75_nz}")
+    print(f"    Max:    {max_nz}")
 
-    bm_median = bm_rows[ar6_year_cols].median(axis=0)
-    bm_median.index = bm_median.index.astype(int)
-    bm_median = bm_median.sort_index()
+    # Print histogram-style view of NZ year distribution
+    nz_decades = nz_years.apply(lambda y: f"{(y // 10) * 10}s")
+    decade_counts = nz_decades.value_counts().sort_index()
+    print("  Distribution by decade:")
+    for decade, count in decade_counts.items():
+        bar = "█" * count
+        print(f"    {decade}: {bar} ({count})")
 
-    nz_scientific = find_net_zero_year(bm_median)
-    print(f"  Scientific NZ year: {nz_scientific}")
-
-    # NGHGI convention: Emissions|CO2 + AFOLU|Indirect
-    mask_indirect = ar6_data_df["Variable"] == _AFOLU_INDIRECT_VAR
-    indirect_rows = ar6_data_df[world_mask & mask_cat & mask_indirect]
-    print(f"  AFOLU|Indirect rows: {len(indirect_rows)}")
-
-    bm_indexed = bm_rows.set_index(["Model", "Scenario"])[ar6_year_cols].rename(
-        columns=str
+    # Build per-scenario DataFrame for this category
+    nz_df = pd.DataFrame(
+        {
+            "model": nz_years.index.get_level_values("model"),
+            "scenario": nz_years.index.get_level_values("scenario"),
+            "category": cat,
+            "nz_year_total_co2": nz_years.values,
+            "reaches_nz_before_2100": (nz_years < 2100).values,
+        }
     )
-    indirect_indexed = indirect_rows.set_index(["Model", "Scenario"])[
-        ar6_year_cols
-    ].rename(columns=str)
+    all_nz_dfs.append(nz_df)
 
-    common_idx = bm_indexed.index.intersection(indirect_indexed.index)
-    print(f"  Scenarios with both variables: {len(common_idx)}")
-
-    nghgi_total = bm_indexed.loc[common_idx] + indirect_indexed.loc[common_idx]
-    nghgi_median = nghgi_total.median(axis=0)
-    nghgi_median.index = nghgi_median.index.astype(int)
-    nghgi_median = nghgi_median.sort_index()
-
-    nz_nghgi = find_net_zero_year(nghgi_median)
-    print(f"  NGHGI NZ year: {nz_nghgi}")
-
-    # Verification: print key years around NZ
-    for label, median_ts, nz_year in [
-        ("Scientific", bm_median, nz_scientific),
-        ("NGHGI", nghgi_median, nz_nghgi),
-    ]:
-        if nz_year:
-            window = range(
-                max(nz_year - 3, min(ar6_year_ints)),
-                min(nz_year + 4, max(ar6_year_ints) + 1),
-            )
-            vals = {y: f"{median_ts.get(y, float('nan')):.0f}" for y in window}
-            print(f"  {label} around NZ: {vals}")
-
+    # Category-level summary for YAML (median used for bunker integration)
     ar6_results[cat] = {
-        "net_zero_year_nghgi": nz_nghgi,
-        "net_zero_year_scientific": nz_scientific,
-        "n_scenarios": n_scenarios,
+        "nz_year_median": median_nz,
+        "nz_year_min": min_nz,
+        "nz_year_q25": q25_nz,
+        "nz_year_q75": q75_nz,
+        "nz_year_max": max_nz,
+        "n_scenarios": n_total,
+        "n_reaching_nz": n_reaching_nz,
     }
 
+# Combine all categories
+all_nz_years_df = pd.concat(all_nz_dfs, ignore_index=True)
+
+print(f"\n{'=' * 60}")
+print(f"Total: {len(all_nz_years_df)} scenarios across {len(categories)} categories")
+
 # %% [markdown]
-# ### Summary and save AR6 constants
+# ### Summary and save
 
 # %%
-print("\nAR6 Category Constants:")
-print("-" * 50)
+print("\nAR6 Category Summary:")
+print("-" * 70)
 for cat, vals in sorted(ar6_results.items()):
     print(
-        f"  {cat}: NGHGI NZ={vals['net_zero_year_nghgi']}, "
-        f"Scientific NZ={vals['net_zero_year_scientific']}, "
-        f"n={vals['n_scenarios']}"
+        f"  {cat}: median NZ={vals['nz_year_median']}, "
+        f"range=[{vals['nz_year_min']}-{vals['nz_year_max']}], "
+        f"IQR=[{vals['nz_year_q25']}-{vals['nz_year_q75']}], "
+        f"n={vals['n_scenarios']} ({vals['n_reaching_nz']} reach NZ)"
     )
 
 # Sanity checks
-for cat, vals in ar6_results.items():
-    nz_nghgi = vals["net_zero_year_nghgi"]
-    nz_sci = vals["net_zero_year_scientific"]
-
-    if nz_nghgi is None:
-        print(f"  WARNING: {cat} NGHGI total CO2 never reaches zero!")
-    if nz_sci is None:
-        print(f"  WARNING: {cat} scientific total CO2 never reaches zero!")
-    if nz_nghgi and nz_sci and nz_nghgi > nz_sci:
+for cat, vals in sorted(ar6_results.items()):
+    if vals["n_reaching_nz"] == 0:
+        print(f"  WARNING: No {cat} scenarios reach net-zero total CO2!")
+    if vals["n_reaching_nz"] < vals["n_scenarios"] * 0.5:
         print(
-            f"  NOTE: {cat} NGHGI NZ ({nz_nghgi}) > scientific NZ ({nz_sci}) — "
-            "expected since NGHGI LULUCF sink is larger"
+            f"  NOTE: Only {vals['n_reaching_nz']}/{vals['n_scenarios']} "
+            f"{cat} scenarios reach net-zero before 2100"
         )
 
+# Save per-scenario NZ years as Parquet
+all_nz_years_df.to_parquet(ar6_nz_years_output_path, index=False)
+print(
+    f"\nSaved per-scenario NZ years ({len(all_nz_years_df)} rows): "
+    f"{ar6_nz_years_output_path}"
+)
+
 # %%
+# Save category-level summary as YAML (used for bunker integration bounds)
 yaml_header = (
     "# AR6 category constants — auto-generated by notebook 100_data_preprocess_rcbs\n"
     "# Source: Gidden et al. AR6 reanalysis (OSCARv3.2)\n"
     "# DO NOT EDIT MANUALLY — re-run the notebook to regenerate\n"
     "#\n"
-    "# net_zero_year_nghgi: first year category-median NGHGI-convention CO2 <= 0\n"
-    "# net_zero_year_scientific: first year category-median BM-convention CO2 <= 0\n"
-    "# n_scenarios: number of AR6 scenarios in this category\n"
+    "# Per-scenario NZ years are in ar6_scenario_nz_years.parquet\n"
+    "#\n"
+    "# nz_year_median: median per-scenario total CO2 NZ year\n"
+    "#   (used as bunker integration bound)\n"
+    "# nz_year_min/q25/q75/max: distribution of per-scenario NZ years\n"
+    "# n_scenarios: total scenarios in category\n"
+    "# n_reaching_nz: scenarios reaching NZ before 2100\n"
 )
+
+# Convert numpy ints to native Python ints for YAML serialization
+yaml_results = {
+    cat: {k: int(v) for k, v in vals.items()} for cat, vals in ar6_results.items()
+}
 
 with open(ar6_constants_output_path, "w") as f:
     f.write(yaml_header)
-    yaml.dump(ar6_results, f, default_flow_style=False, sort_keys=True)
+    yaml.dump(yaml_results, f, default_flow_style=False, sort_keys=True)
 
-print(f"\nSaved to: {ar6_constants_output_path}")
+print(f"\nSaved category summary: {ar6_constants_output_path}")
 
 with open(ar6_constants_output_path) as f:
     print(f.read())
@@ -777,7 +732,7 @@ if rcb_data["rcb_data"]:
 #
 # Delegates to `load_and_process_rcbs()` which handles NGHGI-consistent
 # timeseries-based adjustments (LULUCF deduction + bunker subtraction)
-# with per-category net-zero years following Weber et al. (2026).
+# with per-category adjustments following Weber et al. (2026).
 
 # %%
 from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
