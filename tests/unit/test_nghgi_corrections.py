@@ -26,11 +26,14 @@ from fair_shares.library.utils.data.nghgi import (
     build_nghgi_world_co2_timeseries,
     compute_bunker_deduction,
     compute_cumulative_emissions,
+    compute_gidden_medians,
     compute_lulucf_convention_gap,
     compute_lulucf_deduction,
+    compute_scenario_median_cumulative,
     load_ar6_category_constants,
     load_bunker_timeseries,
     load_gidden_lulucf_components,
+    load_gidden_per_scenario_nz_years,
     load_nghgi_lulucf_historical,
     map_scenario_to_ar6_category,
 )
@@ -60,6 +63,69 @@ def _make_ffi_emissions(year_values: dict[int, float]) -> pd.DataFrame:
     )
     data = {str(y): [v] for y, v in year_values.items()}
     return pd.DataFrame(data, index=index)
+
+
+def _make_scenario_timeseries(
+    values: dict[int, float],
+    model: str = "M1",
+    scenario: str = "S1",
+) -> pd.DataFrame:
+    """Build a single-scenario DataFrame with (model, scenario) MultiIndex.
+
+    This matches the per-scenario format returned by the refactored
+    ``load_gidden_lulucf_components``.
+    """
+    return pd.DataFrame(
+        [[values[y] for y in sorted(values)]],
+        columns=[str(y) for y in sorted(values)],
+        index=pd.MultiIndex.from_tuples(
+            [(model, scenario)], names=["model", "scenario"]
+        ),
+    )
+
+
+def _make_multi_scenario_timeseries(
+    scenario_values: dict[tuple[str, str], dict[int, float]],
+) -> pd.DataFrame:
+    """Build multi-scenario DataFrame with (model, scenario) MultiIndex.
+
+    Parameters
+    ----------
+    scenario_values : dict
+        Mapping of (model, scenario) tuples to year→value dicts.
+        All scenarios must share the same year range.
+    """
+    rows = []
+    index_tuples = []
+    years = sorted(next(iter(scenario_values.values())))
+    for (model, scenario), values in scenario_values.items():
+        rows.append([values[y] for y in years])
+        index_tuples.append((model, scenario))
+    return pd.DataFrame(
+        rows,
+        columns=[str(y) for y in years],
+        index=pd.MultiIndex.from_tuples(index_tuples, names=["model", "scenario"]),
+    )
+
+
+def _make_nz_years(
+    nz_map: dict[tuple[str, str], int] | None = None,
+    default_nz: int = 2050,
+    model: str = "M1",
+    scenario: str = "S1",
+) -> pd.Series:
+    """Build a per-scenario net-zero year Series.
+
+    If nz_map is None, creates a single-scenario Series using model/scenario/default_nz.
+    """
+    if nz_map is None:
+        nz_map = {(model, scenario): default_nz}
+    return pd.Series(
+        nz_map,
+        dtype=int,
+        name="net_zero_year",
+        index=pd.MultiIndex.from_tuples(list(nz_map.keys()), names=["model", "scenario"]),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -279,8 +345,8 @@ class TestLoadGiddenLulucfComponents:
     def _make_data(self, rows: list[dict]) -> pd.DataFrame:
         return pd.DataFrame(rows)
 
-    def test_category_median_computed(self, tmp_path):
-        """Median across model rows is returned for each component."""
+    def test_per_scenario_output(self, tmp_path):
+        """Per-scenario rows are returned with (model, scenario) MultiIndex."""
         meta = self._make_meta(
             [
                 {"model": "M1", "scenario": "S1", "Category": "C1"},
@@ -334,11 +400,15 @@ class TestLoadGiddenLulucfComponents:
                     tmp_path / "ar6_gidden.xlsx", "C1"
                 )
 
-        # median of [100, 200] = 150; median of [200, 300] = 250
-        assert direct_ts["2020"].iloc[0] == pytest.approx(150.0)
-        assert direct_ts["2025"].iloc[0] == pytest.approx(250.0)
-        # median of [10, 30] = 20; median of [20, 40] = 30
-        assert indirect_ts["2020"].iloc[0] == pytest.approx(20.0)
+        # Returns per-scenario DataFrames, not medians
+        assert len(direct_ts) == 2
+        assert direct_ts.index.names == ["model", "scenario"]
+        assert direct_ts.loc[("M1", "S1"), "2020"] == pytest.approx(100.0)
+        assert direct_ts.loc[("M2", "S2"), "2020"] == pytest.approx(200.0)
+        assert direct_ts.loc[("M1", "S1"), "2025"] == pytest.approx(200.0)
+        assert direct_ts.loc[("M2", "S2"), "2025"] == pytest.approx(300.0)
+        assert indirect_ts.loc[("M1", "S1"), "2020"] == pytest.approx(10.0)
+        assert indirect_ts.loc[("M2", "S2"), "2020"] == pytest.approx(30.0)
 
     def test_unknown_category_raises(self, tmp_path):
         """DataProcessingError when AR6 category has no matching rows."""
@@ -374,6 +444,118 @@ class TestLoadGiddenLulucfComponents:
 
 
 # ---------------------------------------------------------------------------
+# compute_gidden_medians
+# ---------------------------------------------------------------------------
+
+
+class TestComputeGiddenMedians:
+    """Tests for compute_gidden_medians (backward-compat median helper)."""
+
+    def test_median_of_two_scenarios(self):
+        """Year-by-year median across two scenarios."""
+        direct = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {2020: 100.0, 2025: 200.0},
+            ("M2", "S2"): {2020: 200.0, 2025: 300.0},
+        })
+        indirect = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {2020: 10.0, 2025: 20.0},
+            ("M2", "S2"): {2020: 30.0, 2025: 40.0},
+        })
+
+        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C1")
+
+        assert len(direct_med) == 1
+        assert direct_med.index.name == "source"
+        # median of [100, 200] = 150; median of [200, 300] = 250
+        assert direct_med["2020"].iloc[0] == pytest.approx(150.0)
+        assert direct_med["2025"].iloc[0] == pytest.approx(250.0)
+        # median of [10, 30] = 20; median of [20, 40] = 30
+        assert indirect_med["2020"].iloc[0] == pytest.approx(20.0)
+        assert indirect_med["2025"].iloc[0] == pytest.approx(30.0)
+
+    def test_single_scenario_passthrough(self):
+        """With one scenario, median equals the original values."""
+        direct = _make_scenario_timeseries({2020: 42.0, 2025: 99.0})
+        indirect = _make_scenario_timeseries({2020: -10.0, 2025: -20.0})
+
+        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C1")
+        assert direct_med["2020"].iloc[0] == pytest.approx(42.0)
+        assert indirect_med["2025"].iloc[0] == pytest.approx(-20.0)
+
+    def test_index_label_includes_category(self):
+        """Output index label includes the AR6 category string."""
+        direct = _make_scenario_timeseries({2020: 1.0})
+        indirect = _make_scenario_timeseries({2020: 2.0})
+
+        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C3")
+        assert "C3" in direct_med.index[0]
+        assert "C3" in indirect_med.index[0]
+
+
+# ---------------------------------------------------------------------------
+# compute_scenario_median_cumulative
+# ---------------------------------------------------------------------------
+
+
+class TestComputeScenarioMedianCumulative:
+    """Tests for compute_scenario_median_cumulative (integrate-first, median-second)."""
+
+    def test_single_scenario(self):
+        """With one scenario, result equals the plain sum."""
+        ts = _make_scenario_timeseries({2020: 10.0, 2021: 20.0, 2022: 30.0})
+        result = compute_scenario_median_cumulative(ts, 2020, 2022)
+        assert result == pytest.approx(60.0)
+
+    def test_median_of_sums_not_sum_of_medians(self):
+        """Demonstrate that median(∑xᵢ) ≠ ∑median(xᵢ) with asymmetric data.
+
+        This is the core property the Weber et al. (2026) refactoring preserves.
+        """
+        # Scenario A: front-loaded (10+1 = 11)
+        # Scenario B: back-loaded  (1+10 = 11)
+        # Scenario C: extreme      (0+20 = 20)
+        ts = _make_multi_scenario_timeseries({
+            ("M1", "A"): {2020: 10.0, 2021: 1.0},
+            ("M2", "B"): {2020: 1.0, 2021: 10.0},
+            ("M3", "C"): {2020: 0.0, 2021: 20.0},
+        })
+
+        # integrate-first-then-median: sums = [11, 11, 20], median = 11
+        result = compute_scenario_median_cumulative(ts, 2020, 2021)
+        assert result == pytest.approx(11.0)
+
+        # median-first-then-sum: medians = [1.0, 10.0], sum = 11.0
+        # (happens to match here, so use a 4th scenario to break symmetry)
+        ts2 = _make_multi_scenario_timeseries({
+            ("M1", "A"): {2020: 10.0, 2021: 1.0},
+            ("M2", "B"): {2020: 1.0, 2021: 10.0},
+            ("M3", "C"): {2020: 0.0, 2021: 20.0},
+            ("M4", "D"): {2020: 100.0, 2021: 0.0},
+        })
+        # sums = [11, 11, 20, 100], median = (11+20)/2 = 15.5
+        integrate_first = compute_scenario_median_cumulative(ts2, 2020, 2021)
+        # medians per year: [5.5, 5.5], sum = 11.0
+        median_first = ts2[["2020", "2021"]].median(axis=0).sum()
+        assert integrate_first != pytest.approx(median_first), (
+            "Should demonstrate that aggregation order matters"
+        )
+
+    def test_sub_range(self):
+        """Only years within [start_year, end_year] are summed."""
+        ts = _make_scenario_timeseries(
+            {2020: 10.0, 2021: 20.0, 2022: 30.0, 2023: 40.0}
+        )
+        result = compute_scenario_median_cumulative(ts, 2021, 2022)
+        assert result == pytest.approx(50.0)
+
+    def test_no_data_in_range_raises(self):
+        """Requesting a range outside data raises DataProcessingError."""
+        ts = _make_scenario_timeseries({2020: 10.0})
+        with pytest.raises(DataProcessingError, match="No data found"):
+            compute_scenario_median_cumulative(ts, 2050, 2060)
+
+
+# ---------------------------------------------------------------------------
 # load_ar6_category_constants
 # ---------------------------------------------------------------------------
 
@@ -387,14 +569,22 @@ class TestLoadAr6CategoryConstants:
 
         constants = {
             "C1": {
-                "net_zero_year_nghgi": 2050,
-                "net_zero_year_scientific": 2047,
+                "nz_year_median": 2050,
+                "nz_year_min": 2035,
+                "nz_year_q25": 2045,
+                "nz_year_q75": 2055,
+                "nz_year_max": 2070,
                 "n_scenarios": 70,
+                "n_reaching_nz": 68,
             },
             "C2": {
-                "net_zero_year_nghgi": 2058,
-                "net_zero_year_scientific": 2054,
+                "nz_year_median": 2058,
+                "nz_year_min": 2040,
+                "nz_year_q25": 2052,
+                "nz_year_q75": 2065,
+                "nz_year_max": 2100,
                 "n_scenarios": 106,
+                "n_reaching_nz": 95,
             },
         }
         path = tmp_path / "constants.yaml"
@@ -402,7 +592,7 @@ class TestLoadAr6CategoryConstants:
             yaml.dump(constants, f)
 
         result = load_ar6_category_constants(path)
-        assert result["C1"]["net_zero_year_nghgi"] == 2050
+        assert result["C1"]["nz_year_median"] == 2050
         assert result["C2"]["n_scenarios"] == 106
 
     def test_missing_file_raises(self, tmp_path):
@@ -416,8 +606,8 @@ class TestLoadAr6CategoryConstants:
 
         constants = {
             "C1": {
-                "net_zero_year_nghgi": 2050,
-                # missing net_zero_year_scientific and n_scenarios
+                "nz_year_min": 2035,
+                # missing nz_year_median and n_scenarios
             },
         }
         path = tmp_path / "constants.yaml"
@@ -453,26 +643,27 @@ class TestComputeLulucfDeduction:
 
     @pytest.fixture
     def gidden_direct(self) -> pd.DataFrame:
-        """Gidden Direct timeseries 2023-2050, 100 MtCO2/yr."""
-        return _make_timeseries(
-            {y: 100.0 for y in range(2023, 2051)}, row_label="gidden_direct_C1"
+        """Gidden Direct per-scenario timeseries 2023-2050, 100 MtCO2/yr."""
+        return _make_scenario_timeseries(
+            {y: 100.0 for y in range(2023, 2051)},
         )
 
     @pytest.fixture
     def gidden_indirect(self) -> pd.DataFrame:
-        """Gidden Indirect timeseries 2023-2050, -200 MtCO2/yr."""
-        return _make_timeseries(
-            {y: -200.0 for y in range(2023, 2051)}, row_label="gidden_indirect_C1"
+        """Gidden Indirect per-scenario timeseries 2023-2050, -200 MtCO2/yr."""
+        return _make_scenario_timeseries(
+            {y: -200.0 for y in range(2023, 2051)},
         )
 
     def test_historical_only(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """When net_zero_year <= splice_year, only historical data is used."""
+        """When per-scenario NZ year <= splice_year, only historical data is used."""
+        nz_years = _make_nz_years(default_nz=2022)
         result = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2022,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         # 3 years × (-500) = -1500
@@ -480,12 +671,13 @@ class TestComputeLulucfDeduction:
 
     def test_historical_plus_future(self, nghgi_ts, gidden_direct, gidden_indirect):
         """Historical + future segments are summed correctly."""
+        nz_years = _make_nz_years(default_nz=2025)
         result = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         historical = -500.0 * 3  # 2020, 2021, 2022
@@ -494,27 +686,54 @@ class TestComputeLulucfDeduction:
 
     def test_net_sink_reduces_deduction(self, nghgi_ts, gidden_direct, gidden_indirect):
         """Net sink (negative LULUCF) must produce a negative cumulative deduction."""
+        nz_years = _make_nz_years(default_nz=2022)
         result = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2022,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         assert result < 0.0, "Net sink should give negative deduction"
 
     def test_net_zero_before_splice(self, nghgi_ts, gidden_direct, gidden_indirect):
         """Net-zero year before splice year uses only a subset of historical data."""
+        nz_years = _make_nz_years(default_nz=2021)
         result = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2021,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         assert result == pytest.approx(-1000.0)  # 2020 + 2021
+
+    def test_different_nz_years_per_scenario(self, nghgi_ts):
+        """Scenarios with different NZ years produce different cumulative totals."""
+        direct = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {y: 100.0 for y in range(2023, 2051)},
+            ("M2", "S2"): {y: 100.0 for y in range(2023, 2051)},
+        })
+        indirect = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {y: -200.0 for y in range(2023, 2051)},
+            ("M2", "S2"): {y: -200.0 for y in range(2023, 2051)},
+        })
+        # S1 reaches NZ at 2025 (3 future years), S2 at 2030 (8 future years)
+        nz_years = _make_nz_years({("M1", "S1"): 2025, ("M2", "S2"): 2030})
+        result = compute_lulucf_deduction(
+            nghgi_ts=nghgi_ts,
+            gidden_direct_scenarios=direct,
+            gidden_indirect_scenarios=indirect,
+            start_year=2020,
+            per_scenario_nz_years=nz_years,
+            splice_year=2022,
+        )
+        # S1: hist(-1500) + future(3×-100 = -300) = -1800
+        # S2: hist(-1500) + future(8×-100 = -800) = -2300
+        # median = (-1800 + -2300) / 2 = -2050
+        assert result == pytest.approx(-2050.0)
 
 
 # ---------------------------------------------------------------------------
@@ -862,26 +1081,27 @@ class TestComputeLulucfConventionGap:
 
     @pytest.fixture
     def gidden_direct(self) -> pd.DataFrame:
-        """Gidden Direct timeseries 2020-2050, 100 MtCO2/yr."""
-        return _make_timeseries(
-            {y: 100.0 for y in range(2020, 2051)}, row_label="gidden_direct_C1"
+        """Gidden Direct per-scenario timeseries 2020-2050, 100 MtCO2/yr."""
+        return _make_scenario_timeseries(
+            {y: 100.0 for y in range(2020, 2051)},
         )
 
     @pytest.fixture
     def gidden_indirect(self) -> pd.DataFrame:
-        """Gidden Indirect timeseries 2020-2050, -200 MtCO2/yr."""
-        return _make_timeseries(
-            {y: -200.0 for y in range(2020, 2051)}, row_label="gidden_indirect_C1"
+        """Gidden Indirect per-scenario timeseries 2020-2050, -200 MtCO2/yr."""
+        return _make_scenario_timeseries(
+            {y: -200.0 for y in range(2020, 2051)},
         )
 
     def test_historical_only_gap(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """When net_zero_year <= splice_year, gap = NGHGI - Direct (historical only)."""
+        """When per-scenario NZ year <= splice_year, gap = NGHGI - Direct (historical only)."""
+        nz_years = _make_nz_years(default_nz=2022)
         result = compute_lulucf_convention_gap(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2022,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         # NGHGI: 3 × (-500) = -1500; Direct: 3 × 100 = 300; gap = -1500 - 300 = -1800
@@ -889,12 +1109,13 @@ class TestComputeLulucfConventionGap:
 
     def test_historical_plus_future_gap(self, nghgi_ts, gidden_direct, gidden_indirect):
         """Historical gap + future indirect component."""
+        nz_years = _make_nz_years(default_nz=2025)
         result = compute_lulucf_convention_gap(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         # Historical: NGHGI(-1500) - Direct(300) = -1800
@@ -905,20 +1126,21 @@ class TestComputeLulucfConventionGap:
         self, nghgi_ts, gidden_direct, gidden_indirect
     ):
         """Convention gap must differ from the full LULUCF deduction."""
+        nz_years = _make_nz_years(default_nz=2025)
         gap = compute_lulucf_convention_gap(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         full = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=gidden_direct,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct,
+            gidden_indirect_scenarios=gidden_indirect,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         assert gap != pytest.approx(
@@ -930,31 +1152,59 @@ class TestComputeLulucfConventionGap:
         nghgi_ts = _make_timeseries(
             {2020: -800.0, 2021: -800.0, 2022: -800.0}, row_label="nghgi_lulucf"
         )
-        direct_ts = _make_timeseries(
-            {y: 200.0 for y in range(2020, 2026)}, row_label="gidden_direct_C1"
+        direct_scenarios = _make_scenario_timeseries(
+            {y: 200.0 for y in range(2020, 2026)},
         )
-        indirect_ts = _make_timeseries(
-            {y: -100.0 for y in range(2020, 2026)}, row_label="gidden_indirect_C1"
+        indirect_scenarios = _make_scenario_timeseries(
+            {y: -100.0 for y in range(2020, 2026)},
         )
+        nz_years = _make_nz_years(default_nz=2025)
 
         gap = compute_lulucf_convention_gap(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=direct_ts,
-            gidden_indirect_ts=indirect_ts,
+            gidden_direct_scenarios=direct_scenarios,
+            gidden_indirect_scenarios=indirect_scenarios,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         full = compute_lulucf_deduction(
             nghgi_ts=nghgi_ts,
-            gidden_direct_ts=direct_ts,
-            gidden_indirect_ts=indirect_ts,
+            gidden_direct_scenarios=direct_scenarios,
+            gidden_indirect_scenarios=indirect_scenarios,
             start_year=2020,
-            net_zero_year=2025,
+            per_scenario_nz_years=nz_years,
             splice_year=2022,
         )
         # Full deduction is larger in magnitude (includes Direct in future too)
         assert abs(gap) != abs(full)
+
+    def test_different_nz_years_affect_gap(self, nghgi_ts):
+        """Scenarios with different NZ years produce different gap values."""
+        direct = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {y: 100.0 for y in range(2020, 2051)},
+            ("M2", "S2"): {y: 100.0 for y in range(2020, 2051)},
+        })
+        indirect = _make_multi_scenario_timeseries({
+            ("M1", "S1"): {y: -200.0 for y in range(2020, 2051)},
+            ("M2", "S2"): {y: -200.0 for y in range(2020, 2051)},
+        })
+        # Same data but different NZ years → different future windows
+        nz_short = _make_nz_years({("M1", "S1"): 2025, ("M2", "S2"): 2025})
+        nz_long = _make_nz_years({("M1", "S1"): 2040, ("M2", "S2"): 2040})
+
+        gap_short = compute_lulucf_convention_gap(
+            nghgi_ts=nghgi_ts, gidden_direct_scenarios=direct,
+            gidden_indirect_scenarios=indirect, start_year=2020,
+            per_scenario_nz_years=nz_short, splice_year=2022,
+        )
+        gap_long = compute_lulucf_convention_gap(
+            nghgi_ts=nghgi_ts, gidden_direct_scenarios=direct,
+            gidden_indirect_scenarios=indirect, start_year=2020,
+            per_scenario_nz_years=nz_long, splice_year=2022,
+        )
+        # Longer integration = more negative indirect → larger magnitude gap
+        assert abs(gap_long) > abs(gap_short)
 
 
 # ---------------------------------------------------------------------------
@@ -1096,26 +1346,31 @@ class TestPrecautionaryLulucfCap:
     @pytest.fixture
     def gidden_direct_sink(self) -> pd.DataFrame:
         """Gidden Direct as net sink: -100 MtCO2/yr (cumulative is negative)."""
-        return _make_timeseries(
-            {y: -100.0 for y in range(2020, 2051)}, row_label="gidden_direct_C1"
+        return _make_scenario_timeseries(
+            {y: -100.0 for y in range(2020, 2051)},
         )
 
     @pytest.fixture
     def gidden_direct_source(self) -> pd.DataFrame:
         """Gidden Direct as net source: +100 MtCO2/yr (cumulative is positive)."""
-        return _make_timeseries(
-            {y: 100.0 for y in range(2020, 2051)}, row_label="gidden_direct_C1"
+        return _make_scenario_timeseries(
+            {y: 100.0 for y in range(2020, 2051)},
         )
 
     @pytest.fixture
     def gidden_indirect(self) -> pd.DataFrame:
         """Gidden Indirect (unused for co2-ffi, but required by signature)."""
-        return _make_timeseries(
-            {y: -200.0 for y in range(2020, 2051)}, row_label="gidden_indirect_C1"
+        return _make_scenario_timeseries(
+            {y: -200.0 for y in range(2020, 2051)},
         )
 
+    @pytest.fixture
+    def nz_years(self) -> pd.Series:
+        """Per-scenario NZ years: single scenario at 2050."""
+        return _make_nz_years(default_nz=2050)
+
     def test_sink_capped_to_zero_with_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect
+        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
     ):
         """When BM is a sink, precautionary cap sets lulucf_mt to 0."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -1123,8 +1378,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -1132,7 +1388,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_mt == 0.0
 
     def test_source_still_reduces_budget_with_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_source, gidden_indirect
+        self, nghgi_ts, bunker_ts, gidden_direct_source, gidden_indirect, nz_years
     ):
         """When BM is a source, precautionary cap still reduces fossil budget."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -1140,8 +1396,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_source,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_source,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -1151,7 +1408,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_mt == pytest.approx(-3100.0)
 
     def test_sink_increases_budget_without_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect
+        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
     ):
         """When precautionary is off, BM sink increases fossil budget (original behavior)."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -1159,8 +1416,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,
@@ -1170,7 +1428,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_mt == pytest.approx(3100.0)
 
     def test_co2_category_unaffected_by_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect
+        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
     ):
         """Precautionary cap only applies to co2-ffi, not co2."""
         _, lulucf_on = _resolve_adjustment_scalars(
@@ -1178,8 +1436,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2",
             precautionary_lulucf=True,
             verbose=False,
@@ -1189,8 +1448,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2",
             precautionary_lulucf=False,
             verbose=False,
@@ -1198,7 +1458,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_on == lulucf_off
 
     def test_bunkers_unaffected_by_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect
+        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
     ):
         """Bunker deduction is identical regardless of precautionary setting."""
         bunkers_on, _ = _resolve_adjustment_scalars(
@@ -1206,8 +1466,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -1217,8 +1478,9 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_ts=gidden_direct_sink,
-            gidden_indirect_ts=gidden_indirect,
+            gidden_direct_scenarios=gidden_direct_sink,
+            gidden_indirect_scenarios=gidden_indirect,
+            per_scenario_nz_years=nz_years,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,

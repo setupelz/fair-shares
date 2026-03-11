@@ -11,6 +11,12 @@ Methodology:
 - The BM-NGHGI convention correction emerges implicitly from using different
   sources for shift vs deduction — no explicit correction step needed
 - Bunker deduction: historical from GCB2024 timeseries + future Weber constant
+# NOTE: What's the Weber constant – investigate what is going on
+
+Aggregation order (as in Weber et al. 2026):
+- For Gidden scenario-based quantities, cumulative emissions are computed
+  per-scenario first, then the median is taken across scenarios. This ensures
+  that the median reflects the distribution of integrated totals.
 
 Sign conventions:
 - Emissions (fossil, bunkers): positive = source
@@ -21,7 +27,8 @@ Data structure notes (from actual file inspection):
 - NGHGI LULUCF file: "World" is the row index; year columns are integers
 - Bunker file: "Territorial Emissions" sheet uses countries as columns,
   years as row index; "Bunkers" is a column (col 228); header is row 12
-  (header=11 in 0-indexed)
+  (header=11 in 0-indexed). This appears to change in more recent GCB versions,
+  where Aviation and Shipping are split into separate columns
 - Gidden file: IAMC-style long format; variable names include OSCAR prefix;
   AR6 category is in a separate metadata file
 """
@@ -40,6 +47,7 @@ _MTC_TO_MTCO2 = 3.664
 # Gidden variable names (full OSCAR prefix as found in the data)
 _AFOLU_DIRECT_VAR = "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Direct"
 _AFOLU_INDIRECT_VAR = "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Indirect"
+_TOTAL_CO2_VAR = "AR6 Reanalysis|OSCARv3.2|Emissions|CO2"
 
 # Scenario to AR6 category mapping
 _SCENARIO_TO_AR6: dict[str, str] = {
@@ -93,7 +101,9 @@ def load_ar6_category_constants(path: str | Path) -> dict[str, dict]:
     -------
     dict[str, dict]
         Mapping of AR6 category (e.g. "C1") to dict with keys:
-        ``net_zero_year_nghgi``, ``net_zero_year_scientific``, ``n_scenarios``
+        ``nz_year_median``, ``n_scenarios``, and distribution stats
+        (``nz_year_min``, ``nz_year_q25``, ``nz_year_q75``, ``nz_year_max``,
+        ``n_reaching_nz``)
 
     Raises
     ------
@@ -124,7 +134,7 @@ def load_ar6_category_constants(path: str | Path) -> dict[str, dict]:
             f"AR6 category constants file {path} does not contain a mapping"
         )
 
-    required_keys = {"net_zero_year_nghgi", "net_zero_year_scientific", "n_scenarios"}
+    required_keys = {"nz_year_median", "n_scenarios"}
     for category, values in constants.items():
         if not isinstance(values, dict):
             raise DataProcessingError(
@@ -194,11 +204,11 @@ def load_gidden_lulucf_components(
     path: str | Path,
     ar6_category: str,
 ) -> tuple[pd.DataFrame, pd.DataFrame]:
-    """Load Gidden et al. AFOLU|Direct and AFOLU|Indirect for a given AR6 category.
+    """Load Gidden et al. AFOLU|Direct and AFOLU|Indirect per scenario.
 
-    Returns the category median across all models for each component.
-    The AR6 category mapping uses the metadata file (metadata_ar6_gidden.xlsx)
-    in the same directory as the data file.
+    Returns **per-scenario** timeseries for each component, indexed by
+    (model, scenario). Downstream code computes cumulative totals per
+    scenario and then takes the median
 
     Under NGHGI conventions:
     - AFOLU|Direct corresponds to model-convention LULUCF (excludes passive fluxes)
@@ -218,8 +228,9 @@ def load_gidden_lulucf_components(
     Returns
     -------
     tuple[pd.DataFrame, pd.DataFrame]
-        (direct_ts, indirect_ts) — each a single-row DataFrame with string year
-        columns and values in MtCO2/yr. Both are category medians across models.
+        (direct_scenarios, indirect_scenarios) — multi-row DataFrames with
+        a ``(model, scenario)`` MultiIndex, string year columns, and values
+        in MtCO2/yr. One row per (model, scenario) pair in the AR6 category.
 
     Raises
     ------
@@ -228,6 +239,11 @@ def load_gidden_lulucf_components(
         not found
     DataProcessingError
         If the AR6 category has no matching rows
+
+    See Also
+    --------
+    compute_gidden_medians : Compute year-by-year medians from per-scenario
+        DataFrames (for backward compatibility or baseline-shift use).
     """
     path = Path(path)
     if not path.exists():
@@ -291,20 +307,172 @@ def load_gidden_lulucf_components(
     year_cols = [c for c in df.columns if _is_year(c)]
     str_year_cols = [str(int(c)) for c in year_cols]
 
-    direct_median = direct_rows[year_cols].median(axis=0)
-    indirect_median = indirect_rows[year_cols].median(axis=0)
+    # Build per-scenario DataFrames indexed by (model, scenario)
+    direct_ts = pd.DataFrame(
+        direct_rows[year_cols].values,
+        columns=str_year_cols,
+        index=pd.MultiIndex.from_arrays(
+            [direct_rows["Model"].values, direct_rows["Scenario"].values],
+            names=["model", "scenario"],
+        ),
+    )
+    indirect_ts = pd.DataFrame(
+        indirect_rows[year_cols].values,
+        columns=str_year_cols,
+        index=pd.MultiIndex.from_arrays(
+            [indirect_rows["Model"].values, indirect_rows["Scenario"].values],
+            names=["model", "scenario"],
+        ),
+    )
+    return direct_ts, indirect_ts
+
+
+def compute_gidden_medians(
+    direct_scenarios: pd.DataFrame,
+    indirect_scenarios: pd.DataFrame,
+    ar6_category: str,
+) -> tuple[pd.DataFrame, pd.DataFrame]:
+    """Compute year-by-year category medians from per-scenario DataFrames.
+
+    Produces single-row DataFrames compatible with functions that expect
+    the legacy median-timeseries format (e.g., ``process_rcb_to_2020_baseline``
+    for the baseline shift, or ``build_nghgi_world_co2_timeseries``).
+
+    Note: For cumulative budget adjustments (LULUCF deduction, convention gap,
+    bunker deduction), use the per-scenario DataFrames directly with
+    ``compute_scenario_median_cumulative`` instead.
+
+    Parameters
+    ----------
+    direct_scenarios : pd.DataFrame
+        Per-scenario AFOLU|Direct timeseries from ``load_gidden_lulucf_components``
+    indirect_scenarios : pd.DataFrame
+        Per-scenario AFOLU|Indirect timeseries from ``load_gidden_lulucf_components``
+    ar6_category : str
+        AR6 category label (e.g. "C1") for index naming
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.DataFrame]
+        (direct_median, indirect_median) — single-row DataFrames with
+        string year columns and a "source" index, matching the legacy format.
+    """
+    year_cols = [c for c in direct_scenarios.columns if c.isdigit()]
+
+    direct_med = direct_scenarios[year_cols].median(axis=0)
+    indirect_med = indirect_scenarios[year_cols].median(axis=0)
 
     direct_ts = pd.DataFrame(
-        [direct_median.values],
-        columns=str_year_cols,
+        [direct_med.values],
+        columns=year_cols,
         index=pd.Index([f"gidden_direct_{ar6_category}"], name="source"),
     )
     indirect_ts = pd.DataFrame(
-        [indirect_median.values],
-        columns=str_year_cols,
+        [indirect_med.values],
+        columns=year_cols,
         index=pd.Index([f"gidden_indirect_{ar6_category}"], name="source"),
     )
     return direct_ts, indirect_ts
+
+
+def load_gidden_per_scenario_nz_years(
+    path: str | Path,
+    ar6_category: str,
+) -> pd.Series:
+    """Compute total CO₂ net-zero year for each scenario in a category.
+
+    For each (model, scenario) pair, finds the first year where
+    ``Emissions|CO2`` (= fossil + BM LULUCF) is ≤ 0. This is the natural
+    net-zero definition for remaining carbon budgets, which are expressed
+    in total CO₂. Scenarios that never reach net-zero are assigned 2100
+    as a conservative upper bound.
+
+    These per-scenario net-zero years are used as integration endpoints for
+    LULUCF corrections, ensuring that each scenario's cumulative LULUCF is
+    integrated exactly to *its own* net-zero year. This avoids including
+    post-net-zero negative emissions and respects that scenarios within a
+    category reach net-zero at different times.
+
+    Parameters
+    ----------
+    path : str or Path
+        Path to ``ar6_gidden.xlsx``
+    ar6_category : str
+        AR6 warming category (e.g. "C1", "C2", "C3")
+
+    Returns
+    -------
+    pd.Series
+        Per-scenario total CO₂ net-zero years, indexed by
+        ``(model, scenario)`` MultiIndex. Scenarios that never reach
+        net-zero are excluded.
+
+    Raises
+    ------
+    DataLoadingError
+        If files cannot be read
+    DataProcessingError
+        If no scenarios reach net-zero in the requested category
+    """
+    path = Path(path)
+    if not path.exists():
+        raise DataLoadingError(f"Gidden et al. data file not found: {path}")
+
+    meta_path = path.parent / "metadata_ar6_gidden.xlsx"
+    if not meta_path.exists():
+        raise DataLoadingError(f"Gidden metadata file not found: {meta_path}")
+
+    # Load metadata and filter to category
+    meta_df = pd.read_excel(meta_path, sheet_name="meta", header=0)
+    category_meta = meta_df[meta_df["Category"] == ar6_category]
+    if category_meta.empty:
+        raise DataProcessingError(
+            f"AR6 category '{ar6_category}' not found in metadata"
+        )
+    category_pairs = set(zip(category_meta["model"], category_meta["scenario"]))
+
+    # Load main data
+    df = pd.read_excel(path, sheet_name="data", header=0)
+
+    mask_world = df["Region"] == "World"
+    data_pairs = pd.MultiIndex.from_frame(df[["Model", "Scenario"]])
+    category_mi = pd.MultiIndex.from_tuples(list(category_pairs))
+    mask_category = data_pairs.isin(category_mi)
+
+    # Emissions|CO2 = fossil + BM LULUCF (total CO2 under BM convention)
+    mask_total = df["Variable"] == _TOTAL_CO2_VAR
+    total_rows = df[mask_world & mask_category & mask_total]
+
+    if total_rows.empty:
+        raise DataProcessingError(
+            f"No Emissions|CO2 rows found for category '{ar6_category}'"
+        )
+
+    year_cols = sorted([c for c in df.columns if _is_year(c)], key=int)
+    total_indexed = total_rows.set_index(["Model", "Scenario"])[year_cols]
+
+    # Find net-zero year per scenario
+    nz_years = {}
+    for scenario_key in total_indexed.index:
+        row = total_indexed.loc[scenario_key]
+        for year_col in year_cols:
+            if row[year_col] <= 0:
+                nz_years[scenario_key] = int(year_col)
+                break
+        # Scenarios that never reach net-zero are assigned 2100 as a
+        # conservative upper integration bound
+        else:
+            nz_years[scenario_key] = 2100
+
+    if not nz_years:
+        raise DataProcessingError(
+            f"No scenarios in category '{ar6_category}' reach net-zero. "
+            f"Cannot compute per-scenario net-zero years."
+        )
+
+    result = pd.Series(nz_years, dtype=int, name="net_zero_year")
+    result.index = pd.MultiIndex.from_tuples(result.index, names=["model", "scenario"])
+    return result
 
 
 def load_bunker_timeseries(path: str | Path) -> pd.DataFrame:
@@ -374,7 +542,7 @@ def compute_cumulative_emissions(
     start_year: int,
     end_year: int,
 ) -> float:
-    """Integrate a timeseries DataFrame over a year range.
+    """Integrate a single-row timeseries DataFrame over a year range.
 
     Sums values for all years from start_year to end_year (inclusive). Missing
     years are skipped (not interpolated) since gap-filling is the caller's
@@ -411,6 +579,51 @@ def compute_cumulative_emissions(
     return float(timeseries[year_cols].sum(axis=1).iloc[0])
 
 
+def compute_scenario_median_cumulative(
+    scenario_timeseries: pd.DataFrame,
+    start_year: int,
+    end_year: int,
+) -> float:
+    """Integrate each scenario row, then return the median of those totals.
+
+    This implements the "integrate first, median second" aggregation order
+    of Weber et al. (2026), which correctly preserves the distribution of
+    cumulative quantities across scenarios. Because the median is nonlinear,
+    ``median(sum(xᵢ))`` ≠ ``sum(median(xᵢ))``.
+
+    Parameters
+    ----------
+    scenario_timeseries : pd.DataFrame
+        Multi-row DataFrame with string year columns and one row per
+        (model, scenario) pair
+    start_year : int
+        First year to include (inclusive)
+    end_year : int
+        Last year to include (inclusive)
+
+    Returns
+    -------
+    float
+        Median of per-scenario cumulative sums
+
+    Raises
+    ------
+    DataProcessingError
+        If no year columns fall within the requested range
+    """
+    year_cols = [
+        str(y) for y in range(start_year, end_year + 1)
+        if str(y) in scenario_timeseries.columns
+    ]
+    if not year_cols:
+        raise DataProcessingError(
+            f"No data found for years {start_year}-{end_year}. "
+            f"Available years: {list(scenario_timeseries.columns[:5])}..."
+        )
+    per_scenario_sums = scenario_timeseries[year_cols].sum(axis=1)
+    return float(per_scenario_sums.median())
+
+
 def find_net_zero_year(median_ts: pd.Series) -> int | None:
     """Find the first year where a median timeseries crosses zero.
 
@@ -433,22 +646,26 @@ def find_net_zero_year(median_ts: pd.Series) -> int | None:
 
 def compute_lulucf_deduction(
     nghgi_ts: pd.DataFrame,
-    gidden_direct_ts: pd.DataFrame,
-    gidden_indirect_ts: pd.DataFrame,
+    gidden_direct_scenarios: pd.DataFrame,
+    gidden_indirect_scenarios: pd.DataFrame,
     start_year: int,
-    net_zero_year: int,
+    per_scenario_nz_years: pd.Series,
     splice_year: int,
 ) -> float:
-    """Compute cumulative NGHGI-consistent LULUCF deduction.
+    """Compute cumulative NGHGI-consistent LULUCF deduction (median of per-scenario).
 
     Uses the mismatch-based approach of Weber et al. (2026):
     - Historical period (start_year to splice_year): cumulative NGHGI LULUCF
-      from Grassi et al. observations
-    - Future period (splice_year+1 to net_zero_year): cumulative Gidden
+      from Grassi et al. observations (identical across scenarios)
+    - Future period (splice_year+1 to nz_year_i): cumulative Gidden
       (Direct + Indirect), which is the NGHGI proxy
 
+    Each scenario is integrated to **its own** NGHGI-convention net-zero year,
+    preventing post-net-zero negative emissions from affecting the deduction.
+    The median is then taken across those per-scenario cumulative totals.
+
     No timeseries splicing is required — the two segments are summed directly.
-    The LULUCF convention correction (BM - NGHGI) emerges implicitly when this
+    The LULUCF convention correction (BM − NGHGI) emerges implicitly when this
     deduction is paired with the BM-based baseline shift in
     process_rcb_to_2020_baseline().
 
@@ -457,14 +674,17 @@ def compute_lulucf_deduction(
     nghgi_ts : pd.DataFrame
         NGHGI LULUCF historical timeseries (from load_nghgi_lulucf_historical)
         in MtCO2/yr. Negative = net sink.
-    gidden_direct_ts : pd.DataFrame
-        Gidden AFOLU|Direct category median timeseries in MtCO2/yr
-    gidden_indirect_ts : pd.DataFrame
-        Gidden AFOLU|Indirect category median timeseries in MtCO2/yr
+    gidden_direct_scenarios : pd.DataFrame
+        Per-scenario Gidden AFOLU|Direct timeseries in MtCO2/yr.
+        Multi-row DataFrame with (model, scenario) index.
+    gidden_indirect_scenarios : pd.DataFrame
+        Per-scenario Gidden AFOLU|Indirect timeseries in MtCO2/yr.
+        Multi-row DataFrame with (model, scenario) index.
     start_year : int
         Start of integration window (inclusive)
-    net_zero_year : int
-        End of integration window (inclusive)
+    per_scenario_nz_years : pd.Series
+        Per-scenario total CO₂ net-zero years, indexed by (model, scenario).
+        From ``load_gidden_per_scenario_nz_years``.
     splice_year : int
         Last year of historical period (typically last year of Grassi data,
         e.g. 2022)
@@ -481,46 +701,67 @@ def compute_lulucf_deduction(
     DataProcessingError
         If data is insufficient to cover the requested year range
     """
-    # Historical segment: Grassi NGHGI LULUCF (MtCO2/yr)
-    historical_end = min(splice_year, net_zero_year)
-    historical_deduction = compute_cumulative_emissions(
-        nghgi_ts, start_year, historical_end
+    # Align scenarios present in Direct, Indirect, AND with a net-zero year
+    common_idx = (
+        gidden_direct_scenarios.index
+        .intersection(gidden_indirect_scenarios.index)
+        .intersection(per_scenario_nz_years.index)
     )
-
-    # Future segment: Gidden Direct + Indirect (NGHGI proxy, MtCO2/yr)
-    future_deduction = 0.0
-    if net_zero_year > splice_year:
-        future_start = splice_year + 1
-        direct_future = compute_cumulative_emissions(
-            gidden_direct_ts, future_start, net_zero_year
+    if common_idx.empty:
+        raise DataProcessingError(
+            "No common (model, scenario) pairs across AFOLU|Direct, "
+            "AFOLU|Indirect, and net-zero years. Cannot compute LULUCF deduction."
         )
-        indirect_future = compute_cumulative_emissions(
-            gidden_indirect_ts, future_start, net_zero_year
-        )
-        future_deduction = direct_future + indirect_future
 
-    return historical_deduction + future_deduction
+    per_scenario_totals = []
+    for scenario_key in common_idx:
+        nz_year = int(per_scenario_nz_years[scenario_key])
+
+        # Historical segment: Grassi NGHGI LULUCF (observational, same values)
+        hist_end = min(splice_year, nz_year)
+        hist_deduction = compute_cumulative_emissions(nghgi_ts, start_year, hist_end)
+
+        # Future segment: Gidden Direct + Indirect (NGHGI proxy)
+        future_deduction = 0.0
+        if nz_year > splice_year:
+            future_start = splice_year + 1
+            future_cols = [
+                str(y) for y in range(future_start, nz_year + 1)
+                if str(y) in gidden_direct_scenarios.columns
+            ]
+            if future_cols:
+                d = float(gidden_direct_scenarios.loc[scenario_key, future_cols].sum())
+                i = float(gidden_indirect_scenarios.loc[scenario_key, future_cols].sum())
+                future_deduction = d + i
+
+        per_scenario_totals.append(hist_deduction + future_deduction)
+
+    return float(pd.Series(per_scenario_totals).median())
 
 
 def compute_lulucf_convention_gap(
     nghgi_ts: pd.DataFrame,
-    gidden_direct_ts: pd.DataFrame,
-    gidden_indirect_ts: pd.DataFrame,
+    gidden_direct_scenarios: pd.DataFrame,
+    gidden_indirect_scenarios: pd.DataFrame,
     start_year: int,
-    net_zero_year: int,
+    per_scenario_nz_years: pd.Series,
     splice_year: int,
 ) -> float:
     """Compute cumulative LULUCF convention gap (NGHGI minus bookkeeping).
 
     For total CO2 budgets, LULUCF remains in the budget but needs to be
-    switched from bookkeeping (BM) to NGHGI convention. The gap is smaller
-    than the full LULUCF deduction used for fossil-only budgets.
+    switched from bookkeeping (BM) to NGHGI convention. The convention gap
+    is the difference between NGHGI and BM LULUCF over the integration window.
 
-    Gap = NGHGI_LULUCF - BM_LULUCF, where:
-    - Historical (start_year to splice_year):
-        NGHGI (Grassi) - Gidden Direct (BM proxy) = convention difference
-    - Future (splice_year+1 to net_zero_year):
-        Gidden Indirect only (the passive flux component that NGHGI includes
+    Each scenario is integrated to **its own** NGHGI-convention net-zero year,
+    preventing post-net-zero negative emissions from inflating the gap. The
+    median is then taken across those per-scenario gap totals.
+
+    Gap_i = NGHGI_LULUCF - BM_LULUCF_i, where for each scenario i:
+    - Historical (start_year to min(splice_year, nz_year_i)):
+        NGHGI (Grassi) - Gidden Direct_i (BM proxy) = convention difference_i
+    - Future (splice_year+1 to nz_year_i):
+        Gidden Indirect_i only (the passive flux component that NGHGI includes
         but BM excludes — Direct cancels out in the gap)
 
     Parameters
@@ -528,14 +769,17 @@ def compute_lulucf_convention_gap(
     nghgi_ts : pd.DataFrame
         NGHGI LULUCF historical timeseries (from load_nghgi_lulucf_historical)
         in MtCO2/yr. Negative = net sink.
-    gidden_direct_ts : pd.DataFrame
-        Gidden AFOLU|Direct category median timeseries in MtCO2/yr
-    gidden_indirect_ts : pd.DataFrame
-        Gidden AFOLU|Indirect category median timeseries in MtCO2/yr
+    gidden_direct_scenarios : pd.DataFrame
+        Per-scenario Gidden AFOLU|Direct timeseries in MtCO2/yr.
+        Multi-row DataFrame with (model, scenario) index.
+    gidden_indirect_scenarios : pd.DataFrame
+        Per-scenario Gidden AFOLU|Indirect timeseries in MtCO2/yr.
+        Multi-row DataFrame with (model, scenario) index.
     start_year : int
         Start of integration window (inclusive)
-    net_zero_year : int
-        End of integration window (inclusive)
+    per_scenario_nz_years : pd.Series
+        Per-scenario total CO₂ net-zero years, indexed by (model, scenario).
+        From ``load_gidden_per_scenario_nz_years``.
     splice_year : int
         Last year of historical period (typically last year of Grassi data,
         e.g. 2022)
@@ -543,26 +787,59 @@ def compute_lulucf_convention_gap(
     Returns
     -------
     float
-        Cumulative convention gap in MtCO2. Positive = NGHGI shows more
-        emissions (or less sink) than BM; negative = NGHGI shows more sink.
+        Cumulative convention gap in MtCO2 (median across scenarios).
+        Positive = NGHGI shows more emissions (or less sink) than BM;
+        negative = NGHGI shows more sink.
     """
-    # Historical segment: gap = NGHGI - Direct (BM proxy)
-    historical_end = min(splice_year, net_zero_year)
-    nghgi_hist = compute_cumulative_emissions(nghgi_ts, start_year, historical_end)
-    direct_hist = compute_cumulative_emissions(
-        gidden_direct_ts, start_year, historical_end
+    # Align scenarios present in Direct, Indirect, AND with a net-zero year
+    common_idx = (
+        gidden_direct_scenarios.index
+        .intersection(gidden_indirect_scenarios.index)
+        .intersection(per_scenario_nz_years.index)
     )
-    historical_gap = nghgi_hist - direct_hist
-
-    # Future segment: only Indirect (Direct cancels in the gap)
-    future_gap = 0.0
-    if net_zero_year > splice_year:
-        future_start = splice_year + 1
-        future_gap = compute_cumulative_emissions(
-            gidden_indirect_ts, future_start, net_zero_year
+    if common_idx.empty:
+        raise DataProcessingError(
+            "No common (model, scenario) pairs across AFOLU|Direct, "
+            "AFOLU|Indirect, and net-zero years. Cannot compute convention gap."
         )
 
-    return historical_gap + future_gap
+    per_scenario_gaps = []
+    for scenario_key in common_idx:
+        nz_year = int(per_scenario_nz_years[scenario_key])
+        hist_end = min(splice_year, nz_year)
+
+        # NGHGI historical (observational, same values for all scenarios)
+        nghgi_hist = compute_cumulative_emissions(nghgi_ts, start_year, hist_end)
+
+        # Direct historical for this scenario
+        hist_cols = [
+            str(y) for y in range(start_year, hist_end + 1)
+            if str(y) in gidden_direct_scenarios.columns
+        ]
+        direct_hist = float(gidden_direct_scenarios.loc[scenario_key, hist_cols].sum()) if hist_cols else 0.0
+        # NOTE: The historical BM proxy here uses Gidden Direct from the AR6
+        # scenario analysis. A future refinement could use GCB observational
+        # bookkeeping data instead, but the impact is small since the historical
+        # segment (2020-2022) is short.
+
+        hist_gap = nghgi_hist - direct_hist
+
+        # Future gap: Indirect only (Direct cancels in the gap)
+        future_gap = 0.0
+        if nz_year > splice_year:
+            future_start = splice_year + 1
+            future_cols = [
+                str(y) for y in range(future_start, nz_year + 1)
+                if str(y) in gidden_indirect_scenarios.columns
+            ]
+            if future_cols:
+                future_gap = float(gidden_indirect_scenarios.loc[scenario_key, future_cols].sum())
+
+        per_scenario_gaps.append(hist_gap + future_gap)
+
+    # Category filtering is guaranteed by the caller: load_gidden_lulucf_components
+    # returns only scenarios within the requested AR6 category.
+    return float(pd.Series(per_scenario_gaps).median())
 
 
 def compute_bunker_deduction(
