@@ -181,8 +181,8 @@ print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
 print(f"  Bunkers source: {adjustments_config.bunkers.path}")
 print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
 print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
-print(f"  Gidden AR6 reanalysis: data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx")
-print(f"    (used for per-scenario LULUCF future projections and net-zero years)")
+print("  Gidden AR6 reanalysis: data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx")
+print("    (used for per-scenario LULUCF future projections and net-zero years)")
 # NOTE: Partially hard-coded at the moment, might need a slight change.
 
 # %%
@@ -555,10 +555,6 @@ print("World emissions (historical) saved")
 
 # %%
 from fair_shares.library.utils.data.nghgi import (
-    _AFOLU_INDIRECT_VAR,
-    _TOTAL_CO2_VAR,
-    _is_year,
-    find_net_zero_year,
     load_gidden_per_scenario_nz_years,
 )
 
@@ -605,7 +601,7 @@ for cat in categories:
     print(f"  Total scenarios: {n_total}")
     print(f"  Scenarios reaching net-zero before 2100: {n_reaching_nz}")
     print(f"  Scenarios assigned 2100 (never reach NZ): {n_at_2100}")
-    print(f"  Net-zero year distribution:")
+    print("  Net-zero year distribution:")
     print(f"    Min:    {min_nz}")
     print(f"    Q25:    {q25_nz}")
     print(f"    Median: {median_nz}")
@@ -615,19 +611,21 @@ for cat in categories:
     # Print histogram-style view of NZ year distribution
     nz_decades = nz_years.apply(lambda y: f"{(y // 10) * 10}s")
     decade_counts = nz_decades.value_counts().sort_index()
-    print(f"  Distribution by decade:")
+    print("  Distribution by decade:")
     for decade, count in decade_counts.items():
         bar = "█" * count
         print(f"    {decade}: {bar} ({count})")
 
     # Build per-scenario DataFrame for this category
-    nz_df = pd.DataFrame({
-        "model": nz_years.index.get_level_values("model"),
-        "scenario": nz_years.index.get_level_values("scenario"),
-        "category": cat,
-        "nz_year_total_co2": nz_years.values,
-        "reaches_nz_before_2100": (nz_years < 2100).values,
-    })
+    nz_df = pd.DataFrame(
+        {
+            "model": nz_years.index.get_level_values("model"),
+            "scenario": nz_years.index.get_level_values("scenario"),
+            "category": cat,
+            "nz_year_total_co2": nz_years.values,
+            "reaches_nz_before_2100": (nz_years < 2100).values,
+        }
+    )
     all_nz_dfs.append(nz_df)
 
     # Category-level summary for YAML (median used for bunker integration)
@@ -673,8 +671,10 @@ for cat, vals in sorted(ar6_results.items()):
 
 # Save per-scenario NZ years as Parquet
 all_nz_years_df.to_parquet(ar6_nz_years_output_path, index=False)
-print(f"\nSaved per-scenario NZ years ({len(all_nz_years_df)} rows): "
-      f"{ar6_nz_years_output_path}")
+print(
+    f"\nSaved per-scenario NZ years ({len(all_nz_years_df)} rows): "
+    f"{ar6_nz_years_output_path}"
+)
 
 # %%
 # Save category-level summary as YAML (used for bunker integration bounds)
@@ -694,8 +694,7 @@ yaml_header = (
 
 # Convert numpy ints to native Python ints for YAML serialization
 yaml_results = {
-    cat: {k: int(v) for k, v in vals.items()}
-    for cat, vals in ar6_results.items()
+    cat: {k: int(v) for k, v in vals.items()} for cat, vals in ar6_results.items()
 }
 
 with open(ar6_constants_output_path, "w") as f:
@@ -764,7 +763,3 @@ rcb_output_path = processed_intermediate_dir / "rcbs.csv"
 rcb_df.to_csv(rcb_output_path, index=False)
 
 print(f"\nSaved processed RCB data to: {rcb_output_path}")
-
-# %%
-
-# %%

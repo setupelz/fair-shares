@@ -10,8 +10,7 @@ Methodology:
 - LULUCF deduction uses NGHGI-reported values (Grassi historical + Gidden future)
 - The BM-NGHGI convention correction emerges implicitly from using different
   sources for shift vs deduction — no explicit correction step needed
-- Bunker deduction: historical from GCB2024 timeseries + future Weber constant
-# NOTE: What's the Weber constant – investigate what is going on
+- Bunker deduction: historical from GCB2024 timeseries + future rate extrapolation
 
 Aggregation order (as in Weber et al. 2026):
 - For Gidden scenario-based quantities, cumulative emissions are computed
@@ -612,7 +611,8 @@ def compute_scenario_median_cumulative(
         If no year columns fall within the requested range
     """
     year_cols = [
-        str(y) for y in range(start_year, end_year + 1)
+        str(y)
+        for y in range(start_year, end_year + 1)
         if str(y) in scenario_timeseries.columns
     ]
     if not year_cols:
@@ -702,11 +702,9 @@ def compute_lulucf_deduction(
         If data is insufficient to cover the requested year range
     """
     # Align scenarios present in Direct, Indirect, AND with a net-zero year
-    common_idx = (
-        gidden_direct_scenarios.index
-        .intersection(gidden_indirect_scenarios.index)
-        .intersection(per_scenario_nz_years.index)
-    )
+    common_idx = gidden_direct_scenarios.index.intersection(
+        gidden_indirect_scenarios.index
+    ).intersection(per_scenario_nz_years.index)
     if common_idx.empty:
         raise DataProcessingError(
             "No common (model, scenario) pairs across AFOLU|Direct, "
@@ -726,12 +724,15 @@ def compute_lulucf_deduction(
         if nz_year > splice_year:
             future_start = splice_year + 1
             future_cols = [
-                str(y) for y in range(future_start, nz_year + 1)
+                str(y)
+                for y in range(future_start, nz_year + 1)
                 if str(y) in gidden_direct_scenarios.columns
             ]
             if future_cols:
                 d = float(gidden_direct_scenarios.loc[scenario_key, future_cols].sum())
-                i = float(gidden_indirect_scenarios.loc[scenario_key, future_cols].sum())
+                i = float(
+                    gidden_indirect_scenarios.loc[scenario_key, future_cols].sum()
+                )
                 future_deduction = d + i
 
         per_scenario_totals.append(hist_deduction + future_deduction)
@@ -792,11 +793,9 @@ def compute_lulucf_convention_gap(
         negative = NGHGI shows more sink.
     """
     # Align scenarios present in Direct, Indirect, AND with a net-zero year
-    common_idx = (
-        gidden_direct_scenarios.index
-        .intersection(gidden_indirect_scenarios.index)
-        .intersection(per_scenario_nz_years.index)
-    )
+    common_idx = gidden_direct_scenarios.index.intersection(
+        gidden_indirect_scenarios.index
+    ).intersection(per_scenario_nz_years.index)
     if common_idx.empty:
         raise DataProcessingError(
             "No common (model, scenario) pairs across AFOLU|Direct, "
@@ -813,10 +812,15 @@ def compute_lulucf_convention_gap(
 
         # Direct historical for this scenario
         hist_cols = [
-            str(y) for y in range(start_year, hist_end + 1)
+            str(y)
+            for y in range(start_year, hist_end + 1)
             if str(y) in gidden_direct_scenarios.columns
         ]
-        direct_hist = float(gidden_direct_scenarios.loc[scenario_key, hist_cols].sum()) if hist_cols else 0.0
+        direct_hist = (
+            float(gidden_direct_scenarios.loc[scenario_key, hist_cols].sum())
+            if hist_cols
+            else 0.0
+        )
         # NOTE: The historical BM proxy here uses Gidden Direct from the AR6
         # scenario analysis. A future refinement could use GCB observational
         # bookkeeping data instead, but the impact is small since the historical
@@ -829,11 +833,14 @@ def compute_lulucf_convention_gap(
         if nz_year > splice_year:
             future_start = splice_year + 1
             future_cols = [
-                str(y) for y in range(future_start, nz_year + 1)
+                str(y)
+                for y in range(future_start, nz_year + 1)
                 if str(y) in gidden_indirect_scenarios.columns
             ]
             if future_cols:
-                future_gap = float(gidden_indirect_scenarios.loc[scenario_key, future_cols].sum())
+                future_gap = float(
+                    gidden_indirect_scenarios.loc[scenario_key, future_cols].sum()
+                )
 
         per_scenario_gaps.append(hist_gap + future_gap)
 

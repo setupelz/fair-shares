@@ -113,7 +113,6 @@ Remaining carbon budgets (RCBs) are reported relative to a reference year (e.g.,
 
 These corrections ensure that country-level fair share allocations are comparable with nationally reported emissions.
 
-
 ### Per-scenario net-zero years as integration bounds
 
 We shift RCBs to the year 2020 and correct for the LULUCF convention gap and bunker fuels by integrating from 2020 to the **scenario-specific net-zero year** $t_{\text{nz},i}$ — the first year when that scenario's total CO₂ emissions (`Emissions|CO2` = fossil + BM LULUCF) reach zero. This prevents post-net-zero negative emissions from inflating the LULUCF correction and respects that scenarios within a category reach net-zero at different times.
@@ -214,7 +213,7 @@ These adjustments convert the raw IPCC RCB into a budget that is consistent with
 | Bunker subtraction         | −35                    | −35                      |
 | **Adjusted RCB from 2020** | **465**                | **381**                  |
 
-**CO₂-FFI:** The 500 GtCO₂ total budget is shared between fossil and land-use emissions. BM LULUCF is currently a next source (~+2.8 GtCO₂/yr), but C1 scenarios project a transition to a net sink around 2027. The median of per-scenario cumulative BM LULUCF (each integrated to its own NZ year, median ~2050) is ~−35 GtCO₂ — i.e., a net sink over the full period. Under the **precautionary cap** (default), this median projected sink is not credited to the fossil budget — the LULUCF adjustment is capped at zero — because the sink relies on uncertain future reforestation. Subtracting 35 GtCO₂ of bunker fuels leaves **465 GtCO₂** for country-level allocation. Without the precautionary cap (`precautionary_lulucf: false`), the fossil budget would be 509 GtCO₂.
+**CO₂-FFI:** The 500 GtCO₂ total budget is shared between fossil and land-use emissions. BM LULUCF is currently a net source (~+2.8 GtCO₂/yr), but C1 scenarios project a transition to a net sink around 2027. The median of per-scenario cumulative BM LULUCF (each integrated to its own NZ year, median ~2050) is ~−35 GtCO₂ — i.e., a net sink over the full period. Under the **precautionary cap** (default), this median projected sink is not credited to the fossil budget — the LULUCF adjustment is capped at zero — because the sink relies on uncertain future reforestation. Subtracting 35 GtCO₂ of bunker fuels leaves **465 GtCO₂** for country-level allocation. Without the precautionary cap (`precautionary_lulucf: false`), the fossil budget would be 509 GtCO₂.
 
 **CO₂:** Countries report under NGHGI convention, which includes indirect effects (CO₂ fertilization) that make the land sink appear ~83 GtCO₂ larger than BM over the same period. This −84 GtCO₂ figure is the median of per-scenario convention gaps across all C1 scenarios (each integrated to its own NZ year). Since the RCB was calculated under BM convention, using it unchanged with NGHGI-convention inventories would allow countries to claim credit for natural carbon uptake already accounted for in the Earth System Models underlying the RCB. The convention gap (−84 GtCO₂) and bunker subtraction (−35 GtCO₂) reduce the budget to **381 GtCO₂**.
 
@@ -270,11 +269,11 @@ The CO₂-FFI budget is consistently larger than the CO₂ budget at every alloc
 
 The full NGHGI LULUCF decomposition for C1 (median of per-scenario cumulative totals, each integrated to its own NZ year):
 
-| Period            | NGHGI LULUCF | Source                                   |
-| ----------------- | ------------ | ---------------------------------------- |
-| 2020–2024         | ~−14 Gt      | Grassi historical (~−2.8 Gt/yr)          |
+| Period            | NGHGI LULUCF | Source                                     |
+| ----------------- | ------------ | ------------------------------------------ |
+| 2020–2024         | ~−14 Gt      | Grassi historical (~−2.8 Gt/yr)            |
 | 2025–~NZ (median) | ~−105 Gt     | Remainder to net-zero (varies by scenario) |
-| **2020–~NZ**      | **~−119 Gt** | = BM Direct (−35) + Convention gap (−83) |
+| **2020–~NZ**      | **~−119 Gt** | = BM Direct (−35) + Convention gap (−83)   |
 
 This ~−119 Gt total decomposes into the BM component (~−1.5 Gt/yr median, direct anthropogenic land-use change) and the indirect component (~−3.5 Gt/yr median, CO₂ fertilization on managed land). Under the precautionary cap, only the convention gap (−83 GtCO₂) reduces the fossil budget; the BM Direct sink (−35 GtCO₂) is zeroed out. Note that the per-scenario integration windows vary (C1 scenarios reach total CO₂ net-zero between ~2035 and ~2070); the values shown are medians across scenarios.
 
