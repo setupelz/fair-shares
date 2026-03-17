@@ -25,7 +25,7 @@ from fair_shares.library.exceptions import (
 if TYPE_CHECKING:
     import pint.facets
 
-    from .core.types import TimeseriesDataFrame
+    from .dataframes import TimeseriesDataFrame
 
 
 # ============================================================================
@@ -59,41 +59,50 @@ def get_default_unit_registry() -> pint.facets.PlainRegistry:
     MissingOptionalDependencyError
         `openscm_units` is not installed
     """
+    # Pint emits noisy "Redefining" logger.warning() calls when
+    # openscm_units registers overlapping unit definitions (C, N, kt,
+    # yr, etc.).  Suppress before importing openscm_units because its
+    # __init__.py already creates a default registry at import time.
+    import logging as _logging
+
+    _pint_logger = _logging.getLogger("pint.util")
+    _prev_level = _pint_logger.level
+    _pint_logger.setLevel(_logging.ERROR)
+
     try:
         import openscm_units
-
-        ur = openscm_units.ScmUnitRegistry()
     except ImportError:
+        _pint_logger.setLevel(_prev_level)
         raise MissingOptionalDependencyError(
             "get_default_unit_registry", "openscm_units"
         )
 
+    ur = openscm_units.ScmUnitRegistry()
     ur.add_standards()
 
-    # Add magnitude units used in the codebase
+    # Magnitude units
     ur.define("thousand = 1000")
     ur.define("million = thousand * 1000")
     ur.define("billion = million * 1000")
 
-    # Add CO2 emission units used in the codebase
+    # CO2 emission units
     ur.define("kt = 1000 * kg")
     ur.define("Mt = 1000000 * kg")
     ur.define("Gt = 1000000000 * kg")  # 1 Gt = 1000 Mt
     ur.define("CO2e = CO2")  # CO2e is equivalent to CO2
 
-    # Add gigagram units for PRIMAP data processing
+    # Gigagram units for PRIMAP data processing
     ur.define("gigagram = kt")
 
-    # Add conversion trick: set annum (a) as 1 to convert data provided in
-    # annual rates to totals. This allows converting e.g. "Gigagram * CO2 / a"
-    # to "Gigagram * CO2" which is the more common way to represent this here.
-    # NOTE: The assumption here is that data is always interval data - so it
-    # represents the total cumulative value over the year.
+    # Set annum (a) as 1 to convert annual rates to totals.
+    # e.g. "Gigagram * CO2 / a" → "Gigagram * CO2"
+    # NOTE: assumes data is always interval (total over the year).
     ur.define("a = 1 = annum = year")
 
+    _pint_logger.setLevel(_prev_level)
+
     # Add transformation to convert mass/time to mass by assuming 1 year
-    # This allows converting e.g. "ktCO2 / yr" to "kt CO2" or
-    # "kt CO2 / month" to "kt CO2"
+    # e.g. "ktCO2 / yr" → "kt CO2"
     annual_context = Context("assume-annual")
     annual_context.add_transformation(
         "[mass] / [time]",

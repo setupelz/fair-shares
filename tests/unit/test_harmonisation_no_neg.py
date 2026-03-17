@@ -159,7 +159,6 @@ class TestHarmonizeToHistoricalWithConvergence:
             anchor_year=2020,
             convergence_year=2022,
             preserve_cumulative_peak=True,
-            max_peak_diff_percent=5.0,  # Allow 5% difference
         )
 
         # Should match historical at anchor

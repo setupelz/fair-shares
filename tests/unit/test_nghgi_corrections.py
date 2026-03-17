@@ -2,19 +2,18 @@
 Unit tests for NGHGI correction utilities (nghgi.py) and related changes to rcb.py.
 
 Tests cover:
-- Loader functions with mock data
+- Loader functions (NGHGI LULUCF, bunker timeseries, AR6 category constants)
 - Cumulative emission computation
-- LULUCF deduction (historical-only, historical+future, sign handling)
 - Bunker deduction
 - Scenario-to-AR6-category mapping
 - process_rcb_to_2020_baseline() with Gidden Direct LULUCF shift
-- New provenance fields in the output dict
+- NGHGI-consistent world CO2 timeseries construction
+- Precautionary LULUCF cap in _resolve_adjustment_scalars
 """
 
 from __future__ import annotations
 
 from pathlib import Path
-from unittest.mock import patch
 
 import pandas as pd
 import pytest
@@ -22,20 +21,12 @@ import pytest
 from fair_shares.library.exceptions import DataLoadingError, DataProcessingError
 from fair_shares.library.preprocessing.rcbs import _resolve_adjustment_scalars
 from fair_shares.library.utils.data.nghgi import (
-    _MTC_TO_MTCO2,
     build_nghgi_world_co2_timeseries,
     compute_bunker_deduction,
     compute_cumulative_emissions,
-    compute_gidden_medians,
-    compute_lulucf_convention_gap,
-    compute_lulucf_deduction,
-    compute_scenario_median_cumulative,
     load_ar6_category_constants,
     load_bunker_timeseries,
-    load_gidden_lulucf_components,
-    load_gidden_per_scenario_nz_years,
-    load_nghgi_lulucf_historical,
-    map_scenario_to_ar6_category,
+    load_world_co2_lulucf,
 )
 from fair_shares.library.utils.data.rcb import process_rcb_to_2020_baseline
 
@@ -63,94 +54,6 @@ def _make_ffi_emissions(year_values: dict[int, float]) -> pd.DataFrame:
     )
     data = {str(y): [v] for y, v in year_values.items()}
     return pd.DataFrame(data, index=index)
-
-
-def _make_scenario_timeseries(
-    values: dict[int, float],
-    model: str = "M1",
-    scenario: str = "S1",
-) -> pd.DataFrame:
-    """Build a single-scenario DataFrame with (model, scenario) MultiIndex.
-
-    This matches the per-scenario format returned by the refactored
-    ``load_gidden_lulucf_components``.
-    """
-    return pd.DataFrame(
-        [[values[y] for y in sorted(values)]],
-        columns=[str(y) for y in sorted(values)],
-        index=pd.MultiIndex.from_tuples(
-            [(model, scenario)], names=["model", "scenario"]
-        ),
-    )
-
-
-def _make_multi_scenario_timeseries(
-    scenario_values: dict[tuple[str, str], dict[int, float]],
-) -> pd.DataFrame:
-    """Build multi-scenario DataFrame with (model, scenario) MultiIndex.
-
-    Parameters
-    ----------
-    scenario_values : dict
-        Mapping of (model, scenario) tuples to year→value dicts.
-        All scenarios must share the same year range.
-    """
-    rows = []
-    index_tuples = []
-    years = sorted(next(iter(scenario_values.values())))
-    for (model, scenario), values in scenario_values.items():
-        rows.append([values[y] for y in years])
-        index_tuples.append((model, scenario))
-    return pd.DataFrame(
-        rows,
-        columns=[str(y) for y in years],
-        index=pd.MultiIndex.from_tuples(index_tuples, names=["model", "scenario"]),
-    )
-
-
-def _make_nz_years(
-    nz_map: dict[tuple[str, str], int] | None = None,
-    default_nz: int = 2050,
-    model: str = "M1",
-    scenario: str = "S1",
-) -> pd.Series:
-    """Build a per-scenario net-zero year Series.
-
-    If nz_map is None, creates a single-scenario Series using model/scenario/default_nz.
-    """
-    if nz_map is None:
-        nz_map = {(model, scenario): default_nz}
-    return pd.Series(
-        nz_map,
-        dtype=int,
-        name="net_zero_year",
-        index=pd.MultiIndex.from_tuples(list(nz_map.keys()), names=["model", "scenario"]),
-    )
-
-
-# ---------------------------------------------------------------------------
-# map_scenario_to_ar6_category
-# ---------------------------------------------------------------------------
-
-
-class TestMapScenarioToAr6Category:
-    """Tests for map_scenario_to_ar6_category."""
-
-    def test_all_four_scenarios(self):
-        """Verify all four scenario strings map to the expected AR6 category."""
-        assert map_scenario_to_ar6_category("1.5p50") == "C1"
-        assert map_scenario_to_ar6_category("1.5p66") == "C1"
-        assert map_scenario_to_ar6_category("2p66") == "C3"
-        assert map_scenario_to_ar6_category("2p83") == "C2"
-
-    def test_unknown_scenario_raises(self):
-        """Unknown scenario string raises DataProcessingError."""
-        with pytest.raises(DataProcessingError, match="Unknown scenario"):
-            map_scenario_to_ar6_category("3p50")
-
-    def test_empty_string_raises(self):
-        with pytest.raises(DataProcessingError, match="Unknown scenario"):
-            map_scenario_to_ar6_category("")
 
 
 # ---------------------------------------------------------------------------
@@ -202,70 +105,75 @@ class TestComputeCumulativeEmissions:
 
 
 # ---------------------------------------------------------------------------
-# load_nghgi_lulucf_historical (mocked)
+# load_world_co2_lulucf (CSV loading)
 # ---------------------------------------------------------------------------
 
 
-class TestLoadNghgiLulucfHistorical:
-    """Tests for load_nghgi_lulucf_historical."""
+class TestLoadNghgiLulucfWorld:
+    """Tests for load_world_co2_lulucf (CSV-based loader returning tuple)."""
 
-    def test_world_row_extracted(self, tmp_path):
-        """'World' row values are returned unchanged (already in MtCO2)."""
-        mock_df = pd.DataFrame(
-            {"1990": [-1000.0], "2022": [-2763.0]},
-            index=pd.Index(["World"], name=None),
+    def _write_csv(self, tmp_path, source: str, year_values: dict[int, float]) -> Path:
+        """Write a mock NGHGI LULUCF world CSV and return its path."""
+        cols = ["source"] + [str(y) for y in sorted(year_values)]
+        vals = [source] + [year_values[y] for y in sorted(year_values)]
+        df = pd.DataFrame([vals], columns=cols)
+        csv_path = tmp_path / "world_co2-lulucf_timeseries.csv"
+        df.to_csv(csv_path, index=False)
+        return csv_path
+
+    def test_values_returned_unchanged(self, tmp_path):
+        """Values are returned unchanged (already in MtCO2)."""
+        csv_path = self._write_csv(
+            tmp_path, "nghgi_lulucf", {1990: -1000.0, 2022: -2763.0}
         )
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=mock_df
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                result = load_nghgi_lulucf_historical(tmp_path / "fake.xlsx")
+        result, splice_year = load_world_co2_lulucf(csv_path)
 
         assert result["1990"].iloc[0] == pytest.approx(-1000.0)
         assert result["2022"].iloc[0] == pytest.approx(-2763.0)
 
+    def test_splice_year_derived_from_data(self, tmp_path):
+        """Splice year is the max year column in the CSV."""
+        csv_path = self._write_csv(
+            tmp_path, "nghgi_lulucf", {1990: -1000.0, 2020: -2000.0, 2022: -2763.0}
+        )
+        _, splice_year = load_world_co2_lulucf(csv_path)
+        assert splice_year == 2022
+
     def test_negative_sink_preserved(self, tmp_path):
         """Negative values (net sink) must not be sign-flipped."""
-        mock_df = pd.DataFrame(
-            {"2020": [-500.0]},
-            index=pd.Index(["World"]),
-        )
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=mock_df
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                result = load_nghgi_lulucf_historical(tmp_path / "fake.xlsx")
-
+        csv_path = self._write_csv(tmp_path, "nghgi_lulucf", {2020: -500.0})
+        result, _ = load_world_co2_lulucf(csv_path)
         assert result["2020"].iloc[0] < 0
 
-    def test_missing_world_row_raises(self, tmp_path):
-        """DataLoadingError when 'World' row is absent."""
-        mock_df = pd.DataFrame({"2020": [100.0]}, index=pd.Index(["Europe"]))
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=mock_df
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                with pytest.raises(DataLoadingError, match="'World' row not found"):
-                    load_nghgi_lulucf_historical(tmp_path / "fake.xlsx")
+    def test_missing_source_column_raises(self, tmp_path):
+        """DataLoadingError when 'source' column is absent."""
+        csv_path = tmp_path / "bad.csv"
+        pd.DataFrame({"year": [2020], "value": [100.0]}).to_csv(csv_path, index=False)
+        with pytest.raises(DataLoadingError, match="'source' column not found"):
+            load_world_co2_lulucf(csv_path)
 
     def test_file_not_found_raises(self, tmp_path):
-        with pytest.raises(DataLoadingError, match="NGHGI LULUCF file not found"):
-            load_nghgi_lulucf_historical(tmp_path / "nonexistent.xlsx")
+        with pytest.raises(
+            DataLoadingError, match="NGHGI LULUCF world timeseries not found"
+        ):
+            load_world_co2_lulucf(tmp_path / "nonexistent.csv")
 
     def test_output_index_name(self, tmp_path):
         """Output index name should be 'source'."""
-        mock_df = pd.DataFrame({"2020": [-100.0]}, index=pd.Index(["World"]))
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=mock_df
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                result = load_nghgi_lulucf_historical(tmp_path / "fake.xlsx")
-
+        csv_path = self._write_csv(tmp_path, "nghgi_lulucf", {2020: -100.0})
+        result, _ = load_world_co2_lulucf(csv_path)
         assert result.index.name == "source"
+
+    def test_returns_tuple(self, tmp_path):
+        """Return type is (DataFrame, int) tuple."""
+        csv_path = self._write_csv(
+            tmp_path, "nghgi_lulucf", {2020: -100.0, 2022: -200.0}
+        )
+        out = load_world_co2_lulucf(csv_path)
+        assert isinstance(out, tuple)
+        assert len(out) == 2
+        assert isinstance(out[0], pd.DataFrame)
+        assert isinstance(out[1], int)
 
 
 # ---------------------------------------------------------------------------
@@ -274,285 +182,51 @@ class TestLoadNghgiLulucfHistorical:
 
 
 class TestLoadBunkerTimeseries:
-    """Tests for load_bunker_timeseries."""
+    """Tests for load_bunker_timeseries (reads intermediate CSV)."""
 
-    def _make_bunker_sheet(
-        self, years: list[int], values_mtc: list[float]
-    ) -> pd.DataFrame:
-        """Mock Territorial Emissions sheet with a Bunkers column."""
-        data = {"USA": [v * 5 for v in values_mtc], "Bunkers": values_mtc}
-        return pd.DataFrame(data, index=pd.Index(years))
+    @staticmethod
+    def _write_bunker_csv(
+        path: Path, years: list[int], values_mtco2: list[float]
+    ) -> Path:
+        """Write a standard bunker timeseries CSV."""
+        df = pd.DataFrame(
+            [values_mtco2],
+            columns=[str(y) for y in years],
+            index=pd.Index(["bunkers"], name="source"),
+        )
+        df.reset_index().to_csv(path, index=False)
+        return path
 
-    def test_mtc_to_mtco2_conversion(self, tmp_path):
-        """Bunker values must be converted from MtC to MtCO2."""
-        mock_sheet = self._make_bunker_sheet([2020, 2021], [100.0, 110.0])
+    def test_reads_csv_correctly(self, tmp_path):
+        """Values from the CSV are returned unchanged (already MtCO2)."""
+        csv_path = self._write_bunker_csv(
+            tmp_path / "bunker_timeseries.csv", [2020, 2021], [366.4, 402.0]
+        )
+        result = load_bunker_timeseries(csv_path)
 
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel",
-            return_value=mock_sheet,
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                result = load_bunker_timeseries(tmp_path / "fake.xlsx")
-
-        assert result["2020"].iloc[0] == pytest.approx(100.0 * _MTC_TO_MTCO2)
-        assert result["2021"].iloc[0] == pytest.approx(110.0 * _MTC_TO_MTCO2)
-
-    def test_missing_bunkers_column_raises(self, tmp_path):
-        """DataLoadingError when 'Bunkers' column is absent."""
-        bad_sheet = pd.DataFrame({"USA": [100.0], "EUR": [50.0]}, index=[2020])
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=bad_sheet
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                with pytest.raises(
-                    DataLoadingError, match="'Bunkers' column not found"
-                ):
-                    load_bunker_timeseries(tmp_path / "fake.xlsx")
+        assert result["2020"].iloc[0] == pytest.approx(366.4)
+        assert result["2021"].iloc[0] == pytest.approx(402.0)
 
     def test_file_not_found_raises(self, tmp_path):
-        with pytest.raises(DataLoadingError, match="Bunker fuel file not found"):
-            load_bunker_timeseries(tmp_path / "nonexistent.xlsx")
+        with pytest.raises(DataLoadingError, match="Bunker timeseries CSV not found"):
+            load_bunker_timeseries(tmp_path / "nonexistent.csv")
 
     def test_output_has_string_columns(self, tmp_path):
-        mock_sheet = self._make_bunker_sheet([2020], [100.0])
-
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel",
-            return_value=mock_sheet,
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                result = load_bunker_timeseries(tmp_path / "fake.xlsx")
+        csv_path = self._write_bunker_csv(
+            tmp_path / "bunker_timeseries.csv", [2020], [100.0]
+        )
+        result = load_bunker_timeseries(csv_path)
 
         assert "2020" in result.columns
         assert result.index.name == "source"
 
+    def test_missing_source_column_raises(self, tmp_path):
+        """DataLoadingError when 'source' column is absent."""
+        bad_csv = tmp_path / "bad_bunker.csv"
+        pd.DataFrame({"2020": [100.0]}).to_csv(bad_csv, index=False)
 
-# ---------------------------------------------------------------------------
-# load_gidden_lulucf_components (mocked)
-# ---------------------------------------------------------------------------
-
-
-class TestLoadGiddenLulucfComponents:
-    """Tests for load_gidden_lulucf_components."""
-
-    _DIRECT_VAR = "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Direct"
-    _INDIRECT_VAR = "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Indirect"
-
-    def _make_meta(self, rows: list[dict]) -> pd.DataFrame:
-        return pd.DataFrame(rows)
-
-    def _make_data(self, rows: list[dict]) -> pd.DataFrame:
-        return pd.DataFrame(rows)
-
-    def test_per_scenario_output(self, tmp_path):
-        """Per-scenario rows are returned with (model, scenario) MultiIndex."""
-        meta = self._make_meta(
-            [
-                {"model": "M1", "scenario": "S1", "Category": "C1"},
-                {"model": "M2", "scenario": "S2", "Category": "C1"},
-            ]
-        )
-        data = self._make_data(
-            [
-                {
-                    "Model": "M1",
-                    "Scenario": "S1",
-                    "Region": "World",
-                    "Variable": self._DIRECT_VAR,
-                    2020: 100.0,
-                    2025: 200.0,
-                },
-                {
-                    "Model": "M2",
-                    "Scenario": "S2",
-                    "Region": "World",
-                    "Variable": self._DIRECT_VAR,
-                    2020: 200.0,
-                    2025: 300.0,
-                },
-                {
-                    "Model": "M1",
-                    "Scenario": "S1",
-                    "Region": "World",
-                    "Variable": self._INDIRECT_VAR,
-                    2020: 10.0,
-                    2025: 20.0,
-                },
-                {
-                    "Model": "M2",
-                    "Scenario": "S2",
-                    "Region": "World",
-                    "Variable": self._INDIRECT_VAR,
-                    2020: 30.0,
-                    2025: 40.0,
-                },
-            ]
-        )
-
-        # read_excel is called 2 times: meta then data
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel",
-            side_effect=[meta, data],
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                direct_ts, indirect_ts = load_gidden_lulucf_components(
-                    tmp_path / "ar6_gidden.xlsx", "C1"
-                )
-
-        # Returns per-scenario DataFrames, not medians
-        assert len(direct_ts) == 2
-        assert direct_ts.index.names == ["model", "scenario"]
-        assert direct_ts.loc[("M1", "S1"), "2020"] == pytest.approx(100.0)
-        assert direct_ts.loc[("M2", "S2"), "2020"] == pytest.approx(200.0)
-        assert direct_ts.loc[("M1", "S1"), "2025"] == pytest.approx(200.0)
-        assert direct_ts.loc[("M2", "S2"), "2025"] == pytest.approx(300.0)
-        assert indirect_ts.loc[("M1", "S1"), "2020"] == pytest.approx(10.0)
-        assert indirect_ts.loc[("M2", "S2"), "2020"] == pytest.approx(30.0)
-
-    def test_unknown_category_raises(self, tmp_path):
-        """DataProcessingError when AR6 category has no matching rows."""
-        meta = self._make_meta(
-            [
-                {"model": "M1", "scenario": "S1", "Category": "C1"},
-            ]
-        )
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=meta
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                with pytest.raises(
-                    DataProcessingError, match="AR6 category 'C9' not found"
-                ):
-                    load_gidden_lulucf_components(tmp_path / "ar6_gidden.xlsx", "C9")
-
-    def test_missing_category_column_raises(self, tmp_path):
-        """DataLoadingError when 'Category' column is absent from metadata."""
-        meta = pd.DataFrame([{"model": "M1", "scenario": "S1", "Tier": "C1"}])
-        with patch(
-            "fair_shares.library.utils.data.nghgi.pd.read_excel", return_value=meta
-        ):
-            with patch.object(Path, "exists", return_value=True):
-                with pytest.raises(
-                    DataLoadingError, match="'Category' column not found"
-                ):
-                    load_gidden_lulucf_components(tmp_path / "ar6_gidden.xlsx", "C1")
-
-    def test_data_file_not_found_raises(self, tmp_path):
-        with pytest.raises(DataLoadingError, match="Gidden et al. data file not found"):
-            load_gidden_lulucf_components(tmp_path / "nonexistent.xlsx", "C1")
-
-
-# ---------------------------------------------------------------------------
-# compute_gidden_medians
-# ---------------------------------------------------------------------------
-
-
-class TestComputeGiddenMedians:
-    """Tests for compute_gidden_medians (backward-compat median helper)."""
-
-    def test_median_of_two_scenarios(self):
-        """Year-by-year median across two scenarios."""
-        direct = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {2020: 100.0, 2025: 200.0},
-            ("M2", "S2"): {2020: 200.0, 2025: 300.0},
-        })
-        indirect = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {2020: 10.0, 2025: 20.0},
-            ("M2", "S2"): {2020: 30.0, 2025: 40.0},
-        })
-
-        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C1")
-
-        assert len(direct_med) == 1
-        assert direct_med.index.name == "source"
-        # median of [100, 200] = 150; median of [200, 300] = 250
-        assert direct_med["2020"].iloc[0] == pytest.approx(150.0)
-        assert direct_med["2025"].iloc[0] == pytest.approx(250.0)
-        # median of [10, 30] = 20; median of [20, 40] = 30
-        assert indirect_med["2020"].iloc[0] == pytest.approx(20.0)
-        assert indirect_med["2025"].iloc[0] == pytest.approx(30.0)
-
-    def test_single_scenario_passthrough(self):
-        """With one scenario, median equals the original values."""
-        direct = _make_scenario_timeseries({2020: 42.0, 2025: 99.0})
-        indirect = _make_scenario_timeseries({2020: -10.0, 2025: -20.0})
-
-        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C1")
-        assert direct_med["2020"].iloc[0] == pytest.approx(42.0)
-        assert indirect_med["2025"].iloc[0] == pytest.approx(-20.0)
-
-    def test_index_label_includes_category(self):
-        """Output index label includes the AR6 category string."""
-        direct = _make_scenario_timeseries({2020: 1.0})
-        indirect = _make_scenario_timeseries({2020: 2.0})
-
-        direct_med, indirect_med = compute_gidden_medians(direct, indirect, "C3")
-        assert "C3" in direct_med.index[0]
-        assert "C3" in indirect_med.index[0]
-
-
-# ---------------------------------------------------------------------------
-# compute_scenario_median_cumulative
-# ---------------------------------------------------------------------------
-
-
-class TestComputeScenarioMedianCumulative:
-    """Tests for compute_scenario_median_cumulative (integrate-first, median-second)."""
-
-    def test_single_scenario(self):
-        """With one scenario, result equals the plain sum."""
-        ts = _make_scenario_timeseries({2020: 10.0, 2021: 20.0, 2022: 30.0})
-        result = compute_scenario_median_cumulative(ts, 2020, 2022)
-        assert result == pytest.approx(60.0)
-
-    def test_median_of_sums_not_sum_of_medians(self):
-        """Demonstrate that median(∑xᵢ) ≠ ∑median(xᵢ) with asymmetric data.
-
-        This is the core property the Weber et al. (2026) refactoring preserves.
-        """
-        # Scenario A: front-loaded (10+1 = 11)
-        # Scenario B: back-loaded  (1+10 = 11)
-        # Scenario C: extreme      (0+20 = 20)
-        ts = _make_multi_scenario_timeseries({
-            ("M1", "A"): {2020: 10.0, 2021: 1.0},
-            ("M2", "B"): {2020: 1.0, 2021: 10.0},
-            ("M3", "C"): {2020: 0.0, 2021: 20.0},
-        })
-
-        # integrate-first-then-median: sums = [11, 11, 20], median = 11
-        result = compute_scenario_median_cumulative(ts, 2020, 2021)
-        assert result == pytest.approx(11.0)
-
-        # median-first-then-sum: medians = [1.0, 10.0], sum = 11.0
-        # (happens to match here, so use a 4th scenario to break symmetry)
-        ts2 = _make_multi_scenario_timeseries({
-            ("M1", "A"): {2020: 10.0, 2021: 1.0},
-            ("M2", "B"): {2020: 1.0, 2021: 10.0},
-            ("M3", "C"): {2020: 0.0, 2021: 20.0},
-            ("M4", "D"): {2020: 100.0, 2021: 0.0},
-        })
-        # sums = [11, 11, 20, 100], median = (11+20)/2 = 15.5
-        integrate_first = compute_scenario_median_cumulative(ts2, 2020, 2021)
-        # medians per year: [5.5, 5.5], sum = 11.0
-        median_first = ts2[["2020", "2021"]].median(axis=0).sum()
-        assert integrate_first != pytest.approx(median_first), (
-            "Should demonstrate that aggregation order matters"
-        )
-
-    def test_sub_range(self):
-        """Only years within [start_year, end_year] are summed."""
-        ts = _make_scenario_timeseries(
-            {2020: 10.0, 2021: 20.0, 2022: 30.0, 2023: 40.0}
-        )
-        result = compute_scenario_median_cumulative(ts, 2021, 2022)
-        assert result == pytest.approx(50.0)
-
-    def test_no_data_in_range_raises(self):
-        """Requesting a range outside data raises DataProcessingError."""
-        ts = _make_scenario_timeseries({2020: 10.0})
-        with pytest.raises(DataProcessingError, match="No data found"):
-            compute_scenario_median_cumulative(ts, 2050, 2060)
+        with pytest.raises(DataLoadingError, match="'source' column not found"):
+            load_bunker_timeseries(bad_csv)
 
 
 # ---------------------------------------------------------------------------
@@ -624,116 +298,6 @@ class TestLoadAr6CategoryConstants:
 
         with pytest.raises(DataProcessingError, match="does not contain a mapping"):
             load_ar6_category_constants(path)
-
-
-# ---------------------------------------------------------------------------
-# compute_lulucf_deduction
-# ---------------------------------------------------------------------------
-
-
-class TestComputeLulucfDeduction:
-    """Tests for compute_lulucf_deduction."""
-
-    @pytest.fixture
-    def nghgi_ts(self) -> pd.DataFrame:
-        """NGHGI historical LULUCF timeseries 2020-2022, all -500 MtCO2/yr."""
-        return _make_timeseries(
-            {2020: -500.0, 2021: -500.0, 2022: -500.0}, row_label="nghgi_lulucf"
-        )
-
-    @pytest.fixture
-    def gidden_direct(self) -> pd.DataFrame:
-        """Gidden Direct per-scenario timeseries 2023-2050, 100 MtCO2/yr."""
-        return _make_scenario_timeseries(
-            {y: 100.0 for y in range(2023, 2051)},
-        )
-
-    @pytest.fixture
-    def gidden_indirect(self) -> pd.DataFrame:
-        """Gidden Indirect per-scenario timeseries 2023-2050, -200 MtCO2/yr."""
-        return _make_scenario_timeseries(
-            {y: -200.0 for y in range(2023, 2051)},
-        )
-
-    def test_historical_only(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """When per-scenario NZ year <= splice_year, only historical data is used."""
-        nz_years = _make_nz_years(default_nz=2022)
-        result = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        # 3 years × (-500) = -1500
-        assert result == pytest.approx(-1500.0)
-
-    def test_historical_plus_future(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """Historical + future segments are summed correctly."""
-        nz_years = _make_nz_years(default_nz=2025)
-        result = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        historical = -500.0 * 3  # 2020, 2021, 2022
-        future = (100.0 + (-200.0)) * 3  # 2023, 2024, 2025 → (-100) × 3 = -300
-        assert result == pytest.approx(historical + future)
-
-    def test_net_sink_reduces_deduction(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """Net sink (negative LULUCF) must produce a negative cumulative deduction."""
-        nz_years = _make_nz_years(default_nz=2022)
-        result = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        assert result < 0.0, "Net sink should give negative deduction"
-
-    def test_net_zero_before_splice(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """Net-zero year before splice year uses only a subset of historical data."""
-        nz_years = _make_nz_years(default_nz=2021)
-        result = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        assert result == pytest.approx(-1000.0)  # 2020 + 2021
-
-    def test_different_nz_years_per_scenario(self, nghgi_ts):
-        """Scenarios with different NZ years produce different cumulative totals."""
-        direct = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {y: 100.0 for y in range(2023, 2051)},
-            ("M2", "S2"): {y: 100.0 for y in range(2023, 2051)},
-        })
-        indirect = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {y: -200.0 for y in range(2023, 2051)},
-            ("M2", "S2"): {y: -200.0 for y in range(2023, 2051)},
-        })
-        # S1 reaches NZ at 2025 (3 future years), S2 at 2030 (8 future years)
-        nz_years = _make_nz_years({("M1", "S1"): 2025, ("M2", "S2"): 2030})
-        result = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=direct,
-            gidden_indirect_scenarios=indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        # S1: hist(-1500) + future(3×-100 = -300) = -1800
-        # S2: hist(-1500) + future(8×-100 = -800) = -2300
-        # median = (-1800 + -2300) / 2 = -2050
-        assert result == pytest.approx(-2050.0)
 
 
 # ---------------------------------------------------------------------------
@@ -814,99 +378,89 @@ class TestComputeBunkerDeduction:
 
 
 class TestProcessRcbTo2020BaselineRegression:
-    """Regression tests: Gidden Direct LULUCF is always included in the baseline shift."""
+    """Regression tests for process_rcb_to_2020_baseline with co2-ffi category."""
 
     @pytest.fixture
     def ffi_emissions(self) -> pd.DataFrame:
         """World FFI emissions: 9000 MtCO2/yr for 2020-2022."""
         return _make_ffi_emissions({2020: 9000.0, 2021: 9100.0, 2022: 9200.0})
 
-    @pytest.fixture
-    def lulucf_shift_zero(self) -> pd.DataFrame:
-        """Zero LULUCF shift — used to isolate fossil-only shift arithmetic."""
-        data = {"2020": [0.0], "2021": [0.0], "2022": [0.0]}
-        return pd.DataFrame(data, index=pd.Index(["lulucf_shift_mean"], name="source"))
-
-    def test_baseline_at_2020_no_adjustment(self, ffi_emissions, lulucf_shift_zero):
+    def test_baseline_at_2020_no_adjustment(self, ffi_emissions):
         """RCB already at 2020: zero rebase, fossil_shift=0."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2020,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
-            bunkers_2020_2100=0.0,
-            lulucf_2020_2100=0.0,
+            bunkers_deduction_mt=0.0,
+            lulucf_deduction_mt=0.0,
             verbose=False,
         )
         assert result["rebase_total_mt"] == 0
         assert result["rebase_fossil_mt"] == 0
         assert result["rebase_lulucf_mt"] == 0
-        assert result["lulucf_convention"] == "nghgi"
         # 400 Gt = 400,000 Mt
         assert result["rcb_2020_mt"] == 400_000
 
-    def test_baseline_2023_fossil_shift_with_zero_lulucf(
-        self, ffi_emissions, lulucf_shift_zero
-    ):
-        """Baseline at 2023 with zero LULUCF shift: rebase equals fossil-only component."""
+    def test_baseline_2023_fossil_shift_co2ffi(self, ffi_emissions):
+        """Baseline at 2023 with co2-ffi: rebase equals fossil-only component."""
         expected_fossil_shift = 9000.0 + 9100.0 + 9200.0  # = 27300
 
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
-            bunkers_2020_2100=0.0,
-            lulucf_2020_2100=0.0,
+            bunkers_deduction_mt=0.0,
+            lulucf_deduction_mt=0.0,
             verbose=False,
         )
 
         assert result["rebase_fossil_mt"] == round(expected_fossil_shift)
         assert result["rebase_lulucf_mt"] == 0
-        assert result["lulucf_convention"] == "nghgi"
         assert result["rebase_total_mt"] == round(expected_fossil_shift)
 
-    def test_bunkers_deduction_negative(self, ffi_emissions, lulucf_shift_zero):
+    def test_bunkers_deduction_negative(self, ffi_emissions):
         """Bunkers deduction is stored as a negative value."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2020,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
-            bunkers_2020_2100=47_000.0,
-            lulucf_2020_2100=0.0,
+            bunkers_deduction_mt=47_000.0,
+            lulucf_deduction_mt=0.0,
             verbose=False,
         )
         assert result["deduction_bunkers_mt"] == -47_000
 
-    def test_lulucf_deduction_passthrough(self, ffi_emissions, lulucf_shift_zero):
+    def test_lulucf_deduction_passthrough(self, ffi_emissions):
         """LULUCF deduction is passed through as-is (sign-ready from caller)."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2020,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
-            bunkers_2020_2100=0.0,
-            lulucf_2020_2100=20_000.0,
+            bunkers_deduction_mt=0.0,
+            lulucf_deduction_mt=20_000.0,
             verbose=False,
         )
-        # lulucf_2020_2100 is sign-ready: added directly to budget
+        # lulucf_deduction_mt is sign-ready: added directly to budget
         assert result["deduction_lulucf_mt"] == 20_000
 
-    def test_net_adjustment_matches_components(self, ffi_emissions, lulucf_shift_zero):
-        """net_deduction_mt = rebase_total + deduction_bunkers + deduction_lulucf."""
+    def test_net_adjustment_matches_components(self, ffi_emissions):
+        """net_adjustment_mt = rebase_total + deduction_bunkers + deduction_lulucf."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
-            bunkers_2020_2100=47_000.0,
-            lulucf_2020_2100=20_000.0,
+            bunkers_deduction_mt=47_000.0,
+            lulucf_deduction_mt=20_000.0,
             verbose=False,
         )
         expected_total = (
@@ -914,16 +468,16 @@ class TestProcessRcbTo2020BaselineRegression:
             + result["deduction_bunkers_mt"]
             + result["deduction_lulucf_mt"]
         )
-        assert result["net_deduction_mt"] == expected_total
+        assert result["net_adjustment_mt"] == expected_total
 
-    def test_output_dict_has_required_keys(self, ffi_emissions, lulucf_shift_zero):
+    def test_output_dict_has_required_keys(self, ffi_emissions):
         """Output must include all required provenance fields."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2020,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
             verbose=False,
         )
         required_keys = {
@@ -936,55 +490,44 @@ class TestProcessRcbTo2020BaselineRegression:
             "rebase_lulucf_mt",
             "deduction_bunkers_mt",
             "deduction_lulucf_mt",
-            "net_deduction_mt",
-            "lulucf_convention",
+            "net_adjustment_mt",
         }
         assert required_keys.issubset(result.keys())
 
 
 # ---------------------------------------------------------------------------
-# process_rcb_to_2020_baseline — with Gidden Direct LULUCF shift
+# process_rcb_to_2020_baseline — co2 category with actual BM LULUCF rebase
 # ---------------------------------------------------------------------------
 
 
-class TestProcessRcbTo2020BaselineWithLulucfShift:
-    """Tests for Gidden Direct LULUCF inclusion in the baseline shift."""
+class TestProcessRcbTo2020BaselineWithCo2Rebase:
+    """Tests for co2 emission category including actual BM LULUCF in rebase."""
 
     @pytest.fixture
     def ffi_emissions(self) -> pd.DataFrame:
         return _make_ffi_emissions({2020: 9000.0, 2021: 9100.0, 2022: 9200.0})
 
     @pytest.fixture
-    def lulucf_shift_emissions(self) -> pd.DataFrame:
-        """World Gidden Direct LULUCF shift timeseries: 3000 MtCO2/yr for 2020-2022."""
-        data = {
-            "2020": [3000.0],
-            "2021": [3100.0],
-            "2022": [3200.0],
-        }
-        return pd.DataFrame(
-            data,
-            index=pd.Index(["lulucf_shift_mean"], name="source"),
+    def actual_bm_lulucf(self) -> pd.DataFrame:
+        """Actual BM LULUCF emissions: 3000 MtCO2/yr for 2020-2022."""
+        index = pd.MultiIndex.from_tuples(
+            [("World", "Mt * CO2e", "co2-lulucf")],
+            names=["iso3c", "unit", "emission-category"],
         )
+        data = {"2020": [3000.0], "2021": [3100.0], "2022": [3200.0]}
+        return pd.DataFrame(data, index=index)
 
-    @pytest.fixture
-    def lulucf_shift_zero(self) -> pd.DataFrame:
-        """Zero LULUCF shift for comparison."""
-        data = {"2020": [0.0], "2021": [0.0], "2022": [0.0]}
-        return pd.DataFrame(data, index=pd.Index(["lulucf_shift_mean"], name="source"))
-
-    def test_lulucf_shift_included_in_rebase(
-        self, ffi_emissions, lulucf_shift_emissions
-    ):
-        """Gidden Direct LULUCF is always included: rebase_total = fossil + LULUCF."""
+    def test_co2_rebase_includes_bm_lulucf(self, ffi_emissions, actual_bm_lulucf):
+        """co2 rebase includes fossil + actual BM LULUCF."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_emissions,
-            bunkers_2020_2100=0.0,
-            lulucf_2020_2100=0.0,
+            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            bunkers_deduction_mt=0.0,
+            lulucf_deduction_mt=0.0,
             verbose=False,
         )
         expected_fossil = 9000.0 + 9100.0 + 9200.0
@@ -995,216 +538,73 @@ class TestProcessRcbTo2020BaselineWithLulucfShift:
         assert result["rebase_lulucf_mt"] == round(expected_lulucf)
         assert result["rebase_total_mt"] == round(expected_total_shift)
 
-    def test_lulucf_convention_always_nghgi(
-        self, ffi_emissions, lulucf_shift_emissions
-    ):
-        """lulucf_convention is always 'nghgi'."""
-        result = process_rcb_to_2020_baseline(
+    def test_co2ffi_rebase_excludes_bm_lulucf(self, ffi_emissions, actual_bm_lulucf):
+        """co2-ffi rebase uses fossil only, even when actual BM LULUCF is provided."""
+        result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_emissions,
+            actual_bm_lulucf_emissions=actual_bm_lulucf,
             verbose=False,
         )
-        assert result["lulucf_convention"] == "nghgi"
+        assert result_ffi["rebase_lulucf_mt"] == 0
+        expected_fossil = 9000.0 + 9100.0 + 9200.0
+        assert result_ffi["rebase_fossil_mt"] == round(expected_fossil)
+        assert result_ffi["rebase_total_mt"] == round(expected_fossil)
 
-    def test_lulucf_shift_increases_rcb_2020_vs_zero_shift(
-        self, ffi_emissions, lulucf_shift_emissions, lulucf_shift_zero
-    ):
-        """Non-zero LULUCF shift produces larger rcb_2020_mt than zero shift."""
-        result_zero_bm = process_rcb_to_2020_baseline(
+    def test_co2_rebase_larger_than_ffi_only(self, ffi_emissions, actual_bm_lulucf):
+        """co2 rebase (fossil + LULUCF) produces larger rcb_2020_mt than co2-ffi."""
+        result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_zero,
             verbose=False,
         )
-        result_with_bm = process_rcb_to_2020_baseline(
+        result_co2 = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_emissions,
+            actual_bm_lulucf_emissions=actual_bm_lulucf,
             verbose=False,
         )
-        assert result_with_bm["rcb_2020_mt"] > result_zero_bm["rcb_2020_mt"]
+        assert result_co2["rcb_2020_mt"] > result_ffi["rcb_2020_mt"]
 
-    def test_baseline_2020_no_lulucf_shift_when_already_at_target(
-        self, ffi_emissions, lulucf_shift_emissions
+    def test_baseline_2020_no_rebase_regardless_of_category(
+        self, ffi_emissions, actual_bm_lulucf
     ):
-        """When baseline == 2020, no shift is needed regardless of LULUCF data."""
+        """When baseline == 2020, no rebase needed regardless of emission category."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2020,
+            emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_emissions,
+            actual_bm_lulucf_emissions=actual_bm_lulucf,
             verbose=False,
         )
         assert result["rebase_fossil_mt"] == 0
         assert result["rebase_lulucf_mt"] == 0
         assert result["rebase_total_mt"] == 0
 
-    def test_provenance_fields_present_with_lulucf_shift(
-        self, ffi_emissions, lulucf_shift_emissions
-    ):
-        """All new provenance fields must be present in output."""
+    def test_provenance_fields_present(self, ffi_emissions, actual_bm_lulucf):
+        """All provenance fields must be present in output."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
+            emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_lulucf_shift_emissions=lulucf_shift_emissions,
+            actual_bm_lulucf_emissions=actual_bm_lulucf,
             verbose=False,
         )
         assert "rebase_fossil_mt" in result
         assert "rebase_lulucf_mt" in result
-        assert "lulucf_convention" in result
-
-
-# ---------------------------------------------------------------------------
-# compute_lulucf_convention_gap
-# ---------------------------------------------------------------------------
-
-
-class TestComputeLulucfConventionGap:
-    """Tests for compute_lulucf_convention_gap (total CO2 NGHGI-BM gap)."""
-
-    @pytest.fixture
-    def nghgi_ts(self) -> pd.DataFrame:
-        """NGHGI historical LULUCF timeseries 2020-2022, -500 MtCO2/yr."""
-        return _make_timeseries(
-            {2020: -500.0, 2021: -500.0, 2022: -500.0}, row_label="nghgi_lulucf"
-        )
-
-    @pytest.fixture
-    def gidden_direct(self) -> pd.DataFrame:
-        """Gidden Direct per-scenario timeseries 2020-2050, 100 MtCO2/yr."""
-        return _make_scenario_timeseries(
-            {y: 100.0 for y in range(2020, 2051)},
-        )
-
-    @pytest.fixture
-    def gidden_indirect(self) -> pd.DataFrame:
-        """Gidden Indirect per-scenario timeseries 2020-2050, -200 MtCO2/yr."""
-        return _make_scenario_timeseries(
-            {y: -200.0 for y in range(2020, 2051)},
-        )
-
-    def test_historical_only_gap(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """When per-scenario NZ year <= splice_year, gap = NGHGI - Direct (historical only)."""
-        nz_years = _make_nz_years(default_nz=2022)
-        result = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        # NGHGI: 3 × (-500) = -1500; Direct: 3 × 100 = 300; gap = -1500 - 300 = -1800
-        assert result == pytest.approx(-1800.0)
-
-    def test_historical_plus_future_gap(self, nghgi_ts, gidden_direct, gidden_indirect):
-        """Historical gap + future indirect component."""
-        nz_years = _make_nz_years(default_nz=2025)
-        result = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        # Historical: NGHGI(-1500) - Direct(300) = -1800
-        # Future: Indirect(2023-2025) = 3 × (-200) = -600
-        assert result == pytest.approx(-1800.0 + (-600.0))
-
-    def test_gap_differs_from_full_deduction(
-        self, nghgi_ts, gidden_direct, gidden_indirect
-    ):
-        """Convention gap must differ from the full LULUCF deduction."""
-        nz_years = _make_nz_years(default_nz=2025)
-        gap = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        full = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=gidden_direct,
-            gidden_indirect_scenarios=gidden_indirect,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        assert gap != pytest.approx(
-            full
-        ), "Convention gap should differ from full deduction"
-
-    def test_gap_smaller_magnitude_than_full_deduction_when_direct_positive(self):
-        """When Direct is positive (net source), gap magnitude < full deduction magnitude."""
-        nghgi_ts = _make_timeseries(
-            {2020: -800.0, 2021: -800.0, 2022: -800.0}, row_label="nghgi_lulucf"
-        )
-        direct_scenarios = _make_scenario_timeseries(
-            {y: 200.0 for y in range(2020, 2026)},
-        )
-        indirect_scenarios = _make_scenario_timeseries(
-            {y: -100.0 for y in range(2020, 2026)},
-        )
-        nz_years = _make_nz_years(default_nz=2025)
-
-        gap = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=direct_scenarios,
-            gidden_indirect_scenarios=indirect_scenarios,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        full = compute_lulucf_deduction(
-            nghgi_ts=nghgi_ts,
-            gidden_direct_scenarios=direct_scenarios,
-            gidden_indirect_scenarios=indirect_scenarios,
-            start_year=2020,
-            per_scenario_nz_years=nz_years,
-            splice_year=2022,
-        )
-        # Full deduction is larger in magnitude (includes Direct in future too)
-        assert abs(gap) != abs(full)
-
-    def test_different_nz_years_affect_gap(self, nghgi_ts):
-        """Scenarios with different NZ years produce different gap values."""
-        direct = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {y: 100.0 for y in range(2020, 2051)},
-            ("M2", "S2"): {y: 100.0 for y in range(2020, 2051)},
-        })
-        indirect = _make_multi_scenario_timeseries({
-            ("M1", "S1"): {y: -200.0 for y in range(2020, 2051)},
-            ("M2", "S2"): {y: -200.0 for y in range(2020, 2051)},
-        })
-        # Same data but different NZ years → different future windows
-        nz_short = _make_nz_years({("M1", "S1"): 2025, ("M2", "S2"): 2025})
-        nz_long = _make_nz_years({("M1", "S1"): 2040, ("M2", "S2"): 2040})
-
-        gap_short = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts, gidden_direct_scenarios=direct,
-            gidden_indirect_scenarios=indirect, start_year=2020,
-            per_scenario_nz_years=nz_short, splice_year=2022,
-        )
-        gap_long = compute_lulucf_convention_gap(
-            nghgi_ts=nghgi_ts, gidden_direct_scenarios=direct,
-            gidden_indirect_scenarios=indirect, start_year=2020,
-            per_scenario_nz_years=nz_long, splice_year=2022,
-        )
-        # Longer integration = more negative indirect → larger magnitude gap
-        assert abs(gap_long) > abs(gap_short)
 
 
 # ---------------------------------------------------------------------------
@@ -1324,17 +724,13 @@ class TestBuildNghgiWorldCo2Timeseries:
 class TestPrecautionaryLulucfCap:
     """Tests for the precautionary_lulucf cap in _resolve_adjustment_scalars.
 
-    When precautionary_lulucf=True (default), BM LULUCF sinks (negative
-    cumulative) cannot increase the co2-ffi fossil budget. Sources (positive
-    cumulative) still reduce it.
-    """
+    For co2-ffi: integrates per-year BM LULUCF timeseries from baseline_year
+    to net_zero_year. When precautionary_lulucf=True (default), net sinks
+    (negative cumulative) cannot increase the fossil budget. Net sources
+    (positive cumulative) still reduce it.
 
-    @pytest.fixture
-    def nghgi_ts(self) -> pd.DataFrame:
-        """NGHGI timeseries (unused for co2-ffi, but required by signature)."""
-        return _make_timeseries(
-            {y: -500.0 for y in range(2020, 2051)}, row_label="nghgi_lulucf"
-        )
+    For co2: uses pre-computed convention gap from rcb_adjustments dict.
+    """
 
     @pytest.fixture
     def bunker_ts(self) -> pd.DataFrame:
@@ -1344,43 +740,40 @@ class TestPrecautionaryLulucfCap:
         )
 
     @pytest.fixture
-    def gidden_direct_sink(self) -> pd.DataFrame:
-        """Gidden Direct as net sink: -100 MtCO2/yr (cumulative is negative)."""
-        return _make_scenario_timeseries(
-            {y: -100.0 for y in range(2020, 2051)},
-        )
+    def lulucf_shift_sink(self) -> pd.DataFrame:
+        """Per-year BM LULUCF median: net sink (-100 MtCO2/yr for 2020-2050)."""
+        values = {y: -100.0 for y in range(2020, 2051)}
+        return _make_timeseries(values, row_label="lulucf_shift_median")
 
     @pytest.fixture
-    def gidden_direct_source(self) -> pd.DataFrame:
-        """Gidden Direct as net source: +100 MtCO2/yr (cumulative is positive)."""
-        return _make_scenario_timeseries(
-            {y: 100.0 for y in range(2020, 2051)},
-        )
+    def lulucf_shift_source(self) -> pd.DataFrame:
+        """Per-year BM LULUCF median: net source (+100 MtCO2/yr for 2020-2050)."""
+        values = {y: 100.0 for y in range(2020, 2051)}
+        return _make_timeseries(values, row_label="lulucf_shift_median")
 
     @pytest.fixture
-    def gidden_indirect(self) -> pd.DataFrame:
-        """Gidden Indirect (unused for co2-ffi, but required by signature)."""
-        return _make_scenario_timeseries(
-            {y: -200.0 for y in range(2020, 2051)},
-        )
-
-    @pytest.fixture
-    def nz_years(self) -> pd.Series:
-        """Per-scenario NZ years: single scenario at 2050."""
-        return _make_nz_years(default_nz=2050)
+    def rcb_adj(self) -> dict[str, dict]:
+        """Pre-computed adjustments (convention gap used for co2 only)."""
+        return {
+            "1.5p50": {
+                "bm_lulucf_cumulative_median": -3100.0,
+                "convention_gap_median": -5000.0,
+                "nz_year_median": 2050,
+                "n_scenarios": 10,
+            }
+        }
 
     def test_sink_capped_to_zero_with_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
+        self, bunker_ts, lulucf_shift_sink, rcb_adj
     ):
         """When BM is a sink, precautionary cap sets lulucf_mt to 0."""
         _, lulucf_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -1388,69 +781,65 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_mt == 0.0
 
     def test_source_still_reduces_budget_with_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_source, gidden_indirect, nz_years
+        self, bunker_ts, lulucf_shift_source, rcb_adj
     ):
         """When BM is a source, precautionary cap still reduces fossil budget."""
         _, lulucf_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_source,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_source,
+            rcb_adjustments=rcb_adj,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
         )
-        # cumulative = 31 * 100 = 3100 (positive), lulucf_mt = -3100
         assert lulucf_mt < 0.0
+        # 31 years (2020-2050 inclusive) * 100 = 3100
         assert lulucf_mt == pytest.approx(-3100.0)
 
     def test_sink_increases_budget_without_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
+        self, bunker_ts, lulucf_shift_sink, rcb_adj
     ):
-        """When precautionary is off, BM sink increases fossil budget (original behavior)."""
+        """When precautionary is off, BM sink increases fossil budget."""
         _, lulucf_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,
         )
-        # cumulative = 31 * (-100) = -3100, lulucf_mt = -(-3100) = 3100
+        # bm_lulucf_mt = sum(-100 * 31) = -3100, lulucf_mt = -(-3100) = 3100
         assert lulucf_mt > 0.0
         assert lulucf_mt == pytest.approx(3100.0)
 
     def test_co2_category_unaffected_by_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
+        self, bunker_ts, lulucf_shift_sink, rcb_adj
     ):
         """Precautionary cap only applies to co2-ffi, not co2."""
         _, lulucf_on = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2",
             precautionary_lulucf=True,
             verbose=False,
         )
         _, lulucf_off = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2",
             precautionary_lulucf=False,
             verbose=False,
@@ -1458,31 +847,152 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_on == lulucf_off
 
     def test_bunkers_unaffected_by_precautionary(
-        self, nghgi_ts, bunker_ts, gidden_direct_sink, gidden_indirect, nz_years
+        self, bunker_ts, lulucf_shift_sink, rcb_adj
     ):
         """Bunker deduction is identical regardless of precautionary setting."""
         bunkers_on, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
         )
         bunkers_off, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
+            baseline_year=2020,
             net_zero_year=2050,
-            nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            gidden_direct_scenarios=gidden_direct_sink,
-            gidden_indirect_scenarios=gidden_indirect,
-            per_scenario_nz_years=nz_years,
+            lulucf_shift_ts=lulucf_shift_sink,
+            rcb_adjustments=rcb_adj,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,
         )
         assert bunkers_on == bunkers_off
+
+
+# ---------------------------------------------------------------------------
+# _resolve_adjustment_scalars — baseline-aware LULUCF integration
+# ---------------------------------------------------------------------------
+
+
+class TestBaselineAwareLulucfIntegration:
+    """Tests that LULUCF integration in _resolve_adjustment_scalars is
+    baseline-aware: starting from baseline_year, not always 2020.
+
+    When baseline_year > 2020, the years before baseline_year are excluded
+    from the LULUCF integration, resulting in a different deduction.
+    """
+
+    @pytest.fixture
+    def bunker_ts(self) -> pd.DataFrame:
+        """Bunker timeseries: 1000 MtCO2/yr."""
+        return _make_timeseries(
+            {y: 1000.0 for y in range(2020, 2061)}, row_label="bunkers"
+        )
+
+    @pytest.fixture
+    def lulucf_shift_ts(self) -> pd.DataFrame:
+        """Per-year BM LULUCF median with varying values 2020-2060.
+
+        Values increase linearly: year 2020 = 100, 2021 = 110, ..., so
+        different baseline years give different cumulative sums.
+        """
+        values = {y: 100.0 + 10.0 * (y - 2020) for y in range(2020, 2061)}
+        return _make_timeseries(values, row_label="lulucf_shift_median")
+
+    @pytest.fixture
+    def rcb_adj(self) -> dict[str, dict]:
+        """Pre-computed adjustments (only convention_gap used for co2)."""
+        return {
+            "1.5p50": {
+                "bm_lulucf_cumulative_median": -5000.0,
+                "convention_gap_median": -2000.0,
+                "nz_year_median": 2050,
+                "n_scenarios": 10,
+            }
+        }
+
+    def test_baseline_2023_excludes_early_years(
+        self, bunker_ts, lulucf_shift_ts, rcb_adj
+    ):
+        """baseline_year=2023 excludes 2020-2022 from LULUCF integration."""
+        _, lulucf_2020 = _resolve_adjustment_scalars(
+            scenario="1.5p50",
+            baseline_year=2020,
+            net_zero_year=2050,
+            bunker_ts=bunker_ts,
+            lulucf_shift_ts=lulucf_shift_ts,
+            rcb_adjustments=rcb_adj,
+            emission_category="co2-ffi",
+            precautionary_lulucf=False,
+            verbose=False,
+        )
+        _, lulucf_2023 = _resolve_adjustment_scalars(
+            scenario="1.5p50",
+            baseline_year=2023,
+            net_zero_year=2050,
+            bunker_ts=bunker_ts,
+            lulucf_shift_ts=lulucf_shift_ts,
+            rcb_adjustments=rcb_adj,
+            emission_category="co2-ffi",
+            precautionary_lulucf=False,
+            verbose=False,
+        )
+        # Both should be negative (negated positive source)
+        # The 2023 baseline excludes 2020(100), 2021(110), 2022(120) = 330 Mt
+        # so the cumulative from 2023 is smaller, and the negated result differs
+        assert lulucf_2020 != lulucf_2023
+
+    def test_baseline_2020_vs_2023_magnitude(self, bunker_ts, lulucf_shift_ts, rcb_adj):
+        """baseline_year=2020 integrates more years, so abs(lulucf) is larger."""
+        _, lulucf_2020 = _resolve_adjustment_scalars(
+            scenario="1.5p50",
+            baseline_year=2020,
+            net_zero_year=2050,
+            bunker_ts=bunker_ts,
+            lulucf_shift_ts=lulucf_shift_ts,
+            rcb_adjustments=rcb_adj,
+            emission_category="co2-ffi",
+            precautionary_lulucf=False,
+            verbose=False,
+        )
+        _, lulucf_2023 = _resolve_adjustment_scalars(
+            scenario="1.5p50",
+            baseline_year=2023,
+            net_zero_year=2050,
+            bunker_ts=bunker_ts,
+            lulucf_shift_ts=lulucf_shift_ts,
+            rcb_adjustments=rcb_adj,
+            emission_category="co2-ffi",
+            precautionary_lulucf=False,
+            verbose=False,
+        )
+        # All per-year values are positive, so cumulative is positive,
+        # and negated lulucf is negative. More years = more negative.
+        assert abs(lulucf_2020) > abs(lulucf_2023)
+
+    def test_exact_integration_from_baseline(self, bunker_ts, lulucf_shift_ts, rcb_adj):
+        """Verify exact LULUCF value from baseline_year=2023 to NZ=2025."""
+        _, lulucf_mt = _resolve_adjustment_scalars(
+            scenario="1.5p50",
+            baseline_year=2023,
+            net_zero_year=2025,
+            bunker_ts=bunker_ts,
+            lulucf_shift_ts=lulucf_shift_ts,
+            rcb_adjustments=rcb_adj,
+            emission_category="co2-ffi",
+            precautionary_lulucf=False,
+            verbose=False,
+        )
+        # Years 2023, 2024, 2025:
+        #   2023 = 100 + 10*3 = 130
+        #   2024 = 100 + 10*4 = 140
+        #   2025 = 100 + 10*5 = 150
+        # Sum = 420, negated = -420
+        expected_sum = 130.0 + 140.0 + 150.0
+        assert lulucf_mt == pytest.approx(-expected_sum)

@@ -1,5 +1,5 @@
 """
-Tests for the AllocationManager class for the fair-shares library.
+Tests for the allocation manager functions for the fair-shares library.
 
 """
 
@@ -9,6 +9,10 @@ import pandas as pd
 import pytest
 from conftest import STANDARD_EMISSION_CATEGORY
 
+from fair_shares.library.allocations.manager import (
+    calculate_absolute_emissions,
+    run_allocation,
+)
 from fair_shares.library.allocations.results import (
     BudgetAllocationResult,
     PathwayAllocationResult,
@@ -20,9 +24,9 @@ from fair_shares.library.utils import (
 
 
 class TestAllocationManager:
-    """Test AllocationManager functionality."""
+    """Test allocation manager functions."""
 
-    def test_get_function(self, allocation_manager):
+    def test_get_function(self):
         """Test that get_function returns correct functions for each approach."""
         from fair_shares.library.allocations import (
             get_allocation_functions,
@@ -35,14 +39,14 @@ class TestAllocationManager:
             assert callable(func), f"Function for {approach} is not callable"
             assert func.__name__ in str(func), f"Function for {approach} has no name"
 
-    def test_get_function_invalid(self, allocation_manager):
+    def test_get_function_invalid(self):
         """Test that get_function raises error for invalid approaches."""
         from fair_shares.library.allocations import get_function
 
         with pytest.raises(AllocationError, match="Unknown allocation approach"):
             get_function("invalid-approach")
 
-    def test_is_budget_approach(self, allocation_manager):
+    def test_is_budget_approach(self):
         """Test identification of budget approaches."""
         from fair_shares.library.allocations import is_budget_approach
 
@@ -66,7 +70,7 @@ class TestAllocationManager:
                 approach
             ), f"{approach} should not be budget approach"
 
-    def test_is_pathway_approach(self, allocation_manager):
+    def test_is_pathway_approach(self):
         """Test identification of pathway approaches."""
         from fair_shares.library.allocations import is_pathway_approach
 
@@ -101,11 +105,9 @@ class TestAllocationManager:
             "per-capita-convergence",
         ],
     )
-    def test_pathway_allocations(
-        self, allocation_manager, test_config, test_data, approach
-    ):
-        """Test that manager can run pathway allocation approaches."""
-        result = allocation_manager.run_allocation(
+    def test_pathway_allocations(self, test_config, test_data, approach):
+        """Test that run_allocation can run pathway allocation approaches."""
+        result = run_allocation(
             approach=approach,
             config=test_config,
             population_ts=test_data["population"],
@@ -171,7 +173,6 @@ class TestAllocationManager:
     )
     def test_cumulative_per_capita_convergence_variants(
         self,
-        allocation_manager,
         test_config,
         test_data,
         inputs,
@@ -180,7 +181,7 @@ class TestAllocationManager:
         expected_normalized,
     ):
         """Test cumulative per capita convergence variants with different approaches."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach=approach_name,
             config=test_config,
             population_ts=test_data["population"],
@@ -212,10 +213,10 @@ class TestAllocationManager:
         )
 
     def test_cumulative_per_capita_convergence_gini_variant(
-        self, allocation_manager, test_config, test_data
+        self, test_config, test_data
     ):
         """Test gini-adjusted variant by calling the specific approach."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="cumulative-per-capita-convergence-gini-adjusted",
             config=test_config,
             population_ts=test_data["population"],
@@ -239,11 +240,9 @@ class TestAllocationManager:
             "per-capita-adjusted-gini-budget",
         ],
     )
-    def test_budget_allocations(
-        self, allocation_manager, test_config, test_data, approach
-    ):
-        """Test that manager can run budget allocation approaches."""
-        result = allocation_manager.run_allocation(
+    def test_budget_allocations(self, test_config, test_data, approach):
+        """Test that run_allocation can run budget allocation approaches."""
+        result = run_allocation(
             approach=approach,
             config=test_config,
             population_ts=test_data["population"],
@@ -272,12 +271,12 @@ class TestAllocationManager:
         assert len(emission_category) == 1
         assert emission_category == STANDARD_EMISSION_CATEGORY
 
-    def test_parameter_validation(self, allocation_manager, test_config, test_data):
-        """Test that manager properly validates required parameters."""
+    def test_parameter_validation(self, test_config, test_data):
+        """Test that run_allocation properly validates required parameters."""
 
         # Test missing first_allocation_year for pathway approaches
         with pytest.raises(AllocationError, match="first_allocation_year required"):
-            allocation_manager.run_allocation(
+            run_allocation(
                 approach="equal-per-capita",
                 config=test_config,
                 population_ts=test_data["population"],
@@ -286,7 +285,7 @@ class TestAllocationManager:
 
         # Test missing allocation_year for budget approaches
         with pytest.raises(AllocationError, match="allocation_year required"):
-            allocation_manager.run_allocation(
+            run_allocation(
                 approach="equal-per-capita-budget",
                 config=test_config,
                 population_ts=test_data["population"],
@@ -297,7 +296,7 @@ class TestAllocationManager:
         with pytest.raises(
             AllocationError, match="Missing required data for capability adjustment"
         ):
-            allocation_manager.run_allocation(
+            run_allocation(
                 approach="per-capita-adjusted",
                 config=test_config,
                 population_ts=test_data["population"],
@@ -308,7 +307,7 @@ class TestAllocationManager:
 
         # Test missing GDP data for Gini-adjusted approaches
         with pytest.raises(AllocationError, match="Missing required data"):
-            allocation_manager.run_allocation(
+            run_allocation(
                 approach="per-capita-adjusted-gini",
                 config=test_config,
                 population_ts=test_data["population"],
@@ -319,7 +318,7 @@ class TestAllocationManager:
 
         # Test missing emissions data for convergence approaches
         with pytest.raises(AllocationError, match="Emissions data required"):
-            allocation_manager.run_allocation(
+            run_allocation(
                 approach="per-capita-convergence",
                 config=test_config,
                 population_ts=test_data["population"],
@@ -327,11 +326,9 @@ class TestAllocationManager:
                 emission_category=STANDARD_EMISSION_CATEGORY,
             )
 
-    def test_calculate_absolute_emissions_pathway(
-        self, allocation_manager, test_config, test_data
-    ):
+    def test_calculate_absolute_emissions_pathway(self, test_config, test_data):
         """Test calculate_absolute_emissions for pathway allocations."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita",
             config=test_config,
             population_ts=test_data["population"],
@@ -343,7 +340,7 @@ class TestAllocationManager:
         pathway_years = result.relative_shares_pathway_emissions.columns
         emissions_data = test_data["emissions"][pathway_years].copy()
 
-        absolute = allocation_manager.calculate_absolute_emissions(
+        absolute = calculate_absolute_emissions(
             result=result,
             emissions_data=emissions_data,
         )
@@ -360,10 +357,10 @@ class TestAllocationManager:
         assert not absolute.isna().any().any()
 
     def test_calculate_absolute_emissions_budget_single_year(
-        self, allocation_manager, test_config, test_data
+        self, test_config, test_data
     ):
         """Test calculate_absolute_emissions for budget allocations with single year."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -376,7 +373,7 @@ class TestAllocationManager:
             test_data["emissions"][["2020"]].copy()
         )
 
-        absolute = allocation_manager.calculate_absolute_emissions(
+        absolute = calculate_absolute_emissions(
             result=result,
             emissions_data=emissions_data,
         )
@@ -398,10 +395,10 @@ class TestAllocationManager:
         assert int(year_cols[0]) == 2020
 
     def test_calculate_absolute_emissions_budget_multiple_years(
-        self, allocation_manager, test_config, test_data
+        self, test_config, test_data
     ):
         """Test calculate_absolute_emissions for budget allocations with multiple years."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -414,7 +411,7 @@ class TestAllocationManager:
             test_data["emissions"][["2020"]].copy()
         )
 
-        absolute = allocation_manager.calculate_absolute_emissions(
+        absolute = calculate_absolute_emissions(
             result=result,
             emissions_data=emissions_data,
         )
@@ -443,10 +440,10 @@ class TestAllocationManager:
         assert abs(allocated_sum - world_emissions_sum) < 1e-10
 
     def test_calculate_absolute_emissions_multiple_categories_error(
-        self, allocation_manager, test_config, test_data
+        self, test_config, test_data
     ):
         """Test that calculate_absolute_emissions raises error for multiple emission categories."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -485,16 +482,16 @@ class TestAllocationManager:
         with pytest.raises(
             AllocationError, match="must contain exactly one emission category, found:"
         ):
-            allocation_manager.calculate_absolute_emissions(
+            calculate_absolute_emissions(
                 result=result,
                 emissions_data=multi_category_df,
             )
 
     def test_calculate_absolute_emissions_single_year_mismatch(
-        self, allocation_manager, test_config, test_data
+        self, test_config, test_data
     ):
         """Test that calculate_absolute_emissions raises error when single year doesn't match allocation_year."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -512,16 +509,14 @@ class TestAllocationManager:
             AllocationError,
             match="remaining budget year 2030 does not match cumulative emission shares year 2020",
         ):
-            allocation_manager.calculate_absolute_emissions(
+            calculate_absolute_emissions(
                 result=result,
                 emissions_data=emissions_data,
             )
 
-    def test_calculate_absolute_emissions_no_world_data(
-        self, allocation_manager, test_config, test_data
-    ):
+    def test_calculate_absolute_emissions_no_world_data(self, test_config, test_data):
         """Test that calculate_absolute_emissions raises error when no World data is present."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -540,16 +535,14 @@ class TestAllocationManager:
         with pytest.raises(
             AllocationError, match="No 'World' data found in remaining budget"
         ):
-            allocation_manager.calculate_absolute_emissions(
+            calculate_absolute_emissions(
                 result=result,
                 emissions_data=emissions_data,
             )
 
-    def test_calculate_absolute_emissions_empty_data(
-        self, allocation_manager, test_config, test_data
-    ):
+    def test_calculate_absolute_emissions_empty_data(self, test_config, test_data):
         """Test that calculate_absolute_emissions raises error when emissions data is empty."""
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],
@@ -567,16 +560,16 @@ class TestAllocationManager:
         with pytest.raises(
             AllocationError, match="No 'World' data found in remaining budget"
         ):
-            allocation_manager.calculate_absolute_emissions(
+            calculate_absolute_emissions(
                 result=result,
                 emissions_data=empty_emissions,
             )
 
-    def test_extended_parameters(self, allocation_manager, test_config, test_data):
-        """Test that manager handles extended parameters correctly."""
+    def test_extended_parameters(self, test_config, test_data):
+        """Test that run_allocation handles extended parameters correctly."""
 
         # Test GDP-adjusted with capability_exponent parameter
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="per-capita-adjusted",
             config=test_config,
             population_ts=test_data["population"],
@@ -589,7 +582,7 @@ class TestAllocationManager:
         assert result.parameters["capability_exponent"] == 0.5
 
         # Test GDP-adjusted with capability_functional_form parameter
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="per-capita-adjusted",
             config=test_config,
             population_ts=test_data["population"],
@@ -602,7 +595,7 @@ class TestAllocationManager:
         assert result.parameters["capability_functional_form"] == "asinh"
 
         # Test convergence with convergence_year parameter
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="per-capita-convergence",
             config=test_config,
             population_ts=test_data["population"],
@@ -613,13 +606,11 @@ class TestAllocationManager:
         )
         assert result.parameters["convergence_year"] == 2050
 
-    def test_result_validation_through_manager(
-        self, allocation_manager, test_config, test_data
-    ):
-        """Test that results created through manager pass validation automatically."""
+    def test_result_validation_through_manager(self, test_config, test_data):
+        """Test that results created through run_allocation pass validation automatically."""
 
         # Test pathway result validation
-        pathway_result = allocation_manager.run_allocation(
+        pathway_result = run_allocation(
             approach="equal-per-capita",
             config=test_config,
             population_ts=test_data["population"],
@@ -631,7 +622,7 @@ class TestAllocationManager:
         assert isinstance(pathway_result, PathwayAllocationResult)
 
         # Test budget result validation
-        budget_result = allocation_manager.run_allocation(
+        budget_result = run_allocation(
             approach="equal-per-capita-budget",
             config=test_config,
             population_ts=test_data["population"],

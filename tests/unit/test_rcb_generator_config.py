@@ -64,13 +64,13 @@ class TestRcbGeneratorConfig:
 
     def test_non_rcb_pathways_with_generator_raises_error(self):
         """Test that rcb_generator with non-rcb-pathways target raises error."""
-        # Test with ar6 target
+        # Test with pathway target
         active_sources_ar6 = {
             "emissions": "primap-202503",
             "gdp": "wdi-2025",
             "population": "un-owid-2025",
             "gini": "unu-wider-2025",
-            "target": "ar6",
+            "target": "pathway",
             "rcb_generator": "exponential-decay",
         }
 
@@ -154,18 +154,20 @@ class TestSourceIdWithGenerator:
 
     def test_source_id_non_rcb_pathways_with_generator(self):
         """Test that generator is ignored for non-rcb-pathways targets."""
-        # For ar6
+        # For pathway target
         source_id_ar6 = build_source_id(
             emissions="primap-202503",
             gdp="wdi-2025",
             population="un-owid-2025",
             gini="unu-wider-2025",
-            target="ar6",
+            target="pathway",
             emission_category="co2-ffi",
             rcb_generator="exponential-decay",
         )
 
-        expected_ar6 = "primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_ar6_co2-ffi"
+        expected_ar6 = (
+            "primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_pathway_co2-ffi"
+        )
         assert source_id_ar6 == expected_ar6
 
         # For rcbs
@@ -191,11 +193,11 @@ class TestSourceIdWithGenerator:
             gdp="wdi-2025",
             population="un-owid-2025",
             gini="unu-wider-2025",
-            target="ar6",
+            target="pathway",
             emission_category="all-ghg",
         )
 
-        expected = "primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_ar6_all-ghg"
+        expected = "primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_pathway_all-ghg"
         assert source_id == expected
 
     def test_integration_config_and_source_id(self):

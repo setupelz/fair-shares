@@ -1,13 +1,22 @@
 """Scenario data harmonization and processing logic."""
 
+from __future__ import annotations
+
 import numpy as np
 import pandas as pd
 
 from fair_shares.library.exceptions import DataProcessingError
 from fair_shares.library.utils import (
     ensure_string_year_columns,
+    harmonize_to_historical_with_convergence,
+    interpolate_scenarios_data,
     set_post_net_zero_emissions_to_nan,
 )
+
+# CO2 categories for which post-net-zero NaN masking applies.
+# Non-CO2 gases rarely reach net-zero within the scenario timeframe;
+# brief sub-zero dips are modelling artefacts (e.g. AFOLU CH4).
+_CO2_CATEGORIES: frozenset[str] = frozenset({"co2-ffi", "co2", "co2-lulucf"})
 
 
 def process_complete_scenarios(
@@ -71,7 +80,8 @@ def process_complete_scenarios(
         )
         harmonized_long["year"] = harmonized_long["year"].astype(int)
 
-        # Apply net-negative emissions handling to each climate assessment
+        # Apply net-negative emissions handling to each climate assessment.
+        # Skip for non-CO2 categories (see _CO2_CATEGORIES docstring).
         adjusted_groups = []
         all_metadata = []
 
@@ -80,9 +90,13 @@ def process_complete_scenarios(
                 harmonized_long["climate-assessment"] == climate_assessment
             ].copy()
 
-            adjusted_df, metadata = set_post_net_zero_emissions_to_nan(
-                median_df, emission_category
-            )
+            if emission_category in _CO2_CATEGORIES:
+                adjusted_df, metadata = set_post_net_zero_emissions_to_nan(
+                    median_df, emission_category
+                )
+            else:
+                adjusted_df = median_df
+                metadata = {}
             adjusted_groups.append(adjusted_df)
             all_metadata.append({"climate-assessment": climate_assessment, **metadata})
 
@@ -188,3 +202,173 @@ def process_complete_scenarios(
             )
 
     return all_complete_scenarios, net_negative_metadata_dict
+
+
+def harmonise_and_median_ar6_pathways(
+    var_long: pd.DataFrame,
+    emission_category: str,
+    historical_data: pd.DataFrame | None,
+    anchor_year: int,
+    convergence_year: int,
+    interpolation_method: str,
+    pathway_index_cols: list[str],
+    source_name: str,
+    target_unit: str = "Mt * CO2e",
+) -> pd.DataFrame:
+    """Interpolate, harmonise, and median-aggregate AR6 individual pathways.
+
+    Encapsulates the notebook-104 pipeline that converts individual AR6 pathways
+    into a single median timeseries suitable for downstream budget calculations.
+
+    Pipeline steps:
+    1. Interpolate to annual timesteps via ``interpolate_scenarios_data()``.
+    2. Harmonise each individual pathway to historical at ``anchor_year`` using
+       ``harmonize_to_historical_with_convergence(preserve_cumulative_peak=True)``.
+    3. Compute the median across harmonised pathways (groupby climate-assessment).
+    4. Apply ``set_post_net_zero_emissions_to_nan()``.
+    5. Pivot to wide format with a 6-level MultiIndex matching the rest of the
+       pipeline:
+       ``(climate-assessment, quantile, source, iso3c, unit, emission-category)``.
+
+    Parameters
+    ----------
+    var_long : pd.DataFrame
+        Long-format DataFrame of individual AR6 pathways.  Must contain
+        columns: ``year``, ``iso3c``, ``unit``, ``climate-assessment``,
+        ``model``, ``scenario``, plus ``emission_category`` as the value column.
+    emission_category : str
+        Name of the emission value column (e.g. ``"co2-ffi"``).
+    historical_data : pd.DataFrame or None
+        Wide-format historical timeseries (one row, year columns as strings) to
+        harmonise against.  If ``None``, harmonisation is skipped.
+    anchor_year : int
+        Year at which all pathways are matched to historical.
+    convergence_year : int
+        Year by which pathways return to their original trajectory.
+    interpolation_method : str
+        ``"linear"`` or ``"stepwise"`` — passed to ``interpolate_scenarios_data()``.
+    pathway_index_cols : list[str]
+        Index column list for ``interpolate_scenarios_data()``, must include
+        ``"year"`` and all pathway grouping columns.
+    source_name : str
+        Label written into the ``source`` index level (e.g. ``"ar6"``).
+    target_unit : str
+        Unit string written into the ``unit`` index level. Default ``"Mt * CO2e"``.
+
+    Returns
+    -------
+    pd.DataFrame
+        Wide-format DataFrame with a 6-level MultiIndex:
+        ``(climate-assessment, quantile, source, iso3c, unit, emission-category)``.
+        Columns are string year labels.
+
+    Raises
+    ------
+    DataProcessingError
+        If ``var_long`` is empty, or if required columns are missing.
+    """
+    if var_long.empty:
+        raise DataProcessingError(
+            f"Input pathway data for '{emission_category}' is empty."
+        )
+
+    required_cols = {"year", "iso3c", "unit", "climate-assessment", emission_category}
+    missing = required_cols - set(var_long.columns)
+    if missing:
+        raise DataProcessingError(
+            f"var_long is missing required columns for '{emission_category}': {missing}"
+        )
+
+    # Step 1: Interpolate to annual timesteps
+    var_long_annual = interpolate_scenarios_data(
+        var_long, interpolation_method, pathway_index_cols
+    )
+
+    groupby_cols = ["climate-assessment", "iso3c", "unit", "year"]
+
+    # Step 2: Harmonise individual pathways (if historical data is available)
+    if historical_data is not None:
+        pathway_id_cols = [col for col in pathway_index_cols if col != "year"]
+
+        var_wide = var_long_annual.pivot_table(
+            index=pathway_id_cols,
+            columns="year",
+            values=emission_category,
+            fill_value=None,
+        )
+        var_wide = ensure_string_year_columns(var_wide)
+
+        # Broadcast historical row to each pathway row
+        historical_broadcast = pd.DataFrame(
+            np.tile(historical_data.iloc[0].values, (len(var_wide), 1)),
+            index=pd.MultiIndex.from_tuples(var_wide.index, names=var_wide.index.names),
+            columns=historical_data.columns,
+        )
+        historical_broadcast = ensure_string_year_columns(historical_broadcast)
+
+        var_wide_harmonized = harmonize_to_historical_with_convergence(
+            var_wide,
+            historical_broadcast,
+            anchor_year,
+            convergence_year,
+            preserve_cumulative_peak=True,
+        )
+
+        # Back to long format
+        var_long_harmonized = var_wide_harmonized.reset_index().melt(
+            id_vars=pathway_id_cols, var_name="year", value_name=emission_category
+        )
+        var_long_harmonized["year"] = var_long_harmonized["year"].astype(int)
+    else:
+        var_long_harmonized = var_long_annual
+
+    # Step 3: Compute median across harmonised pathways
+    var_grouped = (
+        var_long_harmonized.groupby(groupby_cols)
+        .agg({emission_category: "median"})
+        .reset_index()
+    )
+    var_grouped["quantile"] = 0.5
+
+    # Step 4: Apply post-net-zero NaN masking per climate assessment.
+    # Skip for non-CO2 categories (see _CO2_CATEGORIES docstring).
+    adjusted_groups = []
+    for climate_assessment in var_grouped["climate-assessment"].unique():
+        ca_df = var_grouped[
+            var_grouped["climate-assessment"] == climate_assessment
+        ].copy()
+        if emission_category in _CO2_CATEGORIES:
+            adjusted_df, _ = set_post_net_zero_emissions_to_nan(
+                ca_df, emission_category
+            )
+        else:
+            adjusted_df = ca_df
+        adjusted_groups.append(adjusted_df)
+
+    var_median = pd.concat(adjusted_groups, ignore_index=True)
+
+    # Step 5: Pivot to wide format with 6-level MultiIndex
+    timeseries_wide = var_median.pivot_table(
+        index=["climate-assessment", "quantile", "iso3c"],
+        columns="year",
+        values=emission_category,
+        fill_value=None,
+    )
+    timeseries_wide = ensure_string_year_columns(timeseries_wide)
+
+    timeseries_wide.index = pd.MultiIndex.from_tuples(
+        [
+            (ca, q, source_name, iso3c, target_unit, emission_category)
+            for ca, q, iso3c in timeseries_wide.index
+        ],
+        names=[
+            "climate-assessment",
+            "quantile",
+            "source",
+            "iso3c",
+            "unit",
+            "emission-category",
+        ],
+    )
+
+    return timeseries_wide

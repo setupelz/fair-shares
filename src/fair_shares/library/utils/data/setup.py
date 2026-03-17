@@ -18,13 +18,69 @@ from fair_shares.library.exceptions import (
 )
 
 
+def _enumerate_required_files(
+    target: str | None, emission_category: str
+) -> dict[str, str]:
+    """Enumerate required file names keyed by logical role.
+
+    Shared by ``build_data_paths`` and ``verify_data_setup`` to avoid
+    duplicating the category-branching logic.
+    """
+    from fair_shares.library.utils.data.config import (
+        get_final_categories,
+        is_budget_target,
+        is_composite_category,
+    )
+
+    files: dict[str, str] = {
+        "country_gdp": "country_gdp_timeseries.csv",
+        "country_population": "country_population_timeseries.csv",
+        "country_gini": "country_gini_stationary.csv",
+    }
+
+    final_cats = get_final_categories(target, emission_category)
+
+    if is_composite_category(emission_category) and len(final_cats) > 1:
+        for cat in final_cats:
+            files[f"country_emissions_{cat}"] = (
+                f"country_emissions_{cat}_timeseries.csv"
+            )
+            if is_budget_target(target, cat):
+                files[f"rcbs_{cat}"] = f"rcbs_{cat}.csv"
+                files[f"world_emissions_{cat}"] = (
+                    f"world_emissions_{cat}_timeseries.csv"
+                )
+            else:
+                files[f"world_scenarios_{cat}"] = f"world_scenarios_{cat}_complete.csv"
+    else:
+        cat = final_cats[0]
+        files["country_emissions"] = f"country_emissions_{cat}_timeseries.csv"
+        if is_budget_target(target, cat):
+            files["rcbs"] = f"rcbs_{cat}.csv"
+        else:
+            files["world_scenarios"] = f"world_scenarios_{cat}_complete.csv"
+
+    return files
+
+
 def build_data_paths(
-    project_root: Path, source_id: str, emission_category: str
+    project_root: Path,
+    source_id: str,
+    emission_category: str,
+    target: str | None = None,
 ) -> dict[str, Path]:
     """
     Build all necessary paths for data processing pipeline.
 
     Used in the custom fair share allocation notebook.
+
+    For composite categories that need decomposition (RCBs + all-ghg or
+    all-ghg-ex-co2-lulucf), returns per-category path keys:
+    ``country_emissions_co2``, ``country_emissions_non-co2``,
+    ``rcbs_co2``, ``world_emissions_co2``, ``world_scenarios_non-co2``.
+
+    For AR6 + composite or any non-composite category, returns single-category
+    keys: ``country_emissions``, ``world_scenarios`` (or ``rcbs``).
 
     Parameters
     ----------
@@ -34,6 +90,9 @@ def build_data_paths(
         Source identifier combining all data sources
     emission_category : str
         Emission category (e.g., "all-ghg", "co2-ffi")
+    target : str | None, optional
+        Target source type. Determines whether composite categories are
+        decomposed (RCBs) or kept as single categories (AR6).
 
     Returns
     -------
@@ -43,18 +102,15 @@ def build_data_paths(
     base_dir = project_root / "output" / source_id
     processed_dir = base_dir / "intermediate" / "processed"
 
-    return {
+    paths: dict[str, Path] = {
         "base_dir": base_dir,
         "processed_dir": processed_dir,
         "target_file": "master_preprocess",
-        "country_emissions": processed_dir
-        / f"country_emissions_{emission_category}_timeseries.csv",
-        "country_gdp": processed_dir / "country_gdp_timeseries.csv",
-        "country_population": processed_dir / "country_population_timeseries.csv",
-        "country_gini": processed_dir / "country_gini_stationary.csv",
-        "world_scenarios": processed_dir
-        / f"world_scenarios_{emission_category}_complete.csv",
     }
+    for key, filename in _enumerate_required_files(target, emission_category).items():
+        paths[key] = processed_dir / filename
+
+    return paths
 
 
 def generate_snakemake_command(
@@ -73,7 +129,7 @@ def generate_snakemake_command(
     emission_category : str
         Emission category (e.g., "all-ghg", "co2-ffi")
     target : str
-        Target source (e.g., "ar6", "rcbs")
+        Target source (e.g., "pathway", "rcbs")
     active_sources : dict[str, str]
         Dictionary of active data sources
     target_file : Path
@@ -96,6 +152,11 @@ def generate_snakemake_command(
         f"active_gini_source={active_sources['gini']}",
         f"active_target_source={target}",
     ]
+
+    # Pass lulucf source (required for NGHGI corrections)
+    lulucf_source = active_sources.get("lulucf")
+    if lulucf_source:
+        command.append(f"active_lulucf_source={lulucf_source}")
 
     # Pass rcb_generator if specified (for rcb-pathways target)
     rcb_generator = active_sources.get("rcb_generator")
@@ -222,30 +283,14 @@ def verify_data_setup(
     emission_category : str
         Emission category for file naming
     target : str
-        Target source ("rcbs" or "ar6")
+        Target source ("rcbs" or "pathway")
 
     Returns
     -------
     tuple[bool, dict[str, dict[str, Any]]]
         (all_files_exist, file_info_dict)
     """
-    # Base required files (common to all modes)
-    required_files = {
-        "country_emissions": f"country_emissions_{emission_category}_timeseries.csv",
-        "country_gdp": "country_gdp_timeseries.csv",
-        "country_population": "country_population_timeseries.csv",
-        "country_gini": "country_gini_stationary.csv",
-    }
-
-    # Add mode-specific files
-    if target == "rcbs":
-        # For RCB mode, check for RCB data file
-        required_files["rcbs"] = "rcbs.csv"
-    else:
-        # For scenario mode, check for world scenarios file
-        required_files["world_scenarios"] = (
-            f"world_scenarios_{emission_category}_complete.csv"
-        )
+    required_files = _enumerate_required_files(target, emission_category)
 
     all_files_exist = True
     file_info = {}
@@ -268,7 +313,7 @@ def verify_data_setup(
     return all_files_exist, file_info
 
 
-def setup_custom_data_pipeline(
+def setup_data(
     project_root: Path,
     emission_category: str,
     active_sources: dict[str, str],
@@ -301,7 +346,8 @@ def setup_custom_data_pipeline(
         - "gdp": GDP source (e.g., "wdi-2025")
         - "population": population source (e.g., "un-owid-2025")
         - "gini": Gini source (e.g., "unu-wider-2025")
-        - "target": target source (e.g., "ar6", "rcbs")
+        - "lulucf": LULUCF source (e.g., "melo-2026") — required for NGHGI corrections
+        - "target": target source (e.g., "pathway", "rcbs")
     timeout : int, default 600
         Timeout for Snakemake execution in seconds
     verbose : bool, default True
@@ -334,9 +380,14 @@ def setup_custom_data_pipeline(
         raise ConfigurationError("active_sources must include 'target' key")
 
     # Validate target
-    if target not in ["ar6", "rcbs", "rcb-pathways"]:
+    from fair_shares.library.utils.data.config import (
+        ALL_TARGETS,
+        get_final_categories,
+    )
+
+    if target not in ALL_TARGETS:
         raise ConfigurationError(
-            f"Invalid target: {target}. Must be 'ar6', 'rcbs', or 'rcb-pathways'"
+            f"Invalid target: {target}. Must be one of: {sorted(ALL_TARGETS)}"
         )
 
     # Build and validate configuration
@@ -344,8 +395,8 @@ def setup_custom_data_pipeline(
         emission_category, active_sources, harmonisation_year=harmonisation_year
     )
 
-    # Build paths
-    paths = build_data_paths(project_root, source_id, emission_category)
+    # Build paths (target-aware: per-category keys for allghg)
+    paths = build_data_paths(project_root, source_id, emission_category, target=target)
 
     # Generate Snakemake command
     command = generate_snakemake_command(
@@ -355,12 +406,15 @@ def setup_custom_data_pipeline(
         paths["target_file"],
     )
 
+    final_categories = get_final_categories(target, emission_category)
+
     setup_info = {
         "paths": paths,
         "command": command,
         "config": data_config,
         "source_id": source_id,
         "emission_category": emission_category,
+        "final_categories": final_categories,
     }
 
     if verbose:
@@ -371,16 +425,10 @@ def setup_custom_data_pipeline(
         print(f"Target file: {paths['target_file']}")
         print()
 
-    # Execute Snakemake
-    # First, delete existing config file to force regeneration
-    config_file = project_root / "output" / source_id / "config.yaml"
-    if config_file.exists():
-        if verbose:
-            print(f"Removing existing config file to force regeneration: {config_file}")
-        config_file.unlink()
-
+    # Let Snakemake handle incremental builds — it tracks file timestamps
+    # and only re-runs targets whose dependencies have changed.
     if verbose:
-        print("Running Snakemake to set up data...")
+        print("Running Snakemake...")
         print("Command:", " ".join(command))
         print()
 
@@ -415,3 +463,32 @@ def setup_custom_data_pipeline(
         raise DataLoadingError("Some required data files are missing after setup")
 
     return setup_info
+
+
+def lookup_net_negative_emissions(
+    net_negative_metadata: dict,
+    emission_category: str,
+    climate_assessment: str,
+) -> float | None:
+    """Look up cumulative net-negative emissions for a category and climate assessment.
+
+    Parameters
+    ----------
+    net_negative_metadata : dict
+        Metadata dict keyed by emission category, each containing a "pathways" list.
+    emission_category : str
+        The emission category to look up (e.g., "co2-ffi", "co2").
+    climate_assessment : str
+        The climate assessment identifier to match.
+
+    Returns
+    -------
+    float | None
+        The cumulative net-negative emissions value, or None if not found.
+    """
+    if emission_category not in net_negative_metadata:
+        return None
+    for pathway in net_negative_metadata[emission_category].get("pathways", []):
+        if pathway.get("climate-assessment") == climate_assessment:
+            return pathway.get("cumulative_net_negative_emissions", 0.0)
+    return None

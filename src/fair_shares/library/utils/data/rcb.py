@@ -170,10 +170,11 @@ def process_rcb_to_2020_baseline(
     rcb_value: float,
     rcb_unit: str,
     rcb_baseline_year: int,
+    emission_category: str,
     world_co2_ffi_emissions: pd.DataFrame,
-    world_lulucf_shift_emissions: pd.DataFrame | None = None,
-    bunkers_2020_2100: float = 0.0,
-    lulucf_2020_2100: float = 0.0,
+    actual_bm_lulucf_emissions: pd.DataFrame | None = None,
+    bunkers_deduction_mt: float = 0.0,
+    lulucf_deduction_mt: float = 0.0,
     target_baseline_year: int = 2020,
     source_name: str = "",
     scenario: str = "",
@@ -183,22 +184,32 @@ def process_rcb_to_2020_baseline(
     Process RCB from its original baseline year to 2020 baseline with adjustments.
 
     This function converts RCB values from any baseline year (>= 2020) to a
-    standardized 2020 baseline by adding historical CO2-FFI plus Gidden Direct
-    LULUCF emissions. It also applies adjustments for international bunkers and
-    LULUCF following Weber et al. (2026).
+    standardized 2020 baseline. It also applies adjustments for international
+    bunkers and LULUCF following Weber et al. (2026).
+
+    The rebase always uses actual observational data (PRIMAP), never scenario
+    projections. What enters the rebase depends on the emission category:
+
+    - **co2-ffi**: Rebase uses fossil CO2 only. LULUCF is omitted because it
+      cancels algebraically with the LULUCF decomposition term.
+      lulucf_deduction = -L_BM(base,NZ) (positive, increases fossil budget).
+    - **co2**: Rebase uses fossil CO2 + actual bookkeeping-model LULUCF.
+      lulucf_deduction = convention_gap(base,NZ) (negative, reduces budget
+      per Weber).
 
     The calculation follows these steps:
     1. Convert RCB from source unit to Mt * CO2e
-    2. If baseline_year > 2020: Add world CO2-FFI + Gidden Direct LULUCF
-       from 2020 to (baseline_year - 1)
+    2. If baseline_year > 2020: Add actual emissions from 2020 to
+       (baseline_year - 1) — fossil only for co2-ffi, fossil + BM LULUCF
+       for co2
     3. Subtract bunkers deduction (always reduces budget)
-    4. Subtract LULUCF deduction (reduces budget for co2; increases for co2-ffi)
+    4. Apply LULUCF deduction (sign-ready from caller)
 
     Sign convention for deduction parameters:
-    - bunkers_2020_2100: always positive (cumulative emissions), subtracted
-    - lulucf_2020_2100: sign-ready from caller (added directly to budget):
-        - For co2: convention gap, negative → reduces budget (per Weber)
-        - For co2-ffi: negated BM LULUCF, positive → increases fossil budget
+    - bunkers_deduction_mt: always positive (cumulative emissions), subtracted
+    - lulucf_deduction_mt: sign-ready from caller (added directly to budget):
+        - For co2: convention gap, negative -> reduces budget (per Weber)
+        - For co2-ffi: negated BM LULUCF, positive -> increases fossil budget
 
     Parameters
     ----------
@@ -208,18 +219,20 @@ def process_rcb_to_2020_baseline(
         Unit of the RCB value (e.g., "Gt * CO2", "Mt * CO2")
     rcb_baseline_year : int
         The year from which the RCB is calculated (must be >= 2020)
+    emission_category : str
+        Emission category: "co2-ffi" or "co2". Controls whether BM LULUCF
+        is included in the rebase.
     world_co2_ffi_emissions : pd.DataFrame
         World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e)
-    world_lulucf_shift_emissions : pd.DataFrame or None, optional
-        World-level Gidden Direct LULUCF CO2 timeseries with year columns
-        (in Mt * CO2e). Included in the baseline shift alongside fossil CO2.
-        If None, LULUCF shift is zero (default: None).
-    bunkers_2020_2100 : float, optional
+    actual_bm_lulucf_emissions : pd.DataFrame or None, optional
+        Actual bookkeeping-model LULUCF CO2 emissions from PRIMAP, with year
+        columns (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
+    bunkers_deduction_mt : float, optional
         Total bunker CO2 emissions from 2020-2100 in Mt * CO2e (default: 0.0).
-        Always positive.
-    lulucf_2020_2100 : float, optional
+        Always positive; subtracted from budget.
+    lulucf_deduction_mt : float, optional
         LULUCF adjustment in Mt * CO2e, sign-ready (default: 0.0).
-        Added directly to the budget — caller is responsible for correct sign.
+        Added directly to the budget -- caller is responsible for correct sign.
     target_baseline_year : int, optional
         Target baseline year for standardization (default: 2020)
     source_name : str, optional
@@ -238,14 +251,16 @@ def process_rcb_to_2020_baseline(
         - 'rcb_original_unit': Original RCB unit
         - 'baseline_year': Original baseline year
         - 'rebase_total_mt': Emissions added to rebase from source year to 2020
-          (positive, Mt * CO2e); includes fossil CO2 + Gidden Direct LULUCF
+          (positive, Mt * CO2e); fossil only for co2-ffi, fossil + actual BM
+          LULUCF for co2
         - 'rebase_fossil_mt': Fossil-only component of rebase (Mt * CO2e)
-        - 'rebase_lulucf_mt': Gidden Direct LULUCF component of rebase (Mt * CO2e)
+        - 'rebase_lulucf_mt': Actual BM LULUCF component of rebase (Mt * CO2e);
+          only non-zero for co2
         - 'deduction_bunkers_mt': Bunker fuel deduction (negative, Mt * CO2e)
         - 'deduction_lulucf_mt': LULUCF deduction (Mt * CO2e; sign depends on
           emission category)
-        - 'net_deduction_mt': Net adjustment (rebase + deductions, Mt * CO2e)
-        - 'lulucf_convention': Always "nghgi"
+        - 'net_adjustment_mt': Total change from original to 2020 baseline
+          (rebase + deductions, Mt * CO2e)
     """
     # Get unit registry
     ureg = get_default_unit_registry()
@@ -280,11 +295,22 @@ def process_rcb_to_2020_baseline(
                 f"Cannot calculate emissions adjustment for RCB conversion."
             )
 
+        # Fossil rebase — always from actual PRIMAP data
         rebase_fossil_mt = world_co2_ffi_emissions[year_cols].sum(axis=1).iloc[0]
-        if world_lulucf_shift_emissions is not None:
-            rebase_lulucf_mt = (
-                world_lulucf_shift_emissions[year_cols].sum(axis=1).iloc[0]
-            )
+
+        # BM LULUCF rebase — only for co2 (total CO2 needs LULUCF in rebase)
+        # For co2-ffi, LULUCF is omitted because it cancels with the LULUCF
+        # decomposition
+        rebase_lulucf_mt = 0.0
+        if emission_category == "co2" and actual_bm_lulucf_emissions is not None:
+            lulucf_year_cols = [
+                y for y in year_cols if y in actual_bm_lulucf_emissions.columns
+            ]
+            if lulucf_year_cols:
+                rebase_lulucf_mt = (
+                    actual_bm_lulucf_emissions[lulucf_year_cols].sum(axis=1).iloc[0]
+                )
+
         rebase_total_mt = rebase_fossil_mt + rebase_lulucf_mt
 
         if verbose:
@@ -297,11 +323,12 @@ def process_rcb_to_2020_baseline(
                 f"({target_baseline_year}-{rcb_baseline_year - 1}): "
                 f"+{rebase_fossil_mt:.1f} Mt * CO2e"
             )
-            print(
-                f"      Adding Gidden Direct LULUCF emissions "
-                f"({target_baseline_year}-{rcb_baseline_year - 1}): "
-                f"+{rebase_lulucf_mt:.1f} Mt * CO2e"
-            )
+            if emission_category == "co2":
+                print(
+                    f"      Adding actual BM LULUCF emissions "
+                    f"({target_baseline_year}-{rcb_baseline_year - 1}): "
+                    f"+{rebase_lulucf_mt:.1f} Mt * CO2e"
+                )
 
     else:
         # Already at target baseline (rcb_baseline_year == 2020)
@@ -316,23 +343,24 @@ def process_rcb_to_2020_baseline(
     rcb_adjusted_mt = rcb_original_mt + rebase_total_mt
 
     # Apply bunkers deduction (always reduces budget)
-    deduction_bunkers_mt = -bunkers_2020_2100
+    deduction_bunkers_mt = -bunkers_deduction_mt
 
     # Apply LULUCF deduction (sign-ready from caller)
-    deduction_lulucf_mt = lulucf_2020_2100
+    deduction_lulucf_mt = lulucf_deduction_mt
 
-    rcb_2020_mt = rcb_adjusted_mt + deduction_bunkers_mt + deduction_lulucf_mt
+    rcb_2020_mt = rcb_adjusted_mt - bunkers_deduction_mt + lulucf_deduction_mt
 
-    # Calculate net adjustment
-    net_deduction_mt = rebase_total_mt + deduction_bunkers_mt + deduction_lulucf_mt
+    # Net adjustment = total change from original to 2020 baseline
+    # (includes rebase + all deductions)
+    net_adjustment_mt = rebase_total_mt + deduction_bunkers_mt + deduction_lulucf_mt
 
     if verbose:
-        if bunkers_2020_2100 > 0:
+        if bunkers_deduction_mt > 0:
             print(
                 f"      Bunkers deduction (2020-2100): "
                 f"{deduction_bunkers_mt:.1f} Mt * CO2e"
             )
-        if lulucf_2020_2100 != 0:
+        if lulucf_deduction_mt != 0:
             print(
                 f"      LULUCF deduction (2020-2100): "
                 f"{deduction_lulucf_mt:.1f} Mt * CO2e"
@@ -352,6 +380,5 @@ def process_rcb_to_2020_baseline(
         "rebase_lulucf_mt": round(rebase_lulucf_mt),
         "deduction_bunkers_mt": round(deduction_bunkers_mt),
         "deduction_lulucf_mt": round(deduction_lulucf_mt),
-        "net_deduction_mt": round(net_deduction_mt),
-        "lulucf_convention": "nghgi",
+        "net_adjustment_mt": round(net_adjustment_mt),
     }

@@ -15,7 +15,7 @@
 # ---
 
 # %% [markdown]
-# # AR6 (Gidden et al. 2023) Scenarios Data Preprocessing Script
+# # Scenario Data Preprocessing Script
 #
 # This script uses the NGHGi (National Greenhouse Gas Inventories) corrections to
 # the AR6 scenarios database from Gidden et al. 2023 (10.1038/s41586-023-06724-y).
@@ -51,14 +51,12 @@ from fair_shares.library.exceptions import (
 )
 from fair_shares.library.utils import (
     build_source_id,
-    derive_probability_based_categories,
     determine_processing_categories,
     ensure_string_year_columns,
     get_default_unit_registry,
     get_world_totals_timeseries,
     harmonize_to_historical_with_convergence,
     interpolate_scenarios_data,
-    normalize_metadata_column,
     process_iamc_zip,
 )
 from fair_shares.library.utils.units import _clean_unit_string
@@ -70,68 +68,29 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
-# Available MAGICC exceedance probability columns by temperature target
-MAGICC_PROBABILITY_COLUMNS = {
-    "1.5C": "Exceedance Probability 1.5C (MAGICCv7.5.3)",
-    "2C": "Exceedance Probability 2C (MAGICCv7.5.3)",
-}
-
-
-def get_probability_column(temperature_target: str) -> str:
-    """
-    Get the MAGICC probability column name for a given temperature target.
-
-    Parameters
-    ----------
-    temperature_target : str
-        Temperature target: "1.5C" or "2C"
-
-    Returns
-    -------
-    str
-        Column name for the exceedance probability
-    """
-    temp_key = str(temperature_target).strip()
-    if temp_key not in MAGICC_PROBABILITY_COLUMNS:
-        raise ConfigurationError(
-            f"Unsupported temperature_target '{temperature_target}'. "
-            f"Choose one of: {list(MAGICC_PROBABILITY_COLUMNS.keys())}"
-        )
-    return MAGICC_PROBABILITY_COLUMNS[temp_key]
-
-
-# Additional climate assessments that aren't in the original metadata
-# Each spec can define:
-#   - label: Custom label for the derived category (e.g., "peak_1p5_67")
-#   - temperature_target: "1.5C" or "2C" (automatically selects correct column)
-#   - max_exceedance_probability: Upper bound (<=) for exceedance probability
-#   - min_exceedance_probability: Lower bound (>=) for exceedance probability
-#     (optional)
-#   - source_categories: List of source categories to filter from
-#     (optional, uses all if not specified)
-probability_category_specs = [
-    {
-        "label": "peak_1p5_33",
-        "temperature_target": "1.5C",
-        # 33% chance of meeting 1.5 degC peak, <=66% exceedance probability
-        "max_exceedance_probability": 0.66,
-    },
-]
+active_lulucf_source = None
+active_scenario_source = None  # NEW
+source_id = None
 
 # %%
-if emission_category is not None:
+_running_via_papermill = emission_category is not None
+
+if _running_via_papermill:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -150,7 +109,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "unu-wider-2025",
-        "target": "ar6",
+        "target": "pathway",
     }
 
     # Build interactive development config using the same logic as the pipeline
@@ -166,6 +125,7 @@ else:
     active_gdp_source = active_sources["gdp"]
     active_population_source = active_sources["population"]
     active_gini_source = active_sources["gini"]
+    active_scenario_source = "ar6"
 
 # %% [markdown]
 # ## Prepare parameters
@@ -175,17 +135,50 @@ project_root = here()
 print(f"Project root: {project_root}")
 
 
-# Get active sources and scenario configuration
-active_target_source = config["active_target_source"]
-scenario_config = config["targets"][active_target_source]
-scenario_path = scenario_config["path"]
-scenario_data_parameters = scenario_config["data_parameters"]
-available_categories = scenario_data_parameters.get("available_categories", [])
-interpolation_method = scenario_data_parameters.get("interpolation_method")
-world_key = scenario_data_parameters.get("world_key")
+# Get scenario configuration from the scenarios section.
+# This notebook processes whatever scenario source is configured —
+# the source is selected via active_scenario_source, not hard-coded.
+_active_scenario = active_scenario_source or config.get("active_scenario_source")
+if not _active_scenario:
+    # Fallback: infer from target's scenario_source field
+    _pipeline_target = config.get("active_target_source", active_target_source)
+    _target_cfg = config["targets"].get(_pipeline_target, {})
+    _active_scenario = _target_cfg.get("scenario_source", _pipeline_target)
 
-# Extract config values
-emission_category = config["emission_category"]
+# Read from scenarios section if available, fall back to targets for backwards compat
+if "scenarios" in config and _active_scenario in config["scenarios"]:
+    scenario_config = config["scenarios"][_active_scenario]
+    scenario_data_parameters = scenario_config.get("data_parameters", {})
+    scenario_path = scenario_config["path"]
+    world_key = scenario_data_parameters.get("world_key", "World")
+    interpolation_method = scenario_data_parameters.get(
+        "interpolation_method", "linear"
+    )
+    available_categories = scenario_data_parameters.get("available_categories", [])
+else:
+    # Backwards compatibility: read from targets section
+    _pipeline_target = config.get("active_target_source", active_target_source)
+    if "pathway" in config.get("targets", {}):
+        scenario_config = config["targets"]["pathway"]
+    else:
+        scenario_config = config["targets"][_pipeline_target]
+    scenario_data_parameters = scenario_config.get("data_parameters", {})
+
+    allghg_scenarios = scenario_data_parameters.get("all_ghg_scenarios")
+    if allghg_scenarios and not scenario_data_parameters.get("world_key"):
+        scenario_path = allghg_scenarios["path"]
+        world_key = allghg_scenarios["world_key"]
+        interpolation_method = allghg_scenarios.get("interpolation_method")
+        available_categories = ["co2-ffi", "co2", "all-ghg", "all-ghg-ex-co2-lulucf"]
+    else:
+        scenario_path = scenario_config["path"]
+        world_key = scenario_data_parameters.get("world_key")
+        interpolation_method = scenario_data_parameters.get("interpolation_method")
+        available_categories = scenario_data_parameters.get("available_categories", [])
+
+# Extract config values — Papermill parameter takes precedence for allghg triple-pass
+if not _running_via_papermill:
+    emission_category = config["emission_category"]
 emissions_config = config["emissions"][active_emissions_source]
 emissions_data_parameters = emissions_config["data_parameters"]
 
@@ -221,7 +214,21 @@ if emission_category not in available_categories:
 # require combining multiple variables. The mapping is defined below:
 
 # Define which emission categories we can process for AR6
-supported_categories = ["co2-ffi", "all-ghg-ex-co2-lulucf", "all-ghg"]
+# Primary categories are computed from Gidden variables in the main loop.
+# Derived categories (co2-lulucf, non-co2) are computed after the loop
+# from already-processed primary categories.
+supported_categories = [
+    "co2-ffi",
+    "co2-lulucf",
+    "co2",
+    "non-co2",
+    "all-ghg-ex-co2-lulucf",
+    "all-ghg",
+]
+# Categories computed directly from Gidden variables (processed in main loop)
+_primary_categories = ["co2-ffi", "co2", "all-ghg-ex-co2-lulucf", "all-ghg"]
+# Categories derived from primary categories (processed after main loop)
+_derived_categories = ["co2-lulucf", "non-co2"]
 
 # Check that requested category is supported
 if emission_category not in supported_categories:
@@ -235,58 +242,44 @@ processing_info = determine_processing_categories(
     emission_category, supported_categories
 )
 processing_categories = processing_info["process"]
-create_all_other = processing_info["create_all_other"]
 final_categories = processing_info["final"]
 
+# Primary categories go through the main loop (computed from Gidden variables).
+# Derived categories are computed after the loop from the primaries.
+primary_to_process = [c for c in processing_categories if c in _primary_categories]
+derived_to_process = [c for c in processing_categories if c in _derived_categories]
+
+# Always process the primaries needed for derivation
+# co2-lulucf needs: co2, co2-ffi
+# non-co2 needs: all-ghg, co2 OR all-ghg-ex-co2-lulucf, co2-ffi
+if "co2-lulucf" in derived_to_process:
+    for dep in ["co2", "co2-ffi"]:
+        if dep not in primary_to_process:
+            primary_to_process.append(dep)
+if "non-co2" in derived_to_process:
+    for dep in ["all-ghg", "co2"]:
+        if dep not in primary_to_process:
+            primary_to_process.append(dep)
+
 print(f"Processing categories: {processing_categories}")
-print(f"Create all-other: {create_all_other}")
 print(f"Final categories: {final_categories}")
 
-# Filter to only process supported categories
-timeseries_specs = processing_categories
+# Filter to only primary categories for the main processing loop
+timeseries_specs = primary_to_process
 
-# Process probability_category_specs to convert temperature_target to column names
-# and collect all required metadata columns
-processed_probability_specs = []
-probability_metadata_columns = set()
+# 1:1 mapping from AR6 category to RCB scenario label.
+# Each AR6 category corresponds to exactly one RCB scenario.
+# The scenario label encodes temperature target + probability (e.g. "1.5p50").
+# Used internally during processing; converted to clean (assessment, quantile)
+# format at output time via _SCENARIO_TO_ASSESSMENT / _SCENARIO_TO_QUANTILE.
+_AR6_TO_SCENARIO = {"C1": "1.5p50", "C2": "2p83", "C3": "2p66"}
+_AR6_CATEGORIES_TO_PROCESS = list(_AR6_TO_SCENARIO.keys())
+desired_climate_assessments = list(_AR6_TO_SCENARIO.values())
 
-if probability_category_specs:
-    for spec in probability_category_specs:
-        processed_spec = spec.copy()
-
-        # Convert temperature_target to actual column name
-        if "temperature_target" in processed_spec:
-            temperature_target = processed_spec.pop("temperature_target")
-            probability_column = get_probability_column(temperature_target)
-            processed_spec["probability_columns"] = [probability_column]
-            # Track which metadata columns we need
-            probability_metadata_columns.add(probability_column)
-        elif "probability_columns" in processed_spec:
-            # If probability_columns already specified, use as-is
-            for col in processed_spec["probability_columns"]:
-                probability_metadata_columns.add(col)
-        else:
-            raise ConfigurationError(
-                "Each probability_category_spec must specify either "
-                "'temperature_target' (1.5C or 2C) or 'probability_columns'"
-            )
-
-        processed_probability_specs.append(processed_spec)
-
-# Convert metadata columns set to sorted list for use in process_iamc_zip
-probability_metadata_columns = sorted(
-    {normalize_metadata_column(col) for col in probability_metadata_columns}
-)
-
-# Extract derived climate assessment labels
-derived_climate_assessments = [spec["label"] for spec in processed_probability_specs]
-
-# Always include the canonical AR6 categories plus any probability-derived ones.
-default_climate_assessments = ["C1", "C2", "C3", "C4"]
-extra_climate_assessments = [
-    ca for ca in derived_climate_assessments if ca not in default_climate_assessments
-]
-desired_climate_assessments = default_climate_assessments + extra_climate_assessments
+# Output mappings: split scenario label into clean climate-assessment + quantile
+# to match RCB format (e.g. climate-assessment="1.5C", quantile=0.5)
+_SCENARIO_TO_ASSESSMENT = {"1.5p50": "1.5C", "2p83": "2C", "2p66": "2C"}
+_SCENARIO_TO_QUANTILE = {"1.5p50": 0.5, "2p83": 0.83, "2p66": 0.66}
 
 # Print out the parameters for debugging
 print(f"Scenario source: {active_target_source}")
@@ -304,28 +297,7 @@ print(f"Desired scenarios: {desired_climate_assessments}")
 # %%
 # Process the scenario source
 print(f"Processing {active_target_source} scenarios...")
-df = process_iamc_zip(
-    project_root / scenario_path,
-    metadata_columns=probability_metadata_columns,
-)
-
-if processed_probability_specs:
-    print("Applying probability-based climate assessment filters...")
-    df_before = len(df)
-    df = derive_probability_based_categories(df, processed_probability_specs)
-    df_after = len(df)
-    print(f"  Added {df_after - df_before} rows from probability-based categories")
-
-    # Verify derived categories were created
-    if "Category" in df.columns:
-        categories_after = df["Category"].unique()
-        missing_derived = [
-            ca for ca in derived_climate_assessments if ca not in categories_after
-        ]
-        if missing_derived:
-            print(f"  WARNING: Derived categories not found in data: {missing_derived}")
-        else:
-            print(f"  All derived categories present: {derived_climate_assessments}")
+df = process_iamc_zip(project_root / scenario_path)
 
 # %% [markdown]
 # ## Load historical emissions for harmonisation
@@ -412,42 +384,14 @@ def calculate_emission_difference(df1, df2, id_vars, year_cols, suffix1, suffix2
     return merged, year_data
 
 
-def extract_unit_from_data(var_df, timeseries_name, df_all):
-    """Extract unit information from processed or original dataframe."""
-    if "Unit" in var_df.columns:
-        unique_units = var_df["Unit"].unique()
-        if len(unique_units) == 1:
-            return unique_units[0]
-        else:
-            raise DataProcessingError(f"Multiple units found: {unique_units}")
-
-    # Map timeseries names to AR6 variable names
-    variable_mapping = {
-        "all-ghg": (
-            "AR6 Reanalysis|OSCARv3.2|Emissions|"
-            "Kyoto Gases - Direct and Indirect Fluxes"
-        ),
-        "co2-ffi": (
-            "AR6 Reanalysis|OSCARv3.2|Emissions|CO2 - Direct and Indirect Fluxes"
-        ),
-        "all-ghg-ex-co2-lulucf": (
-            "AR6 Reanalysis|OSCARv3.2|Emissions|"
-            "Kyoto Gases - Direct and Indirect Fluxes"
-        ),
-    }
-
-    dataset_variable = variable_mapping.get(timeseries_name)
-    if not dataset_variable:
-        raise DataProcessingError(f"Unknown timeseries_name: {timeseries_name}")
-
-    original_var_units = df_all[df_all["Variable"] == dataset_variable]["Unit"].unique()
-
-    if len(original_var_units) == 1:
-        return original_var_units[0]
-    else:
-        raise DataProcessingError(
-            f"Could not determine unique units: {original_var_units}"
-        )
+def extract_unit_from_data(var_df):
+    """Extract unit from the processed DataFrame's Unit column."""
+    if "Unit" not in var_df.columns:
+        raise DataProcessingError("DataFrame has no 'Unit' column")
+    unique_units = var_df["Unit"].unique()
+    if len(unique_units) == 1:
+        return unique_units[0]
+    raise DataProcessingError(f"Multiple units found: {unique_units}")
 
 
 # %% [markdown]
@@ -457,22 +401,20 @@ def extract_unit_from_data(var_df, timeseries_name, df_all):
 # Process AR6 scenarios data for all timeseries
 print(f"Processing scenarios data from {active_target_source}")
 
-# Rename 'Category' to 'climate-assessment' for clarity
+# Rename 'Category' to 'climate-assessment' and relabel to RCB scenario labels
 df = df.rename(columns={"Category": "climate-assessment"})
 
-# Filter to only desired climate assessments early (before processing)
-print(f"Filtering to desired climate assessments: {desired_climate_assessments}")
+# Filter to AR6 categories that have a corresponding RCB scenario
+print(f"Filtering to AR6 categories: {_AR6_CATEGORIES_TO_PROCESS}")
 df_before_filter = len(df)
-df = df[df["climate-assessment"].isin(desired_climate_assessments)].copy()
+df = df[df["climate-assessment"].isin(_AR6_CATEGORIES_TO_PROCESS)].copy()
 print(f"  Filtered from {df_before_filter} to {len(df)} rows")
 
-# Verify all desired categories are present
-categories_present = df["climate-assessment"].unique()
-missing = [ca for ca in desired_climate_assessments if ca not in categories_present]
-if missing:
-    print(f"  WARNING: Desired categories not found in data: {missing}")
-else:
-    print(f"  All desired categories present: {sorted(categories_present)}")
+# Relabel AR6 categories to RCB scenario labels (e.g. C1 → 1.5p50)
+df["climate-assessment"] = df["climate-assessment"].map(_AR6_TO_SCENARIO)
+print(
+    f"  Relabelled to RCB scenario labels: {sorted(df['climate-assessment'].unique())}"
+)
 
 # Dictionary to store all processed timeseries
 all_timeseries = {}
@@ -534,6 +476,13 @@ for timeseries_name in timeseries_specs:
             var_df["Unit"] = scenario_data["CO2"]["Unit"].iloc[0]
             print(f"    Successfully calculated co2-ffi with {len(var_df)} scenarios")
 
+        elif timeseries_name == "co2":
+            print("  co2 = CO2_NGHGI")
+            var_df = scenario_data["CO2_NGHGI"].copy()
+            var_df["Variable"] = timeseries_name
+            var_df["Unit"] = scenario_data["CO2_NGHGI"]["Unit"].iloc[0]
+            print(f"    Successfully extracted co2 with {len(var_df)} scenarios")
+
         elif timeseries_name == "all-ghg-ex-co2-lulucf":
             print("  all-ghg-ex-co2-lulucf = KYOTO - AFOLU_direct")
             merged, year_data = calculate_emission_difference(
@@ -572,7 +521,7 @@ for timeseries_name in timeseries_specs:
         # Extract unit information
         year_cols = [col for col in var_df.columns if col.isdigit()]
         id_vars = ["climate-assessment", "Model", "Scenario"]
-        original_units = extract_unit_from_data(var_df, timeseries_name, df)
+        original_units = extract_unit_from_data(var_df)
         print(f"    Original units: {original_units}")
 
         # Convert units
@@ -741,7 +690,9 @@ for timeseries_name in timeseries_specs:
             .agg({timeseries_name: "median"})
             .reset_index()
         )
-        var_grouped["quantile"] = 0.5
+        var_grouped["quantile"] = var_grouped["climate-assessment"].map(
+            _SCENARIO_TO_QUANTILE
+        )
 
         timeseries_wide = var_grouped.pivot_table(
             index=["climate-assessment", "quantile", "iso3c"],
@@ -752,10 +703,18 @@ for timeseries_name in timeseries_specs:
         timeseries_wide = ensure_string_year_columns(timeseries_wide)
 
         # Add source, unit and emission-category to index
-        # Source is the target source (e.g., 'ar6') to match structure with rcb-pathways
+        # Remap climate-assessment from scenario label (e.g. "1.5p50") to clean
+        # temperature format ("1.5C") to match RCB conventions
         timeseries_wide.index = pd.MultiIndex.from_tuples(
             [
-                (ca, q, active_target_source, iso3c, target_unit, timeseries_name)
+                (
+                    _SCENARIO_TO_ASSESSMENT.get(ca, ca),
+                    q,
+                    active_scenario_source,
+                    iso3c,
+                    target_unit,
+                    timeseries_name,
+                )
                 for ca, q, iso3c in timeseries_wide.index
             ],
             names=[
@@ -777,73 +736,272 @@ for timeseries_name in timeseries_specs:
 print("\nVariable processing complete")
 
 # %% [markdown]
-# ## Generate "all-other" timeseries
+# ## Derive co2-lulucf and non-co2 from primary categories
+#
+# These are computed from the already-harmonized median pathways:
+# - co2-lulucf (NGHGI) = co2 - co2-ffi
+# - non-co2 = all-ghg - co2
 
 # %%
-if create_all_other and "all-ghg" in all_timeseries:
-    print("Creating 'all-other' timeseries (all-ghg minus requested category)")
+_scenario_index_levels = [
+    "climate-assessment",
+    "quantile",
+    "source",
+    "iso3c",
+    "unit",
+    "emission-category",
+]
 
-    # Prepare dataframes for subtraction
-    all_ghg_df = all_timeseries["all-ghg"]
-    subtract_df = all_timeseries[emission_category]
 
-    # Drop emission-category from index temporarily
-    all_other_df = all_ghg_df.reset_index(level="emission-category", drop=True).copy()
-    df_subtract = subtract_df.reset_index(level="emission-category", drop=True)
+def _derive_category(minuend_key, subtrahend_key, new_category):
+    """Derive a new category by subtracting two existing all_timeseries entries."""
+    if minuend_key not in all_timeseries or subtrahend_key not in all_timeseries:
+        print(
+            f"  Cannot derive {new_category}: "
+            f"missing {minuend_key} or {subtrahend_key}"
+        )
+        return None
 
-    # Align indices and subtract
-    common_indices = all_other_df.index.intersection(df_subtract.index)
-    all_other_df = (
-        all_other_df.loc[common_indices]
-        .sub(df_subtract.loc[common_indices], fill_value=0)
-        .clip(lower=0)
+    a = (
+        all_timeseries[minuend_key]
+        .reset_index(level="emission-category", drop=True)
+        .copy()
     )
+    b = all_timeseries[subtrahend_key].reset_index(level="emission-category", drop=True)
 
-    # Restore multi-index with 'all-other' as emission-category
-    all_other_df = all_other_df.reset_index()
-    all_other_df["emission-category"] = "all-other"
-    all_other_df = all_other_df.set_index(
-        [
-            "climate-assessment",
-            "quantile",
-            "source",
-            "iso3c",
-            "unit",
-            "emission-category",
-        ]
-    )
+    common_idx = a.index.intersection(b.index)
+    result = a.loc[common_idx].sub(b.loc[common_idx], fill_value=0)
 
-    all_timeseries["all-other"] = all_other_df
-    print(f"Created 'all-other' timeseries with shape: {all_other_df.shape}")
+    # Re-attach emission-category
+    result = result.reset_index()
+    result["emission-category"] = new_category
+    result = result.set_index(_scenario_index_levels)
 
-    # Print summary statistics
-    all_other_long = (
-        all_other_df.reset_index(level=["unit", "emission-category"], drop=True)
-        .stack()
-        .reset_index()
-    )
-    all_other_long.columns = [
-        "climate-assessment",
-        "quantile",
-        "iso3c",
-        "year",
-        "all-other",
+    return result
+
+
+if "co2-lulucf" in derived_to_process or "co2-lulucf" in final_categories:
+    print("Deriving co2-lulucf (NGHGI) = co2 - co2-ffi...")
+    co2_lulucf = _derive_category("co2", "co2-ffi", "co2-lulucf")
+    if co2_lulucf is not None:
+        all_timeseries["co2-lulucf"] = co2_lulucf
+        print(f"  co2-lulucf shape: {co2_lulucf.shape}")
+
+if "non-co2" in derived_to_process or "non-co2" in final_categories:
+    print("Deriving non-co2 = all-ghg - co2...")
+    non_co2 = _derive_category("all-ghg", "co2", "non-co2")
+    if non_co2 is not None:
+        all_timeseries["non-co2"] = non_co2
+        print(f"  non-co2 shape: {non_co2.shape}")
+
+# %% [markdown]
+# ## Pre-compute RCB adjustment scalars per AR6 category
+#
+# For RCB-based allocations, the library needs per-AR6-category adjustment scalars
+# to convert IPCC RCBs (BM convention) to NGHGI-consistent budgets. These are
+# pre-computed here from the Gidden scenario data so that the library never needs
+# to handle the Direct/Indirect AFOLU decomposition directly.
+#
+# Scalars computed per AR6 category:
+# - `bm_lulucf_cumulative_median`: median of per-scenario cumulative BM LULUCF
+#   (= AFOLU|Direct), each integrated to its own NZ year
+# - `convention_gap_median`: median of per-scenario cumulative convention gap
+#   (historical NGHGI-Direct + future Indirect), each integrated to its own NZ year
+# - `nz_year_median`, `nz_year_min`, `nz_year_max`: net-zero year statistics
+# - `n_scenarios`: number of scenarios in the category
+
+# %%
+print("\n--- Pre-computing RCB adjustment scalars per AR6 category ---")
+
+# Load NGHGI world timeseries for historical convention gap computation
+nghgi_world_path = (
+    intermediate_dir.parent / "emissions" / "world_co2-lulucf_timeseries.csv"
+)
+nghgi_world_available = nghgi_world_path.exists()
+
+if nghgi_world_available:
+    nghgi_world_df = pd.read_csv(nghgi_world_path).set_index("source")
+    nghgi_splice_year = max(int(c) for c in nghgi_world_df.columns if c.isdigit())
+    print(f"  Loaded NGHGI world LULUCF (splice year: {nghgi_splice_year})")
+else:
+    print("  NGHGI world LULUCF not found — skipping convention gap computation")
+    print(f"  (expected at: {nghgi_world_path})")
+
+# Compute per-AR6-category adjustment scalars
+rcb_adjustments = {}
+
+for ar6_cat in desired_climate_assessments:
+    # Filter to scenarios in this AR6 category
+    cat_direct = scenario_data["AFOLU_direct"][
+        scenario_data["AFOLU_direct"]["climate-assessment"] == ar6_cat
     ]
-    world_all_other = all_other_long[all_other_long["iso3c"] == world_key]
+    cat_total = scenario_data["CO2"][
+        scenario_data["CO2"]["climate-assessment"] == ar6_cat
+    ]
 
-    if not world_all_other.empty:
-        latest_year = world_all_other["year"].max()
-        latest_value = world_all_other["all-other"].iloc[-1]
-        peak_value = world_all_other["all-other"].max()
-        print("  World 'all-other' emissions:")
-        print(f"    Latest ({latest_year}): {latest_value:.1f} Mt * CO2e")
-        print(f"    Peak: {peak_value:.1f} Mt * CO2e")
-elif not create_all_other:
-    print("'all-other' not created (processing all-ghg* categories)")
-elif "all-ghg" not in all_timeseries:
-    raise DataProcessingError(
-        "'all-ghg' timeseries required but not present for 'all-other' creation"
+    if cat_direct.empty or cat_total.empty:
+        print(f"  {ar6_cat}: no data, skipping")
+        continue
+
+    sample_df = next(iter(scenario_data.values()))
+    year_cols = [col for col in sample_df.columns if col.isdigit()]
+    sorted_year_cols = sorted(year_cols, key=int)
+
+    # --- Per-scenario NZ years (from total CO2 BM crossing zero) ---
+    total_indexed = cat_total.set_index(["Model", "Scenario"])[sorted_year_cols]
+    nz_years_dict = {}
+    for scenario_key in total_indexed.index:
+        row = total_indexed.loc[scenario_key]
+        for yc in sorted_year_cols:
+            if row[yc] <= 0:
+                nz_years_dict[scenario_key] = int(yc)
+                break
+        else:
+            nz_years_dict[scenario_key] = 2100
+
+    if not nz_years_dict:
+        print(f"  {ar6_cat}: no NZ years computed, skipping")
+        continue
+
+    nz_series = pd.Series(nz_years_dict, dtype=int)
+
+    # --- Per-scenario cumulative BM LULUCF (= Direct) ---
+    direct_indexed = cat_direct.set_index(["Model", "Scenario"])[sorted_year_cols]
+    common_scenarios = direct_indexed.index.intersection(
+        pd.MultiIndex.from_tuples(nz_series.index)
     )
+
+    bm_lulucf_per_scenario = []
+    for sk in common_scenarios:
+        nz = nz_series[sk]
+        cols = [str(y) for y in range(2020, nz + 1) if str(y) in sorted_year_cols]
+        if cols:
+            bm_lulucf_per_scenario.append(float(direct_indexed.loc[sk, cols].sum()))
+
+    bm_median = (
+        float(pd.Series(bm_lulucf_per_scenario).median())
+        if bm_lulucf_per_scenario
+        else 0.0
+    )
+
+    # --- Per-scenario convention gap (historical NGHGI-Direct + future Indirect) ---
+    gap_median = 0.0
+    if nghgi_world_available:
+        cat_indirect = scenario_data["AFOLU_indirect"][
+            scenario_data["AFOLU_indirect"]["climate-assessment"] == ar6_cat
+        ]
+        indirect_indexed = cat_indirect.set_index(["Model", "Scenario"])[
+            sorted_year_cols
+        ]
+        common_all = common_scenarios.intersection(indirect_indexed.index)
+
+        per_scenario_gaps = []
+        for sk in common_all:
+            nz = nz_series[sk]
+            hist_end = min(nghgi_splice_year, nz)
+
+            # Historical: NGHGI - Direct
+            from fair_shares.library.utils.data.nghgi import (
+                compute_cumulative_emissions,
+            )
+
+            nghgi_hist = compute_cumulative_emissions(nghgi_world_df, 2020, hist_end)
+            hist_cols = [
+                str(y) for y in range(2020, hist_end + 1) if str(y) in sorted_year_cols
+            ]
+            direct_hist = (
+                float(direct_indexed.loc[sk, hist_cols].sum()) if hist_cols else 0.0
+            )
+            hist_gap = nghgi_hist - direct_hist
+
+            # Future: Indirect only (Direct cancels in the gap)
+            future_gap = 0.0
+            if nz > nghgi_splice_year:
+                future_cols = [
+                    str(y)
+                    for y in range(nghgi_splice_year + 1, nz + 1)
+                    if str(y) in sorted_year_cols
+                ]
+                if future_cols:
+                    future_gap = float(indirect_indexed.loc[sk, future_cols].sum())
+
+            per_scenario_gaps.append(hist_gap + future_gap)
+
+        gap_median = (
+            float(pd.Series(per_scenario_gaps).median()) if per_scenario_gaps else 0.0
+        )
+
+    # Store results
+    rcb_adjustments[ar6_cat] = {
+        "bm_lulucf_cumulative_median": round(bm_median, 1),
+        "convention_gap_median": round(gap_median, 1),
+        "nz_year_median": int(nz_series.median()),
+        "nz_year_min": int(nz_series.min()),
+        "nz_year_max": int(nz_series.max()),
+        "n_scenarios": len(nz_series),
+        "n_reaching_nz": int((nz_series < 2100).sum()),
+    }
+
+    print(
+        f"  {ar6_cat}: n={len(nz_series)}, NZ_med={int(nz_series.median())}, "
+        f"BM_LULUCF={bm_median:.0f} Mt, gap={gap_median:.0f} Mt"
+    )
+
+# Save RCB adjustments as YAML
+if rcb_adjustments:
+    rcb_adj_path = intermediate_dir / "rcb_scenario_adjustments.yaml"
+    with open(rcb_adj_path, "w") as f:
+        yaml.dump(rcb_adjustments, f, default_flow_style=False, sort_keys=False)
+    print(f"\nSaved RCB adjustment scalars to: {rcb_adj_path}")
+
+    # Also save as ar6_category_constants.yaml (used by load_ar6_category_constants)
+    ar6_constants_path = project_root / "data/rcbs/ar6_category_constants.yaml"
+    ar6_constants_path.parent.mkdir(parents=True, exist_ok=True)
+    with open(ar6_constants_path, "w") as f:
+        f.write(
+            "# AR6 category constants — auto-generated by notebook 104\n"
+            "# Source: AR6 reanalysis (OSCARv3.2)\n"
+            "# DO NOT EDIT MANUALLY — re-run notebook 104 to regenerate\n"
+        )
+        yaml.dump(rcb_adjustments, f, default_flow_style=False, sort_keys=True)
+    print(f"Saved AR6 category constants to: {ar6_constants_path}")
+
+# %% [markdown]
+# ## Pre-compute baseline-shift LULUCF medians per AR6 category
+#
+# For RCB baseline-year shifting, `process_rcb_to_2020_baseline()` needs the
+# year-by-year median AFOLU|Direct timeseries (Gidden BM LULUCF) per AR6
+# category. Pre-computing these here avoids loading the raw Gidden Excel at
+# runtime in the library.
+
+# %%
+print("\n--- Pre-computing baseline-shift LULUCF median timeseries ---")
+
+sample_df = next(iter(scenario_data.values()))
+year_cols = sorted([col for col in sample_df.columns if col.isdigit()], key=int)
+
+for ar6_cat in desired_climate_assessments:
+    cat_direct = scenario_data["AFOLU_direct"][
+        scenario_data["AFOLU_direct"]["climate-assessment"] == ar6_cat
+    ]
+
+    if cat_direct.empty:
+        print(f"  {ar6_cat}: no AFOLU_direct data, skipping")
+        continue
+
+    # Year-by-year median across scenarios
+    median_vals = cat_direct[year_cols].median(axis=0)
+
+    source_label = f"gidden_direct_{ar6_cat}"
+    median_df = pd.DataFrame(
+        [median_vals.values],
+        columns=year_cols,
+        index=pd.Index([source_label], name="source"),
+    )
+
+    out_path = intermediate_dir / f"lulucf_shift_median_{ar6_cat}.csv"
+    median_df.reset_index().to_csv(out_path, index=False)
+    print(f"  {ar6_cat}: saved {len(cat_direct)} scenarios -> {out_path}")
 
 # %% [markdown]
 # ## Output

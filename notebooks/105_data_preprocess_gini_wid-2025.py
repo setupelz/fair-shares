@@ -29,8 +29,6 @@ import pandas as pd
 import yaml
 from pyprojroot import here
 
-from fair_shares.library.utils import build_source_id
-
 # %% tags=["parameters"]
 emission_category = None
 active_target_source = None
@@ -38,21 +36,14 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+active_scenario_source = None
+source_id = None
 
 # %%
 if emission_category is not None:
-    # Running via Papermill
+    # Running via Papermill — source_id is injected by the Snakefile
     print("Running via Papermill")
-
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -71,7 +62,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wid-2025",
-        "target": "ar6",
+        "target": "pathway",
     }
 
     # Build interactive development config using the same logic as the pipeline

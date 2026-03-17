@@ -46,6 +46,7 @@ dev-pipeline-scenarios:  ## [DEV] Create preprocessed data for AR6 scenarios (ma
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
 		active_gini_source=unu-wider-2025 \
+		active_lulucf_source=melo-2026 \
 		active_target_source=ar6 \
 		--cores 1
 	@echo ""
@@ -64,6 +65,7 @@ dev-pipeline-rcbs:  ## [DEV] Create preprocessed data for RCBs (matches interact
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
 		active_gini_source=unu-wider-2025 \
+		active_lulucf_source=melo-2026 \
 		active_target_source=rcbs \
 		--cores 1
 	@echo ""
@@ -82,6 +84,7 @@ dev-pipeline-rcb-pathways:  ## [DEV] Create preprocessed data for RCB-pathways (
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
 		active_gini_source=unu-wider-2025 \
+		active_lulucf_source=melo-2026 \
 		active_target_source=rcb-pathways \
 		--cores 1
 	@echo ""

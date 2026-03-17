@@ -39,21 +39,26 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+source_id = None
 
 # %%
 if emission_category is not None:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -72,7 +77,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "unu-wider-2025",
-        "target": "ar6",
+        "target": "pathway",
     }
 
     # Build interactive development config using the same logic as the pipeline

@@ -93,13 +93,6 @@ Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et
         heading_level: 4
         show_source: false
 
-### map_scenario_to_ar6_category
-
-::: fair_shares.library.utils.data.nghgi.map_scenario_to_ar6_category
-    options:
-        show_root_heading: true
-        heading_level: 4
-        show_source: false
 
 ## RCB Processing
 

@@ -5,22 +5,13 @@ description: High-level interface for running allocations with data loading and 
 
 # Allocation Manager
 
-The `AllocationManager` provides a high-level interface for running allocations with data loading and output management.
-
-## Overview
-
-::: fair_shares.library.allocations.manager.AllocationManager
-    options:
-        show_root_heading: false
-        heading_level: 3
-        show_source: false
-        members: false
+The `fair_shares.library.allocations.manager` module provides the high-level interface for running allocations with data loading and output management.
 
 ## Running Allocations
 
 ### run_allocation
 
-::: fair_shares.library.allocations.manager.AllocationManager.run_allocation
+::: fair_shares.library.allocations.manager.run_allocation
     options:
         show_root_heading: false
         heading_level: 4
@@ -28,7 +19,7 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ### run_parameter_grid
 
-::: fair_shares.library.allocations.manager.AllocationManager.run_parameter_grid
+::: fair_shares.library.allocations.manager.run_parameter_grid
     options:
         show_root_heading: false
         heading_level: 4
@@ -38,7 +29,7 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ### calculate_absolute_emissions
 
-::: fair_shares.library.allocations.manager.AllocationManager.calculate_absolute_emissions
+::: fair_shares.library.allocations.manager.calculate_absolute_emissions
     options:
         show_root_heading: false
         heading_level: 4
@@ -46,7 +37,7 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ### save_allocation_result
 
-::: fair_shares.library.allocations.manager.AllocationManager.save_allocation_result
+::: fair_shares.library.allocations.manager.save_allocation_result
     options:
         show_root_heading: false
         heading_level: 4
@@ -56,7 +47,7 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ### generate_readme
 
-::: fair_shares.library.allocations.manager.AllocationManager.generate_readme
+::: fair_shares.library.allocations.manager.generate_readme
     options:
         show_root_heading: false
         heading_level: 4
@@ -64,7 +55,7 @@ The `AllocationManager` provides a high-level interface for running allocations 
 
 ### create_param_manifest
 
-::: fair_shares.library.allocations.manager.AllocationManager.create_param_manifest
+::: fair_shares.library.allocations.manager.create_param_manifest
     options:
         show_root_heading: false
         heading_level: 4

@@ -285,6 +285,37 @@ def convert_parquet_to_wide_csv(
     # Combine absolute and relative data
     combined_df = pd.concat(combined_data, ignore_index=True)
 
+    # Sort rows so that paired allocations from decomposed runs are adjacent.
+    # For all-ghg + rcbs, each approach produces a CO2 budget allocation (from
+    # RCBs) and a non-CO2 pathway allocation (from AR6 scenarios).  Stripping
+    # the '-budget' suffix creates a common grouping key so that e.g.
+    # "equal-per-capita-budget" (co2) sorts next to "equal-per-capita" (non-co2).
+    sort_cols = []
+    has_sort_group = False
+    if "approach" in combined_df.columns:
+        combined_df["_sort_group"] = combined_df["approach"].str.replace(
+            r"-budget$", "", regex=True
+        )
+        sort_cols.append("_sort_group")
+        has_sort_group = True
+
+    for col in [
+        "data_type",
+        "iso3c",
+        "climate_assessment",
+        "quantile",
+        "emission_category",
+        "approach_short",
+    ]:
+        if col in combined_df.columns:
+            sort_cols.append(col)
+
+    if sort_cols:
+        combined_df = combined_df.sort_values(sort_cols, ignore_index=True)
+
+    if has_sort_group:
+        combined_df = combined_df.drop(columns=["_sort_group"])
+
     # Identify year columns
     year_cols = [c for c in combined_df.columns if str(c).isdigit()]
     if not year_cols:
@@ -306,8 +337,10 @@ def convert_parquet_to_wide_csv(
         source_data_cols.append("population_source")
     if "gini_source" in combined_df.columns:
         source_data_cols.append("gini_source")
-    # 3. Target source
+    # 3. Target source & emission category
     target_cols = []
+    if "emission_category" in combined_df.columns:
+        target_cols.append("emission_category")
     if "target_source" in combined_df.columns:
         target_cols.append("target_source")
     # 4. Approach & Summarized Configuration (only approach_short and
@@ -363,8 +396,8 @@ def convert_parquet_to_wide_csv(
         "max-gini-adjustment",
         "max-convergence-speed",
         "strict",
-        # Columns already encoded in variable
-        "emission_category",
+        # Columns already encoded in variable (emission_category kept as
+        # standalone column for easy filtering in all-GHG runs)
         "climate_assessment",
         "quantile",
         "source",

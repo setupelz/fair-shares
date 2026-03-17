@@ -42,7 +42,7 @@ from fair_shares.library.allocations.results import BudgetAllocationResult
 from fair_shares.library.utils import (
     calculate_budget_from_rcb,
     ensure_string_year_columns,
-    setup_custom_data_pipeline,
+    setup_data,
 )
 
 project_root = here()
@@ -60,13 +60,14 @@ active_sources = {
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
     "gini": "unu-wider-2025",
+    "lulucf": "melo-2026",
 }
 
 emission_category = "co2-ffi"
 
 # Setup data pipeline
 print("Setting up data pipeline...")
-setup_info = setup_custom_data_pipeline(
+setup_info = setup_data(
     project_root=project_root,
     active_sources=active_sources,
     emission_category=emission_category,
@@ -96,7 +97,7 @@ gini_ts = pd.read_csv(processed_dir / "country_gini_stationary.csv")
 gini_ts = gini_ts.set_index(["iso3c", "unit"])
 
 # Load RCB data and world emissions
-rcbs_df = pd.read_csv(processed_dir / "rcbs.csv")
+rcbs_df = pd.read_csv(processed_dir / f"rcbs_{emission_category}.csv")
 world_emiss_path = processed_dir / f"world_emissions_{emission_category}_timeseries.csv"
 world_emissions_df = pd.read_csv(world_emiss_path)
 world_emissions_df = world_emissions_df.set_index(

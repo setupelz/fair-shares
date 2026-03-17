@@ -12,6 +12,8 @@ This guide explains the fair-shares architecture and how to extend the library.
 
 ## Architecture Overview
 
+> **For a detailed end-to-end walkthrough with worked examples**, see the [Architecture Walkthrough](architecture-walkthrough.md).
+
 ```mermaid
 graph TB
     subgraph Input
@@ -21,7 +23,7 @@ graph TB
 
     subgraph Pipeline
         PP[Preprocessing<br/>notebooks/1xx]
-        SM[Snakemake<br/>workflow/]
+        SM[Snakemake<br/>Snakefile]
     end
 
     subgraph Library
@@ -73,8 +75,8 @@ allocations/
 │   └── cumulative_per_capita_convergence.py
 ├── results/               # Result dataclasses
 ├── core.py               # Shared logic
-├── manager.py            # AllocationManager
-└── registry.py           # Approach name → function mapping
+├── manager.py            # Orchestration + approach name → function registry
+└── runner.py             # Category-level allocation runner
 ```
 
 ### Entry Points
@@ -91,13 +93,12 @@ result = equal_per_capita_budget(
 )
 ```
 
-**AllocationManager (high-level):**
+**Manager functions (high-level):**
 
 ```python
-from fair_shares.library.allocations import AllocationManager
+from fair_shares.library.allocations import run_parameter_grid
 
-manager = AllocationManager()
-results = manager.run_parameter_grid(
+results = run_parameter_grid(
     allocations_config=config,
     population_ts=population_df,
     # ...
@@ -215,7 +216,7 @@ uv run python tools/docs-sync-check.py --verbose
 
 | Check                     | Purpose                                                           |
 | ------------------------- | ----------------------------------------------------------------- |
-| **Registry coverage**     | All approaches in `registry.py` have API docs and catalog entries |
+| **Registry coverage**     | All approaches in `manager.py` have API docs and catalog entries  |
 | **Example syntax**        | Python code blocks in docs parse without syntax errors            |
 | **Parameter consistency** | Parameters in code match those documented in `allocations.md`     |
 | **Cross-references**      | Internal markdown links resolve to existing files and anchors     |
@@ -243,5 +244,6 @@ uv run python tools/docs-sync-check.py --verbose
 
 ## See Also
 
+- **[Architecture Walkthrough](architecture-walkthrough.md)** - End-to-end code path walkthrough with worked examples
 - **[API Reference](https://setupelz.github.io/fair-shares/api/)** - Function documentation
 - **[Scientific Documentation](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations

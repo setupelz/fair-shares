@@ -64,21 +64,28 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+source_id = None
 
 # %%
-if emission_category is not None:
+_running_via_papermill = emission_category is not None
+
+if _running_via_papermill:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -97,7 +104,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "unu-wider-2025",
-        "target": "ar6",
+        "target": "pathway",
     }
 
     # Build interactive development config using the same logic as the pipeline
@@ -121,8 +128,9 @@ else:
 project_root = here()
 print(f"Project root: {project_root}")
 
-# Extract config values
-emission_category = config["emission_category"]
+# Extract config values — Papermill parameter takes precedence for allghg triple-pass
+if not _running_via_papermill:
+    emission_category = config["emission_category"]
 emissions_data_parameters = config["emissions"][active_emissions_source][
     "data_parameters"
 ]
@@ -235,7 +243,7 @@ gini = gini.set_index(["iso3c", "unit"])
 
 # Load scenarios data
 # Note: For some targets like rcb-pathways, scenarios may only be available for the
-# primary requested category, not for derived categories like "all-other"
+# primary requested category, not for all derived categories
 scenarios_data = {}
 for category in final_categories:
     scenarios_path = scenario_intermediate_dir / f"scenarios_{category}_timeseries.csv"
@@ -254,11 +262,6 @@ for category in final_categories:
         scenarios_df = ensure_string_year_columns(scenarios_df)
         scenarios_data[category] = scenarios_df
         print(f"  Loaded scenarios for {category}: {scenarios_path.name}")
-    elif category == "all-other":
-        # all-other is a derived category - scenarios may not exist for it
-        print(
-            f"  Skipping scenarios for {category} (derived category, no scenario file)"
-        )
     else:
         # Primary categories should always have scenarios
         raise DataLoadingError(

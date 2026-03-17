@@ -32,6 +32,7 @@
 
 # %%
 # Imports (run this first)
+
 import matplotlib.pyplot as plt
 import pandas as pd
 from pyprojroot import here
@@ -70,6 +71,8 @@ project_root = here()
 DATA_FILE = (
     project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
 )
+if not DATA_FILE.exists():
+    raise FileNotFoundError(f"Data file not found: {DATA_FILE}")
 
 # IAMC variable names
 POPULATION_VARIABLE = "Population"
@@ -101,7 +104,7 @@ data = load_iamc_data(
     expand_to_annual=True,
 )
 
-print("\nYes Data loaded successfully!")
+print("\nData loaded successfully!")
 print(f"Variables: {data['metadata']['variables_loaded']}")
 print(f"Time range: {data['metadata']['year_range']}")
 

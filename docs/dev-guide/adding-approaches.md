@@ -19,7 +19,7 @@ Allocation approaches live in two directories:
 | Budget  | `allocations/budgets/`  | Single cumulative allocation    |
 | Pathway | `allocations/pathways/` | Time-varying annual allocations |
 
-Each approach is registered in `allocations/registry.py`.
+Each approach is registered in `allocations/manager.py`.
 
 ---
 
@@ -200,7 +200,7 @@ __all__ = [
 
 ## Step 4: Register the Approach
 
-Add to `allocations/registry.py`:
+Add to `allocations/manager.py`:
 
 ```python
 from fair_shares.library.allocations.budgets import (

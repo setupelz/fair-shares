@@ -11,8 +11,9 @@ from __future__ import annotations
 
 import inspect
 import zipfile
+from collections.abc import Callable
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 
 import country_converter as coco
 import numpy as np
@@ -39,12 +40,10 @@ __all__ = [
     "validate_path_exists",
     # Data processing
     "convert_country_name_to_iso3c",
-    "derive_probability_based_categories",
     "determine_processing_categories",
     "filter_function_parameters",
     "groupby_except_robust",
     "normalize_metadata_column",
-    "normalize_metadata_columns",
     "process_iamc_zip",
     "set_post_net_zero_emissions_to_nan",
 ]
@@ -216,106 +215,6 @@ def _standardize_column_labels(columns: list[str]) -> list[str]:
 def normalize_metadata_column(label: str) -> str:
     """Public helper to normalize metadata columns to IAMC casing."""
     return _standardize_column_label(label)
-
-
-def normalize_metadata_columns(columns: list[str]) -> list[str]:
-    """Normalize a list of metadata column labels."""
-    return _standardize_column_labels(columns)
-
-
-def derive_probability_based_categories(
-    df: pd.DataFrame,
-    category_specs: list[dict] | None,
-) -> pd.DataFrame:
-    """
-    Expand datasets by duplicating scenarios that meet probability thresholds.
-
-    Parameters
-    ----------
-    df
-        IAMC-style dataframe containing metadata columns.
-    category_specs
-        Each spec must define:
-            - label: New category name (e.g., "C1_67")
-            - source_categories: Existing categories to subset (e.g., ["C1"])
-            - probability_columns: Ordered list of metadata columns to use.
-              The first non-null value per row is used.
-            - max_exceedance_probability (optional): Upper bound (<=)
-            - min_exceedance_probability (optional): Lower bound (>=)
-
-    Returns
-    -------
-    pd.DataFrame
-        Dataframe including any newly derived category rows appended.
-    """
-    if not category_specs:
-        return df
-
-    required_columns: set[str] = set()
-    for spec in category_specs:
-        for col in spec.get("probability_columns", []):
-            required_columns.add(normalize_metadata_column(col))
-
-    missing = [col for col in required_columns if col not in df.columns]
-    if missing:
-        raise DataProcessingError(
-            "Requested probability-based climate assessments require metadata "
-            f"columns that are missing from the IAMC dataset: {missing}"
-        )
-
-    augmented_frames = [df]
-    for spec in category_specs:
-        label = spec["label"]
-        source_categories = spec.get("source_categories", [])
-        probability_columns = [
-            normalize_metadata_column(col)
-            for col in spec.get("probability_columns", [])
-        ]
-        max_exceedance = spec.get("max_exceedance_probability")
-        min_exceedance = spec.get("min_exceedance_probability")
-
-        source_df = df[df["Category"].isin(source_categories)].copy()
-        if source_df.empty:
-            print(
-                f"  No rows found for probability-derived category '{label}'. "
-                f"Source categories: {source_categories}"
-            )
-            continue
-
-        probability = pd.Series(np.nan, index=source_df.index, dtype=float)
-        for col in probability_columns:
-            col_values = pd.to_numeric(source_df[col], errors="coerce")
-            probability = probability.fillna(col_values)
-
-        mask = probability.notna()
-        if max_exceedance is not None:
-            mask &= probability <= max_exceedance
-        if min_exceedance is not None:
-            mask &= probability >= min_exceedance
-
-        filtered = source_df[mask].copy()
-        if filtered.empty:
-            threshold_desc = []
-            if max_exceedance is not None:
-                threshold_desc.append(f"<= {max_exceedance}")
-            if min_exceedance is not None:
-                threshold_desc.append(f">= {min_exceedance}")
-            print(
-                f"  No scenarios satisfied thresholds for '{label}' "
-                f"({', '.join(threshold_desc)})"
-            )
-            continue
-
-        filtered["Category"] = label
-        augmented_frames.append(filtered[df.columns])
-        print(
-            f"  Created {len(filtered)} pathways for derived category '{label}' "
-            f"using probability columns {probability_columns}"
-        )
-
-    if len(augmented_frames) == 1:
-        return df
-    return pd.concat(augmented_frames, ignore_index=True)
 
 
 def convert_country_name_to_iso3c(
@@ -535,10 +434,9 @@ def determine_processing_categories(
     """
     Determine emission categories to process based on requested categories.
 
-    Simple logic:
-    - If requested category is NOT like 'all-ghg', process it AND 'all-ghg'
-      (for all-other calculation)
-    - If requested category IS like 'all-ghg', just process that
+    Maps a requested emission category to the list of categories that need
+    to be loaded and processed. Special cases handle composite categories
+    (e.g. ``co2`` expands to include FFI and LULUCF components).
 
     Parameters
     ----------
@@ -551,12 +449,10 @@ def determine_processing_categories(
     -------
     Dictionary with keys:
         - 'process': List of categories to process
-        - 'create_all_other': Boolean indicating whether to create "all-other"
-          timeseries
+        - 'create_all_other': Always False (kept for backward compatibility)
         - 'final': List of final categories that will be available (for
           loading/display)
     """
-    # If requesting all-ghg*, just use that. Otherwise, add all-other.
     if requested_category.startswith("all-ghg"):
         process_categories = [requested_category]
         create_all_other = False
@@ -566,11 +462,15 @@ def determine_processing_categories(
         process_categories = ["co2", "co2-ffi", "co2-lulucf"]
         create_all_other = False
         final_categories = ["co2", "co2-ffi", "co2-lulucf"]
+    elif requested_category == "non-co2":
+        # non-co2 is derived (not a raw PRIMAP category), just process it directly
+        process_categories = ["non-co2"]
+        create_all_other = False
+        final_categories = ["non-co2"]
     else:
-        # Need all-ghg to create all-other
-        process_categories = [requested_category, "all-ghg"]
-        create_all_other = True
-        final_categories = [requested_category, "all-other"]
+        process_categories = [requested_category]
+        create_all_other = False
+        final_categories = [requested_category]
 
     # Filter to supported categories only
     process_categories = [
@@ -642,25 +542,3 @@ def filter_function_parameters(
             func_args[k] = v
 
     return func_args
-
-
-def _extract_notebook_error(stderr: str) -> str | None:
-    """Extract the actual notebook error from Snakemake output."""
-    lines = stderr.split("\n")
-
-    # Find the notebook error section
-    in_error_section = False
-    error_lines = []
-
-    for line in lines:
-        if "NOTEBOOK EXECUTION FAILED" in line:
-            in_error_section = True
-            continue
-        if in_error_section:
-            if line.startswith("RuleException:") or line.startswith("["):
-                break
-            error_lines.append(line)
-
-    if error_lines:
-        return "\n".join(error_lines).strip()
-    return None

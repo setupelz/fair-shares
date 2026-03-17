@@ -31,6 +31,8 @@
 
 # %%
 # Imports
+from pathlib import Path
+
 import pandas as pd
 import yaml
 from pyprojroot import here
@@ -52,21 +54,28 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+source_id = None
 
 # %%
-if emission_category is not None:
+_running_via_papermill = emission_category is not None
+
+if _running_via_papermill:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -109,8 +118,10 @@ else:
 project_root = here()
 print(f"Project root: {project_root}")
 
-# Extract config values
-emission_category = config["emission_category"]
+# Extract config values — Papermill parameter takes precedence for decomposition
+# where per-pass emission_category differs from the config's category.
+if not _running_via_papermill:
+    emission_category = config["emission_category"]
 
 # RCB-pathways are only available for co2-ffi and co2
 if emission_category not in ("co2-ffi", "co2"):
@@ -208,51 +219,93 @@ if rcb_data["rcb_data"]:
 # ## Load emissions data and extract world totals
 
 # %%
-# Load emissions for the emission category
-emissions_path = (
-    emissions_intermediate_dir / f"emiss_{emission_category}_timeseries.csv"
-)
+# For co2-ffi: load emissions directly from emiss_co2-ffi_timeseries.csv
+# For co2: load co2-ffi and co2-lulucf components, then construct
+# NGHGI-consistent world CO2 using build_nghgi_world_co2_timeseries(),
+# mirroring run_rcb_preprocessing() in the orchestrator.
 
-if not emissions_path.exists():
-    raise DataLoadingError(
-        f"Emissions data not found at: {emissions_path}. "
-        f"Run 101_data_preprocess_emiss first."
-    )
 
-emissions_df = pd.read_csv(emissions_path)
-emissions_df = emissions_df.set_index(["iso3c", "unit", "emission-category"])
-emissions_df = ensure_string_year_columns(emissions_df)
+def _load_world_emissions(
+    emissions_dir: Path, category: str, world_keys: list[str]
+) -> pd.DataFrame:
+    """Load emissions and extract world totals for a single category."""
+    emiss_path = emissions_dir / f"emiss_{category}_timeseries.csv"
+    if not emiss_path.exists():
+        raise DataLoadingError(
+            f"Emissions data not found at: {emiss_path}. "
+            f"Run 101_data_preprocess_emiss first."
+        )
+    emiss_df = pd.read_csv(emiss_path)
+    emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
+    emiss_df = ensure_string_year_columns(emiss_df)
 
-# Extract world emissions (needed for start value and RCB processing)
-# Look for EARTH, World, WLD, or OWID_WRL as potential world keys
+    # Find world key
+    world_key_found = None
+    for key in world_keys:
+        if key in emiss_df.index.get_level_values("iso3c"):
+            world_key_found = key
+            break
+    if world_key_found is None:
+        raise DataLoadingError(
+            f"No world emissions found in {category} emissions data. "
+            f"Tried keys: {world_keys}"
+        )
+
+    world_df = emiss_df[
+        emiss_df.index.get_level_values("iso3c") == world_key_found
+    ].copy()
+    world_df = world_df.reset_index()
+    world_df["iso3c"] = "World"
+    world_df = world_df.set_index(["iso3c", "unit", "emission-category"])
+    return world_df
+
+
 world_keys = ["EARTH", "World", "WLD", "OWID_WRL"]
-world_key_found = None
 
-for key in world_keys:
-    if key in emissions_df.index.get_level_values("iso3c"):
-        world_key_found = key
-        break
+if emission_category == "co2":
+    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI/BM spliced)
+    # This mirrors run_rcb_preprocessing() lines 454-480 in orchestrator.py
+    from fair_shares.library.preprocessing.rcbs import _load_shared_timeseries
+    from fair_shares.library.utils.data.nghgi import build_nghgi_world_co2_timeseries
 
-if world_key_found is None:
-    raise DataLoadingError(
-        f"No world emissions found in emissions data. Tried keys: {world_keys}"
+    # Load component timeseries
+    world_co2_ffi_df = _load_world_emissions(
+        emissions_intermediate_dir, "co2-ffi", world_keys
+    )
+    world_co2_lulucf_df = _load_world_emissions(
+        emissions_intermediate_dir, "co2-lulucf", world_keys
     )
 
-world_emissions_df = emissions_df[
-    emissions_df.index.get_level_values("iso3c") == world_key_found
-].copy()
+    # Load NGHGI LULUCF world timeseries and bunker timeseries
+    nghgi_ts, bunker_ts, splice_year = _load_shared_timeseries(
+        adjustments_config, project_root, source_id=source_id, verbose=True
+    )
 
-# Reset index to rename World key to standard "World"
-world_emissions_df = world_emissions_df.reset_index()
-world_emissions_df["iso3c"] = "World"
-world_emissions_df = world_emissions_df.set_index(
-    ["iso3c", "unit", "emission-category"]
-)
+    # Build NGHGI-consistent world CO2 timeseries
+    world_emissions_df = build_nghgi_world_co2_timeseries(
+        fossil_ts=world_co2_ffi_df,
+        nghgi_ts=nghgi_ts,
+        bunker_ts=bunker_ts,
+        bm_lulucf_ts=world_co2_lulucf_df,
+        splice_year=splice_year,
+    )
+
+    print("\nNGHGI-consistent world CO2 timeseries constructed:")
+    print("  fossil = co2-ffi (PRIMAP)")
+    print(f"  LULUCF = Melo NGHGI ({splice_year} end year, no BM splicing)")
+    print("  bunkers = international bunker fuel")
+    print("  Formula: total CO2 = fossil - bunkers + LULUCF")
+
+else:
+    # co2-ffi: load directly
+    world_emissions_df = _load_world_emissions(
+        emissions_intermediate_dir, emission_category, world_keys
+    )
 
 # Extract start year emissions value for later use
 start_emissions = float(world_emissions_df[str(start_year)].iloc[0])
 
-print(f"\nWorld emissions extracted from emissions data (key: {world_key_found})")
+print(f"\nWorld emissions for pathway generation ({emission_category}):")
 print(
     f"  Years available: {world_emissions_df.columns[0]} to {world_emissions_df.columns[-1]}"
 )
@@ -268,12 +321,23 @@ print(f"  Start year emissions ({start_year}): {start_emissions:,.0f} Mt CO2")
 # %%
 from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 
+# Always pass PRIMAP fossil (co2-ffi) as world emissions;
+# for total CO2, also pass BM LULUCF for rebase
+if emission_category == "co2":
+    _fossil_for_rcb = world_co2_ffi_df
+    _bm_lulucf_for_rcb = world_co2_lulucf_df
+else:
+    _fossil_for_rcb = world_emissions_df  # already co2-ffi
+    _bm_lulucf_for_rcb = None
+
 rcbs_df = load_and_process_rcbs(
     rcb_yaml_path=rcb_yaml_path,
-    world_emissions_df=world_emissions_df,
+    world_fossil_emissions=_fossil_for_rcb,
     emission_category=emission_category,
     adjustments_config=adjustments_config,
     project_root=project_root,
+    source_id=source_id,
+    actual_bm_lulucf_emissions=_bm_lulucf_for_rcb,
     verbose=True,
 )
 

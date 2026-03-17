@@ -1,6 +1,10 @@
 """
 Utility functions for the fair-shares library.
 
+This is the primary import interface for utility functions. All imports come
+directly from submodules (e.g. utils.data.config, utils.dataframes) rather
+than through intermediate barrel files, so each symbol has exactly two import
+paths: this one and the original module.
 """
 
 from fair_shares.library.utils.data.completeness import (
@@ -12,7 +16,6 @@ from fair_shares.library.utils.data.completeness import (
 from fair_shares.library.utils.data.config import (
     build_data_config,
     build_source_id,
-    build_source_id_from_config,
     get_compatible_approaches,
     validate_data_source_config,
 )
@@ -24,11 +27,14 @@ from fair_shares.library.utils.data.iamc import (
     load_iamc_data,
 )
 from fair_shares.library.utils.data.parquet_to_csv import convert_parquet_to_wide_csv
-from fair_shares.library.utils.data.pipeline import setup_custom_data_pipeline
 from fair_shares.library.utils.data.rcb import (
     calculate_budget_from_rcb,
     parse_rcb_scenario,
     process_rcb_to_2020_baseline,
+)
+from fair_shares.library.utils.data.setup import (
+    lookup_net_negative_emissions,
+    setup_data,
 )
 from fair_shares.library.utils.data.transform import (
     broadcast_shares_to_periods,
@@ -36,11 +42,9 @@ from fair_shares.library.utils.data.transform import (
 )
 from fair_shares.library.utils.dataframes import (
     convert_country_name_to_iso3c,
-    derive_probability_based_categories,
     determine_processing_categories,
     groupby_except_robust,
     normalize_metadata_column,
-    normalize_metadata_columns,
     process_iamc_zip,
     set_post_net_zero_emissions_to_nan,
 )
@@ -76,7 +80,6 @@ __all__ = [
     "broadcast_shares_to_periods",
     "build_data_config",
     "build_source_id",
-    "build_source_id_from_config",
     "calculate_budget_from_rcb",
     "calculate_exponential_decay_pathway",
     "calculate_gini_adjusted_gdp",
@@ -86,7 +89,6 @@ __all__ = [
     "convert_unit_robust",
     "create_example_data",
     "create_gini_lookup_dict",
-    "derive_probability_based_categories",
     "determine_processing_categories",
     "ensure_string_year_columns",
     "filter_time_columns",
@@ -105,13 +107,13 @@ __all__ = [
     "harmonize_to_historical_with_convergence",
     "interpolate_scenarios_data",
     "load_iamc_data",
+    "lookup_net_negative_emissions",
     "normalize_metadata_column",
-    "normalize_metadata_columns",
     "parse_rcb_scenario",
     "process_iamc_zip",
     "process_rcb_to_2020_baseline",
     "set_post_net_zero_emissions_to_nan",
     "set_single_unit",
-    "setup_custom_data_pipeline",
+    "setup_data",
     "validate_data_source_config",
 ]

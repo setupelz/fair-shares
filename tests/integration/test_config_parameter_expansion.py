@@ -12,7 +12,7 @@ import pytest
 import yaml
 from conftest import STANDARD_EMISSION_CATEGORY, generate_simple_test_data
 
-from fair_shares.library.allocations.manager import AllocationManager
+from fair_shares.library.allocations.manager import run_allocation
 from fair_shares.library.exceptions import ConfigurationError
 
 
@@ -53,7 +53,7 @@ class TestConfigParameterExpansion:
             return value
         return [value]
 
-    def _get_allowed_param_names(self, approach, allocation_manager):
+    def _get_allowed_param_names(self, approach):
         """Get allowed parameter names for an approach (mimics notebook logic)."""
         import inspect
 
@@ -71,7 +71,6 @@ class TestConfigParameterExpansion:
             is_budget_approach,
         )
 
-        allocation_manager = AllocationManager()
         allocations = sample_config_with_lists["allocations"]
 
         param_manifest_rows = []
@@ -98,9 +97,7 @@ class TestConfigParameterExpansion:
             years = self._to_list(cfg.pop(year_param))
 
             # Get allowed parameters for this approach
-            allowed_param_names = self._get_allowed_param_names(
-                approach, allocation_manager
-            )
+            allowed_param_names = self._get_allowed_param_names(approach)
             func_param_keys = [k for k in cfg.keys() if k in allowed_param_names]
             meta_keys = [k for k in cfg.keys() if k not in func_param_keys]
 
@@ -160,7 +157,6 @@ class TestConfigParameterExpansion:
         self, sample_config_with_lists
     ):
         """Test that allocation functions work with expanded scalar parameters from config."""
-        allocation_manager = AllocationManager()
         test_data = generate_simple_test_data()
 
         # Test one specific parameter combination from the expansion
@@ -174,7 +170,7 @@ class TestConfigParameterExpansion:
         }
 
         # This should work without errors - no lists should be passed to the function
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach=test_params["approach"],
             config=sample_config_with_lists,
             population_ts=test_data["population"],
@@ -208,7 +204,6 @@ class TestConfigParameterExpansion:
             is_budget_approach,
         )
 
-        allocation_manager = AllocationManager()
         allocation_functions = get_allocation_functions()
 
         # Test expansion logic on real config
@@ -234,9 +229,7 @@ class TestConfigParameterExpansion:
             years = self._to_list(cfg.pop(year_param))
 
             # Get allowed parameters for this approach
-            allowed_param_names = self._get_allowed_param_names(
-                approach, allocation_manager
-            )
+            allowed_param_names = self._get_allowed_param_names(approach)
             func_param_keys = [k for k in cfg.keys() if k in allowed_param_names]
 
             func_param_values = [self._to_list(cfg[k]) for k in func_param_keys]
@@ -265,11 +258,10 @@ class TestConfigParameterExpansion:
         self, sample_config_with_lists
     ):
         """Test that list parameters are now correctly overridden by scalar kwargs."""
-        allocation_manager = AllocationManager()
         test_data = generate_simple_test_data()
 
         # This should now work - scalar capability_exponent should override the list in config
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="per-capita-adjusted",
             config=sample_config_with_lists,  # Contains capability-exponent: [1.0, 0.5, 2.0]
             population_ts=test_data["population"],
@@ -287,7 +279,6 @@ class TestConfigParameterExpansion:
 
     def test_original_error_scenario_now_fixed(self, sample_config_with_lists):
         """Test that reproduces the original error scenario from the notebook."""
-        allocation_manager = AllocationManager()
         test_data = generate_simple_test_data()
 
         # Simulate the exact scenario from the notebook where approach_config contains lists
@@ -299,7 +290,7 @@ class TestConfigParameterExpansion:
         assert isinstance(approach_config["capability-functional-form"], list)
 
         # This simulates what the notebook does - passing a scalar capability_exponent but config contains lists
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="per-capita-adjusted",
             config=sample_config_with_lists,
             population_ts=test_data["population"],

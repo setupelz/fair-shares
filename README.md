@@ -41,7 +41,7 @@ If you use fair-shares in academic work, policy documents, or legal proceedings,
 ```bibtex
 @software{fair_shares,
   title={fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways},
-  author={Pelz, Setu and Holz, Ceecee and Lamboll, Robin and Lewis, Jared and Nicholls, Zebedee},
+  author={Pelz, Setu and Holz, Ceecee and Lamboll, Robin and Weber, Konstantin and Lewis, Jared and Nicholls, Zebedee},
   year={2025},
   url={https://github.com/setupelz/fair-shares},
   license={BSD-3-Clause}

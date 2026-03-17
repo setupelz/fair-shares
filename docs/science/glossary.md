@@ -69,7 +69,7 @@ For detailed parameter effects and examples, see [Parameter Effects](parameter-e
 : Target year for per capita convergence. Must be > allocation year. Convergence approaches only.
 
 **`emission_category`** (type: `str`)
-: Emission species (e.g., `"CO2"`, `"Kyoto GHG"`). Must match data sources.
+: Emission species (e.g., `"co2-ffi"`, `"co2"`, `"all-ghg"`, `"all-ghg-ex-co2-lulucf"`, `"non-co2"`). Must match data sources.
 
 **`group_level`** (type: `str`, default: `"iso3c"`)
 : Index level for countries/regions (ISO 3166-1 alpha-3 codes).
@@ -175,7 +175,7 @@ A `pandas.DataFrame` with a `pandas.MultiIndex` and year columns. The standard s
 
 1. `iso3c` (str): ISO 3166-1 alpha-3 country code (e.g., `"USA"`, `"IND"`, `"DEU"`)
 2. `unit` (str): Physical unit for the data (e.g., `"Mt CO2/yr"`, `"billion 2011 USD"`)
-3. `emission-category` (str): Emission species (e.g., `"CO2"`, `"Kyoto GHG"`)
+3. `emission-category` (str): Emission species (e.g., `"co2-ffi"`, `"all-ghg"`, `"non-co2"`)
 
 **Columns:**
 
@@ -187,9 +187,9 @@ A `pandas.DataFrame` with a `pandas.MultiIndex` and year columns. The standard s
 ```python
                                             2020    2021    2022
 iso3c  unit       emission-category
-USA    Mt CO2/yr  CO2                      5000    4900    4800
-IND    Mt CO2/yr  CO2                      2500    2600    2700
-World  Mt CO2/yr  CO2                     35000   34500   34000
+USA    Mt CO2/yr  co2-ffi                  5000    4900    4800
+IND    Mt CO2/yr  co2-ffi                  2500    2600    2700
+World  Mt CO2/yr  co2-ffi                 35000   34500   34000
 ```
 
 See: [Function Signature](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/#function-signature) for implementation details
@@ -284,11 +284,14 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 **Mt CO2/yr**
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
+**Melo et al. (2026)**
+: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
+
 **NGHGI**
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~100 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~84 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
 
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
