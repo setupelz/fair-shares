@@ -178,7 +178,7 @@ so the system runs a single pathway allocation pass.
 
 ## Weber RCB Corrections
 
-Remaining carbon budgets (RCBs) are published relative to a baseline year (e.g., 2020 for AR6 WGI, 2023 for Lamboll et al.) and use **bookkeeping model (BM)** estimates for land-use CO₂ fluxes. To produce country-level fair share allocations that are comparable with nationally reported emissions, the published RCB must be:
+Remaining carbon budgets (RCBs) are published relative to a baseline year (e.g., 2020 for AR6 WGI, 2023 for Lamboll et al.) and assume **bookkeeping model (BM)** estimates for land-use CO₂ fluxes. To produce country-level fair share allocations that are comparable with nationally reported emissions, the published RCB must be:
 
 1. **Rebased** to the allocation reference year (2020) using actual observational data
 2. **Decomposed** to isolate the fossil-allocatable or NGHGI-consistent portion
@@ -188,16 +188,16 @@ The correction methodology follows Weber et al. (2026). A central design princip
 
 ### Notation
 
-| Symbol                                | Definition                                                                          |
-| ------------------------------------- | ----------------------------------------------------------------------------------- |
-| $\text{RCB}_{\text{BM}}(\text{base})$ | Published Remaining Carbon Budget from baseline year, in BM convention              |
-| $F_{\text{actual}}(a, b)$             | Cumulative actual fossil CO₂ emissions from year $a$ to year $b$ (PRIMAP)           |
-| $L_{\text{BM}}(a, b)$                 | Cumulative BM LULUCF CO₂ from AR6 scenario median (AFOLU\|Direct), years $a$ to $b$ |
-| $L_{\text{BM,actual}}(a, b)$          | Cumulative actual observed BM LULUCF CO₂ (PRIMAP co2-lulucf), years $a$ to $b$      |
-| $B(a, b)$                             | Cumulative international bunker fuel CO₂ emissions, years $a$ to $b$                |
-| $\text{gap}(a, b)$                    | Cumulative NGHGI--BM convention gap for CO₂, years $a$ to $b$                       |
-| $\text{NZ}$                           | Net-zero year (from scenario data)                                                  |
-| $\text{base}$                         | RCB baseline year (e.g., 2023 for Lamboll, 2020 for AR6 WGI)                        |
+| Symbol                                | Definition                                                                               |
+| ------------------------------------- | -----------------------------------------------------------------------------------------|
+| $\text{RCB}_{\text{BM}}(\text{base})$ | Published Remaining Carbon Budget from baseline year, LULUCF emissions in BM convention  |
+| $F_{\text{actual}}(a, b)$             | Cumulative actual fossil CO₂ emissions from year $a$ to year $b$ (PRIMAP)                |
+| $L_{\text{BM}}(a, b)$                 | Cumulative BM LULUCF CO₂ from AR6 scenario median (AFOLU\|Direct), years $a$ to $b$      |
+| $L_{\text{BM,actual}}(a, b)$          | Cumulative actual observed BM LULUCF CO₂ (PRIMAP co2-lulucf), years $a$ to $b$           |
+| $B(a, b)$                             | Cumulative international bunker fuel CO₂ emissions, years $a$ to $b$                     |
+| $\text{gap}(a, b)$                    | Cumulative NGHGI--BM convention gap for CO₂, years $a$ to $b$                            |
+| $\text{NZ}$                           | Net-zero year (from scenario data, with LULUCF emissions in BM convention)               |
+| $\text{base}$                         | RCB baseline year (e.g., 2023 for Lamboll, 2020 for AR6 WGI)                             |
 
 ### Correction for fossil-only budgets (co2-ffi)
 
@@ -216,7 +216,7 @@ The four terms are:
 
 2. **$F_{\text{actual}}(2020,\, \text{base}{-}1)$** -- the fossil rebase. When the published baseline is after 2020, actual fossil emissions from 2020 to $\text{base}{-}1$ are added back. This uses only observational data (PRIMAP), never scenario projections. When $\text{base} = 2020$, this term is zero.
 
-3. **$L_{\text{BM}}(\text{base},\, \text{NZ})$** -- the LULUCF decomposition. Removes the BM LULUCF share of the budget from the baseline year to the scenario net-zero year, using AR6 scenario median pathways (AFOLU|Direct). This is the only way to separate the fossil and land-use portions of the total budget.
+3. **$L_{\text{BM}}(\text{base},\, \text{NZ})$** -- the LULUCF decomposition. Removes the BM LULUCF share of the budget from the baseline year to the scenario net-zero year, using the median cumulative LULUCF emissions (AFOLU|Direct) of AR6 scenario pathways integrated until NZ. This is the only way to separate the fossil and land-use portions of the total budget.
 
 4. **$B(2020,\, \text{NZ})$** -- the bunker deduction. Removes international aviation and shipping emissions that appear in global totals but are excluded from national inventories. Integrated from 2020 to NZ regardless of baseline year.
 
