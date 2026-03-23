@@ -824,8 +824,11 @@ if nghgi_world_available:
     nghgi_splice_year = max(int(c) for c in nghgi_world_df.columns if c.isdigit())
     print(f"  Loaded NGHGI world LULUCF (splice year: {nghgi_splice_year})")
 else:
-    print("  NGHGI world LULUCF not found — skipping convention gap computation")
-    print(f"  (expected at: {nghgi_world_path})")
+    raise FileNotFoundError(
+        f"NGHGI world LULUCF timeseries not found at: {nghgi_world_path}\n"
+        f"Convention gap cannot be computed without this file. "
+        f"Run the NGHGI preprocessing notebooks (105/107) first, then re-run 104."
+    )
 
 # Compute per-AR6-category adjustment scalars
 rcb_adjustments = {}

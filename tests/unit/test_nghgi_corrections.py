@@ -724,10 +724,11 @@ class TestBuildNghgiWorldCo2Timeseries:
 class TestPrecautionaryLulucfCap:
     """Tests for the precautionary_lulucf cap in _resolve_adjustment_scalars.
 
-    For co2-ffi: integrates per-year BM LULUCF timeseries from baseline_year
-    to net_zero_year. When precautionary_lulucf=True (default), net sinks
-    (negative cumulative) cannot increase the fossil budget. Net sources
-    (positive cumulative) still reduce it.
+    For co2-ffi: uses pre-computed bm_lulucf_cumulative_median (median of
+    per-scenario cumulatives, each integrated to its own NZ year).
+    When precautionary_lulucf=True (default), net sinks (negative cumulative)
+    cannot increase the fossil budget. Net sources (positive cumulative) still
+    reduce it.
 
     For co2: uses pre-computed convention gap from rcb_adjustments dict.
     """
@@ -752,8 +753,8 @@ class TestPrecautionaryLulucfCap:
         return _make_timeseries(values, row_label="lulucf_shift_median")
 
     @pytest.fixture
-    def rcb_adj(self) -> dict[str, dict]:
-        """Pre-computed adjustments (convention gap used for co2 only)."""
+    def rcb_adj_sink(self) -> dict[str, dict]:
+        """Pre-computed adjustments for a net-sink scenario."""
         return {
             "1.5p50": {
                 "bm_lulucf_cumulative_median": -3100.0,
@@ -763,8 +764,20 @@ class TestPrecautionaryLulucfCap:
             }
         }
 
+    @pytest.fixture
+    def rcb_adj_source(self) -> dict[str, dict]:
+        """Pre-computed adjustments for a net-source scenario."""
+        return {
+            "1.5p50": {
+                "bm_lulucf_cumulative_median": 3100.0,
+                "convention_gap_median": -5000.0,
+                "nz_year_median": 2050,
+                "n_scenarios": 10,
+            }
+        }
+
     def test_sink_capped_to_zero_with_precautionary(
-        self, bunker_ts, lulucf_shift_sink, rcb_adj
+        self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """When BM is a sink, precautionary cap sets lulucf_mt to 0."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -773,7 +786,7 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -781,7 +794,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_mt == 0.0
 
     def test_source_still_reduces_budget_with_precautionary(
-        self, bunker_ts, lulucf_shift_source, rcb_adj
+        self, bunker_ts, lulucf_shift_source, rcb_adj_source
     ):
         """When BM is a source, precautionary cap still reduces fossil budget."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -790,17 +803,17 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_source,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_source,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
         )
         assert lulucf_mt < 0.0
-        # 31 years (2020-2050 inclusive) * 100 = 3100
+        # bm_lulucf_cumulative_median = 3100 (source), -max(0, 3100) = -3100
         assert lulucf_mt == pytest.approx(-3100.0)
 
     def test_sink_increases_budget_without_precautionary(
-        self, bunker_ts, lulucf_shift_sink, rcb_adj
+        self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """When precautionary is off, BM sink increases fossil budget."""
         _, lulucf_mt = _resolve_adjustment_scalars(
@@ -809,17 +822,17 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,
         )
-        # bm_lulucf_mt = sum(-100 * 31) = -3100, lulucf_mt = -(-3100) = 3100
+        # bm_lulucf_cumulative_median = -3100, lulucf_mt = -(-3100) = 3100
         assert lulucf_mt > 0.0
         assert lulucf_mt == pytest.approx(3100.0)
 
     def test_co2_category_unaffected_by_precautionary(
-        self, bunker_ts, lulucf_shift_sink, rcb_adj
+        self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """Precautionary cap only applies to co2-ffi, not co2."""
         _, lulucf_on = _resolve_adjustment_scalars(
@@ -828,7 +841,7 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2",
             precautionary_lulucf=True,
             verbose=False,
@@ -839,7 +852,7 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2",
             precautionary_lulucf=False,
             verbose=False,
@@ -847,7 +860,7 @@ class TestPrecautionaryLulucfCap:
         assert lulucf_on == lulucf_off
 
     def test_bunkers_unaffected_by_precautionary(
-        self, bunker_ts, lulucf_shift_sink, rcb_adj
+        self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """Bunker deduction is identical regardless of precautionary setting."""
         bunkers_on, _ = _resolve_adjustment_scalars(
@@ -856,7 +869,7 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2-ffi",
             precautionary_lulucf=True,
             verbose=False,
@@ -867,7 +880,7 @@ class TestPrecautionaryLulucfCap:
             net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_sink,
-            rcb_adjustments=rcb_adj,
+            rcb_adjustments=rcb_adj_sink,
             emission_category="co2-ffi",
             precautionary_lulucf=False,
             verbose=False,
@@ -881,11 +894,11 @@ class TestPrecautionaryLulucfCap:
 
 
 class TestBaselineAwareLulucfIntegration:
-    """Tests that LULUCF integration in _resolve_adjustment_scalars is
-    baseline-aware: starting from baseline_year, not always 2020.
+    """Tests that baseline_year > 2020 adjusts the pre-computed cumulative.
 
-    When baseline_year > 2020, the years before baseline_year are excluded
-    from the LULUCF integration, resulting in a different deduction.
+    bm_lulucf_cumulative_median is pre-computed from 2020 to per-scenario NZ.
+    When baseline_year > 2020, the 2020-to-base prefix (from the median
+    timeseries) is subtracted.
     """
 
     @pytest.fixture
@@ -900,27 +913,31 @@ class TestBaselineAwareLulucfIntegration:
         """Per-year BM LULUCF median with varying values 2020-2060.
 
         Values increase linearly: year 2020 = 100, 2021 = 110, ..., so
-        different baseline years give different cumulative sums.
+        different baseline years give different prefix sums.
         """
         values = {y: 100.0 + 10.0 * (y - 2020) for y in range(2020, 2061)}
         return _make_timeseries(values, row_label="lulucf_shift_median")
 
     @pytest.fixture
     def rcb_adj(self) -> dict[str, dict]:
-        """Pre-computed adjustments (only convention_gap used for co2)."""
+        """Pre-computed adjustments with cumulative matching the timeseries.
+
+        Sum of timeseries 2020-2050 (31 terms, 100..400 step 10):
+        31 * (100 + 400) / 2 = 7750.
+        """
         return {
             "1.5p50": {
-                "bm_lulucf_cumulative_median": -5000.0,
+                "bm_lulucf_cumulative_median": 7750.0,
                 "convention_gap_median": -2000.0,
                 "nz_year_median": 2050,
                 "n_scenarios": 10,
             }
         }
 
-    def test_baseline_2023_excludes_early_years(
+    def test_baseline_2023_subtracts_prefix(
         self, bunker_ts, lulucf_shift_ts, rcb_adj
     ):
-        """baseline_year=2023 excludes 2020-2022 from LULUCF integration."""
+        """baseline_year=2023 subtracts 2020-2022 prefix from cumulative."""
         _, lulucf_2020 = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
@@ -944,12 +961,12 @@ class TestBaselineAwareLulucfIntegration:
             verbose=False,
         )
         # Both should be negative (negated positive source)
-        # The 2023 baseline excludes 2020(100), 2021(110), 2022(120) = 330 Mt
-        # so the cumulative from 2023 is smaller, and the negated result differs
+        # The 2023 baseline subtracts prefix 2020(100)+2021(110)+2022(120) = 330
+        # bm_2020 = 7750, bm_2023 = 7750 - 330 = 7420
         assert lulucf_2020 != lulucf_2023
 
     def test_baseline_2020_vs_2023_magnitude(self, bunker_ts, lulucf_shift_ts, rcb_adj):
-        """baseline_year=2020 integrates more years, so abs(lulucf) is larger."""
+        """baseline_year=2020 uses full cumulative, so abs(lulucf) is larger."""
         _, lulucf_2020 = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
@@ -972,16 +989,16 @@ class TestBaselineAwareLulucfIntegration:
             precautionary_lulucf=False,
             verbose=False,
         )
-        # All per-year values are positive, so cumulative is positive,
-        # and negated lulucf is negative. More years = more negative.
+        # All per-year values are positive (source), so cumulative is positive,
+        # and negated lulucf is negative. Larger cumulative = more negative.
         assert abs(lulucf_2020) > abs(lulucf_2023)
 
-    def test_exact_integration_from_baseline(self, bunker_ts, lulucf_shift_ts, rcb_adj):
-        """Verify exact LULUCF value from baseline_year=2023 to NZ=2025."""
+    def test_exact_prefix_subtraction(self, bunker_ts, lulucf_shift_ts, rcb_adj):
+        """Verify exact LULUCF value with baseline_year=2023 prefix subtraction."""
         _, lulucf_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2023,
-            net_zero_year=2025,
+            net_zero_year=2050,
             bunker_ts=bunker_ts,
             lulucf_shift_ts=lulucf_shift_ts,
             rcb_adjustments=rcb_adj,
@@ -989,10 +1006,8 @@ class TestBaselineAwareLulucfIntegration:
             precautionary_lulucf=False,
             verbose=False,
         )
-        # Years 2023, 2024, 2025:
-        #   2023 = 100 + 10*3 = 130
-        #   2024 = 100 + 10*4 = 140
-        #   2025 = 100 + 10*5 = 150
-        # Sum = 420, negated = -420
-        expected_sum = 130.0 + 140.0 + 150.0
-        assert lulucf_mt == pytest.approx(-expected_sum)
+        # bm_lulucf_cumulative_median = 7750 (from 2020 to per-scenario NZ)
+        # Prefix 2020-2022: 100 + 110 + 120 = 330
+        # Adjusted: 7750 - 330 = 7420
+        # Negated: -7420
+        assert lulucf_mt == pytest.approx(-7420.0)

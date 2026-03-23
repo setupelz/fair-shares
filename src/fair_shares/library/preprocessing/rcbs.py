@@ -4,8 +4,12 @@ Processes IPCC RCBs to 2020 baseline with NGHGI-consistent adjustments,
 following the methodology of Weber et al. (2026).
 
 Supports both co2-ffi and co2 emission categories:
-- **co2-ffi**: integrates per-year BM LULUCF median timeseries from the
-  RCB source baseline year to net-zero (baseline-aware).
+- **co2-ffi**: uses the pre-computed median-of-per-scenario-cumulatives
+  (``bm_lulucf_cumulative_median``) from notebook 104, based on AR6
+  scenarios in the corresponding climate category. Scenario data is
+  required because the LULUCF decomposition extends to net-zero (no
+  observational data exists for the future). Adjusted for baseline year
+  by subtracting the 2020-to-base prefix.
 - **co2**: uses the pre-computed convention gap (BM -> NGHGI) from
   notebook 104, plus actual BM LULUCF for rebase.
 
@@ -168,8 +172,10 @@ def _resolve_adjustment_scalars(
 ) -> tuple[float, float]:
     """Compute sign-ready adjustment scalars for a given scenario.
 
-    For co2-ffi: integrates the per-year BM LULUCF median timeseries from
-    ``baseline_year`` to ``net_zero_year`` (baseline-aware).
+    For co2-ffi: uses the pre-computed ``bm_lulucf_cumulative_median``
+    (median of per-scenario cumulatives from 2020 to each scenario's NZ).
+    When ``baseline_year`` > 2020, the 2020-to-base prefix is subtracted
+    from the median timeseries.
     For co2: uses the pre-computed convention gap from notebook 104.
 
     Returns values that can be added directly to the budget:
@@ -211,16 +217,38 @@ def _resolve_adjustment_scalars(
         # gap(2020, base-1) converts the BM rebase to NGHGI convention.
         adj = rcb_adjustments.get(scenario, {})
         lulucf_mt = adj.get("convention_gap_median", 0.0)
+        if lulucf_mt == 0.0:
+            import warnings
+
+            warnings.warn(
+                f"convention_gap_median is 0.0 for scenario '{scenario}' — "
+                f"this likely means notebook 104 ran before NGHGI data was "
+                f"preprocessed. Re-run the preprocessing pipeline: "
+                f"notebooks 105/107 first, then 104.",
+                stacklevel=2,
+            )
     else:
-        # co2-ffi: integrate BM LULUCF from baseline_year to NZ
-        year_cols = [
-            str(y)
-            for y in range(baseline_year, net_zero_year + 1)
-            if str(y) in lulucf_shift_ts.columns
-        ]
-        bm_lulucf_mt = (
-            float(lulucf_shift_ts[year_cols].sum(axis=1).iloc[0]) if year_cols else 0.0
-        )
+        # co2-ffi: use pre-computed median-of-per-scenario-cumulatives.
+        # bm_lulucf_cumulative_median integrates each scenario from 2020
+        # to its own NZ year, then takes the median — consistent with the
+        # convention gap approach per Weber 2026.
+        adj = rcb_adjustments.get(scenario, {})
+        bm_lulucf_mt = adj.get("bm_lulucf_cumulative_median", 0.0)
+
+        # Adjust for baseline year > 2020: subtract the 2020-to-base
+        # prefix using the median timeseries.  Historical BM LULUCF has
+        # negligible inter-scenario spread, so median(cum_i - prefix_i)
+        # ≈ median(cum_i) - median_prefix.
+        if baseline_year > 2020:
+            prefix_cols = [
+                str(y)
+                for y in range(2020, baseline_year)
+                if str(y) in lulucf_shift_ts.columns
+            ]
+            if prefix_cols:
+                bm_lulucf_mt -= float(
+                    lulucf_shift_ts[prefix_cols].sum(axis=1).iloc[0]
+                )
 
         if precautionary_lulucf:
             lulucf_mt = -max(0.0, bm_lulucf_mt)
@@ -441,10 +469,10 @@ def load_and_process_rcbs(
                 "rcb_original_value": result["rcb_original_value"],
                 "rcb_original_unit": result["rcb_original_unit"],
                 "rcb_2020_mt": result["rcb_2020_mt"],
+                "net_adjustment_mt": result["net_adjustment_mt"],
                 "rebase_total_mt": result["rebase_total_mt"],
                 "rebase_fossil_mt": result["rebase_fossil_mt"],
                 "rebase_lulucf_mt": result["rebase_lulucf_mt"],
-                "net_adjustment_mt": result["net_adjustment_mt"],
                 "deduction_bunkers_mt": result["deduction_bunkers_mt"],
                 "deduction_lulucf_mt": result["deduction_lulucf_mt"],
             }

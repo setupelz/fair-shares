@@ -34,6 +34,11 @@ Start with country-fair-shares unless you're working with integrated assessment 
 - [Science](https://setupelz.github.io/fair-shares/science/) -- equity concepts, allocation design, references
 - [Developer Guide](https://setupelz.github.io/fair-shares/dev-guide/) -- architecture, adding approaches, contributing
 
+## Known Limitations
+
+- **Pre-2000 LULUCF data**: Allocations that include LULUCF (emission category `co2`) are currently restricted to start years of 2000 or later. NGHGI-reported LULUCF data (Melo et al. v3.1) is only available from 2000. We are working with scientific collaborators to assess the quality of pre-2000 estimates and expect to extend coverage in a future release.
+- **Non-CO₂ pathways**: The all-GHG allocation currently derives non-CO₂ pathways from AR6 scenario medians. Custom CH₄ mitigation pathways (e.g., for different CH₄ reduction targets) are architecturally supported but not yet available as a user-facing option - this is also being actively pursued.
+
 ## Citation
 
 If you use fair-shares in academic work, policy documents, or legal proceedings, please cite it:

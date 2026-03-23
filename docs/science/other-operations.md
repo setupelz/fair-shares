@@ -237,10 +237,13 @@ Since we would need to subtract $L_{\text{BM}}(2020,\, \text{NZ})$ to isolate th
 A **precautionary cap** (default: on) ensures that the projected BM LULUCF sink cannot increase the fossil budget -- only sources can reduce it:
 
 $$
-L_{\text{BM}}^{\text{capped}} = \max\!\left(0,\; \sum_{t=\text{base}}^{\text{NZ}} \underset{i}{\text{median}}\left[L_{\text{BM},i}(t)\right]\right)
+L_{\text{BM}}^{\text{capped}} = \max\!\left(0,\; \underset{i}{\text{median}}\left[\sum_{t=2020}^{t_{\text{nz},i}} L_{\text{BM},i}(t)\right] - \underset{i}{\text{median}}\left[L_{\text{BM},i}(t)\right]_{t=2020}^{\text{base}-1}\right)
 $$
 
-The per-year median is computed across all scenarios in notebook 104 and stored as a timeseries (`lulucf_shift_median_{scenario}.csv`). At runtime, this timeseries is integrated from `base` to the median net-zero year `NZ`. When the cumulative sum is negative (net sink), the cap zeros it out because the sink relies on uncertain future reforestation. Configurable via `precautionary_lulucf` in the adjustments config (default: `true`; set to `false` for sensitivity analysis).
+The LULUCF decomposition extends from the baseline year to net-zero. Thus we must use AR6 scenario pathways corresponding to the same climate category as the RCB (e.g., 1.5°C 50th percentile scenarios for a 1.5p50 budget). Each scenario's cumulative AFOLU|Direct is integrated from 2020 to its own net-zero year $t_{\text{nz},i}$, then the median across scenarios is taken (integrate per scenario, then median — consistent with the convention gap computation per Weber 2026). The pre-computed median cumulative is stored as `bm_lulucf_cumulative_median` in `rcb_scenario_adjustments.yaml`. When the RCB baseline year $\text{base} > 2020$, the 2020-to-base prefix is subtracted using the per-year median timeseries (accurate because historical BM LULUCF has negligible inter-scenario spread). When the result is negative (net sink), the cap zeros it out because the sink relies on uncertain future reforestation. Configurable via `precautionary_lulucf` in the adjustments config (default: `true`; set to `false` for sensitivity analysis).
+
+!!! note "Why `convention_gap_median` is 0 in CO2-FFI output"
+    The `rcb_scenario_adjustments.yaml` file includes a `convention_gap_median` field for every AR6 category. For **co2-ffi** allocations, this field is **not used** — the LULUCF adjustment comes from `bm_lulucf_cumulative_median` instead (see above). The convention gap only applies to **co2** allocations, where the budget must switch from the bookkeeping model convention to the NGHGI convention. Its presence in the YAML for co2-ffi scenarios is a storage artefact, not a computational input.
 
 ### Correction for total CO₂ budgets (co2)
 
@@ -317,6 +320,8 @@ $$
 
 The total per-scenario gap is $\text{Gap}_i = \text{Gap}_{i,\text{hist}} + \text{Gap}_{i,\text{future}}$, and the median is taken across all scenarios $i$ in the corresponding AR6 category pool. Each scenario's integration ends at its own $t_{\text{nz},i}$.
 
+**Why AR6 scenario data for the BM side?** The convention gap is a per-scenario quantity — each scenario has its own AFOLU|Direct pathway, NZ year, and Indirect fluxes. The Gidden AR6 reanalysis provides this per-scenario decomposition. Global Carbon Budget multi-model averages cannot be substituted here because they would collapse the per-scenario variation into a single number, breaking the integrate-per-scenario-then-median methodology. For actual historical emissions (the RCB rebase from baseline to 2020), PRIMAP observational data is used — no scenario data is involved in that step.
+
 ### World CO₂ timeseries for backward extension
 
 When the allocation year is before 2020, historical emissions must be added back to the RCB (see [RCB Pathway Generation](#rcb-pathway-generation) above). For total CO₂, the per-year world emissions use the NGHGI convention:
@@ -328,7 +333,7 @@ $$
 Where LULUCF uses:
 
 - **2000 onwards**: Melo NGHGI LULUCF (nationally aggregated inventory data, v3.1)
-- **Pre-2000**: Not available in NGHGI convention. Categories including LULUCF are limited to the NGHGI data range (2000+). No NGHGI/BM splicing is performed.
+- **Pre-2000**: Not available in NGHGI convention. Categories including LULUCF are limited to the NGHGI data range (2000+). No NGHGI/BM splicing is performed. While earlier NGHGI LULUCF estimates may exist (e.g., via Grassi et al. or historical extensions of Melo), the official NGHGI data begins in 2000. Extending to 1990 would require splicing heterogeneous datasets, which risks introducing artefacts (the BM-to-NGHGI transition around 1990 shows a large jump). We plan to extend coverage when validated pre-2000 NGHGI LULUCF data becomes available.
 
 This ensures the world timeseries passed to `calculate_budget_from_rcb` is NGHGI-consistent, and that function works identically for both `co2-ffi` and `co2` categories.
 
@@ -377,7 +382,7 @@ Using `ar6_2020` source: 500 GtCO₂ total from 2020, scenario `1.5p50` (70 C1 s
 | Bunker subtraction            | -35 Gt                 | -35 Gt                |
 | **Allocatable budget (2020)** | **465 Gt**             | **375 Gt**            |
 
-**co2-ffi:** The cumulative BM LULUCF (sum of per-year medians from 2020 to median NZ ~2050) is a net sink. Under the **precautionary cap** (default), this sink is not credited to the fossil budget (capped to 0). Without the cap (`precautionary_lulucf: false`), the fossil budget would increase.
+**co2-ffi:** The cumulative BM LULUCF is estimated from AR6 scenarios in the corresponding climate category (here 1.5°C 50th percentile). Each scenario's AFOLU|Direct is integrated from 2020 to its own NZ year, then the median across scenarios is taken. The result is a net sink. Under the **precautionary cap** (default), this sink is not credited to the fossil budget (capped to 0). Without the cap (`precautionary_lulucf: false`), the fossil budget would increase.
 
 **co2:** The convention gap is -90 Gt — NGHGI reports a larger land CO₂ sink than bookkeeping models, reducing the allocatable budget. The gap is computed from Melo v3.1 NGHGI LULUCF and Gidden AR6 reanalysis (see [Convention gap decomposition](#convention-gap-decomposition)). Bunker deduction is ~35 Gt (~870 Mt/yr integrated to median NZ year ~2050). The co2 budget is lower than co2-ffi because the convention gap is a significant negative adjustment.
 

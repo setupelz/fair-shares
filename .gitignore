@@ -187,3 +187,7 @@ format-output.py
 
 # Untracked analysis notebooks
 notebooks/404_*
+
+# Mozart-injected (symlinks to Mozart repo)
+.claude/
+.ralph-worktrees/
