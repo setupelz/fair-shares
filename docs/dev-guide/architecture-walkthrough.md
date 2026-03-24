@@ -488,7 +488,7 @@ global emissions.
 ## See Also
 
 - [Developer Guide](index.md) -- Module overview and conventions
-- [Adding Allocation Approaches](../dev-guide/adding-approaches/) -- Step-by-step guide for new approaches
-- [Adding Data Sources](../dev-guide/adding-data-sources/) -- Step-by-step guide for new datasets
+- [Adding Allocation Approaches](adding-approaches.md) -- Step-by-step guide for new approaches
+- [Adding Data Sources](adding-data-sources.md) -- Step-by-step guide for new datasets
 - [Scientific Documentation](../science/allocations.md) -- Theoretical foundations
-- [API Reference](../api/) -- Function-level documentation
+- [API Reference](../api/index.md) -- Function-level documentation

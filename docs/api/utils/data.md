@@ -53,17 +53,25 @@ Functions for processing and transforming input datasets: convergence pathway da
 
 Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et al. (2026). See [Scientific Documentation](https://setupelz.github.io/fair-shares/science/other-operations/#nghgi-consistent-rcb-corrections) for methodology.
 
-### compute_lulucf_deduction
+### load_ar6_category_constants
 
-::: fair_shares.library.utils.data.nghgi.compute_lulucf_deduction
+::: fair_shares.library.utils.data.nghgi.load_ar6_category_constants
     options:
         show_root_heading: true
         heading_level: 4
         show_source: false
 
-### compute_lulucf_convention_gap
+### load_world_co2_lulucf
 
-::: fair_shares.library.utils.data.nghgi.compute_lulucf_convention_gap
+::: fair_shares.library.utils.data.nghgi.load_world_co2_lulucf
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
+### load_bunker_timeseries
+
+::: fair_shares.library.utils.data.nghgi.load_bunker_timeseries
     options:
         show_root_heading: true
         heading_level: 4

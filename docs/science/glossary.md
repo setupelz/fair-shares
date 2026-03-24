@@ -285,10 +285,10 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI**
-: National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
+: National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
 : The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~84 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
@@ -297,7 +297,7 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
 
 **RCB**
-: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#nghgi-consistent-rcb-corrections)
+: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **SSP**
 : Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).

@@ -179,6 +179,8 @@ nav:
       - Adding Allocation Approaches: dev-guide/adding-approaches.md
       - Adding Data Sources: dev-guide/adding-data-sources.md
       - Docstring Template: dev-guide/docstring-template.md
+      - Architecture Walkthrough: dev-guide/architecture-walkthrough.md
+      - Docs Links: dev-guide/docs-links.md
 
 extra_css:
   - stylesheets/extra.css
