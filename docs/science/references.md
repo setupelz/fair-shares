@@ -13,8 +13,8 @@ Complete bibliography for the fair-shares project. All citations are drawn from 
 
 For context on how these inform allocation approaches, see:
 
-- [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
 - [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)
+- [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 - [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)
 
 Inline citations in `docs/science/` use `[Author YYYY]` format.

@@ -466,17 +466,10 @@ def run_rcb_preprocessing(
             adjustments_config, orch.project_root, source_id=source_id, verbose=True
         )
 
-        if "co2-lulucf" not in world_emiss:
-            raise DataLoadingError(
-                "LULUCF world emissions ('co2-lulucf') required for total CO2 "
-                "NGHGI-consistent budgets but not found in emissions data."
-            )
-
         world_emiss["co2"] = build_nghgi_world_co2_timeseries(
             fossil_ts=world_emiss["co2-ffi"],
             nghgi_ts=nghgi_ts,
             bunker_ts=bunker_ts,
-            bm_lulucf_ts=world_emiss["co2-lulucf"],
         )
 
     # Save processed data

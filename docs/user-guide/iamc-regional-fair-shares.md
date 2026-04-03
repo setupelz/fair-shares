@@ -15,7 +15,7 @@ The `401_custom_iamc_allocation.ipynb` notebook calculates fair share allocation
 Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use [country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/).
 
 !!! note "Entry Points Framework"
-    Fair share quantification involves five structured decision stages [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for the full framework.
+    Fair share quantification involves five structured decision stages [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 
 !!! info "Regions come from your data"
 The library uses **whatever regions are in your IAMC input file**. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.

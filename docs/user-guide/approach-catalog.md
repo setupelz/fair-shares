@@ -10,7 +10,7 @@ search:
 
 All allocation approaches at a glance.
 
-- **Which principles does each approach implement?** See [Climate Equity Concepts](../science/climate-equity-concepts.md)
+- **Which principles does each approach implement?** See [From Principle to Code](../science/principle-to-code.md)
 - **How do I configure an approach for specific principles?** See [Principle to Code](../science/principle-to-code.md)
 - **What's the math?** See [API Reference](../api/allocations/budgets.md)
 
@@ -77,7 +77,7 @@ Gradual transition from current emissions to fair share target.
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
 
 !!! tip "Entry Points Framework"
-Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b]. Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for the full framework.
+Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b]. Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 
 ---
 

@@ -118,7 +118,7 @@ results = run_parameter_grid(
 
 ## Adding New Functionality
 
-All allocation approaches in this library can be linked to specific (sets of) equity principles. Before contributing new approaches, review the [Climate Equity Concepts](../science/climate-equity-concepts.md) documentation to understand the normative foundations.
+All allocation approaches in this library can be linked to specific (sets of) equity principles. Before contributing new approaches, review the [From Principle to Code](../science/principle-to-code.md) documentation to understand the normative foundations.
 
 Use the **Entry Points Framework** when considering any new approach: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b].
 

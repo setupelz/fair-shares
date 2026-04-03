@@ -263,7 +263,7 @@ def _load_world_emissions(
 world_keys = ["EARTH", "World", "WLD", "OWID_WRL"]
 
 if emission_category == "co2":
-    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI/BM spliced)
+    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI)
     # This mirrors run_rcb_preprocessing() lines 454-480 in orchestrator.py
     from fair_shares.library.preprocessing.rcbs import _load_shared_timeseries
     from fair_shares.library.utils.data.nghgi import build_nghgi_world_co2_timeseries
@@ -286,8 +286,6 @@ if emission_category == "co2":
         fossil_ts=world_co2_ffi_df,
         nghgi_ts=nghgi_ts,
         bunker_ts=bunker_ts,
-        bm_lulucf_ts=world_co2_lulucf_df,
-        splice_year=splice_year,
     )
 
     print("\nNGHGI-consistent world CO2 timeseries constructed:")

@@ -2,7 +2,7 @@
 """Extract and validate citations from science documentation.
 
 This script:
-1. Extracts all author-year citations from a markdown file
+1. Extracts all author-year citations from science markdown files
 2. Validates them against references.md
 3. Reports valid vs invalid citations
 """
@@ -84,15 +84,23 @@ def validate_citations(
 
 
 def main():
-    """Extract and validate citations from climate-equity-concepts.md."""
+    """Extract and validate citations from science documentation."""
     # File paths
-    concepts_file = Path("docs/science/climate-equity-concepts.md")
+    science_files = [
+        Path("docs/science/principle-to-code.md"),
+        Path("docs/science/allocations.md"),
+    ]
     refs_file = Path("docs/science/references.md")
 
-    # Extract citations
-    print(f"Extracting citations from {concepts_file}...")
-    citations = extract_citations(concepts_file)
-    print(f"Found {len(citations)} unique citations\n")
+    # Extract citations from all science files
+    all_citations: Set[str] = set()
+    for science_file in science_files:
+        if science_file.exists():
+            print(f"Extracting citations from {science_file}...")
+            file_citations = extract_citations(science_file)
+            print(f"  Found {len(file_citations)} unique citations")
+            all_citations |= file_citations
+    print(f"\nTotal unique citations: {len(all_citations)}\n")
 
     # Load valid references
     print(f"Loading valid references from {refs_file}...")
@@ -100,7 +108,7 @@ def main():
     print(f"Found {len(valid_refs)} valid author-year combinations\n")
 
     # Validate
-    valid, invalid = validate_citations(citations, valid_refs)
+    valid, invalid = validate_citations(all_citations, valid_refs)
 
     # Report results
     print("=" * 60)
@@ -118,7 +126,7 @@ def main():
     if invalid:
         print("\n" + "!" * 60)
         print("ACTION REQUIRED:")
-        print(f"Remove {len(invalid)} invalid citation(s) from {concepts_file}")
+        print(f"Fix {len(invalid)} invalid citation(s) in science docs")
         print("!" * 60)
     else:
         print("\n✓ All citations are valid!")

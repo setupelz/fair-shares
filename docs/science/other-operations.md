@@ -164,6 +164,7 @@ system automatically derives equivalent pathway approaches for non-CO₂:
 - `per-capita-adjusted-budget` → `per-capita-adjusted`
 - `per-capita-adjusted-gini-budget` → `per-capita-adjusted-gini`
 - `allocation_year` → `first_allocation_year`
+- `preserve_allocation_year_shares` → `preserve_first_allocation_year_shares`
 
 This ensures methodological consistency: the same equity principle governs
 both gases, adapted to the different allocation modes.
@@ -306,10 +307,10 @@ Scenarios that never reach net-zero total CO₂ before 2100 are assigned 2100 as
 
 The per-scenario convention gap $\text{Gap}_i$ decomposes into two temporal segments:
 
-**Historical** ($\text{base} \leq t \leq \text{splice\_year}$): Melo NGHGI (reported values, same for all scenarios) minus Gidden Direct for scenario $i$ (a bookkeeping proxy from the AR6 reanalysis). The splice year is derived dynamically from the data (currently 2023 with Melo v3.1):
+**Historical** ($2020 \leq t \leq \text{splice\_year}$): Melo NGHGI (reported values, same for all scenarios) minus Gidden Direct for scenario $i$ (a bookkeeping proxy from the AR6 reanalysis). The splice year is derived dynamically from the data (currently 2023 with Melo v3.1). The gap always covers the full 2020--NZ range because the BM LULUCF rebase years also need convention conversion:
 
 $$
-\text{Gap}_{i,\text{hist}} = \sum_{t=\text{base}}^{\min(\text{splice},\, t_{\text{nz},i})} \left[\text{Melo}(t) - \text{Gidden}_{\text{Direct},i}(t)\right]
+\text{Gap}_{i,\text{hist}} = \sum_{t=2020}^{\min(\text{splice},\, t_{\text{nz},i})} \left[\text{Melo}(t) - \text{Gidden}_{\text{Direct},i}(t)\right]
 $$
 
 **Future** ($t > \text{splice\_year}$): Only the Gidden Indirect component for scenario $i$ (CO₂ fertilization and other passive fluxes), because the Direct components cancel in the gap:

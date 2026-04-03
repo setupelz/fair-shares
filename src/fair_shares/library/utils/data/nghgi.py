@@ -11,7 +11,7 @@ Sign conventions:
 - Deductions returned as positive floats (calling code negates as needed)
 
 Data structure notes:
-- NGHGI LULUCF file: CSV produced by notebook 105 (Melo v3.1)
+- NGHGI LULUCF file: CSV produced by notebook 107 (Melo v3.1)
 - Bunker file: CSV produced by notebook 107, sourced from GCB2024
 - AR6 category constants: YAML produced by notebook 104 (scenario preprocessing)
 """
@@ -20,6 +20,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from fair_shares.library.exceptions import DataLoadingError, DataProcessingError
@@ -96,7 +97,7 @@ def load_world_co2_lulucf(path: str | Path) -> tuple[pd.DataFrame, int]:
     """Load world-total NGHGI LULUCF CO2 timeseries from notebook-produced CSV.
 
     Reads the world-total NGHGI-reported LULUCF CO2 values produced by
-    notebook 105 (Melo v3.1). The CSV has a single row with a "source" index
+    notebook 107 (Melo v3.1). The CSV has a single row with a "source" index
     and string year columns. Values are in MtCO2/yr (negative = net sink).
 
     The splice year (last year of NGHGI data) is derived dynamically from the
@@ -294,15 +295,15 @@ def build_nghgi_world_co2_timeseries(
     fossil_ts: pd.DataFrame,
     nghgi_ts: pd.DataFrame,
     bunker_ts: pd.DataFrame,
-    bm_lulucf_ts: pd.DataFrame,
-    splice_year: int = 2022,
 ) -> pd.DataFrame:
     """Construct NGHGI-consistent world total CO2 timeseries.
 
     For backward extension of allocation years < 2020, Weber Eq. 3 requires
     per-year world CO2 = fossil - bunkers + LULUCF, where LULUCF uses:
-    - 1990 onwards: NGHGI LULUCF (Melo v3.1)
-    - Pre-1990: bookkeeping LULUCF (PRIMAP co2-lulucf) as fallback
+    - 2000 onwards: NGHGI LULUCF (Melo v3.1)
+    - Pre-2000: NaN (no fallback — NGHGI coverage only)
+
+    No NGHGI/BM splicing is performed. Years outside NGHGI coverage are NaN.
 
     Parameters
     ----------
@@ -316,13 +317,6 @@ def build_nghgi_world_co2_timeseries(
     bunker_ts : pd.DataFrame
         Bunker fuel CO2 timeseries (from load_bunker_timeseries)
         in MtCO2/yr. Single-row DataFrame with string year columns.
-    bm_lulucf_ts : pd.DataFrame
-        Bookkeeping LULUCF world totals (PRIMAP co2-lulucf) in Mt CO2/yr.
-        Same index structure as fossil_ts.
-    splice_year : int, optional
-        First year of NGHGI data availability (default: 2022, matching
-        the last year of NGHGI data — years <= splice_year use NGHGI
-        where available).
 
     Returns
     -------
@@ -330,6 +324,7 @@ def build_nghgi_world_co2_timeseries(
         Single-row DataFrame with same index structure as fossil_ts but
         emission-category label set to "co2", containing per-year
         NGHGI-consistent total CO2 = fossil - bunkers + LULUCF.
+        Years outside NGHGI LULUCF coverage will be NaN.
     """
     # Get all year columns from fossil_ts
     year_cols = [c for c in fossil_ts.columns if _is_year(c)]
@@ -337,24 +332,11 @@ def build_nghgi_world_co2_timeseries(
     # Extract numeric arrays for fast computation
     fossil_vals = fossil_ts[year_cols].iloc[0]
 
-    # Build LULUCF timeseries: NGHGI where available, BM fallback
-    bm_vals = bm_lulucf_ts[[c for c in year_cols if c in bm_lulucf_ts.columns]].iloc[0]
-
-    # First year of NGHGI data
-    nghgi_years = sorted([c for c in nghgi_ts.columns if _is_year(c)])
-    nghgi_first_year = int(nghgi_years[0]) if nghgi_years else splice_year + 1
-
-    lulucf_vals = pd.Series(index=year_cols, dtype=float)
+    # Build LULUCF timeseries: NGHGI where available, NaN otherwise
+    lulucf_vals = pd.Series(np.nan, index=year_cols, dtype=float)
     for y in year_cols:
-        yi = int(y)
-        if yi >= nghgi_first_year and y in nghgi_ts.columns:
-            # Use NGHGI (Melo)
+        if y in nghgi_ts.columns:
             lulucf_vals[y] = nghgi_ts[y].iloc[0]
-        elif y in bm_vals.index:
-            # Fallback to bookkeeping (PRIMAP)
-            lulucf_vals[y] = bm_vals[y]
-        else:
-            lulucf_vals[y] = 0.0
 
     # Build bunker timeseries (0 for years outside bunker data)
     bunker_vals = pd.Series(0.0, index=year_cols, dtype=float)

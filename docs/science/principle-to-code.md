@@ -9,7 +9,7 @@ search:
 
 This guide walks you through the **process** of translating climate equity principles into fair-shares configurations. It answers: "Given the principles I've chosen, how do I configure the tool?"
 
-For **understanding what principles mean** and their ethical grounding, see [Climate Equity Concepts](climate-equity-concepts.md). This guide assumes you've read that page or are familiar with the concepts.
+This guide assumes familiarity with equity concepts from the climate justice literature (see [References](references.md)).
 
 **Key insight**: Define your principles first, then select the allocation approach that operationalizes those principles.
 
@@ -49,22 +49,20 @@ flowchart LR
 
 ## Principle-to-Code Quick Reference
 
-Each principle maps to specific configuration choices. For conceptual background, follow the links to [Climate Equity Concepts](climate-equity-concepts.md).
+Each principle maps to specific configuration choices.
 
-| Principle                                                   | Concept Reference                                                                          | Key Questions                                 | Code Building Blocks                                               |
-| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------ | --------------------------------------------- | ------------------------------------------------------------------ |
-| **[Equal per capita](#equal-per-capita)**                   | [Equal Per Capita Entitlement](climate-equity-concepts.md#equal-per-capita-entitlement)    | Population year? Pure or adjusted?            | `equal_per_capita_budget()`, `equal_per_capita()`                  |
-| **[Historical responsibility](#historical-responsibility)** | [Historical Responsibility](climate-equity-concepts.md#historical-responsibility)          | Start date? Weight? Subsistence exemption?    | `allocation_year`, `responsibility_weight`                         |
-| **[Capability](#capability)**                               | [Ability to Pay](climate-equity-concepts.md#ability-to-pay)                                | GDP indicator? Development threshold? Weight? | `capability_weight`, `income_floor`                                |
-| **[CBDR-RC](#cbdr-rc)**                                     | [CBDR-RC in Overview](climate-equity-concepts.md#overview)                                 | Balance R vs. C? Include subsistence?         | `*-adjusted` approaches, weight combinations                       |
-| **[Subsistence protection](#subsistence-protection)**       | [Protection of Basic Needs](climate-equity-concepts.md#protection-of-basic-needs)          | Income floor? Gini adjustment?                | `*-gini-adjusted` approaches, `income_floor`                       |
-| **[Convergence](#convergence)**                             | [Cumulative vs. Annual](climate-equity-concepts.md#cumulative-vs-annual-emissions-framing) | Budget-preserving? Pathway shape?             | `cumulative_per_capita_convergence()` vs. `per-capita-convergence` |
+| Principle                                                   | Key Questions                                 | Code Building Blocks                                               |
+| ----------------------------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------ |
+| **[Equal per capita](#equal-per-capita)**                   | Population year? Pure or adjusted?            | `equal_per_capita_budget()`, `equal_per_capita()`                  |
+| **[Historical responsibility](#historical-responsibility)** | Start date? Weight? Subsistence exemption?    | `allocation_year`, `responsibility_weight`                         |
+| **[Capability](#capability)**                               | GDP indicator? Development threshold? Weight? | `capability_weight`, `income_floor`                                |
+| **[CBDR-RC](#cbdr-rc)**                                     | Balance R vs. C? Include subsistence?         | `*-adjusted` approaches, weight combinations                       |
+| **[Subsistence protection](#subsistence-protection)**       | Income floor? Gini adjustment?                | `*-gini-adjusted` approaches, `income_floor`                       |
+| **[Convergence](#convergence)**                             | Budget-preserving? Pathway shape?             | `cumulative_per_capita_convergence()` vs. `per-capita-convergence` |
 
 ---
 
 ## Equal Per Capita
-
-**Concept**: [Equal Per Capita Entitlement](climate-equity-concepts.md#equal-per-capita-entitlement)
 
 ### Questions to Answer
 
@@ -88,8 +86,6 @@ Each principle maps to specific configuration choices. For conceptual background
 ---
 
 ## Historical Responsibility
-
-**Concept**: [Historical Responsibility](climate-equity-concepts.md#historical-responsibility)
 
 ### Questions to Answer
 
@@ -119,8 +115,6 @@ Each principle maps to specific configuration choices. For conceptual background
 
 ## Capability
 
-**Concept**: [Ability to Pay](climate-equity-concepts.md#ability-to-pay)
-
 ### Questions to Answer
 
 1. **Indicator** — GDP per capita? Income above development threshold?
@@ -143,8 +137,6 @@ Each principle maps to specific configuration choices. For conceptual background
 ---
 
 ## CBDR-RC
-
-**Concept**: [CBDR-RC in Overview table](climate-equity-concepts.md#overview)
 
 CBDR-RC combines historical responsibility with capability. The question is how to balance them.
 
@@ -169,8 +161,6 @@ CBDR-RC combines historical responsibility with capability. The question is how 
 
 ## Subsistence Protection
 
-**Concept**: [Protection of Basic Needs](climate-equity-concepts.md#protection-of-basic-needs)
-
 ### Questions to Answer
 
 1. **Threshold** — What income defines subsistence vs. luxury? (GDR: $7,500/year 2010 PPP)
@@ -194,8 +184,6 @@ CBDR-RC combines historical responsibility with capability. The question is how 
 ---
 
 ## Convergence
-
-**Concept**: [Cumulative vs. Annual Framing](climate-equity-concepts.md#cumulative-vs-annual-emissions-framing)
 
 Convergence creates smooth transitions from current emissions to fair shares. But there are two very different types:
 

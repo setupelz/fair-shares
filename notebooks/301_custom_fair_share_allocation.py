@@ -26,7 +26,6 @@
 # **Before configuring, read:**
 #
 # - [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - Principles-first workflow
-# - [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Foundational concepts
 #
 # **Pre-configured examples:**
 #

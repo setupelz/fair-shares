@@ -29,11 +29,10 @@
 #
 # **For model input preparation**, see notebook 401.
 #
-# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports (run this first)
-
 import matplotlib.pyplot as plt
 import pandas as pd
 from pyprojroot import here
@@ -70,8 +69,6 @@ project_root = here()
 DATA_FILE = (
     project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
 )
-if not DATA_FILE.exists():
-    raise FileNotFoundError(f"Data file not found: {DATA_FILE}")
 
 # IAMC variable names
 POPULATION_VARIABLE = "Population"
@@ -103,7 +100,7 @@ data = load_iamc_data(
     expand_to_annual=True,
 )
 
-print("\nData loaded successfully!")
+print("\nYes Data loaded successfully!")
 print(f"Variables: {data['metadata']['variables_loaded']}")
 print(f"Time range: {data['metadata']['year_range']}")
 
@@ -121,7 +118,7 @@ emissions_ts = data["emissions"].rename_axis(index={"region": "iso3c"})
 #
 # Formula: Regional share = cumulative population (allocation_year -> end_year) / world cumulative population
 #
-# See: docs/science/climate-equity-concepts.md (Equal Rights to Atmosphere)
+# See: docs/science/principle-to-code.md (Equal Per Capita)
 
 # %%
 # Calculate ECPC allocation from 2015

@@ -167,7 +167,6 @@ nav:
   - Scientific Documentation:
       - science/index.md
       - Allocation Approaches: science/allocations.md
-      - Climate Equity Concepts: science/climate-equity-concepts.md
       - From Principle to Code: science/principle-to-code.md
       - Parameter Effects Reference: science/parameter-effects.md
       - Glossary: science/glossary.md
@@ -179,8 +178,6 @@ nav:
       - Adding Allocation Approaches: dev-guide/adding-approaches.md
       - Adding Data Sources: dev-guide/adding-data-sources.md
       - Docstring Template: dev-guide/docstring-template.md
-      - Architecture Walkthrough: dev-guide/architecture-walkthrough.md
-      - Docs Links: dev-guide/docs-links.md
 
 extra_css:
   - stylesheets/extra.css

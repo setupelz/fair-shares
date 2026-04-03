@@ -206,23 +206,23 @@ See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide
 
 ## Equity Principles
 
-Brief definitions. For detailed explanations and operationalization, see [Climate Equity Concepts](climate-equity-concepts.md) and [From Principle to Code](principle-to-code.md).
+Brief definitions. For detailed explanations and operationalization, see [From Principle to Code](principle-to-code.md).
 
 **Carbon Debt**
 : Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. Matthews [2016] calculates debts against an equal per capita benchmark; Pelz [2025a] introduces a net-zero framing. [Pickering 2012; Pelz 2025a; Matthews 2016]
-: See: [Climate Equity Concepts](climate-equity-concepts.md#scientific-foundations)
+: See: [References](references.md)
 
 **Cascading Biases**
 : Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. Kartha [2018] identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches). [Kartha 2018]
-: See: [Climate Equity Concepts](climate-equity-concepts.md#grandfathering)
+: See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **CBDR-RC**
 : Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity.
-: See: [Climate Equity Concepts](climate-equity-concepts.md#overview)
+: See: [From Principle to Code](principle-to-code.md#cbdr-rc)
 
 **Egalitarianism**
 : Ethical tradition grounding equal per capita entitlement to atmospheric space.
-: See: [Climate Equity Concepts](climate-equity-concepts.md#equal-per-capita-entitlement)
+: See: [From Principle to Code](principle-to-code.md#equal-per-capita)
 
 **Equal per capita**
 : Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is incorporated via `allocation_year` (past emissions subtracted), not via weight adjustments.
@@ -230,7 +230,7 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 
 **Grandfathering**
 : Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis. `per-capita-convergence` includes grandfathering elements.
-: See: [Climate Equity Concepts](climate-equity-concepts.md#grandfathering)
+: See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **Historical responsibility**
 : Past emissions reduce remaining fair share. Primary mechanism: `allocation_year` (earlier = more subtracted). Secondary: `responsibility_weight` in `*-adjusted` approaches.
@@ -238,7 +238,7 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 
 **Negative Allocation**
 : When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b]
-: See: [Allocation Approaches](allocations.md) · [Guidance](climate-equity-concepts.md)
+: See: [Allocation Approaches](allocations.md) · [From Principle to Code](principle-to-code.md)
 
 **Subsistence protection**
 : Basic needs emissions protected from mitigation burdens. Operationalized via `income_floor` and Gini adjustments.
@@ -291,7 +291,7 @@ Brief definitions. For detailed explanations and operationalization, see [Climat
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~84 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~90 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
 
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).

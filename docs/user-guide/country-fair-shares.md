@@ -61,7 +61,7 @@ Available sources are configured in `conf/data_sources/`.
 ---
 
 !!! note "Entry Points Framework"
-Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for details.
+Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [From Principle to Code](../science/principle-to-code.md) for details.
 
 ## Step 2: Allocation Approaches
 

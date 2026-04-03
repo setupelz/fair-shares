@@ -48,7 +48,6 @@ def docs_url(path: str) -> str:
 DOCS_URLS = {
     "science": {
         "allocations": docs_url("science/allocations"),
-        "climate_equity_concepts": docs_url("science/climate-equity-concepts"),
         "principle_to_code": docs_url("science/principle-to-code"),
         "glossary": docs_url("science/glossary"),
         "references": docs_url("science/references"),

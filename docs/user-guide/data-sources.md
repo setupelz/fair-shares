@@ -70,7 +70,7 @@ All bundled data permits redistribution. The licenses are permissive:
 **What it provides:** GDP per capita (PPP, constant 2021 USD).
 
 !!! note "PPP vs MER: a normative choice"
-The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b]. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for further discussion.
+The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b]. See [From Principle to Code](../science/principle-to-code.md) for further discussion.
 
 ### IMF World Economic Outlook
 

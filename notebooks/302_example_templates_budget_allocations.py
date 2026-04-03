@@ -28,7 +28,7 @@
 #
 # Each example demonstrates how different equity principles translate to budget allocations.
 #
-# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %% [markdown]
 # ---
@@ -70,7 +70,7 @@ active_sources = {
 allocations = {
     # APPROACH 1: Equal Per Capita Budget
     # Principle: Equal per capita — equal rights to atmosphere
-    # See: docs/science/climate-equity-concepts.md (Equal Rights to Atmosphere)
+    # See: docs/science/principle-to-code.md (Equal Per Capita)
     "equal-per-capita-budget": [
         {
             "allocation_year": [2015],
@@ -79,7 +79,7 @@ allocations = {
     ],
     # APPROACH 2: Per Capita Adjusted Budget
     # Principle: Historical responsibility + capability (CBDR-RC)
-    # See: docs/science/climate-equity-concepts.md (CBDR-RC)
+    # See: docs/science/principle-to-code.md (CBDR-RC)
     "per-capita-adjusted-budget": [
         # Configuration A: Historical responsibility only
         {
@@ -106,7 +106,7 @@ allocations = {
     ],
     # APPROACH 3: Per Capita Adjusted with Gini
     # Principle: Subsistence protection
-    # See: docs/science/climate-equity-concepts.md (Subsistence vs. Luxury Emissions)
+    # See: docs/science/principle-to-code.md (Subsistence Protection)
     "per-capita-adjusted-gini-budget": [
         # Configuration A: Gini-adjusted capability only
         {

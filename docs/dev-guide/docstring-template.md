@@ -61,9 +61,9 @@ def my_new_allocation(
 
     See Also
     --------
-    `Climate Equity Concepts <https://setupelz.github.io/fair-shares/science/climate-equity-concepts/>`_
+    `From Principle to Code <https://setupelz.github.io/fair-shares/science/principle-to-code/>`_
         Normative foundations and equity principles underlying allocation approaches.
-    `Entry Points Framework <https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#entry-points-framework>`_
+    `Entry Points Framework <https://setupelz.github.io/fair-shares/science/principle-to-code/#the-five-entry-points>`_
         Five-stage structure for transparent fair share documentation: foundational principles,
         allocation quantity, allocation approach, indicators, implications for all others [Pelz 2025b].
     """

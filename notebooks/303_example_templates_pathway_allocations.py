@@ -29,7 +29,7 @@
 #
 # Each demonstrates how different equity principles translate to pathway allocations.
 #
-# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports
@@ -108,7 +108,7 @@ desired_harmonisation_year = 2020
 # 5. Cumulative convergence adjusted — convergence + CBDR-RC adjustments
 # 6. Cumulative convergence Gini — convergence + subsistence protection
 #
-# See: docs/science/climate-equity-concepts.md | docs/science/principle-to-code.md
+# See: docs/science/principle-to-code.md
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 allocations = {
