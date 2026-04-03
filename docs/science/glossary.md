@@ -206,7 +206,7 @@ See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide
 
 ## Equity Principles
 
-Brief definitions. For detailed explanations and operationalization, see [From Principle to Code](principle-to-code.md).
+Brief definitions. For detailed explanations and operationalization, see [Allocation Approaches](allocations.md) and [From Principle to Code](principle-to-code.md).
 
 **Carbon Debt**
 : Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. Matthews [2016] calculates debts against an equal per capita benchmark; Pelz [2025a] introduces a net-zero framing. [Pickering 2012; Pelz 2025a; Matthews 2016]
@@ -218,15 +218,15 @@ Brief definitions. For detailed explanations and operationalization, see [From P
 
 **CBDR-RC**
 : Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity.
-: See: [From Principle to Code](principle-to-code.md#cbdr-rc)
+: See: [Allocation Approaches](allocations.md)
 
 **Egalitarianism**
 : Ethical tradition grounding equal per capita entitlement to atmospheric space.
-: See: [From Principle to Code](principle-to-code.md#equal-per-capita)
+: See: [Allocation Approaches](allocations.md)
 
 **Equal per capita**
-: Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is incorporated via `allocation_year` (past emissions subtracted), not via weight adjustments.
-: See: [From Principle to Code](principle-to-code.md#equal-per-capita)
+: Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is usually incorporated via `allocation_year` (past emissions subtracted), not via weight adjustments.
+: See: [Allocation Approaches](allocations.md)
 
 **Grandfathering**
 : Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis. `per-capita-convergence` includes grandfathering elements.
@@ -234,7 +234,7 @@ Brief definitions. For detailed explanations and operationalization, see [From P
 
 **Historical responsibility**
 : Past emissions reduce remaining fair share. Primary mechanism: `allocation_year` (earlier = more subtracted). Secondary: `responsibility_weight` in `*-adjusted` approaches.
-: See: [From Principle to Code](principle-to-code.md#historical-responsibility)
+: See: [Allocation Approaches](allocations.md#historical-responsibility)
 
 **Negative Allocation**
 : When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b]
@@ -242,7 +242,7 @@ Brief definitions. For detailed explanations and operationalization, see [From P
 
 **Subsistence protection**
 : Basic needs emissions protected from mitigation burdens. Operationalized via `income_floor` and Gini adjustments.
-: See: [From Principle to Code](principle-to-code.md#subsistence-protection)
+: See: [Allocation Approaches](allocations.md#gini-adjustment)
 
 ---
 

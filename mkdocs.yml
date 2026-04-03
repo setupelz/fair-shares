@@ -175,8 +175,10 @@ nav:
   - Developer Guide:
       - dev-guide/index.md
       - Contributing: CONTRIBUTING.md
+      - Architecture Walkthrough: dev-guide/architecture-walkthrough.md
       - Adding Allocation Approaches: dev-guide/adding-approaches.md
       - Adding Data Sources: dev-guide/adding-data-sources.md
+      - Documentation Links: dev-guide/docs-links.md
       - Docstring Template: dev-guide/docstring-template.md
 
 extra_css:

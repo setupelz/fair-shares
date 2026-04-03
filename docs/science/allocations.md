@@ -106,7 +106,7 @@ Reference year for calculating cumulative per capita allocations.
 | Budget   | `allocation_year`       |
 | Pathway  | `first_allocation_year` |
 
-Earlier allocation years account for historical emissions in the cumulative calculation. See [Historical Responsibility](principle-to-code.md#historical-responsibility).
+Earlier allocation years account for historical emissions in the cumulative calculation. See [Historical Responsibility](#historical-responsibility) below.
 
 ### Building Blocks
 
@@ -168,7 +168,7 @@ Implements the Greenhouse Development Rights (GDR) framework approach to nationa
 
 Income distribution is modelled as log-normal, parameterised by each country's Gini coefficient. When combined with the income floor, higher inequality means more national income sits above the development threshold — increasing measured capability.
 
-See [Subsistence Protection](principle-to-code.md#subsistence-protection) for conceptual context.
+See [From Principle to Code](principle-to-code.md) for conceptual context.
 
 **Mathematical formulations:** [GDR capability calculation](https://setupelz.github.io/fair-shares/api/utils/adjustments/#calculate_gini_adjusted_gdp) | [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
 
@@ -227,7 +227,7 @@ Two mechanisms:
 1. **Early allocation year:** Set `allocation_year` to 1850 or 1990 (calculates cumulative per capita since that year)
 2. **Responsibility weight:** Use `responsibility_weight` + `historical_responsibility_year` (multiplicative adjustment based on per-capita historical emissions)
 
-These can be combined. See [Historical Responsibility](principle-to-code.md#historical-responsibility) for conceptual foundations.
+These can be combined. See [Historical Responsibility](#historical-responsibility) below for conceptual foundations.
 
 **Mathematical details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/)
 

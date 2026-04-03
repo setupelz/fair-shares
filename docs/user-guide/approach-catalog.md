@@ -22,7 +22,7 @@ When `allocation_year` (budget) or `first_allocation_year` (pathway) is set in t
 
 The choice of start date is normatively significant: 1850 captures the full industrial era, 1950 tracks post-war growth, and 1990 corresponds to the IPCC First Assessment Report — widely treated in the equity literature as the "excusable ignorance" threshold, beyond which responsibility for emissions harm is difficult to deny [Baer 2013; Pelz 2025b].
 
-See [Principle to Code](../science/principle-to-code.md#historical-responsibility) for configuration details.
+See [Allocation Approaches](../science/allocations.md#historical-responsibility) for configuration details.
 
 ---
 

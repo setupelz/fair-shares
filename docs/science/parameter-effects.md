@@ -45,7 +45,7 @@ _Example uses 1.5°C carbon budget (50% probability). Remaining budget = (cumula
 
 **Mathematical detail:** See [equal_per_capita_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget)
 
-**Theoretical basis:** See [Equal Per Capita](https://setupelz.github.io/fair-shares/science/principle-to-code/#equal-per-capita) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/principle-to-code/#historical-responsibility)
+**Theoretical basis:** See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility)
 
 ---
 
@@ -75,7 +75,7 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/principle-to-code/#historical-responsibility)
+**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility)
 
 ---
 
@@ -105,7 +105,7 @@ _Example uses `allocation_year=2020`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Capability](https://setupelz.github.io/fair-shares/science/principle-to-code/#capability)
+**Theoretical basis:** See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)
 
 ---
 
@@ -137,7 +137,7 @@ _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
 **Mathematical detail:** See [per_capita_adjusted_gini_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget)
 
-**Theoretical basis:** See [Subsistence Protection](https://setupelz.github.io/fair-shares/science/principle-to-code/#subsistence-protection)
+**Theoretical basis:** See [Gini Adjustment](https://setupelz.github.io/fair-shares/science/allocations/#gini-adjustment)
 
 ---
 
