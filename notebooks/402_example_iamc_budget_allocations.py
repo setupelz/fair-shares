@@ -29,7 +29,7 @@
 #
 # **For model input preparation**, see notebook 401.
 #
-# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports (run this first)
@@ -118,7 +118,7 @@ emissions_ts = data["emissions"].rename_axis(index={"region": "iso3c"})
 #
 # Formula: Regional share = cumulative population (allocation_year -> end_year) / world cumulative population
 #
-# See: docs/science/climate-equity-concepts.md (Equal Rights to Atmosphere)
+# See: docs/science/principle-to-code.md (Equal Per Capita)
 
 # %%
 # Calculate ECPC allocation from 2015

@@ -11,7 +11,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fair_shares.library.allocations.manager import AllocationManager
 from fair_shares.library.allocations.results import (
     BudgetAllocationResult,
     PathwayAllocationResult,
@@ -195,21 +194,6 @@ def generate_sample_shares_data(countries, years, emission_category):
 
 
 @pytest.fixture(scope="session")
-def _shared_allocation_manager():
-    """Session-cached AllocationManager (internal - do not use directly)."""
-    return AllocationManager()
-
-
-@pytest.fixture
-def allocation_manager(_shared_allocation_manager):
-    """Provide a fresh AllocationManager instance for testing.
-
-    Each test gets a deep copy to prevent state pollution between tests.
-    """
-    return copy.deepcopy(_shared_allocation_manager)
-
-
-@pytest.fixture(scope="session")
 def _shared_test_data():
     """Session-cached test data (internal - do not use directly)."""
     return generate_simple_test_data()
@@ -311,7 +295,7 @@ def sample_pathway_result(_shared_sample_pathway_result):
 @pytest.fixture
 def limited_gdp_data(test_data):
     """Test data with limited GDP availability (only 2015, 2020)."""
-    limited_data = test_data.copy()
+    limited_data = copy.deepcopy(test_data)
     limited_gdp = test_data["gdp"].loc[:, ["2015", "2020"]]
     limited_data["gdp"] = ensure_string_year_columns(limited_gdp)
     return limited_data

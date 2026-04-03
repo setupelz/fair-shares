@@ -10,6 +10,7 @@
 # Intermediate data
 /data/intermediate
 /data/input/scenarios/ipcc_ar6_gidden/*.xlsx
+/data/scenarios/messageix-justmip/
 
 # Output data
 /output
@@ -186,3 +187,7 @@ format-output.py
 
 # Untracked analysis notebooks
 notebooks/404_*
+
+# Mozart-injected (symlinks to Mozart repo)
+.claude/
+.ralph-worktrees/

@@ -44,7 +44,7 @@ graph LR
 | Source         | Allocation Functions | Description                                                             |
 | -------------- | -------------------- | ----------------------------------------------------------------------- |
 | `rcbs`         | Budget approaches    | Remaining Carbon Budgets -- single cumulative value per country         |
-| `ar6`          | Pathway approaches   | IPCC AR6 scenarios -- allocate existing scenario pathways               |
+| `pathway`      | Pathway approaches   | IPCC AR6 scenarios -- allocate existing scenario pathways               |
 | `rcb-pathways` | Pathway approaches   | RCB to global pathway, then allocated annually using pathway approaches |
 
 ### Supporting Data
@@ -61,7 +61,7 @@ Available sources are configured in `conf/data_sources/`.
 ---
 
 !!! note "Entry Points Framework"
-    Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for details.
+Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [From Principle to Code](../science/principle-to-code.md) for details.
 
 ## Step 2: Allocation Approaches
 
@@ -81,7 +81,7 @@ These implement Equal Cumulative Per Capita (ECPC) allocation when `allocation_y
 | `per-capita-adjusted-budget`      | Adjusted for responsibility and capability     |
 | `per-capita-adjusted-gini-budget` | Further adjusted for within-country inequality |
 
-### Pathway Approaches (for `target="ar6"` or `target="rcb-pathways"`)
+### Pathway Approaches (for `target="pathway"` or `target="rcb-pathways"`)
 
 | Approach                                          | Description                                                                                                                                                                         |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

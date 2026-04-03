@@ -45,7 +45,7 @@ _Example uses 1.5°C carbon budget (50% probability). Remaining budget = (cumula
 
 **Mathematical detail:** See [equal_per_capita_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget)
 
-**Theoretical basis:** See [Equal Per Capita Entitlement](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#equal-per-capita-entitlement) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility)
+**Theoretical basis:** See [Equal Per Capita](https://setupelz.github.io/fair-shares/science/principle-to-code/#equal-per-capita) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/principle-to-code/#historical-responsibility)
 
 ---
 
@@ -75,7 +75,7 @@ _Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility)
+**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/principle-to-code/#historical-responsibility)
 
 ---
 
@@ -105,7 +105,7 @@ _Example uses `allocation_year=2020`._
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Ability to Pay](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#ability-to-pay)
+**Theoretical basis:** See [Capability](https://setupelz.github.io/fair-shares/science/principle-to-code/#capability)
 
 ---
 
@@ -137,7 +137,7 @@ _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
 **Mathematical detail:** See [per_capita_adjusted_gini_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget)
 
-**Theoretical basis:** See [Protection of Basic Needs](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#protection-of-basic-needs)
+**Theoretical basis:** See [Subsistence Protection](https://setupelz.github.io/fair-shares/science/principle-to-code/#subsistence-protection)
 
 ---
 
@@ -243,7 +243,6 @@ When combining adjustments:
 
 ## See Also
 
-- [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Theoretical foundations for each parameter
 - [Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - How equity principles map to parameters
 - [Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/) - Pre-configured combinations for common scenarios
 - [API Documentation](https://setupelz.github.io/fair-shares/api/allocations/budgets/) - Mathematical definitions and validation rules

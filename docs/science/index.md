@@ -15,7 +15,6 @@ icon: material/flask
 ## In This Section
 
 - **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** -- Design, parameters, and rationale for each approach
-- **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)** -- Ethical traditions and foundational principles
 - **[From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)** -- How equity principles translate to implementation choices
 - **[Parameter Effects](https://setupelz.github.io/fair-shares/science/parameter-effects/)** -- How parameter choices affect allocations, with real data examples
 - **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)** -- RCB pathway generation, net-negative handling, harmonization

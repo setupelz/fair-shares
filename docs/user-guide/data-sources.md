@@ -14,16 +14,16 @@ fair-shares bundles several datasets to enable allocations without external depe
 
 All bundled data permits redistribution. The licenses are permissive:
 
-| Data Type      | Source                   | License       | Citation Required |
-| -------------- | ------------------------ | ------------- | ----------------- |
-| Emissions      | PRIMAP-hist v2.6.1       | **CC-BY-4.0** | Yes               |
-| Population     | UN/OWID 2025             | **CC-BY-4.0** | Yes               |
-| GDP            | World Bank WDI 2025      | **CC-BY-4.0** | Yes               |
-| GDP            | IMF WEO 2025             | Terms of Use  | Yes               |
-| Gini           | UNU-WIDER WIID 2025      | Academic use  | Yes               |
-| Regions        | regioniso3c (custom)     | **MIT**       | Optional          |
-| Scenarios      | IPCC AR6 (Gidden 2022)   | **CC-BY-4.0** | Yes               |
-| Carbon budgets | Lamboll et al. 2023      | See paper     | Yes               |
+| Data Type      | Source                 | License       | Citation Required |
+| -------------- | ---------------------- | ------------- | ----------------- |
+| Emissions      | PRIMAP-hist v2.6.1     | **CC-BY-4.0** | Yes               |
+| Population     | UN/OWID 2025           | **CC-BY-4.0** | Yes               |
+| GDP            | World Bank WDI 2025    | **CC-BY-4.0** | Yes               |
+| GDP            | IMF WEO 2025           | Terms of Use  | Yes               |
+| Gini           | UNU-WIDER WIID 2025    | Academic use  | Yes               |
+| Regions        | regioniso3c (custom)   | **MIT**       | Optional          |
+| Scenarios      | IPCC AR6 (Gidden 2022) | **CC-BY-4.0** | Yes               |
+| Carbon budgets | Lamboll et al. 2023    | See paper     | Yes               |
 
 ---
 
@@ -70,7 +70,7 @@ All bundled data permits redistribution. The licenses are permissive:
 **What it provides:** GDP per capita (PPP, constant 2021 USD).
 
 !!! note "PPP vs MER: a normative choice"
-The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b]. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for further discussion.
+The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b]. See [From Principle to Code](../science/principle-to-code.md) for further discussion.
 
 ### IMF World Economic Outlook
 
@@ -121,18 +121,18 @@ When working with IAMC-format files, the library uses **the regions defined in y
 
 The global remaining carbon budget (RCB) is a key input for budget-based allocations. Different sources, temperature targets, and probability levels produce substantially different budgets. The table below documents the primary sources used and referenced in fair-shares:
 
-| Source              | Budget              | Temperature | Probability | Notes                                               |
-| ------------------- | ------------------- | ----------- | ----------- | --------------------------------------------------- |
-| Lamboll et al. 2023 | 247 GtCO2 from 2023 | 1.5°C       | 50%         | Default RCB in fair-shares bundled data             |
-| IPCC SR1.5          | 420 GtCO2 from 2018 | 1.5°C       | 66%         | Earlier estimate; larger due to higher probability  |
+| Source              | Budget              | Temperature | Probability | Notes                                              |
+| ------------------- | ------------------- | ----------- | ----------- | -------------------------------------------------- |
+| Lamboll et al. 2023 | 247 GtCO2 from 2023 | 1.5°C       | 50%         | Default RCB in fair-shares bundled data            |
+| IPCC SR1.5          | 420 GtCO2 from 2018 | 1.5°C       | 66%         | Earlier estimate; larger due to higher probability |
 | IPCC AR6            | Various             | Various     | Various     | Temperature–budget relationships in WG1 Chapter 5  |
 
 **Citation for default budget:**
 
-> Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. *Nature Climate Change*, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
+> Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. _Nature Climate Change_, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
 !!! note "Budget choice is normatively significant"
-    The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b]. Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.
+The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b]. Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.
 
 ---
 

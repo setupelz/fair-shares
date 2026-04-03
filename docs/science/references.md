@@ -13,8 +13,8 @@ Complete bibliography for the fair-shares project. All citations are drawn from 
 
 For context on how these inform allocation approaches, see:
 
-- [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
 - [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)
+- [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 - [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)
 
 Inline citations in `docs/science/` use `[Author YYYY]` format.
@@ -74,6 +74,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format.
 **[Shue 2015]** Henry Shue. "Historical Responsibility, Harm Prohibition, and Preservation Requirement: Core Practical Convergence on Climate Change." _Moral Philosophy and Politics_. DOI: 10.1515/mopp-2013-0009
 
 **[Truccone-Borgogno 2022]** Santiago Truccone-Borgogno. "Climate Justice and the Duty of Restitution." _Moral Philosophy and Politics_. DOI: 10.1515/mopp-2021-0071
+
+**[Weber 2026]** Konstantin Weber, Cyril Brunner, and Reto Knutti. "Tracking country-level mitigation progress using NGHGI-consistent carbon budgets." _Nature Communications_. DOI: 10.1038/s41467-026-69078-9
 
 **[Winkler 2020]** Harald Winkler. "Putting equity into practice in the global stocktake under the Paris Agreement." _Climate Policy_. DOI: 10.1080/14693062.2019.1680337
 

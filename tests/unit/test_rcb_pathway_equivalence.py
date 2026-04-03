@@ -7,14 +7,8 @@ This is a critical verification that pathway allocations match budget allocation
 import pandas as pd
 import pytest
 
-from fair_shares.library.allocations import AllocationManager
+from fair_shares.library.allocations.manager import run_allocation
 from fair_shares.library.utils import get_year_columns
-
-
-@pytest.fixture
-def allocation_manager():
-    """Fresh allocation manager for each test."""
-    return AllocationManager()
 
 
 @pytest.fixture
@@ -129,7 +123,6 @@ class TestRCBPathwayEquivalence:
 
     def test_equal_per_capita_equivalence(
         self,
-        allocation_manager,
         sample_population_ts,
         sample_rcbs,
         sample_world_pathway,
@@ -138,7 +131,7 @@ class TestRCBPathwayEquivalence:
         Test that equal-per-capita (pathway) matches equal-per-capita-budget (RCB) cumulatively.
         """
         # 1. Run budget allocation with RCB
-        budget_result = allocation_manager.run_allocation(
+        budget_result = run_allocation(
             approach="equal-per-capita-budget",
             population_ts=sample_population_ts,
             allocation_year=2020,
@@ -153,7 +146,7 @@ class TestRCBPathwayEquivalence:
         budget_shares = budget_result.relative_shares_cumulative_emission[year_col]
 
         # 2. Run pathway allocation with RCB-Pathway
-        pathway_result = allocation_manager.run_allocation(
+        pathway_result = run_allocation(
             approach="equal-per-capita",
             population_ts=sample_population_ts,
             world_scenario_emissions_ts=sample_world_pathway,
@@ -183,7 +176,6 @@ class TestRCBPathwayEquivalence:
 
     def test_per_capita_adjusted_equivalence(
         self,
-        allocation_manager,
         sample_population_ts,
         sample_gdp_ts,
         sample_rcbs,
@@ -194,7 +186,7 @@ class TestRCBPathwayEquivalence:
         Test that per-capita-adjusted (pathway) matches per-capita-adjusted-budget (RCB) cumulatively.
         """
         # 1. Run budget allocation with RCB
-        budget_result = allocation_manager.run_allocation(
+        budget_result = run_allocation(
             approach="per-capita-adjusted-budget",
             population_ts=sample_population_ts,
             gdp_ts=sample_gdp_ts,
@@ -214,7 +206,7 @@ class TestRCBPathwayEquivalence:
         budget_shares = budget_result.relative_shares_cumulative_emission[year_col]
 
         # 2. Run pathway allocation with RCB-Pathway
-        pathway_result = allocation_manager.run_allocation(
+        pathway_result = run_allocation(
             approach="per-capita-adjusted",
             population_ts=sample_population_ts,
             gdp_ts=sample_gdp_ts,
@@ -247,16 +239,14 @@ class TestRCBPathwayEquivalence:
             atol=1e-6,  # Absolute tolerance for small values
         )
 
-    def test_cumulative_conservation(
-        self, allocation_manager, sample_population_ts, sample_world_pathway
-    ):
+    def test_cumulative_conservation(self, sample_population_ts, sample_world_pathway):
         """
         Test that pathway allocations conserve the total budget.
 
         The sum of all RELATIVE shares across countries should equal 1.0 for each year.
         """
         # Run pathway allocation
-        result = allocation_manager.run_allocation(
+        result = run_allocation(
             approach="equal-per-capita",
             population_ts=sample_population_ts,
             world_scenario_emissions_ts=sample_world_pathway,
@@ -268,9 +258,9 @@ class TestRCBPathwayEquivalence:
         year_cols = get_year_columns(result.relative_shares_pathway_emissions)
         for year in year_cols:
             year_sum = result.relative_shares_pathway_emissions[year].sum()
-            assert abs(year_sum - 1.0) < 1e-10, (
-                f"Year {year} shares sum to {year_sum}, not 1.0"
-            )
+            assert (
+                abs(year_sum - 1.0) < 1e-10
+            ), f"Year {year} shares sum to {year_sum}, not 1.0"
 
     @pytest.mark.parametrize(
         "responsibility_weight,capability_weight",
@@ -283,7 +273,6 @@ class TestRCBPathwayEquivalence:
     )
     def test_per_capita_adjusted_equivalence_parametric(
         self,
-        allocation_manager,
         sample_population_ts,
         sample_gdp_ts,
         sample_rcbs,
@@ -296,7 +285,7 @@ class TestRCBPathwayEquivalence:
         Test equivalence with different responsibility/capability weights.
         """
         # 1. Run budget allocation
-        budget_result = allocation_manager.run_allocation(
+        budget_result = run_allocation(
             approach="per-capita-adjusted-budget",
             population_ts=sample_population_ts,
             gdp_ts=sample_gdp_ts,
@@ -316,7 +305,7 @@ class TestRCBPathwayEquivalence:
         budget_shares = budget_result.relative_shares_cumulative_emission[year_col]
 
         # 2. Run pathway allocation
-        pathway_result = allocation_manager.run_allocation(
+        pathway_result = run_allocation(
             approach="per-capita-adjusted",
             population_ts=sample_population_ts,
             gdp_ts=sample_gdp_ts,

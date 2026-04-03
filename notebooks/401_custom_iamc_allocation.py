@@ -25,7 +25,6 @@
 # **Before configuring, read:**
 #
 # - [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - Principles-first workflow
-# - [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/) - Foundational concepts
 #
 # **Pre-configured examples:**
 #
@@ -45,7 +44,6 @@ import pandas as pd
 import pyam
 from pyprojroot import here
 
-# Import fair-shares library components
 from fair_shares.library.allocations.budgets.per_capita import (
     equal_per_capita_budget,
     per_capita_adjusted_budget,
@@ -100,6 +98,8 @@ project_root = here()
 DATA_FILE = (
     project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
 )
+if not DATA_FILE.exists():
+    raise FileNotFoundError(f"Data file not found: {DATA_FILE}")
 
 # IAMC variable names in your file
 POPULATION_VARIABLE = "Population"
@@ -209,8 +209,11 @@ print("\nReady to proceed to Step 3.")
 #
 # **Available approaches:**
 #
-# - Budget: `equal-per-capita-budget`, `per-capita-adjusted-budget`, `*-gini-budget`
-# - Pathway: `equal-per-capita`, `per-capita-adjusted`, `cumulative-per-capita-convergence`, `*-gini-adjusted`
+# - Budget: `equal-per-capita-budget`, `per-capita-adjusted-budget`
+# - Pathway: `equal-per-capita`, `per-capita-adjusted`, `cumulative-per-capita-convergence`
+#
+# *Not available for IAMC data:* Gini-adjusted approaches (`*-gini-*`) require
+# sub-regional inequality data not present in standard IAMC files.
 #
 # See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) for parameters.
 
@@ -254,12 +257,11 @@ if "capability_weight" in approach_params and gdp_ts is None:
     )
 
 if "gini" in approach:
-    gini_data = data.get("gini")
-    if gini_data is None:
-        raise ValueError(
-            "Approach requires Gini coefficient data but none was loaded. "
-            "Ensure your data file contains Gini data or use a non-gini approach."
-        )
+    raise ValueError(
+        "Gini-adjusted approaches are not yet supported for IAMC data. "
+        "Use one of: equal-per-capita, per-capita-adjusted, per-capita-convergence, "
+        "cumulative-per-capita-convergence, or their budget equivalents."
+    )
 
 # Validate convergence approaches require emissions data
 if allocation_type == "pathway" and "convergence" in approach:
@@ -345,6 +347,14 @@ if "convergence" in approach:
     world_emissions_ts = emissions_ts[
         emissions_ts.index.get_level_values("iso3c") == "World"
     ]
+    if world_emissions_ts.empty:
+        # No "World" region in data — compute by summing all regions
+        from fair_shares.library.utils.data.iamc import calculate_world_total_timeseries
+
+        world_emissions_ts = calculate_world_total_timeseries(
+            emissions_ts, unit_level="unit", group_level="iso3c"
+        )
+        print("  Note: 'World' region not found; computed from regional sum.")
     kwargs["world_scenario_emissions_ts"] = world_emissions_ts
     kwargs["country_actual_emissions_ts"] = emissions_ts
 
@@ -356,8 +366,13 @@ if allocation_type == "budget":
     shares = result.relative_shares_cumulative_emission[str(allocation_year)]
     label = "Regional Budget Shares"
 else:
-    shares = result.relative_shares_pathway_emissions[str(allocation_year)]
-    label = f"Regional Pathway Shares (year {allocation_year})"
+    shares_df = result.relative_shares_pathway_emissions
+    yr_cols = sorted([c for c in shares_df.columns if str(c).isdigit()], key=int)
+    print(
+        f"  Pathway shares computed for {len(yr_cols)} years ({yr_cols[0]}-{yr_cols[-1]})"
+    )
+    shares = shares_df[yr_cols[0]]  # Use first year for preview table
+    label = f"Regional Pathway Shares - Preview (first year: {yr_cols[0]})"
 shares = shares.droplevel(["unit", "emission-category"])
 
 print(f"\n{label}:\n")

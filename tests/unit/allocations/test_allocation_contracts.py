@@ -4,7 +4,6 @@ import inspect
 
 import pytest
 
-from fair_shares.library.allocations.manager import AllocationManager
 from fair_shares.library.allocations.results import (
     BudgetAllocationResult,
     PathwayAllocationResult,
@@ -20,7 +19,6 @@ def test_allocation_contracts(test_data):
     """
     from fair_shares.library.allocations import get_allocation_functions
 
-    manager = AllocationManager()
     allocation_functions = get_allocation_functions()
     first_allocation_year = test_data["first-allocation-year"]
     allocation_year = test_data["allocation-year"]
@@ -63,8 +61,8 @@ def test_allocation_contracts(test_data):
             if param.default is inspect._empty and name not in kwargs
         ]
         if missing_required:
-            pytest.skip(
-                f"Skipping {approach} due to missing parameters: {missing_required}",
+            pytest.fail(
+                f"{approach} has required parameters not covered by test inputs: {missing_required}",
             )
 
         result = func(**kwargs)

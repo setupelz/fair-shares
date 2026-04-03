@@ -8,7 +8,7 @@ when strict=False, with appropriate warnings generated.
 import pandas as pd
 import pytest
 
-from fair_shares.library.allocations import AllocationManager
+from fair_shares.library.allocations.manager import run_allocation
 from fair_shares.library.exceptions import AllocationError
 from fair_shares.library.utils import get_year_columns
 
@@ -101,10 +101,8 @@ class TestStrictFalseMode:
 
     def test_strict_true_raises_error(self, infeasible_test_data):
         """Verify that strict=True (default) raises error for infeasible case."""
-        manager = AllocationManager()
-
         with pytest.raises(AllocationError, match="invalid long-run shares"):
-            manager.run_allocation(
+            run_allocation(
                 approach="cumulative-per-capita-convergence-adjusted",
                 population_ts=infeasible_test_data["population"],
                 country_actual_emissions_ts=infeasible_test_data["emissions"],
@@ -120,9 +118,7 @@ class TestStrictFalseMode:
 
     def test_strict_false_returns_result(self, infeasible_test_data):
         """Verify that strict=False returns a result instead of raising error."""
-        manager = AllocationManager()
-
-        result = manager.run_allocation(
+        result = run_allocation(
             approach="cumulative-per-capita-convergence-adjusted",
             population_ts=infeasible_test_data["population"],
             country_actual_emissions_ts=infeasible_test_data["emissions"],
@@ -146,9 +142,7 @@ class TestStrictFalseMode:
 
     def test_warnings_format(self, infeasible_test_data):
         """Verify warnings are formatted correctly."""
-        manager = AllocationManager()
-
-        result = manager.run_allocation(
+        result = run_allocation(
             approach="cumulative-per-capita-convergence-adjusted",
             population_ts=infeasible_test_data["population"],
             country_actual_emissions_ts=infeasible_test_data["emissions"],
@@ -174,9 +168,7 @@ class TestStrictFalseMode:
 
     def test_conservation(self, infeasible_test_data):
         """Verify shares still sum to 1.0 in strict=False mode."""
-        manager = AllocationManager()
-
-        result = manager.run_allocation(
+        result = run_allocation(
             approach="cumulative-per-capita-convergence-adjusted",
             population_ts=infeasible_test_data["population"],
             country_actual_emissions_ts=infeasible_test_data["emissions"],
@@ -198,10 +190,8 @@ class TestStrictFalseMode:
 
     def test_adjustment_factors_consistency(self, infeasible_test_data):
         """Verify adjustment factors reflect actual changes."""
-        manager = AllocationManager()
-
         # Run with strict=False
-        result_adjusted = manager.run_allocation(
+        result_adjusted = run_allocation(
             approach="cumulative-per-capita-convergence-adjusted",
             population_ts=infeasible_test_data["population"],
             country_actual_emissions_ts=infeasible_test_data["emissions"],
@@ -222,7 +212,14 @@ class TestStrictFalseMode:
         # Countries with adjustment factor > 1 should have higher cumulative share
         # (This is a sanity check - exact values depend on the algorithm)
         year_cols = get_year_columns(result_adjusted.relative_shares_pathway_emissions)
-        result_adjusted.relative_shares_pathway_emissions[year_cols].sum(axis=1)
+        cumulative_shares = result_adjusted.relative_shares_pathway_emissions[
+            year_cols
+        ].sum(axis=1)
+
+        # Verify cumulative shares are non-negative (sanity check after adjustment)
+        assert (
+            cumulative_shares >= 0
+        ).all(), "Cumulative shares should be non-negative"
 
         for iso3c, warning in result_adjusted.country_warnings.items():
             factor = float(warning.split(":")[1])
@@ -236,9 +233,7 @@ class TestStrictParameterPropagation:
 
     def test_parameter_stored_in_result(self, infeasible_test_data):
         """Verify strict parameter is stored in result.parameters."""
-        manager = AllocationManager()
-
-        result = manager.run_allocation(
+        result = run_allocation(
             approach="cumulative-per-capita-convergence-adjusted",
             population_ts=infeasible_test_data["population"],
             country_actual_emissions_ts=infeasible_test_data["emissions"],

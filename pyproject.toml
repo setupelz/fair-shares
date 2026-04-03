@@ -9,10 +9,8 @@ license = { text = "BSD-3-Clause" }
 requires-python = ">=3.11"
 dependencies = [
     "attrs>=24.3.0",
-    "browser-use",
     "country-converter>=1.0.0",
     "fastparquet>=2024.11.0",
-    "graphviz>=0.20.3",
     "ipykernel>=6.29.5",
     "ipywidgets>=8.1.8",
     "jupyterlab>=4.3.4",
@@ -33,7 +31,6 @@ dependencies = [
     "plotly>=5.18.0",
     "pyam-iamc>=3.0.0",
     "pyarrow>=21.0.0",
-    "pycollocation>=0.6.0a0",
     "pydantic>=2.0.0",
     "pyprojroot>=0.3.0",
     "pytest>=8.4.1",
@@ -112,7 +109,7 @@ formats = "ipynb,py:percent"
 
 [tool.ruff]
 src = ["src"]
-target-version = "py39"
+target-version = "py311"
 line-length = 88
 
 [tool.ruff.lint]

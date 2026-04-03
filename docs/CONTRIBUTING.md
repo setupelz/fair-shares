@@ -60,6 +60,6 @@ Check for broken links, missing front matter, and syntax warnings.
 
 1. Read the code -- docstrings in `src/` are authoritative
 2. Check `docs/science/allocations.md` for theoretical grounding
-3. Read `docs/science/climate-equity-concepts.md` to understand the normative foundations
+3. Read `docs/science/principle-to-code.md` to understand the normative foundations
 4. Run a test to verify behavior
 5. Tag maintainers for review

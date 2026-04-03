@@ -31,6 +31,8 @@
 
 # %%
 # Imports
+from pathlib import Path
+
 import pandas as pd
 import yaml
 from pyprojroot import here
@@ -43,7 +45,6 @@ from fair_shares.library.utils import (
     build_source_id,
     ensure_string_year_columns,
     generate_rcb_pathway_scenarios,
-    process_rcb_to_2020_baseline,
 )
 
 # %% tags=["parameters"]
@@ -53,21 +54,28 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+source_id = None
 
 # %%
-if emission_category is not None:
+_running_via_papermill = emission_category is not None
+
+if _running_via_papermill:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -80,7 +88,7 @@ else:
     print("Running interactively - build desired config")
 
     # Interactive development configuration
-    emission_category = "co2-ffi"  # RCB-pathways only support co2-ffi
+    emission_category = "co2-ffi"  # or "co2"
     active_sources = {
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
@@ -110,14 +118,16 @@ else:
 project_root = here()
 print(f"Project root: {project_root}")
 
-# Extract config values
-emission_category = config["emission_category"]
+# Extract config values — Papermill parameter takes precedence for decomposition
+# where per-pass emission_category differs from the config's category.
+if not _running_via_papermill:
+    emission_category = config["emission_category"]
 
-# RCB-pathways are only available for co2-ffi
-if emission_category != "co2-ffi":
+# RCB-pathways are only available for co2-ffi and co2
+if emission_category not in ("co2-ffi", "co2"):
     raise ConfigurationError(
-        f"RCB-pathway allocations only support 'co2-ffi' emission category. "
-        f"Got: {emission_category}. Please use target: 'ar6' or 'cr'"
+        f"RCB-pathway allocations only support 'co2-ffi' and 'co2' emission "
+        f"categories. Got: {emission_category}. Please use target: 'ar6'"
         f" in your configuration for other emission categories."
     )
 
@@ -142,14 +152,18 @@ print(f"  Generator: {generator}")
 print(f"  Start year: {start_year}")
 print(f"  End year: {end_year}")
 
-# Get RCB adjustments
-rcb_adjustments = rcb_pathways_config.get("data_parameters", {}).get("adjustments", {})
-bunkers_2020_2100 = rcb_adjustments.get("bunkers_2020_2100", 0.0)
-lulucf_2020_2100 = rcb_adjustments.get("lulucf_2020_2100", 0.0)
+# Get RCB adjustment configuration (NGHGI-consistent timeseries)
+from fair_shares.library.config.models import AdjustmentsConfig
 
-print("\nRCB adjustments:")
-print(f"  Bunkers (2020-2100): {bunkers_2020_2100:,.0f} Mt CO2")
-print(f"  LULUCF (2020-2100): {lulucf_2020_2100:,.0f} Mt CO2")
+rcb_data_parameters = rcb_pathways_config.get("data_parameters", {})
+rcb_adjustments_raw = rcb_data_parameters.get("adjustments", {})
+adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
+
+print("\nRCB adjustments (NGHGI-consistent, Weber et al. 2026):")
+print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
+print(f"  Bunkers source: {adjustments_config.bunkers.path}")
+print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
+print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 
 # %%
 # Construct paths to intermediate data
@@ -205,51 +219,91 @@ if rcb_data["rcb_data"]:
 # ## Load emissions data and extract world totals
 
 # %%
-# Load emissions for the emission category
-emissions_path = (
-    emissions_intermediate_dir / f"emiss_{emission_category}_timeseries.csv"
-)
+# For co2-ffi: load emissions directly from emiss_co2-ffi_timeseries.csv
+# For co2: load co2-ffi and co2-lulucf components, then construct
+# NGHGI-consistent world CO2 using build_nghgi_world_co2_timeseries(),
+# mirroring run_rcb_preprocessing() in the orchestrator.
 
-if not emissions_path.exists():
-    raise DataLoadingError(
-        f"Emissions data not found at: {emissions_path}. "
-        f"Run 101_data_preprocess_emiss first."
-    )
 
-emissions_df = pd.read_csv(emissions_path)
-emissions_df = emissions_df.set_index(["iso3c", "unit", "emission-category"])
-emissions_df = ensure_string_year_columns(emissions_df)
+def _load_world_emissions(
+    emissions_dir: Path, category: str, world_keys: list[str]
+) -> pd.DataFrame:
+    """Load emissions and extract world totals for a single category."""
+    emiss_path = emissions_dir / f"emiss_{category}_timeseries.csv"
+    if not emiss_path.exists():
+        raise DataLoadingError(
+            f"Emissions data not found at: {emiss_path}. "
+            f"Run 101_data_preprocess_emiss first."
+        )
+    emiss_df = pd.read_csv(emiss_path)
+    emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
+    emiss_df = ensure_string_year_columns(emiss_df)
 
-# Extract world emissions (needed for start value and RCB processing)
-# Look for EARTH, World, WLD, or OWID_WRL as potential world keys
+    # Find world key
+    world_key_found = None
+    for key in world_keys:
+        if key in emiss_df.index.get_level_values("iso3c"):
+            world_key_found = key
+            break
+    if world_key_found is None:
+        raise DataLoadingError(
+            f"No world emissions found in {category} emissions data. "
+            f"Tried keys: {world_keys}"
+        )
+
+    world_df = emiss_df[
+        emiss_df.index.get_level_values("iso3c") == world_key_found
+    ].copy()
+    world_df = world_df.reset_index()
+    world_df["iso3c"] = "World"
+    world_df = world_df.set_index(["iso3c", "unit", "emission-category"])
+    return world_df
+
+
 world_keys = ["EARTH", "World", "WLD", "OWID_WRL"]
-world_key_found = None
 
-for key in world_keys:
-    if key in emissions_df.index.get_level_values("iso3c"):
-        world_key_found = key
-        break
+if emission_category == "co2":
+    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI)
+    # This mirrors run_rcb_preprocessing() lines 454-480 in orchestrator.py
+    from fair_shares.library.preprocessing.rcbs import _load_shared_timeseries
+    from fair_shares.library.utils.data.nghgi import build_nghgi_world_co2_timeseries
 
-if world_key_found is None:
-    raise DataLoadingError(
-        f"No world emissions found in emissions data. Tried keys: {world_keys}"
+    # Load component timeseries
+    world_co2_ffi_df = _load_world_emissions(
+        emissions_intermediate_dir, "co2-ffi", world_keys
+    )
+    world_co2_lulucf_df = _load_world_emissions(
+        emissions_intermediate_dir, "co2-lulucf", world_keys
     )
 
-world_emissions_df = emissions_df[
-    emissions_df.index.get_level_values("iso3c") == world_key_found
-].copy()
+    # Load NGHGI LULUCF world timeseries and bunker timeseries
+    nghgi_ts, bunker_ts, splice_year = _load_shared_timeseries(
+        adjustments_config, project_root, source_id=source_id, verbose=True
+    )
 
-# Reset index to rename World key to standard "World"
-world_emissions_df = world_emissions_df.reset_index()
-world_emissions_df["iso3c"] = "World"
-world_emissions_df = world_emissions_df.set_index(
-    ["iso3c", "unit", "emission-category"]
-)
+    # Build NGHGI-consistent world CO2 timeseries
+    world_emissions_df = build_nghgi_world_co2_timeseries(
+        fossil_ts=world_co2_ffi_df,
+        nghgi_ts=nghgi_ts,
+        bunker_ts=bunker_ts,
+    )
+
+    print("\nNGHGI-consistent world CO2 timeseries constructed:")
+    print("  fossil = co2-ffi (PRIMAP)")
+    print(f"  LULUCF = Melo NGHGI ({splice_year} end year, no BM splicing)")
+    print("  bunkers = international bunker fuel")
+    print("  Formula: total CO2 = fossil - bunkers + LULUCF")
+
+else:
+    # co2-ffi: load directly
+    world_emissions_df = _load_world_emissions(
+        emissions_intermediate_dir, emission_category, world_keys
+    )
 
 # Extract start year emissions value for later use
 start_emissions = float(world_emissions_df[str(start_year)].iloc[0])
 
-print(f"\nWorld emissions extracted from emissions data (key: {world_key_found})")
+print(f"\nWorld emissions for pathway generation ({emission_category}):")
 print(
     f"  Years available: {world_emissions_df.columns[0]} to {world_emissions_df.columns[-1]}"
 )
@@ -257,76 +311,33 @@ print(f"  Start year emissions ({start_year}): {start_emissions:,.0f} Mt CO2")
 
 # %% [markdown]
 # ## Process RCB data to 2020 baseline
+#
+# Uses `load_and_process_rcbs` — the same NGHGI-consistent pipeline as
+# notebook 100. This ensures per-category net-zero years, Gidden LULUCF
+# shift in the rebase, and the precautionary BM LULUCF cap are all applied.
 
 # %%
-print("\nProcessing RCBs with adjustments:")
-print("  Target baseline year: 2020")
-print(f"  Bunkers adjustment: {bunkers_2020_2100:,.0f} Mt CO2")
-print(f"  LULUCF adjustment: {lulucf_2020_2100:,.0f} Mt CO2")
+from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 
-# Create a list to store all RCB records
-rcb_records = []
+# Always pass PRIMAP fossil (co2-ffi) as world emissions;
+# for total CO2, also pass BM LULUCF for rebase
+if emission_category == "co2":
+    _fossil_for_rcb = world_co2_ffi_df
+    _bm_lulucf_for_rcb = world_co2_lulucf_df
+else:
+    _fossil_for_rcb = world_emissions_df  # already co2-ffi
+    _bm_lulucf_for_rcb = None
 
-# Process each source
-for source_key, source_data in rcb_data["rcb_data"].items():
-    print(f"\n  Processing source: {source_key}")
-
-    # Extract metadata from source
-    baseline_year = source_data.get("baseline_year")
-    unit = source_data.get("unit", "Gt CO2")
-    scenarios = source_data.get("scenarios", {})
-
-    # Validate required fields
-    if baseline_year is None:
-        raise ConfigurationError(
-            f"RCB source '{source_key}' missing required field 'baseline_year'"
-        )
-    if not scenarios:
-        raise ConfigurationError(f"RCB source '{source_key}' has no scenarios defined")
-
-    print(f"    Baseline year: {baseline_year}, Scenarios: {len(scenarios)}")
-
-    # Process each scenario for this source
-    for scenario, rcb_value in scenarios.items():
-        # Parse scenario string into climate assessment and quantile
-        # Format: "TEMPpPROB" (e.g., "1.5p50" -> 1.5C warming, 50% probability)
-        parts = scenario.split("p")
-        if len(parts) == 2:
-            temperature = parts[0]
-            probability = parts[1]
-            climate_assessment = f"{temperature}C"
-            quantile = str(int(probability) / 100)
-        else:
-            raise ValueError(f"Invalid RCB scenario format: {scenario}")
-
-        # Process RCB to 2020 baseline
-        result = process_rcb_to_2020_baseline(
-            rcb_value=rcb_value,
-            rcb_unit=unit,
-            rcb_baseline_year=baseline_year,
-            world_co2_ffi_emissions=world_emissions_df,
-            bunkers_2020_2100=bunkers_2020_2100,
-            lulucf_2020_2100=lulucf_2020_2100,
-            target_baseline_year=2020,
-            source_name=source_key,
-            scenario=scenario,
-            verbose=False,
-        )
-
-        # Create record with parsed climate assessment and quantile
-        record = {
-            "source": source_key,
-            "scenario": scenario,
-            "climate-assessment": climate_assessment,
-            "quantile": quantile,
-            "emission-category": emission_category,
-            "rcb_2020_mt": result["rcb_2020_mt"],
-        }
-
-        rcb_records.append(record)
-
-# Convert to DataFrame
-rcbs_df = pd.DataFrame(rcb_records)
+rcbs_df = load_and_process_rcbs(
+    rcb_yaml_path=rcb_yaml_path,
+    world_fossil_emissions=_fossil_for_rcb,
+    emission_category=emission_category,
+    adjustments_config=adjustments_config,
+    project_root=project_root,
+    source_id=source_id,
+    actual_bm_lulucf_emissions=_bm_lulucf_for_rcb,
+    verbose=True,
+)
 
 print(f"\nProcessed {len(rcbs_df)} RCB records")
 print("\nRCB scenarios:")

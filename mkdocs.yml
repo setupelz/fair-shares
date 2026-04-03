@@ -167,7 +167,6 @@ nav:
   - Scientific Documentation:
       - science/index.md
       - Allocation Approaches: science/allocations.md
-      - Climate Equity Concepts: science/climate-equity-concepts.md
       - From Principle to Code: science/principle-to-code.md
       - Parameter Effects Reference: science/parameter-effects.md
       - Glossary: science/glossary.md

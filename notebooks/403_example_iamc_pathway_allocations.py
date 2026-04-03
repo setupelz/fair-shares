@@ -28,7 +28,7 @@
 #
 # Each demonstrates how different equity principles translate to IAMC regional pathway allocations.
 #
-# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) | [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/)
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports (run this first)
@@ -140,7 +140,7 @@ print(f"  Match: {'Yes' if abs(regional_sum - world_total) < 0.01 else 'No'}")
 #
 # Formula: Regional share(year) = population(year) / world_population(year)
 #
-# See: docs/science/climate-equity-concepts.md (Equal Rights to Atmosphere)
+# See: docs/science/principle-to-code.md (Equal Per Capita)
 
 # %%
 # Calculate EPC allocation from 2015

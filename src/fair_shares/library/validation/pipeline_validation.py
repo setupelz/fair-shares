@@ -5,64 +5,11 @@ Pipeline validation functions for the fair-shares library.
 
 from __future__ import annotations
 
-import os
-import sys
-from pathlib import Path
-
 import pandas as pd
 
 from fair_shares.library.error_messages import format_error
 from fair_shares.library.exceptions import DataProcessingError
 from fair_shares.library.utils.dataframes import TimeseriesDataFrame, get_year_columns
-
-
-def validate_paths(notebook_path, output_path):
-    """
-    Validate notebook and output paths.
-
-    Parameters
-    ----------
-    notebook_path : Path
-        Path to input notebook
-    output_path : Path
-        Path for output notebook
-
-    Raises
-    ------
-    SystemExit
-        If paths are invalid or inaccessible
-    """
-    # Check input notebook exists
-    if not notebook_path.exists():
-        print("\n" + "=" * 60)
-        print("INPUT NOTEBOOK NOT FOUND!")
-        print("=" * 60)
-        print(f"Notebook path: {notebook_path}")
-        print(f"Absolute path: {notebook_path.absolute()}")
-        print(f"Current working directory: {Path.cwd()}")
-        print("\n" + "=" * 60)
-        sys.exit(1)
-
-    # Check input notebook is readable
-    if not os.access(notebook_path, os.R_OK):
-        print("\n" + "=" * 60)
-        print("INPUT NOTEBOOK NOT READABLE!")
-        print("=" * 60)
-        print(f"Notebook path: {notebook_path}")
-        print("Check file permissions.")
-        print("\n" + "=" * 60)
-        sys.exit(1)
-
-    # Check output directory is writable
-    output_dir = output_path.parent
-    if output_dir.exists() and not os.access(output_dir, os.W_OK):
-        print("\n" + "=" * 60)
-        print("OUTPUT DIRECTORY NOT WRITABLE!")
-        print("=" * 60)
-        print(f"Output directory: {output_dir}")
-        print("Check directory permissions.")
-        print("\n" + "=" * 60)
-        sys.exit(1)
 
 
 def validate_index_structure(

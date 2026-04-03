@@ -9,7 +9,7 @@ generating source identifiers.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Literal
+from typing import Any, Literal
 
 import yaml
 
@@ -19,8 +19,103 @@ from fair_shares.library.exceptions import (
     DataLoadingError,
 )
 
-if TYPE_CHECKING:
-    pass
+# All valid target types.
+ALL_TARGETS: frozenset[str] = frozenset({"pathway", "rcbs", "rcb-pathways"})
+
+# Composite categories that contain non-CO2 components.
+COMPOSITE_CATEGORIES: frozenset[str] = frozenset({"all-ghg", "all-ghg-ex-co2-lulucf"})
+
+# CO2 categories (both use budget/RCB-based allocations; non-CO2 uses AR6 pathways).
+ALL_GHG_CO2_CATEGORIES: tuple[str, str] = ("co2-ffi", "co2")
+
+
+def is_composite_category(emission_category: str) -> bool:
+    """Return True if emission_category contains non-CO2 components.
+
+    Composite categories (all-ghg, all-ghg-ex-co2-lulucf) need decomposition
+    into CO2 + non-CO2 when used with RCB targets, because RCBs only constrain CO2.
+    """
+    return emission_category in COMPOSITE_CATEGORIES
+
+
+def needs_decomposition(target: str, emission_category: str) -> bool:
+    """Return True if this target + category needs 2-pass decomposition.
+
+    RCB targets can only constrain CO2, so composite categories (all-ghg,
+    all-ghg-ex-co2-lulucf) must be decomposed into CO2 (from RCBs) + non-CO2
+    (from AR6 pathways).  AR6 targets have direct data for all categories.
+    """
+    return target != "pathway" and is_composite_category(emission_category)
+
+
+def get_co2_component(emission_category: str) -> str:
+    """Return the CO2 sub-category for a composite emission category.
+
+    all-ghg             → co2     (includes LULUCF)
+    all-ghg-ex-co2-lulucf → co2-ffi (excludes LULUCF)
+    """
+    if emission_category == "all-ghg":
+        return "co2"
+    elif emission_category == "all-ghg-ex-co2-lulucf":
+        return "co2-ffi"
+    return emission_category
+
+
+def is_budget_target(target: str, category: str) -> bool:
+    """Return True if this target + category uses budget (RCB) allocation."""
+    return target == "rcbs" and category in ALL_GHG_CO2_CATEGORIES
+
+
+def get_final_categories(target: str, emission_category: str) -> tuple[str, ...]:
+    """Return the emission categories that the allocation loop iterates over.
+
+    pathway target has direct pathways for all categories — no expansion needed.
+    RCB targets need decomposition for categories containing non-CO2:
+      all-ghg               → (co2, non-co2)
+      all-ghg-ex-co2-lulucf → (co2-ffi, non-co2)
+    Pure CO2 categories pass through unchanged.
+    """
+    if target == "pathway":
+        return (emission_category,)
+
+    if emission_category == "all-ghg":
+        return ("co2", "non-co2")
+    elif emission_category == "all-ghg-ex-co2-lulucf":
+        return ("co2-ffi", "non-co2")
+    else:
+        return (emission_category,)
+
+
+def get_emission_preprocessing_categories(
+    target: str, emission_category: str
+) -> tuple[str, ...]:
+    """Return PRIMAP categories needed for emissions preprocessing.
+
+    These are the categories that the emissions notebook (101) must extract
+    from PRIMAP.  Notebook 107 (LULUCF) always needs co2-ffi, co2-lulucf,
+    and all-ghg-ex-co2-lulucf as primitives for computing derived categories,
+    so those are always included.
+    """
+    # Base primitives always needed by notebook 107 (LULUCF → derived categories)
+    _LULUCF_PRIMITIVES = {"co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
+
+    if not is_composite_category(emission_category):
+        if emission_category == "co2":
+            needed = {"co2", "co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
+        else:
+            needed = {emission_category} | _LULUCF_PRIMITIVES
+        return tuple(sorted(needed))
+
+    if target == "pathway":
+        # pathway target has direct data, but notebook 107 still needs primitives
+        needed = {emission_category} | _LULUCF_PRIMITIVES
+        return tuple(sorted(needed))
+
+    # RCB targets: need source categories for non-co2 derivation + LULUCF primitives
+    if emission_category == "all-ghg":
+        return ("all-ghg-ex-co2-lulucf", "co2", "co2-ffi", "co2-lulucf")
+    else:  # all-ghg-ex-co2-lulucf
+        return ("all-ghg-ex-co2-lulucf", "co2-ffi", "co2-lulucf")
 
 
 def build_source_id(
@@ -31,6 +126,7 @@ def build_source_id(
     gini: str,
     target: str,
     emission_category: str,
+    lulucf: str | None = None,
     rcb_generator: str | None = None,
 ) -> str:
     """Construct standardized source identifier used for output directories.
@@ -40,6 +136,9 @@ def build_source_id(
     For rcb-pathways targets, the generator name is appended to the target
     (e.g., "rcb-pathways-exponential-decay") to create separate output
     directories for different generators.
+
+    The emission_category is always included in the source_id to ensure
+    unique output directories for different emission scopes.
 
     Parameters
     ----------
@@ -52,10 +151,12 @@ def build_source_id(
     gini : str
         Gini source identifier
     target : str
-        Target source type. One of: "rcbs", "ar6", "rcb-pathways".
+        Target source type. One of: "rcbs", "pathway", "rcb-pathways".
     emission_category : str
         Emission category. Available categories are defined per target in
         ``conf/data_sources/data_sources_unified.yaml``.
+    lulucf : str | None, optional
+        LULUCF source identifier (e.g., "melo-2026")
     rcb_generator : str | None, optional
         RCB pathway generator name (only used for target="rcb-pathways")
 
@@ -64,7 +165,7 @@ def build_source_id(
     str
         Source identifier string
     """
-    # For rcb-pathways, append generator to target name (default to exponential-decay)
+    # For rcb-pathways, append generator to target name (default to exponential-decay).
     if target == "rcb-pathways":
         if rcb_generator is None:
             rcb_generator = "exponential-decay"
@@ -72,48 +173,22 @@ def build_source_id(
     else:
         target_with_generator = target
 
-    return "_".join(
-        [
-            emissions,
-            gdp,
-            population,
-            gini,
-            target_with_generator,
-            emission_category,
-        ]
-    )
+    # LULUCF only affects categories that use NGHGI corrections:
+    # co2 (directly), all-ghg (decomposes into co2 + non-co2).
+    # all-ghg-ex-co2-lulucf is NOT dependent — its CO2 component is co2-ffi.
+    _LULUCF_DEPENDENT = {"co2", "all-ghg"}
 
-
-def build_source_id_from_config(config: dict[str, Any]) -> str:
-    """Construct source_id directly from a loaded unified config dict.
-
-    Expects keys set per build_data_config output: ``active_emissions_source``,
-    ``active_gdp_source``, ``active_population_source``, ``active_gini_source``,
-    ``active_target_source``, ``emission_category``, and optionally ``rcb_generator``.
-
-    Parameters
-    ----------
-    config : dict[str, Any]
-        Configuration dictionary with active source keys
-
-    Returns
-    -------
-    str
-        Source identifier string
-    """
-    return build_source_id(
-        emissions=config["active_emissions_source"],
-        gdp=config["active_gdp_source"],
-        population=config["active_population_source"],
-        gini=config["active_gini_source"],
-        target=config["active_target_source"],
-        emission_category=config["emission_category"],
-        rcb_generator=config.get("rcb_generator"),
-    )
+    parts = [emissions, gdp, population, gini]
+    if lulucf and emission_category in _LULUCF_DEPENDENT:
+        parts.append(lulucf)
+    parts.extend([target_with_generator, emission_category])
+    return "_".join(parts)
 
 
 def build_data_config(
-    emission_category: Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"],
+    emission_category: Literal[
+        "co2-ffi", "co2-lulucf", "co2", "non-co2", "all-ghg", "all-ghg-ex-co2-lulucf"
+    ],
     active_sources: dict[str, str],
     config_path: Path | None = None,
     harmonisation_year: int | None = None,
@@ -126,9 +201,12 @@ def build_data_config(
 
     Parameters
     ----------
-    emission_category : Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"]
+    emission_category : Literal[...]
         Emission category to filter for. Options:
         - "co2-ffi": CO2 from fossil fuels and industry
+        - "co2-lulucf": LULUCF CO2 (NGHGI convention)
+        - "co2": Total CO2 (fossil + LULUCF, NGHGI-consistent)
+        - "non-co2": CH4 + N2O + F-gases (all Kyoto excl CO2)
         - "all-ghg": All greenhouse gases including LULUCF (GWP100 AR6)
         - "all-ghg-ex-co2-lulucf": All GHGs excluding CO2 from land use
     active_sources : dict[str, str]
@@ -137,7 +215,7 @@ def build_data_config(
         - "gdp": GDP source (e.g., "wdi-2025")
         - "population": population source (e.g., "un-owid-2025")
         - "gini": Gini source (e.g., "unu-wider-2025")
-        - "target": target source (e.g., "ar6", "rcbs", "rcb-pathways")
+        - "target": target source (e.g., "pathway", "rcbs", "rcb-pathways")
         - "rcb_generator": (optional) pathway generator for rcb-pathways
           (e.g., "exponential-decay"). Only used when target="rcb-pathways".
     config_path : Path | None, optional
@@ -191,16 +269,51 @@ def build_data_config(
 
     selected_target = {target: full_config["targets"][target]}
 
-    # Validate emission category is available in selected target
+    # Validate emission category is available.
+    # For pathway-mode targets, categories come from the scenario source.
     target_config = selected_target[target]
     available_categories = target_config.get("data_parameters", {}).get(
         "available_categories", []
     )
+    if not available_categories:
+        # Fall back to scenario source categories
+        _scenario_key = target_config.get("scenario_source") or full_config.get(
+            "active_scenario_source"
+        )
+        if _scenario_key:
+            _scenario_cfg = full_config.get("scenarios", {}).get(_scenario_key, {})
+            available_categories = _scenario_cfg.get("data_parameters", {}).get(
+                "available_categories", []
+            )
     if emission_category not in available_categories:
         raise ConfigurationError(
             f"Emission category '{emission_category}' not available "
             f"in target '{target}'. Available: {available_categories}"
         )
+
+    # For composite categories with budget/rcb-pathway targets, validate that
+    # a scenario source exists (non-CO2 pass needs scenario pathways).
+    _is_composite = is_composite_category(emission_category)
+    # Infer allocation mode early for validation
+    _tc = target_config
+    if _tc.get("allocation_mode"):
+        _alloc_mode = _tc["allocation_mode"]
+    elif not _tc.get("path"):
+        _alloc_mode = "pathway"
+    elif _tc.get("generator"):
+        _alloc_mode = "rcb-pathway"
+    else:
+        _alloc_mode = "budget"
+    if _is_composite and _alloc_mode != "pathway":
+        _sc_key = _tc.get("scenario_source") or full_config.get(
+            "active_scenario_source"
+        )
+        if _sc_key is None:
+            raise ConfigurationError(
+                f"Target '{target}' (allocation_mode={_alloc_mode}) requires "
+                f"'scenario_source' when emission_category='{emission_category}'. "
+                f"Non-CO2 pathways need a scenario source for decomposition."
+            )
 
     # Validate and process rcb_generator parameter
     rcb_generator = active_sources.get("rcb_generator")
@@ -228,27 +341,41 @@ def build_data_config(
             f"target='rcb-pathways'."
         )
 
-    # Determine harmonisation_year: only needed for scenario-based targets, not for RCBs
-    # Any target that isn't "rcbs" is assumed scenario-based and needs harmonisation
-    final_harmonisation_year = None
+    # Determine harmonisation_year: always include when available, since upstream
+    # notebooks (e.g., 104 scenario preprocessing) need it regardless of target.
+    if harmonisation_year is not None:
+        final_harmonisation_year = harmonisation_year
+    else:
+        final_harmonisation_year = full_config.get("harmonisation_year")
 
-    if target != "rcbs":
-        # For scenario-based targets, harmonisation_year is required
-        if harmonisation_year is not None:
-            final_harmonisation_year = harmonisation_year
+    # Scenario-based targets require it — error if missing
+    if final_harmonisation_year is None and (target != "rcbs" or _is_composite):
+        raise ConfigurationError(
+            f"harmonisation_year is required for scenario-based targets "
+            f"(target='{target}'). "
+            "Please provide it in notebook 301 or in the config YAML file."
+        )
+
+    # Resolve scenario source: per-target override → global default → None
+    active_target_cfg = full_config["targets"][target]
+    scenario_source_key = active_target_cfg.get("scenario_source") or full_config.get(
+        "active_scenario_source"
+    )
+    all_scenarios = full_config.get("scenarios", {})
+    if scenario_source_key and scenario_source_key in all_scenarios:
+        filtered_scenarios = {scenario_source_key: all_scenarios[scenario_source_key]}
+    else:
+        filtered_scenarios = {}
+
+    # Infer allocation_mode from target structure if not explicit
+    _alloc_mode = active_target_cfg.get("allocation_mode")
+    if not _alloc_mode:
+        if not active_target_cfg.get("path"):
+            _alloc_mode = "pathway"
+        elif active_target_cfg.get("generator"):
+            _alloc_mode = "rcb-pathway"
         else:
-            # Try to get from config YAML
-            config_harmonisation_year = full_config.get("harmonisation_year")
-            if config_harmonisation_year is not None:
-                final_harmonisation_year = config_harmonisation_year
-            else:
-                # Raise error if not provided and not in config
-                raise ConfigurationError(
-                    f"harmonisation_year is required for scenario-based targets "
-                    f"(target='{target}'). "
-                    "Please provide it in notebook 301 or in the config YAML file."
-                )
-    # For RCBs, harmonisation_year is not needed - leave it as None
+            _alloc_mode = "budget"
 
     # Build filtered config dict
     filtered_config = {
@@ -257,6 +384,8 @@ def build_data_config(
         "gdp": full_config.get("gdp", {}),
         "population": full_config.get("population", {}),
         "gini": full_config.get("gini", {}),
+        "lulucf": full_config.get("lulucf", {}),
+        "scenarios": filtered_scenarios,
         "targets": selected_target,
         "general": full_config.get("general", {}),
         "harmonisation_year": final_harmonisation_year,
@@ -265,19 +394,21 @@ def build_data_config(
         "active_gdp_source": active_sources.get("gdp"),
         "active_population_source": active_sources.get("population"),
         "active_gini_source": active_sources.get("gini"),
+        "active_lulucf_source": active_sources.get("lulucf"),
         "active_target_source": target,
+        "active_scenario_source": scenario_source_key,
         "rcb_generator": rcb_generator,  # Will be None for non-rcb-pathways targets
     }
 
     # Validate with Pydantic (this will raise ValidationError if invalid)
     validated_config = DataSourcesConfig(**filtered_config)
 
-    # Build source_id directly from the active sources
     source_id = build_source_id(
         emissions=active_sources.get("emissions"),
         gdp=active_sources.get("gdp"),
         population=active_sources.get("population"),
         gini=active_sources.get("gini"),
+        lulucf=active_sources.get("lulucf"),
         target=target,
         emission_category=emission_category,
         rcb_generator=rcb_generator,
@@ -286,18 +417,24 @@ def build_data_config(
     return validated_config, source_id
 
 
-def get_compatible_approaches(target: str) -> list[str]:
+def get_compatible_approaches(
+    target: str, emission_category: str = "co2-ffi"
+) -> list[str]:
     """
     Return allocation approaches compatible with the given target type.
 
-    Budget approaches (ending with "-budget") are compatible with "rcbs" target.
-    Pathway approaches (not ending with "-budget") are compatible with scenario
-    targets ("ar6", "rcb-pathways").
+    Budget approaches (ending with "-budget") are compatible with "rcbs" target
+    when not running all-GHG.  When ``emission_category="all-ghg"`` and
+    ``target="rcbs"``, both budget and pathway approaches are returned because
+    CO2 uses budget allocation and non-CO2 uses pathway allocation.
 
     Parameters
     ----------
     target : str
-        Target source type: "rcbs", "ar6", or "rcb-pathways"
+        Target source type: "rcbs", "pathway", or "rcb-pathways".
+    emission_category : str, default "co2-ffi"
+        Emission category. When "all-ghg", rcbs returns both budget and pathway
+        approaches.
 
     Returns
     -------
@@ -309,8 +446,11 @@ def get_compatible_approaches(target: str) -> list[str]:
     >>> get_compatible_approaches("rcbs")
     ['equal-per-capita-budget', 'per-capita-adjusted-budget', ...]
 
-    >>> get_compatible_approaches("ar6")
+    >>> get_compatible_approaches("pathway")
     ['equal-per-capita', 'per-capita-adjusted', ...]
+
+    >>> get_compatible_approaches("rcbs", emission_category="all-ghg")
+    ['equal-per-capita-budget', ..., 'equal-per-capita', ...]
     """
     # Budget approaches - compatible with RCB targets
     budget_approaches = [
@@ -331,8 +471,12 @@ def get_compatible_approaches(target: str) -> list[str]:
     ]
 
     if target == "rcbs":
+        if needs_decomposition(target, emission_category):
+            return (
+                budget_approaches + pathway_approaches
+            )  # CO2 budgets + non-CO2 pathways
         return budget_approaches
-    elif target in ["ar6", "rcb-pathways"]:
+    elif target in ALL_TARGETS:
         return pathway_approaches
     else:
         # Unknown target - return all approaches with a warning
@@ -413,18 +557,21 @@ def validate_data_source_config(
 
     # Get compatible approaches
     target = active_sources.get("target", "")
-    compatible_approaches = get_compatible_approaches(target)
+    compatible_approaches = get_compatible_approaches(target, emission_category)
 
     # Determine target type
-    if target == "rcbs":
+    if is_composite_category(emission_category):
+        target_type = "composite"
+    elif target == "rcbs":
         target_type = "budget"
-    elif target in ["ar6", "rcb-pathways"]:
+    elif target in ALL_TARGETS:
         target_type = "pathway"
     else:
         target_type = "unknown"
         if target:
             issues.append(
-                f"Unknown target type: '{target}'. Expected: rcbs, ar6, or rcb-pathways"
+                f"Unknown target type: '{target}'. "
+                f"Expected one of: {sorted(ALL_TARGETS)}"
             )
 
     # Print summary
@@ -433,6 +580,10 @@ def validate_data_source_config(
             f"[OK] Emission category '{emission_category}' is valid for target '{target}'"
         )
         print(f"[OK] Target type: {target_type}")
+        if target_type == "composite":
+            print(
+                f"[OK] Composite run: {get_final_categories(target, emission_category)}"
+            )
         print(f"[OK] Compatible approaches: {len(compatible_approaches)} available")
 
     return {

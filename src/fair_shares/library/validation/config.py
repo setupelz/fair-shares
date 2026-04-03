@@ -8,35 +8,12 @@ See docs/science/ for theoretical foundations of validation requirements.
 from __future__ import annotations
 
 import inspect
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from fair_shares.library.error_messages import format_error
 from fair_shares.library.exceptions import AllocationError, ConfigurationError
-
-
-def validate_allocation_approach(
-    approach: str, available_approaches: list[str]
-) -> None:
-    """
-    Validate that an allocation approach is implemented and available.
-
-    Parameters
-    ----------
-    approach : str
-        The allocation approach to validate
-    available_approaches : list[str]
-        List of allocation approaches currently implemented in the library
-
-    Raises
-    ------
-    AllocationError
-        If the approach is not available in the library
-    """
-    if approach not in available_approaches:
-        raise AllocationError(
-            f"Unknown allocation approach: {approach}. "
-            f"Available: {available_approaches}"
-        )
+from fair_shares.library.utils.data.config import ALL_TARGETS
 
 
 def validate_allocation_parameters(
@@ -108,6 +85,108 @@ def validate_allocation_parameters(
         )
 
 
+# Default NGHGI min year — used only as a fallback when no metadata is available.
+# The actual min year should be derived from lulucf_metadata.yaml at runtime.
+_NGHGI_MIN_YEAR_DEFAULT = 2000
+
+
+def _raise_nghgi_year_error(
+    approach: str,
+    param_name: str,
+    year: int,
+    emission_category: str,
+    nghgi_min_year: int,
+) -> None:
+    """Raise AllocationError for year < nghgi_min_year in LULUCF-containing categories."""
+    raise AllocationError(
+        f"Configuration error for approach '{approach}':\n"
+        f"  {param_name} = {year} is before {nghgi_min_year}\n\n"
+        f"For emission_category='{emission_category}' (contains LULUCF), "
+        f"all allocations must be NGHGI-consistent. NGHGI-consistent LULUCF "
+        f"CO2 data only starts in {nghgi_min_year} — both at country level "
+        f"and world level (derived from NGHGI data).\n\n"
+        f"Options:\n"
+        f"  1. Set {param_name} >= {nghgi_min_year}\n"
+        f"  2. Use emission_category='co2-ffi' or 'all-ghg-ex-co2-lulucf' "
+        f"(no LULUCF data dependency)"
+    )
+
+
+def validate_allocation_year_for_co2(
+    allocations_config: dict[str, list[dict[str, Any]]],
+    emission_category: str,
+    nghgi_min_year: int | None = None,
+) -> None:
+    """
+    Enforce year parameters >= nghgi_min_year for LULUCF-containing categories.
+
+    The minimum year is derived from the NGHGI data (e.g., Melo v3.1 starts
+    at 2000). No NGHGI/BM splicing is allowed — categories containing LULUCF
+    are limited to the NGHGI data range.
+
+    This applies to budget allocations (``allocation_year``), pathway
+    allocations (``first_allocation_year``), and responsibility-adjusted
+    approaches (``historical_responsibility_year``) to ensure
+    methodological consistency.
+
+    Parameters
+    ----------
+    allocations_config : dict[str, list[dict[str, Any]]]
+        Configuration dict with approach names as keys
+    emission_category : str
+        Emission category (e.g. "co2-ffi", "co2", "all-ghg")
+    nghgi_min_year : int or None
+        Minimum year for NGHGI-consistent allocations (derived from data).
+        If None, uses the default (currently 2000).
+
+    Raises
+    ------
+    AllocationError
+        If allocation start year or historical_responsibility_year < nghgi_min_year
+        for LULUCF-containing emission categories ("co2", "all-ghg")
+    """
+    # Resolve NGHGI min year
+    min_year = nghgi_min_year if nghgi_min_year is not None else _NGHGI_MIN_YEAR_DEFAULT
+
+    # Categories containing LULUCF: "co2" (= co2-ffi + co2-lulucf) and
+    # "all-ghg" (= co2 + non-co2, where co2 includes LULUCF).
+    _LULUCF_CATEGORIES = {"co2", "all-ghg"}
+    if emission_category not in _LULUCF_CATEGORIES:
+        return
+
+    for approach, params_list in allocations_config.items():
+        is_budget = approach.endswith("-budget")
+        year_param = "allocation_year" if is_budget else "first_allocation_year"
+
+        for params in params_list:
+            params_snake = {k.replace("-", "_"): v for k, v in params.items()}
+            years = params_snake.get(year_param, [])
+            if not isinstance(years, (list, tuple)):
+                years = [years]
+
+            for year in years:
+                if year < min_year:
+                    _raise_nghgi_year_error(
+                        approach, year_param, year, emission_category, min_year
+                    )
+
+            # Check historical_responsibility_year
+            hist_year = params_snake.get("historical_responsibility_year")
+            if hist_year is not None:
+                hist_years = (
+                    hist_year if isinstance(hist_year, (list, tuple)) else [hist_year]
+                )
+                for hy in hist_years:
+                    if hy < min_year:
+                        _raise_nghgi_year_error(
+                            approach,
+                            "historical_responsibility_year",
+                            hy,
+                            emission_category,
+                            min_year,
+                        )
+
+
 def validate_allocation_years_against_harmonisation(
     allocations_config: dict[str, list[dict[str, Any]]],
     harmonisation_year: int | None,
@@ -125,14 +204,16 @@ def validate_allocation_years_against_harmonisation(
     harmonisation_year : int | None
         Year at which scenarios are harmonized to historical data
     target_source : str
-        Target source (e.g., "rcbs", "ar6", "rcb-pathways")
+        Target source (e.g., "rcbs", "pathway", "rcb-pathways")
 
     Raises
     ------
     AllocationError
         If allocation years exceed harmonisation_year for scenario-based targets
     """
-    # Only validate for scenario-based targets (not RCBs-only)
+    # Only validate for scenario-based targets (not RCBs-only).
+    # Note: rcbs + all-ghg is also scenario-based (non-CO2 uses scenario pathways),
+    # but the harmonisation check only applies when harmonisation_year is set.
     if target_source == "rcbs" or harmonisation_year is None:
         return
 
@@ -180,7 +261,7 @@ def validate_target_source_compatibility(
     allocations_config : dict[str, list[dict[str, Any]]]
         Configuration dict with approach names as keys
     target_source : str
-        Target source (e.g., "rcbs", "ar6", "rcb-pathways")
+        Target source (e.g., "rcbs", "pathway", "rcb-pathways")
 
     Raises
     ------
@@ -206,8 +287,7 @@ def validate_target_source_compatibility(
                 f"  - 'equal-per-capita-budget' instead of 'equal-per-capita'\n"
             )
 
-    elif target_source in ["ar6", "rcb-pathways"]:
-        # LOCKOUT: Budget allocations are not yet supported with pathway-based scenarios
+    elif target_source in ALL_TARGETS - {"rcbs"}:
         # This is a temporary restriction until we determine how to properly
         # calculate allocation_year budgets from pathways that may have
         # net-negative emissions and other complexities.
@@ -224,7 +304,7 @@ def validate_target_source_compatibility(
 
         if budget_approaches:
             target_display = {
-                "ar6": "AR6 scenarios",
+                "pathway": "AR6 scenarios",
                 "rcb-pathways": "RCB-derived pathways",
             }.get(target_source, f"{target_source} pathways")
 

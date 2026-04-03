@@ -83,7 +83,7 @@ class TestErrorMessageFormatting:
 
     def test_format_error_invalid_target(self):
         """Test formatting of invalid_target error with suggestion."""
-        suggestion = suggest_similar("rcb", ["rcbs", "ar6", "cr", "rcb-pathways"])
+        suggestion = suggest_similar("rcb", ["rcbs", "pathway", "cr", "rcb-pathways"])
         msg = format_error("invalid_target", target="rcb", suggestion=suggestion)
 
         assert "Target 'rcb' not recognized" in msg
@@ -196,7 +196,7 @@ class TestSuggestSimilar:
 
     def test_suggest_similar_exact_typo_rcb_to_rcbs(self):
         """Test the canonical typo case: rcb -> rcbs."""
-        result = suggest_similar("rcb", ["rcbs", "ar6", "cr", "rcb-pathways"])
+        result = suggest_similar("rcb", ["rcbs", "pathway", "cr", "rcb-pathways"])
 
         assert "Did you mean:" in result
         assert "rcbs" in result
@@ -228,17 +228,17 @@ class TestSuggestSimilar:
 
     def test_suggest_similar_no_close_match(self):
         """Test fallback when no close match exists."""
-        result = suggest_similar("xyz", ["rcbs", "ar6", "cr"])
+        result = suggest_similar("xyz", ["rcbs", "pathway", "cr"])
 
         # Should fall back to listing valid options
         assert "Valid options:" in result
         assert "rcbs" in result
-        assert "ar6" in result
+        assert "pathway" in result
         assert "cr" in result
 
     def test_suggest_similar_case_sensitive(self):
         """Test that matching is case-sensitive by default."""
-        result = suggest_similar("RCB", ["rcbs", "ar6", "cr", "rcb-pathways"])
+        result = suggest_similar("RCB", ["rcbs", "pathway", "cr", "rcb-pathways"])
 
         # difflib default cutoff is 0.6, case mismatch might still match
         # but we want to ensure we get suggestions
@@ -285,7 +285,7 @@ class TestErrorMessageIntegration:
         """Test complete workflow for invalid target error."""
         # Simulate user typo
         user_input = "rcb"
-        valid_targets = ["rcbs", "ar6", "cr", "rcb-pathways"]
+        valid_targets = ["rcbs", "pathway", "cr", "rcb-pathways"]
 
         # Generate suggestion
         suggestion = suggest_similar(user_input, valid_targets)

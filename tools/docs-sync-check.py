@@ -772,7 +772,6 @@ def check_reference_comments() -> list[ValidationResult]:
     # Check specific markdown files
     files_to_check = [
         docs_dir / "allocations.md",
-        docs_dir / "climate-equity-concepts.md",
         docs_dir / "parameter-effects.md",
     ]
 

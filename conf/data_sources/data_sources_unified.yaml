@@ -1,54 +1,66 @@
-# Unified Data Source Configuration for fair-shares Pipeline
-# This single configuration file contains all available data sources for all emission categories
-# The filtering logic (build_data_config in src/fair_shares/library/utils/data/processing.py) will
-# select the appropriate subset based on user choices
+# =============================================================================
+# Data Source Configuration
+# =============================================================================
+#
+# This file defines all available data sources for the fair-shares pipeline.
+# The notebooks select ONE source per section (emissions, gdp, population,
+# gini, target) via the active_*_source parameters.
+#
+# To add a new data source: add an entry under the relevant section with a
+# unique key, a path to the data file, and source-specific parameters.
+# =============================================================================
 
-# Historical emissions data
+# --- LULUCF (NGHGI-convention) -----------------------------------------------
+lulucf:
+  melo-2026:
+    path: "data/lulucf/melo-2026/timeseries_NGHGI_v3.1.csv"
+    data_parameters:
+      world_key: "WRD"
+      format: "long" # Melo uses long format (ISO3, Year, CFluxes_yr)
+      category_filter: "LULUCF"
+      gas_filter: "CO2"
+      exclude_regions: ["EU27"]
+      value_column: "CFluxes_yr"
+      iso3_column: "ISO3"
+      year_column: "Year"
+
+# --- Historical emissions ---------------------------------------------------
 emissions:
   primap-202503:
     path: "data/emissions/primap-202503/Guetschow_et_al_2025-PRIMAP-hist_v2.6.1_final_no_rounding_13-Mar-2025.nc"
     data_parameters:
       available_categories:
-        [
-          co2-ffi,
-          co2-lulucf,
-          ch4-ffi,
-          ch4-afolu,
-          n2o,
-          all-ghg,
-          all-ghg-ex-co2-lulucf,
-        ]
+        [co2-ffi, co2, co2-lulucf, non-co2, all-ghg, all-ghg-ex-co2-lulucf]
       world_key: "EARTH"
-      scenario: "HISTCR" # Can be "HISTTP" or "HISTCR"
+      scenario: "HISTCR" # "HISTCR" for country-reported (can use "HISTTP" for third party)
 
-# GDP data
+# --- GDP ---------------------------------------------------------------------
 gdp:
   wdi-2025:
     path_ppp: "data/gdp/wdi-2025/API_NY.GDP.MKTP.PP.CD_DS2_en_csv_v2_1090665.csv"
     path_mer: "data/gdp/wdi-2025/API_NY.GDP.MKTP.CD_DS2_en_csv_v2_5607117.csv"
     data_parameters:
-      gdp_variant: "PPP" # Choose between "PPP" or "MER"
+      gdp_variant: "PPP" # "PPP" or "MER"
       world_key: "WLD"
   imf-2025:
     path_ppp: "data/gdp/imf-2025/imf-dm-export-20251119_PPP.xls"
     path_mer: "data/gdp/imf-2025/imf-dm-export-20251119_MER.xls"
     data_parameters:
-      gdp_variant: "PPP" # Choose between "PPP" or "MER"
+      gdp_variant: "PPP" # "PPP" or "MER"
       world_key: "World"
 
-# Population data (combined historical and projected)
+# --- Population --------------------------------------------------------------
 population:
   un-owid-2025:
     path_historical: "data/population/un-owid-2025/population.csv"
     path_projected: "data/population/un-owid-2025/UN_PPP2024_Output_PopTot.xlsx"
     data_parameters:
       projected_variant: "un-median-to-2100"
-      # IMPORTANT: The historical_world_key is used as the standard for combined population data
-      # This ensures consistency with the add_row_timeseries function which expects the historical world key
+      # historical_world_key is used as the standard for combined population data
       historical_world_key: "OWID_WRL"
       projected_world_key: "World"
 
-# Gini data
+# --- Gini coefficients -------------------------------------------------------
 gini:
   unu-wider-2025:
     path: "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
@@ -61,52 +73,71 @@ gini:
       world_key: "WLD"
       gini_year: 2020
 
-# Target sources (e.g. ar6, rcbs) - for future emissions/budgets
-targets:
-  # IPCC AR6 scenarios from Gidden et al.
+# --- Scenario source ---------------------------------------------------------
+# Where pathway data comes from. Currently AR6; add SCI here when available.
+# The active scenario source is the default for all targets unless overridden.
+
+active_scenario_source: "ar6"
+
+scenarios:
   ar6:
     path: "data/scenarios/ipcc_ar6_gidden/ar6_gidden.zip"
+    format: "iamc-zip"
+    notebook: "104_data_preprocess_scenarios"
     data_parameters:
-      available_categories: [co2-ffi, all-ghg, all-ghg-ex-co2-lulucf]
+      available_categories:
+        [co2-ffi, co2-lulucf, co2, non-co2, all-ghg, all-ghg-ex-co2-lulucf]
       interpolation_method: "linear"
       quantiles: [0.5]
       world_key: "World"
 
-  # Remaining Carbon Budgets (only for co2-ffi)
+# --- Targets -----------------------------------------------------------------
+# Each target defines the allocation strategy.  Pick ONE per run.
+#
+# Allocation mode is inferred from the target structure:
+#   no path         → pathway (use scenarios directly)
+#   path, no gen.   → budget (cumulative RCB allocation)
+#   path + generator → rcb-pathway (RCBs converted to annual pathways)
+#
+# Override scenario_source per-target only if different from the global default.
+#
+# Combined with emission_category="all-ghg":
+#   budget/rcb-pathway → CO2 from RCBs + non-CO2 from scenario source
+#   pathway            → scenario pathways for both CO2 and non-CO2
+
+targets:
+  # Use scenario pathways directly
+  pathway: {}
+
+  # Remaining carbon budgets — cumulative allocation
   rcbs:
     path: "data/rcbs/rcbs.yaml"
     data_parameters:
-      available_categories: [co2-ffi] # RCBs only available for CO2-FFI
-      # Adjustments (in Mt * CO2)
-      adjustments:
-        bunkers_2020_2100: 47000 # International shipping and aviation CO2 emissions 2020-2100
-        lulucf_2020_2100: 0.0 # Land use, land-use change and forestry CO2 emissions 2020-2100
+      available_categories: [co2-ffi, co2, all-ghg, all-ghg-ex-co2-lulucf]
+      adjustments: &rcb_adjustments
+        lulucf_nghgi:
+          path: "output/{source_id}/intermediate/emissions/world_co2-lulucf_timeseries.csv"
+        bunkers:
+          path: "output/{source_id}/intermediate/emissions/bunker_timeseries.csv"
+        ar6_constants_path: "data/rcbs/ar6_category_constants.yaml"
+        precautionary_lulucf: true
 
-  # RCB-based Pathways (converts RCBs to emission pathways using a configurable generator)
+  # RCB converted to annual pathways
   rcb-pathways:
     path: "data/rcbs/rcbs.yaml"
-    generator:
-      "exponential-decay" # Pathway generator method - currently supports: "exponential-decay"
-      # This parameter selects which algorithm to use for distributing
-      # the RCB over time (additional generators can be added in the future)
+    generator: "exponential-decay"
     data_parameters:
-      available_categories: [co2-ffi] # Only CO2-FFI, derived from RCBs
-      interpolation_method: "linear"
-      quantiles: [0.5]
-      world_key: "World"
-      # Pathway generation parameters
+      available_categories: [co2-ffi, co2, all-ghg, all-ghg-ex-co2-lulucf]
       pathway_parameters:
         start_year: 2020
         end_year: 2100
-      # RCB adjustments (same as rcbs)
-      adjustments:
-        bunkers_2020_2100: 47000
-        lulucf_2020_2100: 0.0
+      adjustments: *rcb_adjustments
 
-# Global harmonisation year applied to all scenario pathways
+# --- Global settings ---------------------------------------------------------
+# Harmonisation year applied to all scenario pathways
 harmonisation_year: 2020
 
-# Region mapping table (unofficial)
+# Region mapping
 general:
   region_mapping:
     path: "data/regions/iso3c_region_mapping_20240319.csv"

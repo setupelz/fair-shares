@@ -17,16 +17,18 @@ def load_preprocessing_config(
     active_gdp_source: str | None,
     active_population_source: str | None,
     active_gini_source: str | None,
+    active_lulucf_source: str | None = None,
 ) -> tuple[dict[str, Any], str, Path]:
     """Load preprocessing configuration from Papermill parameters or interactive defaults.
 
     Args:
         emission_category: Emission category (e.g., "co2-ffi", "all-ghg-ex-co2-lulucf")
-        active_target_source: Target source (e.g., "rcbs", "ar6")
+        active_target_source: Target source (e.g., "rcbs", "pathway")
         active_emissions_source: Emissions source (e.g., "primap-202503")
         active_gdp_source: GDP source (e.g., "wdi-2025")
         active_population_source: Population source (e.g., "un-owid-2025")
         active_gini_source: Gini source (e.g., "unu-wider-2025")
+        active_lulucf_source: LULUCF source (e.g., "melo-2026")
 
     Returns
     -------
@@ -43,6 +45,7 @@ def load_preprocessing_config(
             gdp=active_gdp_source,
             population=active_population_source,
             gini=active_gini_source,
+            lulucf=active_lulucf_source,
             target=active_target_source,
             emission_category=emission_category,
         )

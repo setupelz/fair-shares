@@ -324,7 +324,6 @@ def harmonize_to_historical_with_convergence(
     ur: pint.facets.PlainRegistry = get_default_unit_registry(),
     preserve_cumulative_peak: bool = False,
     easing_power: float = 1.0,
-    max_peak_diff_percent: float = 1.0,
 ) -> TimeseriesDataFrame:
     """
     Harmonize scenario pathways to historical data with linear convergence.
@@ -356,8 +355,6 @@ def harmonize_to_historical_with_convergence(
     easing_power
         Controls ease-in curve for cumulative corrections (1=linear, 2=quadratic).
         Higher values concentrate adjustments in later years. Default 1.0.
-    max_peak_diff_percent
-        Unused parameter kept for API compatibility. Default 1.0.
 
     Returns
     -------

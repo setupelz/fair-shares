@@ -115,6 +115,120 @@ class GiniSourceConfig(BaseModel):
         return validate_path_exists(v, "Gini data file")
 
 
+class LulucfDataParameters(BaseModel):
+    """Parameters for LULUCF data source."""
+
+    world_key: str = Field(..., description="Key identifier for world/global data")
+    format: str = Field(..., description="Data format (e.g. 'long')")
+    category_filter: str = Field(
+        ..., description="Category to filter on (e.g. 'LULUCF')"
+    )
+    gas_filter: str = Field(..., description="Gas to filter on (e.g. 'CO2')")
+    exclude_regions: list[str] = Field(
+        default_factory=list, description="Regions to exclude (e.g. ['EU27'])"
+    )
+    value_column: str = Field(..., description="Column containing flux values")
+    iso3_column: str = Field(..., description="Column containing ISO3 country codes")
+    year_column: str = Field(..., description="Column containing year values")
+
+
+class LulucfSourceConfig(BaseModel):
+    """Configuration for LULUCF data source."""
+
+    path: str = Field(..., description="Path to LULUCF data file")
+    data_parameters: LulucfDataParameters
+
+    @field_validator("path")
+    @classmethod
+    def validate_path_exists(cls, v: str) -> str:
+        """Validate that the path exists (relative to project root)."""
+        return validate_path_exists(v, "LULUCF data file")
+
+
+class DataSourceRef(BaseModel):
+    """Reference to a data file used for timeseries-based RCB adjustments."""
+
+    path: str = Field(
+        ..., description="Path to the data file (relative to project root)"
+    )
+
+
+class AdjustmentsConfig(BaseModel):
+    """RCB adjustment configuration — timeseries-based (NGHGI-consistent)."""
+
+    lulucf_nghgi: DataSourceRef = Field(
+        ...,
+        description="NGHGI-reported LULUCF CO2 world timeseries (notebook 105 output)",
+    )
+    bunkers: DataSourceRef = Field(
+        ..., description="International bunker fuel CO2 timeseries"
+    )
+    ar6_constants_path: str = Field(
+        "data/rcbs/ar6_category_constants.yaml",
+        description=(
+            "Path to auto-generated AR6 category constants file (relative to "
+            "project root). Contains per-category net-zero years computed from "
+            "Gidden et al. AR6 reanalysis by the RCB preprocessing notebook."
+        ),
+    )
+    precautionary_lulucf: bool = Field(
+        True,
+        description=(
+            "If true (default), BM LULUCF sinks cannot increase the fossil "
+            "budget for co2-ffi. Sources still reduce it. Implements "
+            "max(0, BM_cumulative) so uncertain future reforestation does not "
+            "inflate the fossil budget."
+        ),
+    )
+
+
+class ScenarioDataParameters(BaseModel):
+    """Parameters for scenario data source."""
+
+    available_categories: list[str] = Field(
+        ..., description="Available emission categories in this dataset"
+    )
+    interpolation_method: str = Field(
+        "linear", description="Method for temporal interpolation"
+    )
+    quantiles: list[float] = Field(
+        default_factory=lambda: [0.5], description="Quantiles to extract"
+    )
+    world_key: str = Field("World", description="Key identifier for world/global data")
+
+
+class ScenarioSourceConfig(BaseModel):
+    """Configuration for a scenario data source (e.g. AR6, SCI)."""
+
+    path: str = Field(
+        ..., description="Path to scenario data file (e.g., ar6_gidden.zip)"
+    )
+    format: str = Field("iamc-zip", description="Data format: iamc-zip, iamc-xlsx, csv")
+    notebook: str = Field(
+        "104_data_preprocess_scenarios",
+        description="Notebook stem that processes this source",
+    )
+    data_parameters: ScenarioDataParameters
+
+
+class AllGhgScenariosConfig(BaseModel):
+    """Configuration for the AR6 scenario data used in all-GHG non-CO2 passes."""
+
+    path: str = Field(
+        ..., description="Path to the AR6 scenarios data file (e.g., ar6_gidden.zip)"
+    )
+    interpolation_method: str = Field(
+        "linear", description="Method for temporal interpolation"
+    )
+    quantiles: list[float] = Field(
+        default_factory=lambda: [0.5], description="Quantiles to extract"
+    )
+    world_key: str = Field("World", description="Key for world/global data")
+    adjustments: AdjustmentsConfig | None = Field(
+        None, description="Optional RCB adjustments for non-CO2 passes"
+    )
+
+
 class TargetDataParameters(BaseModel):
     """Parameters for target data source (AR6 scenarios or remaining carbon budgets)."""
 
@@ -126,21 +240,42 @@ class TargetDataParameters(BaseModel):
     )
     quantiles: list[float] | None = Field(None, description="Available quantiles")
     world_key: str | None = Field(None, description="Key for world/global data")
-    adjustments: dict[str, float] | None = Field(
+    adjustments: AdjustmentsConfig | None = Field(
         None, description="Adjustments for RCB processing (bunkers, lulucf, etc.)"
+    )
+    all_ghg_scenarios: AllGhgScenariosConfig | None = Field(
+        None,
+        description=(
+            "AR6 scenario configuration for the non-CO2 pass of all-GHG runs. "
+            "Required when emission_category='all-ghg' (except for target='pathway')."
+        ),
     )
 
 
 class TargetSourceConfig(BaseModel):
-    """Configuration for target data source (AR6 scenarios or remaining carbon budgets)."""
+    """Configuration for an allocation target.
 
-    path: str = Field(..., description="Path to target data file")
+    Pathway-mode targets need no path — they use scenario data directly.
+    Budget and rcb-pathway targets need a path to RCB data.
+    """
+
+    path: str | None = Field(
+        None, description="Path to target data file (RCB targets only)"
+    )
     data_parameters: TargetDataParameters | None = None
+    scenario_source: str | None = Field(
+        None, description="Key into scenarios section (e.g. 'ar6')"
+    )
+    allocation_mode: str | None = Field(
+        None, description="Allocation mode: pathway, budget, or rcb-pathway"
+    )
 
     @field_validator("path")
     @classmethod
-    def validate_path_exists(cls, v: str) -> str:
+    def validate_path_exists(cls, v: str | None) -> str | None:
         """Validate that the path exists (relative to project root)."""
+        if v is None:
+            return v
         return validate_path_exists(v, "Target data file")
 
 
@@ -156,12 +291,39 @@ class GeneralConfig(BaseModel):
     region_mapping: RegionMappingConfig
 
 
+class NonCO2Overrides(BaseModel):
+    """Optional parameter overrides for non-CO2 GHG allocations.
+
+    Non-CO2 inherits all parameters from the CO2 allocation config except
+    those explicitly set here. None means "inherit from CO2 config".
+    """
+
+    convergence_year: int | None = None
+    responsibility_weight: float | None = None
+    capability_weight: float | None = None
+
+    def merge_with(self, base: dict) -> dict:
+        """Return a copy of base params with non-None overrides applied.
+
+        Uses ``model_dump(exclude_none=True)`` so that new fields added to this
+        model are automatically propagated without updating this method.
+        """
+        result = dict(base)
+        result.update(self.model_dump(exclude_none=True))
+        return result
+
+
 class DataSourcesConfig(BaseModel):
     """Top-level configuration for all data sources."""
 
-    emission_category: Literal["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"] = Field(
-        ..., description="Emission category for this configuration"
-    )
+    emission_category: Literal[
+        "co2-ffi",
+        "co2-lulucf",
+        "co2",
+        "non-co2",
+        "all-ghg",
+        "all-ghg-ex-co2-lulucf",
+    ] = Field(..., description="Emission category for this configuration")
     emissions: dict[str, EmissionsSourceConfig] = Field(
         ..., description="Available emissions data sources"
     )
@@ -174,12 +336,28 @@ class DataSourcesConfig(BaseModel):
     gini: dict[str, GiniSourceConfig] = Field(
         ..., description="Available Gini data sources"
     )
+    lulucf: dict[str, LulucfSourceConfig] = Field(
+        default_factory=dict, description="Available LULUCF data sources"
+    )
+    scenarios: dict[str, ScenarioSourceConfig] = Field(
+        default_factory=dict, description="Available scenario data sources (e.g. ar6)"
+    )
     targets: dict[str, TargetSourceConfig] = Field(
         ..., description="Available target sources (AR6 scenarios, RCBs)"
     )
 
     # General configuration
     general: GeneralConfig = Field(..., description="General configuration data")
+
+    # Non-CO2 GHG overrides (optional; non-CO2 inherits CO2 params by default)
+    non_co2_overrides: NonCO2Overrides | None = Field(
+        None,
+        description=(
+            "Optional parameter overrides for non-CO2 GHG allocations. "
+            "Non-CO2 is derived from existing categories (all-ghg-ex-co2-lulucf "
+            "minus co2-ffi), not a standalone emission_category."
+        ),
+    )
 
     # Active sources (set by filtering)
     active_emissions_source: str | None = Field(
@@ -190,8 +368,15 @@ class DataSourcesConfig(BaseModel):
         None, description="Active population data source"
     )
     active_gini_source: str | None = Field(None, description="Active Gini data source")
+    active_lulucf_source: str | None = Field(
+        None, description="Active LULUCF data source"
+    )
     active_target_source: str | None = Field(
         None, description="Active target source (AR6 scenarios or RCBs)"
+    )
+    active_scenario_source: str | None = Field(
+        None,
+        description="Active scenario source key (resolved from target's scenario_source)",
     )
 
     # Additional target configuration
@@ -245,6 +430,18 @@ class DataSourcesConfig(BaseModel):
                 f"{suggestion}\n\n"
                 f"Available Gini sources: {', '.join(valid_options)}"
             )
+        if (
+            self.active_lulucf_source
+            and self.lulucf
+            and self.active_lulucf_source not in self.lulucf
+        ):
+            valid_options = list(self.lulucf.keys())
+            suggestion = suggest_similar(self.active_lulucf_source, valid_options)
+            raise ConfigurationError(
+                f"LULUCF source '{self.active_lulucf_source}' not recognized.\n\n"
+                f"{suggestion}\n\n"
+                f"Available LULUCF sources: {', '.join(valid_options)}"
+            )
         if self.active_target_source and self.active_target_source not in self.targets:
             valid_options = list(self.targets.keys())
             suggestion = suggest_similar(self.active_target_source, valid_options)
@@ -255,11 +452,28 @@ class DataSourcesConfig(BaseModel):
                     suggestion=suggestion,
                 )
             )
+        if (
+            self.active_scenario_source
+            and self.scenarios
+            and self.active_scenario_source not in self.scenarios
+        ):
+            valid_options = list(self.scenarios.keys())
+            suggestion = suggest_similar(self.active_scenario_source, valid_options)
+            raise ConfigurationError(
+                f"Scenario source '{self.active_scenario_source}' not recognized.\n\n"
+                f"{suggestion}\n\n"
+                f"Available scenario sources: {', '.join(valid_options)}"
+            )
         return self
 
     @model_validator(mode="after")
     def validate_emission_category(self) -> DataSourcesConfig:
-        """Validate that emission category is available in emissions source."""
+        """Validate that emission category is available in emissions source.
+
+        Note: by the time the Pydantic model is constructed, the emission_category
+        has already been resolved to the effective value (e.g., "co2-ffi" for
+        all-ghg runs), so this validator sees the resolved value.
+        """
         if self.active_emissions_source:
             emissions_config = self.emissions[self.active_emissions_source]
             available = emissions_config.data_parameters.available_categories

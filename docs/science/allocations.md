@@ -9,7 +9,7 @@ search:
 
 Design and parameters for allocation approaches in fair-shares.
 
-For underlying principles, see [Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/). For mathematical formulations, see the API Reference for [budgets](https://setupelz.github.io/fair-shares/api/allocations/budgets/) and [pathways](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
+For underlying principles, see [From Principle to Code](principle-to-code.md). For mathematical formulations, see the API Reference for [budgets](https://setupelz.github.io/fair-shares/api/allocations/budgets/) and [pathways](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
 
 ---
 
@@ -106,7 +106,7 @@ Reference year for calculating cumulative per capita allocations.
 | Budget   | `allocation_year`       |
 | Pathway  | `first_allocation_year` |
 
-Earlier allocation years account for historical emissions in the cumulative calculation. See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility).
+Earlier allocation years account for historical emissions in the cumulative calculation. See [Historical Responsibility](principle-to-code.md#historical-responsibility).
 
 ### Building Blocks
 
@@ -168,7 +168,7 @@ Implements the Greenhouse Development Rights (GDR) framework approach to nationa
 
 Income distribution is modelled as log-normal, parameterised by each country's Gini coefficient. When combined with the income floor, higher inequality means more national income sits above the development threshold — increasing measured capability.
 
-See [Subsistence vs. Luxury Emissions](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#subsistence-vs-luxury-emissions) for conceptual context.
+See [Subsistence Protection](principle-to-code.md#subsistence-protection) for conceptual context.
 
 **Mathematical formulations:** [GDR capability calculation](https://setupelz.github.io/fair-shares/api/utils/adjustments/#calculate_gini_adjusted_gdp) | [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
 
@@ -227,7 +227,7 @@ Two mechanisms:
 1. **Early allocation year:** Set `allocation_year` to 1850 or 1990 (calculates cumulative per capita since that year)
 2. **Responsibility weight:** Use `responsibility_weight` + `historical_responsibility_year` (multiplicative adjustment based on per-capita historical emissions)
 
-These can be combined. See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#historical-responsibility) for conceptual foundations.
+These can be combined. See [Historical Responsibility](principle-to-code.md#historical-responsibility) for conceptual foundations.
 
 **Mathematical details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/)
 
@@ -272,15 +272,34 @@ Parameter: `strict` (default: True)
 
 <!-- REFERENCE: per_capita_convergence() in src/fair_shares/library/allocations/pathways/per_capita_convergence.py -->
 
-The `per-capita-convergence` approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements, which are critiqued in the literature; see [Approaches Debated in the Literature](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/#approaches-debated-in-the-literature) for context.
+The `per-capita-convergence` approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements, which are critiqued in the literature; see [Approaches Debated in the Literature](#approaches-debated-in-the-literature) for context.
 
 **[Formulation →](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**
 
 ---
 
+## Approaches Debated in the Literature
+
+Several approaches appear in climate policy discussions and have been subject to scholarly critique.
+
+### Grandfathering
+
+Allocating future emission entitlements based on current emission shares. Caney [2009] calls grandfathering "morally perverse," and Dooley [2021] documents that it has "virtually no support among moral and political philosophers." Despite this, it dominates many studies that claim to be value-neutral. Moreover grandfathering is often embedded implicitly in "blended" approaches that combine it with equity principles [Kartha 2018] which must be treated with caution.
+
+The `per-capita-convergence` approach includes grandfathering elements and is available in fair-shares for comparison; see [PCC](#per-capita-convergence-pcc).
+
+### BAU Deviation Framing
+
+Treating deviation from business-as-usual emissions as a cost or sacrifice. Pelz 2025b argues this framing is inconsistent with CBDR-RC because it treats current emission levels as a baseline entitlement.
+
+### Small Share Justification
+
+Arguments of the form "We only emit X% of global emissions." Winkler 2020 notes this cannot be universalized and conflates total with per capita emissions.
+
+---
+
 ## See Also
 
-- **[Climate Equity Concepts](https://setupelz.github.io/fair-shares/science/climate-equity-concepts/):** Theoretical foundations and principles
 - **[API Reference: Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/):** Budget mathematical formulations
 - **[API Reference: Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/):** Pathway mathematical formulations
 - **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** When to use each approach

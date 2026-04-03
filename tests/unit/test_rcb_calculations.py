@@ -203,3 +203,77 @@ class TestCalculateBudgetFromRCB:
         # Used 2020-2021: 15+16 = 31
         expected = 500.0 - 31.0
         assert result == expected
+
+
+class TestCalculateBudgetFromRCBTotalCO2:
+    """Tests for calculate_budget_from_rcb with total CO2 (emission-category='co2').
+
+    The function is category-agnostic — it should work identically regardless
+    of the emission-category label in the index. This confirms that constructing
+    the correct world timeseries during preprocessing is sufficient.
+    """
+
+    @pytest.fixture
+    def world_co2_emissions_ts(self) -> TimeseriesDataFrame:
+        """Create test world CO2 total emissions timeseries (NGHGI-consistent)."""
+        years = list(range(1990, 2026))
+        emissions = [8.0] * len(years)  # 8 Gt/yr for simplicity
+
+        data = {str(year): [emiss] for year, emiss in zip(years, emissions)}
+
+        index = pd.MultiIndex.from_tuples(
+            [("World", "Gt * CO2e", "co2")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+
+        return pd.DataFrame(data, index=index)
+
+    def test_allocation_year_2020(self, world_co2_emissions_ts):
+        """RCB used directly at allocation year 2020."""
+        result = calculate_budget_from_rcb(
+            500.0, 2020, world_co2_emissions_ts, verbose=False
+        )
+        assert result == 500.0
+
+    def test_allocation_year_before_2020(self, world_co2_emissions_ts):
+        """Historical emissions added for allocation years before 2020."""
+        result = calculate_budget_from_rcb(
+            500.0, 1990, world_co2_emissions_ts, verbose=False
+        )
+        # 30 years × 8 Gt/year = 240 Gt
+        expected = 240.0 + 500.0
+        assert result == expected
+
+    def test_allocation_year_after_2020(self, world_co2_emissions_ts):
+        """Emissions used subtracted for allocation years after 2020."""
+        result = calculate_budget_from_rcb(
+            500.0, 2025, world_co2_emissions_ts, verbose=False
+        )
+        # 5 years × 8 Gt/year = 40 Gt
+        expected = 500.0 - 40.0
+        assert result == expected
+
+    def test_identical_to_ffi_when_same_values(self):
+        """When co2 and co2-ffi have same values, results are identical."""
+        years = list(range(2015, 2026))
+        emissions = [float(y - 2000) for y in years]
+        data = {str(year): [emiss] for year, emiss in zip(years, emissions)}
+
+        # co2 label
+        co2_index = pd.MultiIndex.from_tuples(
+            [("World", "Gt * CO2e", "co2")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+        co2_ts = pd.DataFrame(data, index=co2_index)
+
+        # co2-ffi label (same data)
+        ffi_index = pd.MultiIndex.from_tuples(
+            [("World", "Gt * CO2e", "co2-ffi")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+        ffi_ts = pd.DataFrame(data, index=ffi_index)
+
+        for alloc_year in [2015, 2020, 2023]:
+            r_co2 = calculate_budget_from_rcb(500.0, alloc_year, co2_ts, verbose=False)
+            r_ffi = calculate_budget_from_rcb(500.0, alloc_year, ffi_ts, verbose=False)
+            assert r_co2 == r_ffi

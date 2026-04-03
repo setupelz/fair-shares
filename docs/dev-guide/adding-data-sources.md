@@ -16,13 +16,14 @@ Data sources are configured in `conf/data_sources/data_sources_unified.yaml` and
 
 ### Data Types
 
-| Type         | Purpose                   | Current Sources     |
-| ------------ | ------------------------- | ------------------- |
-| `emissions`  | Historical emissions      | PRIMAP-hist         |
-| `gdp`        | Economic capability       | World Bank WDI, IMF |
-| `population` | Per capita calculations   | UN/OWID             |
-| `gini`       | Within-country inequality | UNU-WIDER, WID      |
-| `targets`    | Global constraints        | AR6 scenarios, RCBs |
+| Type         | Purpose                              | Current Sources        |
+| ------------ | ------------------------------------ | ---------------------- |
+| `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist            |
+| `gdp`        | Economic capability                  | World Bank WDI, IMF    |
+| `population` | Per capita calculations              | UN/OWID                |
+| `gini`       | Within-country inequality            | UNU-WIDER, WID         |
+| `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026)     |
+| `targets`    | Global constraints                   | AR6 scenarios, RCBs    |
 
 ---
 
@@ -39,6 +40,8 @@ data/
 │   └── my-source-YYYY/
 ├── population/
 ├── gini/
+├── lulucf/
+│   └── my-source-YYYY/
 ├── scenarios/
 └── rcbs/
 ```
@@ -185,8 +188,71 @@ active_sources = {
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
     "gini": "unu-wider-2025",
+    "lulucf": "melo-2026",
 }
 ```
+
+---
+
+## LULUCF Data Sources
+
+LULUCF data provides NGHGI-consistent land-use CO2 emissions that replace
+the bookkeeping model (BM) estimates in PRIMAP. This is required for total
+CO2 (`co2`) and all-GHG (`all-ghg`) categories — see
+[NGHGI Corrections](../science/other-operations.md) for the science.
+
+### What LULUCF preprocessing produces
+
+Notebook 107 reads the raw LULUCF source and outputs:
+
+- `emiss_co2-lulucf_timeseries.csv` — country-level NGHGI LULUCF emissions
+  (overwrites the PRIMAP BM version from notebook 101)
+- `world_co2-lulucf_timeseries.csv` — world-total LULUCF for RCB corrections
+- `bunker_timeseries.csv` — international bunker fuel emissions
+- `lulucf_metadata.yaml` — NGHGI start year (enforces allocation year ≥ 2000
+  for `co2` category)
+
+### Adding a new LULUCF source
+
+1. Place data in `data/lulucf/{source-name}/`
+2. Add config entry under `lulucf:` in `data_sources_unified.yaml` with
+   `data_parameters` including `format`, `iso3_column`, `year_column`,
+   `value_column`, `category_filter`, `gas_filter`, and `exclude_regions`
+3. Create `107_data_preprocess_lulucf_{source-name}.py` following the pattern
+   of `107_data_preprocess_lulucf_melo-2026.py`
+4. The Snakefile will pick it up via `active_lulucf_source`
+
+### Which categories use LULUCF?
+
+| Emission category | Uses LULUCF? | Why |
+|-------------------|-------------|-----|
+| `co2-ffi` | No | Fossil fuels only |
+| `co2` | **Yes** | Total CO2 = fossil − bunkers + NGHGI LULUCF |
+| `all-ghg` | **Yes** | Decomposes into `co2` (NGHGI) + `non-co2` |
+| `all-ghg-ex-co2-lulucf` | No | CO2 component is `co2-ffi` |
+| `co2-lulucf` | Indirect | IS the LULUCF data |
+| `non-co2` | No | Derived by subtraction |
+
+---
+
+## Scenario Data and NGHGI Consistency
+
+When adding or updating scenario data (AR6 or custom), ensure the scenarios
+use NGHGI-consistent emissions conventions. The pipeline applies NGHGI
+corrections to remaining carbon budgets (RCBs) to account for the gap
+between bookkeeping model and NGHGI LULUCF estimates, but scenario pathways
+must already be internally consistent.
+
+**For AR6 scenarios:** The Gidden et al. reanalysis provides scenarios that
+are consistent with PRIMAP historical emissions. NGHGI corrections are
+applied at the RCB level (adjusting the budget), not at the scenario pathway
+level.
+
+**For custom scenarios:** If your scenario data uses a different emissions
+convention than PRIMAP/NGHGI, apply the necessary corrections in the
+preprocessing notebook (`104_data_preprocess_scenarios.py`) before
+the data enters the pipeline. Do not rely on downstream corrections — the
+allocation functions assume scenario data is already convention-consistent.
 
 ---
 
@@ -213,11 +279,14 @@ New data sources should:
 
 ## Existing Notebooks as Examples
 
-| Notebook                                         | Data Type  | Good Example Of                         |
-| ------------------------------------------------ | ---------- | --------------------------------------- |
-| `101_data_preprocess_emiss_primap-202503.py`     | Emissions  | NetCDF processing, category mapping     |
-| `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping    |
-| `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data |
+| Notebook                                         | Data Type  | Good Example Of                                    |
+| ------------------------------------------------ | ---------- | -------------------------------------------------- |
+| `101_data_preprocess_emiss_primap-202503.py`     | Emissions  | NetCDF processing, category mapping                |
+| `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping               |
+| `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data            |
+| `105_data_preprocess_gini_unu-wider-2025.py`     | Gini       | Quality filtering, stationary output               |
+| `105_data_preprocess_gini_wid-2025.py`           | Gini       | WID.world processing, stationary output            |
+| `107_data_preprocess_lulucf_melo-2026.py`        | LULUCF     | NGHGI corrections, metadata export, world totals   |
 
 ---
 

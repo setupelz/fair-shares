@@ -131,8 +131,8 @@ Complete bibliography for the fair-shares project. All citations are drawn from 
 rubrics reviewed for climate equity scholarship.
 
 For context on how these inform allocation approaches, see:
-- [Climate Equity Concepts](climate-equity-concepts.md)
 - [Allocation Approaches](allocations.md)
+- [From Principle to Code](principle-to-code.md)
 - [Other Operations](other-operations.md)
 
 > **Citation style in docs/science/**: Inline citations use `[e.g., Author YYYY]` format to signal

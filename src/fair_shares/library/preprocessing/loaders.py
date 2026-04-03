@@ -136,11 +136,6 @@ def load_scenarios_data(
             scenarios_df = ensure_string_year_columns(scenarios_df)
             scenarios_data[category] = scenarios_df
             print(f"  Loaded scenarios for {category}: {scenarios_path.name}")
-        elif category == "all-other":
-            # all-other is a derived category - scenarios may not exist for it
-            print(
-                f"  Skipping scenarios for {category} (derived category, no scenario file)"
-            )
         else:
             # Primary categories should always have scenarios
             raise DataLoadingError(

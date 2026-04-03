@@ -2,7 +2,7 @@
 Column metadata and type specifications for allocation results.
 
 This module defines the standard columns and data types used in allocation
-result DataFrames. Separating this metadata from the AllocationManager improves
+result DataFrames. Separating this metadata from the manager module improves
 maintainability and makes column definitions reusable across the codebase.
 """
 

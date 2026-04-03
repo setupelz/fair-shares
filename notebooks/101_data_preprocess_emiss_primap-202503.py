@@ -53,21 +53,31 @@ active_emissions_source = None
 active_gdp_source = None
 active_population_source = None
 active_gini_source = None
+active_lulucf_source = None
+source_id = None
 
 # %%
-if emission_category is not None:
+# Track whether we're running via Papermill — if so, the parameter-injected
+# emission_category is the source of truth (essential for allghg triple-pass
+# where each pass uses a different category).
+_running_via_papermill = emission_category is not None
+
+if _running_via_papermill:
     # Running via Papermill
     print("Running via Papermill")
 
-    # Construct path to composed config (created by compose_config rule in Snakefile)
-    source_id = build_source_id(
-        emissions=active_emissions_source,
-        gdp=active_gdp_source,
-        population=active_population_source,
-        gini=active_gini_source,
-        target=active_target_source,
-        emission_category=emission_category,
-    )
+    # Use source_id from Snakefile if provided (essential for allghg triple-pass
+    # where per-pass emission_category differs from the source_id's category).
+    if source_id is None:
+        source_id = build_source_id(
+            emissions=active_emissions_source,
+            gdp=active_gdp_source,
+            population=active_population_source,
+            gini=active_gini_source,
+            lulucf=active_lulucf_source,
+            target=active_target_source,
+            emission_category=emission_category,
+        )
 
     config_path = here() / f"output/{source_id}/config.yaml"
 
@@ -86,7 +96,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "unu-wider-2025",
-        "target": "ar6",
+        "target": "pathway",
     }
 
     # Build interactive development config using the same logic as the pipeline
@@ -127,8 +137,11 @@ available_categories = emissions_data_parameters.get("available_categories", [])
 world_key = emissions_data_parameters.get("world_key")
 scenario = emissions_data_parameters.get("scenario")
 
-# Get global emission categories from the config
-emission_category = config["emission_category"]
+# Get emission category: Papermill parameter takes precedence (needed for allghg
+# triple-pass where each pass uses a different category). In interactive mode,
+# use whatever was set in config.
+if not _running_via_papermill:
+    emission_category = config["emission_category"]
 
 # Check required parameters are specified
 if not emission_category:
@@ -151,11 +164,9 @@ processing_info = determine_processing_categories(
     emission_category, available_categories
 )
 processing_categories = processing_info["process"]
-create_all_other = processing_info["create_all_other"]
 final_categories = processing_info["final"]
 
 print(f"Processing categories: {processing_categories}")
-print(f"Create all-other: {create_all_other}")
 
 # Define variable mappings for timeseries processing based on emission categories
 variable_mappings = {
@@ -163,21 +174,13 @@ variable_mappings = {
         "emission": "CO2",
         "category": ["1", "2"],  # Energy + IPPU
     },
+    "co2": {
+        "emission": "CO2",
+        "category": ["1", "2", "M.LULUCF"],  # Total CO2: Energy + IPPU + LULUCF
+    },
     "co2-lulucf": {
         "emission": "CO2",
         "category": ["M.LULUCF"],  # LULUCF
-    },
-    "ch4-ffi": {
-        "emission": "CH4",
-        "category": ["1", "2", "4", "5"],  # Non-AFOLU: Energy, IPPU, Waste, Other
-    },
-    "ch4-afolu": {
-        "emission": "CH4",
-        "category": ["M.AG", "M.LULUCF"],  # AFOLU = Agriculture + LULUCF
-    },
-    "n2o": {
-        "emission": "N2O",
-        "category": ["0"],  # All sectors
     },
     "all-ghg": {
         "emission": "KYOTOGHG (AR6GWP100)",
@@ -329,69 +332,10 @@ for timeseries_name, spec in timeseries_specs.items():
     print(f"  TimeseriesDataFrame shape: {timeseries_wide.shape}")
 
 # %%
-# [Optional if emission category is not 'all-ghg*']
-if create_all_other and "all-ghg" in all_timeseries:
-    # Generate "all-other" timeseries
-    print("Creating 'all-other' timeseries (all-ghg minus requested emission category)")
-
-    # Get the all-ghg timeseries
-    all_ghg_df = all_timeseries["all-ghg"]
-
-    # Get the timeseries that should be subtracted (the requested emission category)
-    subtract_df = all_timeseries[emission_category]
-
-    # Temporarily drop emission category from index for subtraction
-    all_other_df = all_ghg_df.reset_index(level="emission-category", drop=True).copy()
-    df_subtract = subtract_df.reset_index(level="emission-category", drop=True)
-
-    # Ensure both dataframes have the same index structure (now just iso3c and unit)
-    common_indices = all_other_df.index.intersection(df_subtract.index)
-    all_other_df = all_other_df.loc[common_indices]
-    df_subtract = df_subtract.loc[common_indices]
-
-    # Subtract the values (handling NaN values)
-    all_other_df = all_other_df.sub(df_subtract, fill_value=0)
-
-    # Update the MultiIndex to reflect that this is 'all-other' data, not 'all-ghg'
-    all_other_df = all_other_df.reset_index()
-    all_other_df["emission-category"] = "all-other"
-    all_other_df = all_other_df.set_index(["iso3c", "unit", "emission-category"])
-
-    # Add to the timeseries dictionary
-    all_timeseries["all-other"] = all_other_df
-    print(f"Created 'all-other' timeseries with shape: {all_other_df.shape}")
-
-    # Print summary statistics for all-other
-    all_other_long = (
-        all_other_df.reset_index(level=["unit", "emission-category"], drop=True)
-        .stack()
-        .reset_index()
-    )
-    all_other_long.columns = ["iso3c", "year", "all-other"]
-    world_all_other = all_other_long[all_other_long["iso3c"] == world_key]
-
-    if not world_all_other.empty:
-        print("  World 'all-other' emissions summary:")
-        print(
-            f"    Latest value ({world_all_other['year'].max()}): {world_all_other['all-other'].iloc[-1]:.1f} Mt * CO2e"
-        )
-        print(f"    Peak value: {world_all_other['all-other'].max():.1f} Mt * CO2e")
-else:
-    if not create_all_other:
-        print(
-            "'all-other' timeseries not created: Processing logic indicates no 'all-other' needed (requested 'all-ghg*' categories)"
-        )
-    elif "all-ghg" not in all_timeseries:
-        raise DataLoadingError(
-            "Cannot create 'all-other' timeseries: 'all-ghg' timeseries is required but not present in the data"
-        )
-
-# %%
-# Save only explicitly requested timeseries (plus 'all-other' if generated)
+# Save requested timeseries
 print("\n--- Saving TimeseriesDataFrames ---")
 
 for timeseries_name, timeseries_df in all_timeseries.items():
-    # Save originally requested timeseries and 'all-other' if it was created
     if timeseries_name in final_categories:
         timeseries_output_path = (
             intermediate_dir / f"emiss_{timeseries_name}_timeseries.csv"
@@ -411,7 +355,7 @@ for timeseries_name, timeseries_df in all_timeseries.items():
 print("\n--- Generating World Emissions Plots ---")
 
 for timeseries_name, timeseries_df in all_timeseries.items():
-    # Only plot timeseries saved (originally requested + 'all-other' if created)
+    # Only plot timeseries that were saved
     if timeseries_name not in final_categories:
         continue
     # Convert back to long format for plotting

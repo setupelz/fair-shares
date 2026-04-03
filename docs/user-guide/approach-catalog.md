@@ -10,7 +10,7 @@ search:
 
 All allocation approaches at a glance.
 
-- **Which principles does each approach implement?** See [Climate Equity Concepts](../science/climate-equity-concepts.md)
+- **Which principles does each approach implement?** See [From Principle to Code](../science/principle-to-code.md)
 - **How do I configure an approach for specific principles?** See [Principle to Code](../science/principle-to-code.md)
 - **What's the math?** See [API Reference](../api/allocations/budgets.md)
 
@@ -30,9 +30,9 @@ See [Principle to Code](../science/principle-to-code.md#historical-responsibilit
 
 Allocate a cumulative emissions budget at a single point in time.
 
-| Approach                              | Use Case                                          |
-| ------------------------------------- | ------------------------------------------------- |
-| **`equal-per-capita-budget`**         | Population-proportional targets                   |
+| Approach                              | Use Case                                                                                       |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------- |
+| **`equal-per-capita-budget`**         | Population-proportional targets                                                                |
 | **`per-capita-adjusted-budget`**      | Additional weighting by emissions history (historical responsibility) and GDP (ability to pay) |
 | **`per-capita-adjusted-gini-budget`** | Accounts for within-country inequality                                                         |
 
@@ -46,9 +46,9 @@ Allocate emissions over multiple years, producing annual shares.
 
 These approaches implement Equal Cumulative Per Capita (ECPC) allocation when an `allocation_year` in the past is used, ensuring historical emissions count against each country's share.
 
-| Approach                       | Use Case                                          |
-| ------------------------------ | ------------------------------------------------- |
-| **`equal-per-capita`**         | Year-by-year population shares                    |
+| Approach                       | Use Case                                                                                       |
+| ------------------------------ | ---------------------------------------------------------------------------------------------- |
+| **`equal-per-capita`**         | Year-by-year population shares                                                                 |
 | **`per-capita-adjusted`**      | Additional weighting by emissions history (historical responsibility) and GDP (ability to pay) |
 | **`per-capita-adjusted-gini`** | Accounts for within-country inequality                                                         |
 
@@ -67,26 +67,26 @@ Gradual transition from current emissions to fair share target.
 
 ## Choosing an Approach
 
-| Question                               | Answer                      |
-| -------------------------------------- | --------------------------- |
-| Single target or year-by-year?         | Budget vs Pathway           |
+| Question                                         | Answer                      |
+| ------------------------------------------------ | --------------------------- |
+| Single target or year-by-year?                   | Budget vs Pathway           |
 | Account for history (historical responsibility)? | Set early `allocation_year` |
 | Account for capability (ability to pay)?         | Use `-adjusted` variants    |
-| Account for within-country inequality? | Use `-gini` variants        |
+| Account for within-country inequality?           | Use `-gini` variants        |
 
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
 
 !!! tip "Entry Points Framework"
-    Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b]. Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [Climate Equity Concepts](../science/climate-equity-concepts.md) for the full framework.
+Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b]. Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 
 ---
 
 ## Registry Reference
 
-All approaches are registered in [`src/fair_shares/library/allocations/registry.py`](https://github.com/setupelz/fair-shares/blob/main/src/fair_shares/library/allocations/registry.py).
+All approaches are registered in [`src/fair_shares/library/allocations/manager.py`](https://github.com/setupelz/fair-shares/blob/main/src/fair_shares/library/allocations/manager.py).
 
 ```python
-from fair_shares.library.allocations.registry import get_allocation_functions
+from fair_shares.library.allocations.manager import get_allocation_functions
 
 approaches = get_allocation_functions()
 print(list(approaches.keys()))
