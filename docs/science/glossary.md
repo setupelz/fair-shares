@@ -16,7 +16,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 
 !!! info "Key concept: allocation_year"
 
-    All approaches incorporate historical responsibility via `allocation_year` (budget) or `first_allocation_year` (pathway). When set in the past, emissions from that year to present are subtracted, leaving different **remaining allocations** for each country. The `*-adjusted` approaches add further weighting on top of this mechanism.
+    All approaches incorporate historical differentiation via `allocation_year` (budget) or `first_allocation_year` (pathway). When set in the past, cumulative population from that year determines each country's share of the total budget — leaving different **remaining allocations** for each country. The `*-adjusted` approaches add pre-allocation responsibility rescaling on top of this mechanism.
 
 ### Budget Approaches
 
@@ -24,7 +24,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Population-proportional allocation. Historical accountability via `allocation_year` only.
 
 **`per-capita-adjusted-budget`**
-: Adds `responsibility_weight` and `capability_weight` adjustments. CBDR-RC.
+: Adds `pre_allocation_responsibility_weight` (backward-looking from allocation year) and `capability_weight` (forward-looking from allocation year onwards) adjustments. CBDR-RC.
 
 **`per-capita-adjusted-gini-budget`**
 : Adds Gini adjustment for within-country inequality. Subsistence protection.
@@ -35,7 +35,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Annual population-proportional shares. Historical accountability via `first_allocation_year`.
 
 **`per-capita-adjusted`**
-: Annual shares with responsibility/capability adjustments. CBDR-RC.
+: Annual shares with pre-allocation responsibility (backward-looking) and capability (from allocation year onwards) adjustments. CBDR-RC.
 
 **`per-capita-adjusted-gini`**
 : Annual shares with Gini adjustment. Subsistence protection.
@@ -49,7 +49,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Budget-preserving convergence. Distributes cumulative per capita shares over time. **Fair share approach.**
 
 **`cumulative-per-capita-convergence-adjusted`** / **`-gini-adjusted`**
-: Convergence with responsibility/capability/Gini adjustments.
+: Convergence with pre-allocation responsibility/capability/Gini adjustments.
 
 See: [API Reference](../api/allocations/budgets.md) · [From Principle to Code](principle-to-code.md)
 
@@ -62,40 +62,42 @@ For detailed parameter effects and examples, see [Parameter Effects](parameter-e
 ### Core Parameters
 
 **`allocation_year`** / **`first_allocation_year`** (type: `int`)
-: Start year for cumulative accounting. Past emissions subtracted → different remaining allocations. No neutral default.
+: Start year for cumulative accounting. Cumulative population from this year determines each country's share of the total budget. No neutral default: the choice operationalises whether past emissions create present obligations.
 : Budget approaches use `allocation_year`; pathway approaches use `first_allocation_year`.
 
 **`convergence_year`** (type: `int`)
-: Target year for per capita convergence. Must be > allocation year. Convergence approaches only.
+: Year by which allocations converge to equal per capita shares. Must be > allocation year. Required when `convergence_method="sine-deviation"`. Earlier convergence years demand steeper near-term reductions; later years spread the transition. Convergence approaches only. See [Parameter Effects](parameter-effects.md#convergence_method-convergence-only).
 
 **`emission_category`** (type: `str`)
-: Emission species (e.g., `"co2-ffi"`, `"co2"`, `"all-ghg"`, `"all-ghg-ex-co2-lulucf"`, `"non-co2"`). Must match data sources.
+: Emission species (e.g., `"co2-ffi"`, `"co2"`, `"all-ghg"`, `"all-ghg-ex-co2-lulucf"`, `"non-co2"`). Must match data sources. Both `all-ghg` and `all-ghg-ex-co2-lulucf` use GWP100 AR6 values to convert non-CO2 gases to CO2-equivalent. Composite categories (`all-ghg`, `all-ghg-ex-co2-lulucf`) trigger [decomposition into CO2 + non-CO2](other-operations.md#all-ghg-allocations-with-rcbs) when used with RCB targets, because RCBs constrain CO2 only and non-CO2 requires scenario pathway data.
 
 **`group_level`** (type: `str`, default: `"iso3c"`)
 : Index level for countries/regions (ISO 3166-1 alpha-3 codes).
 
 ### Adjustment Weights
 
-Constraint: `responsibility_weight + capability_weight ≤ 1.0`
+Constraint: `pre_allocation_responsibility_weight + capability_weight ≤ 1.0`
 
-**`responsibility_weight`** (type: `float`, default: `0.0`)
-: Weight for historical emissions adjustment. Higher = more reduction for high emitters.
+Only the **ratio** between the two weights matters -- they are normalized by their sum before use. `(0.3, 0.7)` and `(0.15, 0.35)` produce identical results. When one weight is 0, the other is the sole adjustment regardless of its specific value -- `(0.0, 0.3)` is identical to `(0.0, 1.0)`.
+
+**`pre_allocation_responsibility_weight`** (type: `float`, default: `0.0`)
+: Weight for relative per-capita rescaling based on emissions in [`pre_allocation_responsibility_year`, `allocation_year`). Higher relative to `capability_weight` = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early `allocation_year`. Always produces positive allocations if `allocation_year` is the present.
 
 **`capability_weight`** (type: `float`, default: `0.0`)
-: Weight for GDP-based adjustment. Higher = more reduction for wealthy countries.
+: Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility looks backward from the allocation year, while capability looks forward from it.
 
-### Responsibility Parameters
+### Pre-allocation Responsibility Parameters
 
-**`historical_responsibility_year`** (type: `int`, default: `1990`)
-: Start year for cumulative emissions in responsibility calculation. Must be ≤ `allocation_year`.
+**`pre_allocation_responsibility_year`** (type: `int`, default: `1990`)
+: Start year for cumulative emissions in the pre-allocation responsibility window. Must be strictly less than `allocation_year` for the adjustment to have effect — when equal, the window is empty.
 
-**`responsibility_per_capita`** (type: `bool`, default: `True`)
-: Per capita (True) or absolute (False) emissions for responsibility calculation.
+**`pre_allocation_responsibility_per_capita`** (type: `bool`, default: `False`)
+: Per capita (True) or absolute (False) emissions for pre-allocation responsibility calculation. Default is `False` (absolute) to match the polluter-pays framing of GDR (Baer 2009), Matthews (2016), and most historical-responsibility literature. Set to `True` if your research framing calls for per-capita responsibility.
 
-**`responsibility_exponent`** (type: `float`, default: `1.0`)
-: Exponent for responsibility adjustment. >1.0 increases non-linearity.
+**`pre_allocation_responsibility_exponent`** (type: `float`, default: `1.0`)
+: Exponent for pre-allocation responsibility adjustment. >1.0 increases non-linearity.
 
-**`responsibility_functional_form`** (type: `str`, default: `"asinh"`)
+**`pre_allocation_responsibility_functional_form`** (type: `str`, default: `"asinh"`)
 : Functional form: `"asinh"` or `"power"`.
 
 ### Capability Parameters
@@ -104,7 +106,7 @@ Constraint: `responsibility_weight + capability_weight ≤ 1.0`
 : Per capita (True) or absolute (False) GDP for capability calculation.
 
 **`capability_exponent`** (type: `float`, default: `1.0`)
-: Exponent for capability adjustment. >1.0 increases non-linearity.
+: Exponent for capability adjustment (applies from allocation year onwards). >1.0 increases non-linearity.
 
 **`capability_functional_form`** (type: `str`, default: `"asinh"`)
 : Functional form: `"asinh"` or `"power"`.
@@ -112,18 +114,34 @@ Constraint: `responsibility_weight + capability_weight ≤ 1.0`
 ### Inequality Parameters
 
 **`income_floor`** (type: `float`, default: `0.0`)
-: Income below this threshold excluded from capability (subsistence protection).
+: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. At `0.0`, all income counts. The GDR framework default is `7500` ($7,500/year 2010 PPP). Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
 
 **`max_gini_adjustment`** (type: `float`, default: `0.8`)
-: Maximum Gini-based adjustment magnitude.
+: Maximum proportional reduction from the Gini-based capability correction. Caps the influence of extreme inequality (Gini > 0.6) on measured capability, preventing outsized adjustments from dominating the allocation. At 0.8, the Gini adjustment can reduce a country's measured GDP by at most 80%. Available on `*-gini-*` approaches only.
+
+### Discounting Parameters
+
+**`historical_discount_rate`** (type: `float`, default: `0.0`)
+: Weights earlier historical emissions less when computing pre-allocation responsibility adjustments. `0.0` treats all years equally. Available on `*-adjusted` functions only. See [Parameter Effects](parameter-effects.md#historical_discount_rate).
+
+### Convergence Parameters
+
+**`convergence_method`** (type: `str`, default: `"minimum-speed"`)
+: Solver for convergence pathway. `"minimum-speed"` finds the minimum exponential speed satisfying cumulative constraints. `"sine-deviation"` uses iterative sine-shaped deviation from a PCC baseline (requires `convergence_year`). Convergence approaches only.
+
+**`max_convergence_speed`** (type: `float`, default: `0.9`)
+: Upper bound on exponential convergence speed. Lower values force slower transitions but may cause infeasibility. Convergence approaches only.
+
+**`strict`** (type: `bool`, default: `True`)
+: Controls behavior on infeasible convergence targets. `True` raises an error; `False` clips infeasible long-run shares and reports per-country deviation ratios. Convergence approaches only. See [Parameter Effects](parameter-effects.md#strict-convergence-only).
 
 ### Constraint Parameters
 
-**`max_deviation_sigma`** (type: `float | None`, default: `2.0`)
-: Outlier constraint (standard deviations from mean).
+**`max_deviation_sigma`** (type: `float | None`, default: `None`)
+: Optional outlier constraint (standard deviations from mean). Default `None` means no constraint — the raw, unconstrained adjustment is returned. Set to a positive float (e.g. `2.0`) to opt into a ±N-σ cap that compresses extreme values. Only relevant when applying scaling adjustments. See [Parameter Effects](parameter-effects.md#max_deviation_sigma).
 
 **`preserve_allocation_year_shares`** / **`preserve_first_allocation_year_shares`** (type: `bool`, default: `False`)
-: Fix population shares at allocation year rather than recalculating dynamically.
+: When `True`, freezes population (and adjustment) shares at the allocation year instead of recalculating as demographics evolve. The choice reflects whether future population growth should increase a country's atmospheric entitlement. See [Parameter Effects](parameter-effects.md#preserve_allocation_year_shares-preserve_first_allocation_year_shares).
 
 ---
 
@@ -209,15 +227,15 @@ See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide
 Brief definitions. For detailed explanations and operationalization, see [Allocation Approaches](allocations.md) and [From Principle to Code](principle-to-code.md).
 
 **Carbon Debt**
-: Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. Matthews [2016] calculates debts against an equal per capita benchmark; Pelz [2025a] introduces a net-zero framing. [Pickering 2012; Pelz 2025a; Matthews 2016]
+: Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. [Matthews 2016](https://doi.org/10.1038/NCLIMATE2774) calculates debts against an equal per capita benchmark; [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122) introduces a net-zero framing that makes post-peak obligations explicit. Moral grounding: [Pickering 2012](https://doi.org/10.1080/13698230.2012.727311).
 : See: [References](references.md)
 
 **Cascading Biases**
-: Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. Kartha [2018] identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches). [Kartha 2018]
+: Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7) identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches). [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
 : See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **CBDR-RC**
-: Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity.
+: Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity. For the legal interpretation in its normative environment, see [Rajamani 2024](https://doi.org/10.1093/clp/cuae011); for operational interpretations under the Paris Agreement, see [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504).
 : See: [Allocation Approaches](allocations.md)
 
 **Egalitarianism**
@@ -225,19 +243,19 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : See: [Allocation Approaches](allocations.md)
 
 **Equal per capita**
-: Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is usually incorporated via `allocation_year` (past emissions subtracted), not via weight adjustments.
+: Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is usually incorporated via `allocation_year` (cumulative accounting includes past emissions), not via weight adjustments.
 : See: [Allocation Approaches](allocations.md)
 
 **Grandfathering**
-: Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis. `per-capita-convergence` includes grandfathering elements.
+: Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis — [Caney 2009](https://doi.org/10.1080/17449620903110300) calls it "morally perverse" and [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8) finds "virtually no support" for it among moral and political philosophers. `per-capita-convergence` includes grandfathering elements.
 : See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **Historical responsibility**
-: Past emissions reduce remaining fair share. Primary mechanism: `allocation_year` (earlier = more subtracted). Secondary: `responsibility_weight` in `*-adjusted` approaches.
+: Past emissions reduce remaining fair share. Two distinct mechanisms: (1) early `allocation_year` — cumulative accounting where cumulative population from that year determines shares (can produce negative allocations as a mathematical consequence); (2) `pre_allocation_responsibility_weight` in `*-adjusted` approaches — multiplicative rescaling of shares by relative per-capita emissions in a historical window (always positive).
 : See: [Allocation Approaches](allocations.md#historical-responsibility)
 
 **Negative Allocation**
-: When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b]
+: When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)
 : See: [Allocation Approaches](allocations.md) · [From Principle to Code](principle-to-code.md)
 
 **Subsistence protection**
@@ -255,19 +273,19 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : IPCC Sixth Assessment Report (2021-2023). Source of global emissions scenarios used in fair-shares.
 
 **BAU**
-: Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued in the literature as inconsistent with CBDR-RC (see Kartha 2018).
+: Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued in the literature as inconsistent with CBDR-RC (see [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)).
 
 **Bookkeeping (BM)**
 : LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: [NGHGI-Consistent RCB Corrections](other-operations.md#why-two-lulucf-conventions-matter)
 
 **Bunker fuels**
-: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026].
+: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
 
 **ECPC**
-: Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis, with past emissions subtracted from future entitlements.
+: Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis. Cumulative population from the allocation year determines each country's share.
 
 **GDP**
-: Gross Domestic Product. Economic output measure used for capability adjustments.
+: Gross Domestic Product. Economic output measure used for capability adjustments (from the allocation year onwards).
 
 **GHG**
 : Greenhouse Gas (e.g., CO2, CH4, N2O). "Kyoto GHG" refers to the basket of gases covered by the Kyoto Protocol.
@@ -291,13 +309,13 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~90 GtCO₂ for 1.5°C scenarios [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~90 GtCO₂ for 1.5°C scenarios [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
 
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
 
 **RCB**
-: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026]. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **SSP**
 : Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).

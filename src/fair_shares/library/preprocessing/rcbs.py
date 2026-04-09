@@ -5,8 +5,8 @@ following the methodology of Weber et al. (2026).
 
 Supports both co2-ffi and co2 emission categories:
 - **co2-ffi**: uses the pre-computed median-of-per-scenario-cumulatives
-  (``bm_lulucf_cumulative_median``) from notebook 104, based on AR6
-  scenarios in the corresponding climate category. Scenario data is
+  (``bm_lulucf_cumulative_median``) from notebook 104, based on scenario data
+  (e.g. AR6) in the corresponding climate category. Scenario data is
   required because the LULUCF decomposition extends to net-zero (no
   observational data exists for the future). Adjusted for baseline year
   by subtracting the 2020-to-base prefix.
@@ -14,7 +14,7 @@ Supports both co2-ffi and co2 emission categories:
   notebook 104, plus actual BM LULUCF for rebase.
 
 NZ years and convention gap scalars are pre-computed by notebook 104 from
-the Gidden AR6 scenario data and saved as
+the scenario data (currently Gidden et al. AR6 reanalysis) and saved as
 ``rcb_scenario_adjustments.yaml``. Per-year BM LULUCF medians are stored
 as ``lulucf_shift_median_{scenario}.csv``.
 """
@@ -38,7 +38,6 @@ from fair_shares.library.utils import (
 )
 from fair_shares.library.utils.data.nghgi import (
     compute_bunker_deduction,
-    load_ar6_category_constants,
     load_bunker_timeseries,
     load_world_co2_lulucf,
 )
@@ -291,7 +290,7 @@ def load_and_process_rcbs(
     rcb_yaml_path : Path
         Path to RCB YAML configuration file
     world_fossil_emissions : pd.DataFrame
-        World PRIMAP fossil CO2 emissions timeseries — always fossil,
+        World fossil CO2 emissions timeseries (e.g. PRIMAP) — always fossil,
         regardless of emission_category
     emission_category : str
         Emission category (must be "co2-ffi" or "co2")
@@ -367,15 +366,11 @@ def load_and_process_rcbs(
         )
     rcb_adjustments = _load_rcb_scenario_adjustments(scenarios_dir, verbose=verbose)
 
-    # Load AR6 category constants for category-level NZ years (bunker integration)
-    constants_path = resolved_root / adjustments_config.ar6_constants_path
-    ar6_constants = load_ar6_category_constants(constants_path)
-
     if verbose:
         print("\nProcessing RCBs with adjustments:")
         print("  Target baseline year: 2020")
         print("  Adjustment mode: pre-computed (NGHGI-consistent, Weber et al. 2026)")
-        print("  Bunker NZ years: category-level median (from AR6 constants YAML)")
+        print("  Bunker NZ years: category-level median (from scenario adjustments)")
 
     # Pre-load baseline-shift LULUCF median timeseries from notebook 104 output.
     # These are year-by-year median AFOLU|Direct CSVs, one per AR6 category.
@@ -428,7 +423,7 @@ def load_and_process_rcbs(
             direct_median = lulucf_shift_cache[scenario]
 
             # Scenario-level NZ year (for bunker integration)
-            nz_year = ar6_constants[scenario]["nz_year_median"]
+            nz_year = rcb_adjustments[scenario]["nz_year_median"]
 
             # Resolve adjustment scalars from pre-computed values
             bunkers_mt, lulucf_mt = _resolve_adjustment_scalars(

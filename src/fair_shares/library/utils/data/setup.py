@@ -79,8 +79,9 @@ def build_data_paths(
     ``country_emissions_co2``, ``country_emissions_non-co2``,
     ``rcbs_co2``, ``world_emissions_co2``, ``world_scenarios_non-co2``.
 
-    For AR6 + composite or any non-composite category, returns single-category
-    keys: ``country_emissions``, ``world_scenarios`` (or ``rcbs``).
+    For pathway targets + composite or any non-composite category, returns
+    single-category keys: ``country_emissions``, ``world_scenarios``
+    (or ``rcbs``).
 
     Parameters
     ----------
@@ -92,7 +93,7 @@ def build_data_paths(
         Emission category (e.g., "all-ghg", "co2-ffi")
     target : str | None, optional
         Target source type. Determines whether composite categories are
-        decomposed (RCBs) or kept as single categories (AR6).
+        decomposed (RCBs) or kept as single categories (pathway).
 
     Returns
     -------
@@ -118,6 +119,7 @@ def generate_snakemake_command(
     target: str,
     active_sources: dict[str, str],
     target_file: Path,
+    harmonisation_year: int | None = None,
 ) -> list[str]:
     """
     Generate Snakemake command for data setup.
@@ -162,6 +164,10 @@ def generate_snakemake_command(
     rcb_generator = active_sources.get("rcb_generator")
     if rcb_generator:
         command.append(f"rcb_generator={rcb_generator}")
+
+    # Pass harmonisation_year so pathway generation starts at the right year
+    if harmonisation_year is not None:
+        command.append(f"harmonisation_year={harmonisation_year}")
 
     command.extend(["--", str(target_file)])  # Separate config from targets
 
@@ -404,6 +410,7 @@ def setup_data(
         target,
         active_sources,
         paths["target_file"],
+        harmonisation_year=harmonisation_year,
     )
 
     final_categories = get_final_categories(target, emission_category)

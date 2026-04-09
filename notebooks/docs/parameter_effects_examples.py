@@ -21,7 +21,7 @@
 #
 # This notebook produces tables for `docs/science/parameter-effects.md` demonstrating:
 # - `allocation_year` / `first_allocation_year` effects
-# - `responsibility_weight` effects
+# - `pre_allocation_responsibility_weight` effects
 # - `capability_weight` effects
 # - `income_floor` effects
 #
@@ -202,39 +202,44 @@ for country in example_countries:
 print()
 
 # %% [markdown]
-# ## Example 2: responsibility_weight Effects
+# ## Example 2: pre_allocation_responsibility_weight Effects
 #
 # Show how responsibility weighting affects shares for per-capita-adjusted-budget
 
 # %%
-# Test different responsibility weights
-responsibility_weights = [0.0, 0.5, 1.0]
+# Test responsibility ON vs OFF (with capability_weight=0.0).
+# When capability_weight=0.0, any non-zero pre_allocation_responsibility_weight
+# is the sole adjustment — its specific value doesn't matter (only the ratio
+# between weights affects results). So we show OFF (0.0) vs ON (1.0).
+pre_allocation_responsibility_weights = [0.0, 1.0]
 responsibility_results = {}
 
-for weight in responsibility_weights:
+for weight in pre_allocation_responsibility_weights:
     result = per_capita_adjusted_budget(
         population_ts=population_ts,
         country_actual_emissions_ts=emissions_ts,
         gdp_ts=gdp_ts,
         allocation_year=2020,
         emission_category=emission_category,
-        responsibility_weight=weight,
+        pre_allocation_responsibility_weight=weight,
         capability_weight=0.0,  # Isolate responsibility effect
-        historical_responsibility_year=1990,
+        pre_allocation_responsibility_year=1990,
     )
     responsibility_results[weight] = get_country_shares(result, example_countries)
 
 # Create markdown table
-print("## responsibility_weight Effects\n")
-print("| Country | weight=0.0 | weight=0.5 | weight=1.0 |")
-print("|---------|-----------|-----------|-----------|")
+print("## pre_allocation_responsibility_weight Effects\n")
+print("Note: with capability_weight=0.0, any non-zero responsibility weight")
+print("is the sole adjustment — 0.5 and 1.0 produce identical results.\n")
+print("| Country | weight=0.0 (no adjustment) | weight=1.0 (responsibility only) |")
+print("|---------|---------------------------|----------------------------------|")
 for country in example_countries:
     country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
     shares = [
-        responsibility_results[weight][country] for weight in responsibility_weights
+        responsibility_results[weight][country] for weight in pre_allocation_responsibility_weights
     ]
     print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% | {shares[2]:.1f}% |"
+        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% |"
     )
 print()
 
@@ -244,8 +249,11 @@ print()
 # Show how capability weighting affects shares for per-capita-adjusted-budget
 
 # %%
-# Test different capability weights
-capability_weights = [0.0, 0.5, 1.0]
+# Test capability ON vs OFF (with pre_allocation_responsibility_weight=0.0).
+# When pre_allocation_responsibility_weight=0.0, any non-zero capability_weight
+# is the sole adjustment — its specific value doesn't matter (only the ratio
+# between weights affects results). So we show OFF (0.0) vs ON (1.0).
+capability_weights = [0.0, 1.0]
 capability_results = {}
 
 for weight in capability_weights:
@@ -255,20 +263,22 @@ for weight in capability_weights:
         gdp_ts=gdp_ts,
         allocation_year=2020,
         emission_category=emission_category,
-        responsibility_weight=0.0,  # Isolate capability effect
+        pre_allocation_responsibility_weight=0.0,  # Isolate capability effect
         capability_weight=weight,
     )
     capability_results[weight] = get_country_shares(result, example_countries)
 
 # Create markdown table
 print("## capability_weight Effects\n")
-print("| Country | weight=0.0 | weight=0.5 | weight=1.0 |")
-print("|---------|-----------|-----------|-----------|")
+print("Note: with pre_allocation_responsibility_weight=0.0, any non-zero capability weight")
+print("is the sole adjustment — 0.5 and 1.0 produce identical results.\n")
+print("| Country | weight=0.0 (no adjustment) | weight=1.0 (capability only) |")
+print("|---------|---------------------------|------------------------------|")
 for country in example_countries:
     country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
     shares = [capability_results[weight][country] for weight in capability_weights]
     print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% | {shares[2]:.1f}% |"
+        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% |"
     )
 print()
 
@@ -291,8 +301,8 @@ for floor in income_floors:
         gini_s=gini_ts,
         allocation_year=2020,
         emission_category=emission_category,
-        responsibility_weight=0.0,
-        capability_weight=0.5,  # Use capability to see floor effect
+        pre_allocation_responsibility_weight=0.0,
+        capability_weight=1.0,  # Capability only (sole adjustment when pre_allocation_responsibility_weight=0.0)
         income_floor=floor,
     )
     income_floor_results[floor] = get_country_shares(result, example_countries)
@@ -319,8 +329,9 @@ print()
 #
 # **Key patterns:**
 # - Earlier `allocation_year` -> reduces shares for high historical emitters (USA, Germany)
-# - Higher `responsibility_weight` -> penalizes historical emissions
-# - Higher `capability_weight` -> reduces shares for wealthy countries (USA, Germany)
+# - Enabling pre-allocation responsibility (weight > 0) -> penalizes historical emissions
+# - Enabling capability (weight > 0) -> reduces shares for wealthy countries (USA, Germany)
+# - Only the ratio between the two weights matters (they are normalized by their sum)
 # - Higher `income_floor` -> protects developing countries from capability adjustments
 #
 # Copy these tables into `docs/science/parameter-effects.md` for documentation.

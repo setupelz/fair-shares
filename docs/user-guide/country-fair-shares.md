@@ -36,22 +36,22 @@ graph LR
 | Category                | Description                           | Notes                                 |
 | ----------------------- | ------------------------------------- | ------------------------------------- |
 | `co2-ffi` **(default)** | CO₂ from fossil fuels and industry    |                                       |
-| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | Avoids LULUCF measurement uncertainty |
-| `all-ghg`               | All greenhouse gases including LULUCF | Uses GWP100 AR6 values                |
+| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | GWP100 AR6 values; avoids LULUCF measurement uncertainty |
+| `all-ghg`               | All greenhouse gases including LULUCF | GWP100 AR6 values                     |
 
 ### Target Source
 
 | Source         | Allocation Functions | Description                                                             |
 | -------------- | -------------------- | ----------------------------------------------------------------------- |
 | `rcbs`         | Budget approaches    | Remaining Carbon Budgets -- single cumulative value per country         |
-| `pathway`      | Pathway approaches   | IPCC AR6 scenarios -- allocate existing scenario pathways               |
+| `pathway`      | Pathway approaches   | Scenario pathways (e.g. IPCC AR6) -- allocate existing scenario pathways |
 | `rcb-pathways` | Pathway approaches   | RCB to global pathway, then allocated annually using pathway approaches |
 
 ### Supporting Data
 
 | Data Type    | Purpose                                              |
 | ------------ | ---------------------------------------------------- |
-| `emissions`  | Historical emissions for responsibility calculations |
+| `emissions`  | Historical emissions for pre-allocation responsibility calculations |
 | `population` | Per capita calculations                              |
 | `gdp`        | Capability-based adjustments                         |
 | `gini`       | Within-country inequality adjustments                |
@@ -61,7 +61,7 @@ Available sources are configured in `conf/data_sources/`.
 ---
 
 !!! note "Entry Points Framework"
-Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b]: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The steps below map directly onto these decision stages. See [From Principle to Code](../science/principle-to-code.md) for details.
+Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. See [From Principle to Code](../science/principle-to-code.md) for details.
 
 ## Step 2: Allocation Approaches
 
@@ -73,12 +73,10 @@ Before configuring approaches and parameters, it helps to work through the five 
 
 ### Budget Approaches (for `target="rcbs"`)
 
-These implement Equal Cumulative Per Capita (ECPC) allocation when `allocation_year` is set to a historical start year (e.g., 1990). The choice of start year is normatively significant — 1990 corresponds to the IPCC First Assessment Report and the "excusable ignorance" threshold in the equity literature [Baer 2013; Pelz 2025b].
-
 | Approach                          | Description                                    |
 | --------------------------------- | ---------------------------------------------- |
 | `equal-per-capita-budget`         | Equal share per person                         |
-| `per-capita-adjusted-budget`      | Adjusted for responsibility and capability     |
+| `per-capita-adjusted-budget`      | Adjusted for pre-allocation responsibility and capability     |
 | `per-capita-adjusted-gini-budget` | Further adjusted for within-country inequality |
 
 ### Pathway Approaches (for `target="pathway"` or `target="rcb-pathways"`)
@@ -86,11 +84,11 @@ These implement Equal Cumulative Per Capita (ECPC) allocation when `allocation_y
 | Approach                                          | Description                                                                                                                                                                         |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `equal-per-capita`                                | Equal share per person per year                                                                                                                                                     |
-| `per-capita-adjusted`                             | Adjusted for responsibility and capability                                                                                                                                          |
+| `per-capita-adjusted`                             | Adjusted for pre-allocation responsibility (backward-looking) and capability (from allocation year onwards)                                                                                        |
 | `per-capita-adjusted-gini`                        | Further adjusted for within-country inequality                                                                                                                                      |
-| `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only — convergence from current levels embeds implicit grandfathering during the transition period [Kartha 2018]) |
+| `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only — convergence from current levels embeds implicit grandfathering during the transition period [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)) |
 | `cumulative-per-capita-convergence`               | Budget-preserving transition from current emissions to cumulative targets                                                                                                           |
-| `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with responsibility and capability adjustments                                                                                                               |
+| `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with pre-allocation responsibility (backward-looking) and capability adjustments (from allocation year onwards)                                                              |
 | `cumulative-per-capita-convergence-gini-adjusted` | Cumulative convergence accounting for intra-national inequality                                                                                                                     |
 
 For detailed explanations, see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/).
@@ -159,12 +157,15 @@ allocations = {
         {
             "allocation_year": [2020],
             "preserve_allocation_year_shares": [False],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
         }
     ],
 }
 ```
+
+!!! note "Illustrative parameters only"
+    The `per-capita-adjusted-budget` entry above shows the config *structure*, not a complete parameter set. For full worked examples with all adjustment parameters, see [From Principle to Code](../science/principle-to-code.md).
 
 Both approaches run in a single pipeline execution. Results include an `approach` column for filtering.
 

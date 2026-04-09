@@ -38,8 +38,8 @@ def test_allocation_contracts(test_data):
         "per-capita-convergence": {"convergence_year": first_allocation_year + 30},
         # Unified function: variant determined by inputs (gdp_ts, gini_s, weights)
         "cumulative-per-capita-convergence": {
-            "historical_responsibility_year": 1990,
-            "responsibility_weight": 0.3,
+            "pre_allocation_responsibility_year": 1990,
+            "pre_allocation_responsibility_weight": 0.3,
             "capability_weight": 0.3,
         },
     }

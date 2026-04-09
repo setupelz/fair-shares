@@ -333,93 +333,93 @@ class TestAllocationParameters:
         for year in large_floor_shares.columns:
             assert abs(large_floor_shares[year].sum() - 1.0) < 1e-7
 
-    def test_per_capita_adjusted_responsibility_weight(self, test_data):
-        """Test that responsibility_weight parameter works for per_capita_adjusted."""
+    def test_per_capita_adjusted_pre_allocation_responsibility_weight(self, test_data):
+        """Test that pre_allocation_responsibility_weight parameter works for per_capita_adjusted."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         emissions = test_data["emissions"]
         first_allocation_year = test_data["first-allocation-year"]
         ur = get_default_unit_registry()
 
-        # Test with responsibility_weight = 0 (no responsibility adjustment)
+        # Test with pre_allocation_responsibility_weight = 0 (no pre-allocation responsibility adjustment)
         result_no_resp = per_capita_adjusted(
             population_ts=population,
             country_actual_emissions_ts=emissions,
             gdp_ts=gdp,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=0.0,
+            pre_allocation_responsibility_weight=0.0,
             capability_weight=1.0,
             ur=ur,
         )
 
-        # Test with responsibility_weight > 0
+        # Test with pre_allocation_responsibility_weight > 0
         result_with_resp = per_capita_adjusted(
             population_ts=population,
             country_actual_emissions_ts=emissions,
             gdp_ts=gdp,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=0.3,
+            pre_allocation_responsibility_weight=0.3,
             capability_weight=0.7,
             ur=ur,
         )
 
         # Verify normalized parameters stored correctly (0.3/1.0 = 0.3, 0.7/1.0 = 0.7)
-        assert result_no_resp.parameters["responsibility_weight"] == 0.0
-        assert abs(result_with_resp.parameters["responsibility_weight"] - 0.3) < 1e-10
+        assert result_no_resp.parameters["pre_allocation_responsibility_weight"] == 0.0
+        assert abs(result_with_resp.parameters["pre_allocation_responsibility_weight"] - 0.3) < 1e-10
         assert abs(result_with_resp.parameters["capability_weight"] - 0.7) < 1e-10
 
-        # Results should differ when responsibility is applied
+        # Results should differ when pre-allocation responsibility is applied
         assert not result_no_resp.relative_shares_pathway_emissions.equals(
             result_with_resp.relative_shares_pathway_emissions
-        ), "Responsibility adjustment should change allocation"
+        ), "Pre-allocation responsibility adjustment should change allocation"
 
-    def test_per_capita_adjusted_responsibility_per_capita(self, test_data):
-        """Test responsibility_per_capita parameter for per_capita_adjusted."""
+    def test_per_capita_adjusted_pre_allocation_responsibility_per_capita(self, test_data):
+        """Test pre_allocation_responsibility_per_capita parameter for per_capita_adjusted."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         emissions = test_data["emissions"]
         first_allocation_year = test_data["first-allocation-year"]
         ur = get_default_unit_registry()
 
-        # Test with per capita responsibility
+        # Test with per capita pre-allocation responsibility
         result_per_capita = per_capita_adjusted(
             population_ts=population,
             country_actual_emissions_ts=emissions,
             gdp_ts=gdp,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
-            responsibility_per_capita=True,
+            pre_allocation_responsibility_per_capita=True,
             ur=ur,
         )
 
-        # Test with absolute responsibility
+        # Test with absolute pre-allocation responsibility
         result_absolute = per_capita_adjusted(
             population_ts=population,
             country_actual_emissions_ts=emissions,
             gdp_ts=gdp,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
-            responsibility_per_capita=False,
+            pre_allocation_responsibility_per_capita=False,
             ur=ur,
         )
 
         # Verify parameters
-        assert result_per_capita.parameters["responsibility_per_capita"] is True
-        assert result_absolute.parameters["responsibility_per_capita"] is False
+        assert result_per_capita.parameters["pre_allocation_responsibility_per_capita"] is True
+        assert result_absolute.parameters["pre_allocation_responsibility_per_capita"] is False
 
         # Results should differ
         assert not result_per_capita.relative_shares_pathway_emissions.equals(
             result_absolute.relative_shares_pathway_emissions
-        ), "Per capita vs absolute responsibility should produce different results"
+        ), "Per capita vs absolute pre-allocation responsibility should produce different results"
 
     def test_per_capita_adjusted_mixed_adjustments(self, test_data):
-        """Test combining responsibility and capability adjustments."""
+        """Test combining pre-allocation responsibility and capability adjustments."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         emissions = test_data["emissions"]
@@ -429,9 +429,9 @@ class TestAllocationParameters:
         # Test various weight combinations
         weight_combinations = [
             (0.5, 0.5),  # Equal weights
-            (0.8, 0.2),  # More responsibility
+            (0.8, 0.2),  # More pre-allocation responsibility
             (0.2, 0.8),  # More capability
-            (1.0, 0.0),  # Only responsibility
+            (1.0, 0.0),  # Only pre-allocation responsibility
             (0.0, 1.0),  # Only capability
         ]
 
@@ -443,7 +443,7 @@ class TestAllocationParameters:
                 gdp_ts=gdp,
                 first_allocation_year=first_allocation_year,
                 emission_category=STANDARD_EMISSION_CATEGORY,
-                responsibility_weight=resp_w,
+                pre_allocation_responsibility_weight=resp_w,
                 capability_weight=cap_w,
                 ur=ur,
             )
@@ -458,7 +458,7 @@ class TestAllocationParameters:
                 expected_resp = 0.0
                 expected_cap = 0.0
             assert (
-                abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+                abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
             )
             assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10
 
@@ -470,8 +470,8 @@ class TestAllocationParameters:
             results[(1.0, 0.0)].relative_shares_pathway_emissions
         )
 
-    def test_cumulative_per_capita_convergence_responsibility_weight(self, test_data):
-        """Test that different responsibility weights produce different results."""
+    def test_cumulative_per_capita_convergence_pre_allocation_responsibility_weight(self, test_data):
+        """Test that different pre-allocation responsibility weights produce different results."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         test_data["gini"]
@@ -480,7 +480,7 @@ class TestAllocationParameters:
         first_allocation_year = test_data["first-allocation-year"]
         ur = get_default_unit_registry()
 
-        # Test with no responsibility (pure cumulative per capita)
+        # Test with no pre-allocation responsibility (pure cumulative per capita)
         result_no_resp = cumulative_per_capita_convergence(
             population_ts=population,
             country_actual_emissions_ts=emissions,
@@ -490,7 +490,7 @@ class TestAllocationParameters:
             ur=ur,
         )
 
-        # Test with some responsibility (weight = 0.5)
+        # Test with some pre-allocation responsibility (weight = 0.5)
         result_with_resp = cumulative_per_capita_convergence_adjusted(
             population_ts=population,
             gdp_ts=gdp,
@@ -498,7 +498,7 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             ur=ur,
         )
 
@@ -507,19 +507,19 @@ class TestAllocationParameters:
         assert isinstance(result_with_resp, PathwayAllocationResult)
         assert result_no_resp.approach == "cumulative-per-capita-convergence"
         assert result_with_resp.approach == "cumulative-per-capita-convergence-adjusted"
-        assert result_no_resp.parameters["responsibility_weight"] == 0.0
-        # With responsibility_weight=0.5 and capability_weight=0.0 (default), normalized is 1.0
-        assert abs(result_with_resp.parameters["responsibility_weight"] - 1.0) < 1e-10
+        assert result_no_resp.parameters["pre_allocation_responsibility_weight"] == 0.0
+        # With pre_allocation_responsibility_weight=0.5 and capability_weight=0.0 (default), normalized is 1.0
+        assert abs(result_with_resp.parameters["pre_allocation_responsibility_weight"] - 1.0) < 1e-10
 
         # Results should be different
         shares_no_resp = result_no_resp.relative_shares_pathway_emissions
         shares_with_resp = result_with_resp.relative_shares_pathway_emissions
         assert not shares_no_resp.equals(
             shares_with_resp
-        ), "Different responsibility weights should produce different results"
+        ), "Different pre-allocation responsibility weights should produce different results"
 
     def test_cumulative_per_capita_convergence_per_capita_modes(self, test_data):
-        """Test per capita vs absolute modes for responsibility and capability."""
+        """Test per capita vs absolute modes for pre-allocation responsibility and capability."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         test_data["gini"]
@@ -554,7 +554,7 @@ class TestAllocationParameters:
             ur=ur,
         )
 
-        # Test with responsibility per capita mode
+        # Test with pre-allocation responsibility per capita mode
         result_resp_per_cap = cumulative_per_capita_convergence_adjusted(
             population_ts=population,
             gdp_ts=gdp,
@@ -562,12 +562,12 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_per_capita=True,
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_per_capita=True,
             ur=ur,
         )
 
-        # Test with responsibility absolute mode
+        # Test with pre-allocation responsibility absolute mode
         result_resp_abs = cumulative_per_capita_convergence_adjusted(
             population_ts=population,
             gdp_ts=gdp,
@@ -575,8 +575,8 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_per_capita=False,
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_per_capita=False,
             ur=ur,
         )
 
@@ -589,8 +589,8 @@ class TestAllocationParameters:
         # Check parameters are stored correctly
         assert result_cap_per_cap.parameters["capability_per_capita"] is True
         assert result_cap_abs.parameters["capability_per_capita"] is False
-        assert result_resp_per_cap.parameters["responsibility_per_capita"] is True
-        assert result_resp_abs.parameters["responsibility_per_capita"] is False
+        assert result_resp_per_cap.parameters["pre_allocation_responsibility_per_capita"] is True
+        assert result_resp_abs.parameters["pre_allocation_responsibility_per_capita"] is False
 
         # Results should be different for different modes
         assert not result_cap_per_cap.relative_shares_pathway_emissions.equals(
@@ -598,10 +598,10 @@ class TestAllocationParameters:
         ), "Per capita vs absolute capability should produce different results"
         assert not result_resp_per_cap.relative_shares_pathway_emissions.equals(
             result_resp_abs.relative_shares_pathway_emissions
-        ), "Per capita vs absolute responsibility should produce different results"
+        ), "Per capita vs absolute pre-allocation responsibility should produce different results"
 
     def test_cumulative_per_capita_convergence_exponents(self, test_data):
-        """Test that different capability and responsibility exponents work."""
+        """Test that different capability and pre-allocation responsibility exponents work."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         test_data["gini"]
@@ -667,7 +667,7 @@ class TestAllocationParameters:
             shares_20
         ), "Different capability exponents should produce different results"
 
-        # Test different responsibility exponents
+        # Test different pre-allocation responsibility exponents
         result_resp_exp_05 = cumulative_per_capita_convergence_adjusted(
             population_ts=population,
             gdp_ts=gdp,
@@ -675,8 +675,8 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_exponent=0.5,
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_exponent=0.5,
             ur=ur,
         )
 
@@ -687,23 +687,23 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_exponent=2.0,
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_exponent=2.0,
             ur=ur,
         )
 
         assert isinstance(result_resp_exp_05, PathwayAllocationResult)
         assert isinstance(result_resp_exp_20, PathwayAllocationResult)
-        assert result_resp_exp_05.parameters["responsibility_exponent"] == 0.5
-        assert result_resp_exp_20.parameters["responsibility_exponent"] == 2.0
+        assert result_resp_exp_05.parameters["pre_allocation_responsibility_exponent"] == 0.5
+        assert result_resp_exp_20.parameters["pre_allocation_responsibility_exponent"] == 2.0
 
         # Results should be different
         assert not result_resp_exp_05.relative_shares_pathway_emissions.equals(
             result_resp_exp_20.relative_shares_pathway_emissions
-        ), "Different responsibility exponents should produce different results"
+        ), "Different pre-allocation responsibility exponents should produce different results"
 
     def test_cumulative_per_capita_convergence_functional_forms(self, test_data):
-        """Test that different functional forms work for capability and responsibility."""
+        """Test that different functional forms work for capability and pre-allocation responsibility."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         test_data["gini"]
@@ -747,7 +747,7 @@ class TestAllocationParameters:
             result_asinh.relative_shares_pathway_emissions
         ), "Power and asinh capability forms should produce different results"
 
-        # Test responsibility functional forms
+        # Test pre-allocation responsibility functional forms
         result_resp_power = cumulative_per_capita_convergence_adjusted(
             population_ts=population,
             gdp_ts=gdp,
@@ -755,8 +755,8 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_functional_form="power",
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_functional_form="power",
             ur=ur,
         )
 
@@ -767,23 +767,23 @@ class TestAllocationParameters:
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
             world_scenario_emissions_ts=world_emissions,
-            responsibility_weight=0.5,
-            responsibility_functional_form="asinh",
+            pre_allocation_responsibility_weight=0.5,
+            pre_allocation_responsibility_functional_form="asinh",
             ur=ur,
         )
 
         assert isinstance(result_resp_power, PathwayAllocationResult)
         assert isinstance(result_resp_asinh, PathwayAllocationResult)
-        assert result_resp_power.parameters["responsibility_functional_form"] == "power"
-        assert result_resp_asinh.parameters["responsibility_functional_form"] == "asinh"
+        assert result_resp_power.parameters["pre_allocation_responsibility_functional_form"] == "power"
+        assert result_resp_asinh.parameters["pre_allocation_responsibility_functional_form"] == "asinh"
 
         # Results should be different
         assert not result_resp_power.relative_shares_pathway_emissions.equals(
             result_resp_asinh.relative_shares_pathway_emissions
-        ), "Power and asinh responsibility forms should produce different results"
+        ), "Power and asinh pre-allocation responsibility forms should produce different results"
 
     def test_per_capita_adjusted_weight_normalization_pathway(self, test_data):
-        """Test that capability and responsibility weights are normalized to their sum."""
+        """Test that capability and pre-allocation responsibility weights are normalized to their sum."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         emissions = test_data["emissions"]
@@ -807,17 +807,17 @@ class TestAllocationParameters:
                 gdp_ts=gdp,
                 first_allocation_year=first_allocation_year,
                 emission_category=STANDARD_EMISSION_CATEGORY,
-                responsibility_weight=resp_w,
+                pre_allocation_responsibility_weight=resp_w,
                 capability_weight=cap_w,
                 ur=ur,
             )
 
             # Check normalized weights are stored correctly
             assert (
-                abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+                abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
             ), (
-                f"Expected responsibility_weight={expected_resp} for inputs ({resp_w}, {cap_w}), "
-                f"got {result.parameters['responsibility_weight']}"
+                f"Expected pre_allocation_responsibility_weight={expected_resp} for inputs ({resp_w}, {cap_w}), "
+                f"got {result.parameters['pre_allocation_responsibility_weight']}"
             )
             assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10, (
                 f"Expected capability_weight={expected_cap} for inputs ({resp_w}, {cap_w}), "
@@ -827,7 +827,7 @@ class TestAllocationParameters:
             # When both weights are > 0, they should sum to 1.0
             if resp_w > 0 and cap_w > 0:
                 weight_sum = (
-                    result.parameters["responsibility_weight"]
+                    result.parameters["pre_allocation_responsibility_weight"]
                     + result.parameters["capability_weight"]
                 )
                 assert (
@@ -855,24 +855,24 @@ class TestAllocationParameters:
             gini_s=gini_data,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=resp_w,
+            pre_allocation_responsibility_weight=resp_w,
             capability_weight=cap_w,
             ur=ur,
         )
 
         # Check normalized weights
-        assert abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+        assert abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
         assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10
 
         # Should sum to 1.0
         weight_sum = (
-            result.parameters["responsibility_weight"]
+            result.parameters["pre_allocation_responsibility_weight"]
             + result.parameters["capability_weight"]
         )
         assert abs(weight_sum - 1.0) < 1e-10
 
     def test_per_capita_adjusted_weight_normalization_budget(self, test_data):
-        """Test that capability and responsibility weights are normalized for budget allocations."""
+        """Test that capability and pre-allocation responsibility weights are normalized for budget allocations."""
         population = test_data["population"]
         gdp = test_data["gdp"]
         emissions = test_data["emissions"]
@@ -893,17 +893,17 @@ class TestAllocationParameters:
                 gdp_ts=gdp,
                 allocation_year=allocation_year,
                 emission_category=STANDARD_EMISSION_CATEGORY,
-                responsibility_weight=resp_w,
+                pre_allocation_responsibility_weight=resp_w,
                 capability_weight=cap_w,
                 ur=ur,
             )
 
             # Check normalized weights are stored correctly
             assert (
-                abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+                abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
             ), (
-                f"Expected responsibility_weight={expected_resp}, "
-                f"got {result.parameters['responsibility_weight']}"
+                f"Expected pre_allocation_responsibility_weight={expected_resp}, "
+                f"got {result.parameters['pre_allocation_responsibility_weight']}"
             )
             assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10, (
                 f"Expected capability_weight={expected_cap}, "
@@ -912,7 +912,7 @@ class TestAllocationParameters:
 
             # Should sum to 1.0
             weight_sum = (
-                result.parameters["responsibility_weight"]
+                result.parameters["pre_allocation_responsibility_weight"]
                 + result.parameters["capability_weight"]
             )
             assert abs(weight_sum - 1.0) < 1e-10
@@ -937,18 +937,18 @@ class TestAllocationParameters:
             gini_s=gini_data,
             allocation_year=allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=resp_w,
+            pre_allocation_responsibility_weight=resp_w,
             capability_weight=cap_w,
             ur=ur,
         )
 
         # Check normalized weights
-        assert abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+        assert abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
         assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10
 
         # Should sum to 1.0
         weight_sum = (
-            result.parameters["responsibility_weight"]
+            result.parameters["pre_allocation_responsibility_weight"]
             + result.parameters["capability_weight"]
         )
         assert abs(weight_sum - 1.0) < 1e-10
@@ -978,17 +978,17 @@ class TestAllocationParameters:
                 first_allocation_year=first_allocation_year,
                 emission_category=STANDARD_EMISSION_CATEGORY,
                 world_scenario_emissions_ts=world_emissions,
-                responsibility_weight=resp_w,
+                pre_allocation_responsibility_weight=resp_w,
                 capability_weight=cap_w,
                 ur=ur,
             )
 
             # Check normalized weights are stored correctly
             assert (
-                abs(result.parameters["responsibility_weight"] - expected_resp) < 1e-10
+                abs(result.parameters["pre_allocation_responsibility_weight"] - expected_resp) < 1e-10
             ), (
-                f"Expected responsibility_weight={expected_resp} for inputs ({resp_w}, {cap_w}), "
-                f"got {result.parameters['responsibility_weight']}"
+                f"Expected pre_allocation_responsibility_weight={expected_resp} for inputs ({resp_w}, {cap_w}), "
+                f"got {result.parameters['pre_allocation_responsibility_weight']}"
             )
             assert abs(result.parameters["capability_weight"] - expected_cap) < 1e-10, (
                 f"Expected capability_weight={expected_cap} for inputs ({resp_w}, {cap_w}), "
@@ -997,7 +997,7 @@ class TestAllocationParameters:
 
             # Should sum to 1.0
             weight_sum = (
-                result.parameters["responsibility_weight"]
+                result.parameters["pre_allocation_responsibility_weight"]
                 + result.parameters["capability_weight"]
             )
             assert (
@@ -1019,13 +1019,13 @@ class TestAllocationParameters:
             gdp_ts=gdp,
             first_allocation_year=first_allocation_year,
             emission_category=STANDARD_EMISSION_CATEGORY,
-            responsibility_weight=0.0,
+            pre_allocation_responsibility_weight=0.0,
             capability_weight=0.0,
             ur=ur,
         )
 
         # Both normalized weights should be 0.0
-        assert result.parameters["responsibility_weight"] == 0.0
+        assert result.parameters["pre_allocation_responsibility_weight"] == 0.0
         assert result.parameters["capability_weight"] == 0.0
 
         # Approach should be equal-per-capita when no adjustments

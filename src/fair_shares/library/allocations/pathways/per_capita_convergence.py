@@ -288,7 +288,7 @@ def per_capita_convergence(
 
     **Limitations**
 
-    - Does not incorporate historical responsibility for past emissions
+    - Does not incorporate pre-allocation responsibility rescaling for past emissions
     - Does not incorporate capability/ability to pay
     - The grandfathering starting point lacks ethical basis (see referenced docs)
 
@@ -325,7 +325,7 @@ def per_capita_convergence(
 
     See Also
     --------
-    per_capita_adjusted : Equal per capita with responsibility/capability adjustments
+    per_capita_adjusted : Equal per capita with pre-allocation responsibility/capability adjustments
     cumulative_per_capita_convergence : Convergence accounting for cumulative emissions
     """
     return _per_capita_convergence_core(

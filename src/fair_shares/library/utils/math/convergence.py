@@ -519,3 +519,123 @@ def _find_feasible_long_run_shares(
     adjusted_cumulative = total_initial_contribution + clipped_long_run * denominator
 
     return clipped_long_run, adjustment_warnings, adjusted_cumulative
+
+
+def evolve_shares_sine_deviation(
+    target_cumulative_budgets: pd.Series,
+    pcc_shares: pd.DataFrame,
+    global_pathway: pd.Series,
+    initial_shares: pd.Series,
+    sorted_columns: list,
+    start_column: str | int | float,
+    convergence_year: int,
+    first_allocation_year: int,
+) -> pd.DataFrame:
+    """
+    Iterative sine-deviation convergence solver (Dekker Eqs. 7-8).
+
+    Computes year-by-year allocations that deviate from a PCC baseline using
+    a sine-shaped correction, front-loading the adjustment toward cumulative
+    budget targets. Each year's allocation depends on all previous allocations.
+
+    .. note::
+        Validated with synthetic data in unit and integration tests. Pending
+        validation against real AR6/PRIMAP pipeline output and the published
+        results in Dekker et al. (2025).
+
+    The method works in two steps per year:
+
+    **Step 1** -- Track remaining debt/leftover (Eq. 7):
+
+        D(t, g) = B_ECPC(g) - sum_{t_i=t_a}^{t-1} E_alloc(t_i, g) + E_PCC(t, g)
+
+    **Step 2** -- Sine-shaped deviation from PCC (Eq. 8):
+
+        E_alloc(t, g) = D(t,g)/(t_conv - t) * sin((t - t_a)/(t_conv - t_a) * pi)
+                        + E_PCC(t, g)
+
+    Parameters
+    ----------
+    target_cumulative_budgets : pd.Series
+        Target cumulative emissions budget per country (absolute emissions,
+        not shares). Indexed by country.
+    pcc_shares : pd.DataFrame
+        Per capita convergence share matrix (countries x years). Each column
+        sums to 1.0.
+    global_pathway : pd.Series
+        Global emissions pathway indexed by year column labels. Same columns
+        as pcc_shares.
+    initial_shares : pd.Series
+        Initial emission shares at start year (sums to 1.0).
+    sorted_columns : list
+        Year columns in sorted order.
+    start_column : str | int | float
+        Column label for first allocation year.
+    convergence_year : int
+        Year by which allocations converge.
+    first_allocation_year : int
+        First allocation year (t_a, equivalent to t_0 in Dekker).
+
+    Returns
+    -------
+    pd.DataFrame
+        Share matrix (countries x years) with allocations that sum to 1.0
+        per year.
+    """
+    import math
+
+    start_idx = sorted_columns.index(start_column)
+    t_a = first_allocation_year
+    t_conv = convergence_year
+
+    # Initialize output shares DataFrame
+    shares_df = pd.DataFrame(
+        index=initial_shares.index, columns=sorted_columns, dtype=float
+    )
+    shares_df[start_column] = initial_shares
+
+    # Track cumulative allocated emissions per country (absolute, not shares)
+    cumulative_allocated = pd.Series(0.0, index=initial_shares.index)
+
+    # First year: allocate using initial shares (these are actual emission shares)
+    first_year_global = float(global_pathway[start_column])
+    first_year_allocated = initial_shares * first_year_global
+    cumulative_allocated += first_year_allocated
+
+    for col in sorted_columns[start_idx + 1 :]:
+        t = int(col)
+        global_emissions_t = float(global_pathway[col])
+
+        # PCC allocation for this year (absolute emissions)
+        pcc_alloc_t = pcc_shares[col] * global_emissions_t
+
+        if t >= t_conv:
+            # After convergence year: use PCC directly
+            alloc_t = pcc_alloc_t
+        else:
+            # Eq. 7: D(t, g) = B_ECPC(g) - sum of previous allocations + E_PCC(t, g)
+            d_t = target_cumulative_budgets - cumulative_allocated + pcc_alloc_t
+
+            # Eq. 8: sine-shaped deviation
+            remaining_years = t_conv - t
+            sine_arg = ((t - t_a) / (t_conv - t_a)) * math.pi
+            sine_factor = math.sin(sine_arg)
+
+            alloc_t = (d_t / remaining_years) * sine_factor + pcc_alloc_t
+
+        # Convert to shares and ensure non-negative
+        alloc_t = alloc_t.clip(lower=0.0)
+        total = alloc_t.sum()
+        if total > 0:
+            year_shares = alloc_t / total
+        else:
+            # Fallback: use PCC shares if total is zero
+            year_shares = pcc_shares[col]
+
+        # Scale to get actual allocated emissions this year
+        actual_alloc_t = year_shares * global_emissions_t
+        cumulative_allocated += actual_alloc_t
+
+        shares_df[col] = year_shares
+
+    return shares_df

@@ -116,7 +116,7 @@ def load_allocation_data(
             sc_path = processed_dir / f"world_scenarios_{category}_complete.csv"
             sc_df = pd.read_csv(sc_path)
             # Include source in index if present (e.g. non-CO2 pathways
-            # in composite rcbs runs have a source column from AR6)
+            # in composite rcbs runs have a source column from scenario data)
             if "source" in sc_df.columns and "source" not in index_cols:
                 index_cols.insert(2, "source")
             scenarios_data[category] = sc_df.set_index(index_cols)
@@ -200,7 +200,12 @@ def run_all_allocations(
     target : str
         Target source type.
     final_categories : list[str]
-        Categories to iterate over.
+        Categories to iterate over (from ``get_final_categories``).
+        For composite categories with RCB targets this is e.g.
+        ``["co2", "non-co2"]`` because RCBs constrain CO2 only and
+        non-CO2 requires scenario pathway data.  Auto-derivation of
+        pathway approaches for the non-CO2 leg depends on matching
+        pathway data being available in the active source set.
     harmonisation_year : int | None
         Harmonisation year (None for pure RCB runs).
 
@@ -221,6 +226,9 @@ def run_all_allocations(
     # approaches for composite RCB runs — the non-CO2 pathway equivalents
     # are generated automatically (e.g. equal-per-capita-budget →
     # equal-per-capita with allocation_year → first_allocation_year).
+    # NOTE: auto-derivation only works when scenario pathway data matching
+    # the RCBs' climate assessments is available in the active source set.
+    # build_data_config() validates this upstream.
     if budget_allocs and not pathway_allocs:
         pathway_allocs = derive_pathway_allocations(budget_allocs)
         logger.info(

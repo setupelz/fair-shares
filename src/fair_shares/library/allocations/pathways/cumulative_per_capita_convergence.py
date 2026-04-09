@@ -3,7 +3,7 @@ Cumulative per capita convergence pathway allocation.
 
 This module implements allocation approaches that distribute emissions budgets
 based on cumulative population shares over the full scenario time horizon,
-with optional adjustments for historical responsibility and capability.
+with optional adjustments for pre-allocation responsibility and capability.
 
 For theoretical foundations and academic context, see:
     docs/science/allocations.md#convergence-mechanism-theoretical-foundations
@@ -14,13 +14,13 @@ For CBDR-RC principles and normative considerations, see:
 **Three Allocation Variants**
 
 - ``cumulative-per-capita-convergence``: Pure cumulative per capita shares
-- ``cumulative-per-capita-convergence-adjusted``: With responsibility/capability adjustments
+- ``cumulative-per-capita-convergence-adjusted``: With pre-allocation responsibility/capability adjustments
 - ``cumulative-per-capita-convergence-gini-adjusted``: With Gini-based inequality corrections
 
 Implementation is modular across utility packages:
 - ``utils.data.convergence``: Data processing for convergence allocations
 - ``utils.math.convergence``: Convergence solver and speed validation
-- ``utils.math.adjustments``: Responsibility and capability adjustments
+- ``utils.math.adjustments``: Pre-allocation responsibility and capability adjustments
 - ``validation.convergence``: Input/output validation
 """
 
@@ -32,6 +32,7 @@ import numpy as np
 import pandas as pd
 
 from fair_shares.library.allocations.results import PathwayAllocationResult
+from fair_shares.library.exceptions import AllocationError
 from fair_shares.library.utils import (
     calculate_relative_adjustment,
     filter_time_columns,
@@ -49,7 +50,10 @@ from fair_shares.library.utils.math.adjustments import (
     calculate_capability_adjustment_data,
     calculate_responsibility_adjustment_data_convergence,
 )
-from fair_shares.library.utils.math.convergence import find_minimum_convergence_speed
+from fair_shares.library.utils.math.convergence import (
+    evolve_shares_sine_deviation,
+    find_minimum_convergence_speed,
+)
 from fair_shares.library.validation.convergence import (
     validate_adjustment_data_requirements,
     validate_country_world_consistency,
@@ -74,20 +78,23 @@ def _cumulative_per_capita_convergence_core(
     world_scenario_emissions_ts: TimeseriesDataFrame,
     gdp_ts: TimeseriesDataFrame | None = None,
     gini_s: pd.DataFrame | None = None,
-    responsibility_weight: float = 0.0,
+    pre_allocation_responsibility_weight: float = 0.0,
     capability_weight: float = 0.0,
-    historical_responsibility_year: int = 1990,
-    responsibility_per_capita: bool = True,
-    responsibility_exponent: float = 1.0,
-    responsibility_functional_form: str = "asinh",
+    pre_allocation_responsibility_year: int = 1990,
+    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_exponent: float = 1.0,
+    pre_allocation_responsibility_functional_form: str = "asinh",
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
     income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
-    max_deviation_sigma: float | None = 2.0,
+    max_deviation_sigma: float | None = None,
     strict: bool = True,
     max_convergence_speed: float = 0.9,
+    historical_discount_rate: float = 0.0,
+    convergence_method: str = "minimum-speed",
+    convergence_year: int | None = None,
     group_level: str = "iso3c",
     unit_level: str = "unit",
     ur: pint.facets.PlainRegistry = get_default_unit_registry(),
@@ -97,21 +104,110 @@ def _cumulative_per_capita_convergence_core(
 
     This function implements the cumulative per capita convergence approach,
     which allocates emissions based on cumulative population shares with
-    optional adjustments for historical responsibility and capability.
+    optional adjustments for pre-allocation responsibility and capability.
 
     The approach is grounded in the equal per capita principle, extended to
     account for the full time dimension of emissions pathways. Adjustments
     incorporate CBDR-RC principles by reducing allocations for countries with
-    higher historical emissions (responsibility) or higher economic capacity
-    (capability).
+    higher historical emissions (pre-allocation responsibility) or higher
+    economic capacity (capability).
 
     Delegates to helper modules for data processing, validation, math,
     and solving. This function orchestrates the overall workflow.
+
+    Parameters
+    ----------
+    population_ts
+        Population time series for per capita calculations.
+    country_actual_emissions_ts
+        Country emissions for initial shares and pre-allocation responsibility calculation.
+    first_allocation_year
+        Starting year for the allocation.
+    emission_category
+        The emission category (e.g., 'co2-ffi', 'all-ghg').
+    world_scenario_emissions_ts
+        World emissions pathway defining the time horizon and year weights.
+    gdp_ts
+        GDP time series for capability adjustment. Required if capability_weight > 0.
+    gini_s
+        Gini coefficients for GDP inequality adjustment.
+    pre_allocation_responsibility_weight
+        Weight for pre-allocation responsibility adjustment (0-1).
+    capability_weight
+        Weight for economic capability adjustment (0-1). Applies from the first
+        allocation year onwards (contrast with pre-allocation responsibility,
+        which looks backward from it).
+    pre_allocation_responsibility_year
+        Start year for pre-allocation responsibility calculation. Default: 1990.
+    pre_allocation_responsibility_per_capita
+        If True, use per capita emissions for pre-allocation responsibility. Default: True.
+    pre_allocation_responsibility_exponent
+        Exponent for the pre-allocation responsibility adjustment function. Default: 1.0.
+    pre_allocation_responsibility_functional_form
+        Functional form for pre-allocation responsibility: "asinh" or "power". Default: "asinh".
+    capability_per_capita
+        If True, use per capita GDP for capability. Default: True.
+    capability_exponent
+        Exponent for the capability adjustment function. Default: 1.0.
+    capability_functional_form
+        Functional form for capability: "asinh" or "power". Default: "asinh".
+    income_floor
+        Income floor for Gini adjustment (in USD PPP per capita). Default: 0.0.
+    max_gini_adjustment
+        Maximum reduction factor from Gini adjustment (0-1). Default: 0.8.
+    max_deviation_sigma
+        Maximum allowed deviation from equal per capita baseline. If None, no
+        constraint is applied.
+    strict
+        If True (default), raise error for infeasible convergence.
+        If False, use nearest feasible solution with warnings.
+    max_convergence_speed
+        Maximum allowed convergence speed (0 to 1.0). Default: 0.9.
+    historical_discount_rate
+        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
+        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
+        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+    convergence_method
+        Convergence algorithm to use. "minimum-speed" (default): exponential
+        convergence with binary-search for minimum feasible speed.
+        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        from a PCC baseline; requires convergence_year.
+    convergence_year
+        Year by which allocations converge to equal per capita. Required when
+        convergence_method='sine-deviation'. Must be > first_allocation_year.
+        Default: None.
+    group_level
+        Index level name for grouping. Default: 'iso3c'.
+    unit_level
+        Index level name for units. Default: 'unit'.
+    ur
+        Pint unit registry for unit conversions.
+
+    Returns
+    -------
+    PathwayAllocationResult
+        Relative shares over time, summing to unity each year.
+
+    Notes
+    -----
+    **GDP window (capability adjustment only):** When ``capability_weight > 0``,
+    the per-country capability scalar is computed by summing GDP and population
+    only over the intersection of years where both data are available -- there
+    is no forward-fill into post-observation years. With ``gdp_ts`` typically
+    ending at the last observed year (e.g. 2023 for ``wdi-2025``) and
+    population running to ~2100, only the observed-GDP years contribute to the
+    capability metric. This is structurally different from the per-capita
+    pathway and budget primitives, which forward-fill GDP per capita into the
+    post-observation window. Users who want post-observation GDP dynamics to
+    enter the capability calculation should extend the input ``gdp_ts`` time
+    series with projected data (SSP2 GDP projections, custom growth
+    assumptions, or a future-extended WDI release) before calling this
+    function. ``cumulative_per_capita_convergence`` (without adjustments) does
+    not use GDP and is unaffected.
     """
     # Convert to int
     first_allocation_year = int(first_allocation_year)
-    historical_responsibility_year = int(historical_responsibility_year)
-
+    pre_allocation_responsibility_year = int(pre_allocation_responsibility_year)
     # Determine last year from world scenario data
     last_year = int(max(world_scenario_emissions_ts.columns, key=lambda x: int(x)))
 
@@ -124,29 +220,48 @@ def _cumulative_per_capita_convergence_core(
         gini_s=gini_s,
         country_actual_emissions_ts=country_actual_emissions_ts,
         world_scenario_emissions_ts=world_scenario_emissions_ts,
-        historical_responsibility_year=historical_responsibility_year
-        if responsibility_weight > 0
+        pre_allocation_responsibility_year=pre_allocation_responsibility_year
+        if pre_allocation_responsibility_weight > 0
         else None,
     )
 
     # Validate inputs
-    validate_weights(responsibility_weight, capability_weight)
+    validate_weights(pre_allocation_responsibility_weight, capability_weight)
     validate_adjustment_data_requirements(capability_weight, gdp_ts, gini_s)
+
+    # Validate convergence method
+    valid_methods = ("minimum-speed", "sine-deviation")
+    if convergence_method not in valid_methods:
+        raise AllocationError(
+            f"Invalid convergence_method '{convergence_method}'. "
+            f"Must be one of: {valid_methods}"
+        )
+    if convergence_method == "sine-deviation" and convergence_year is None:
+        raise AllocationError(
+            "convergence_year is required when convergence_method='sine-deviation'"
+        )
+    if convergence_year is not None:
+        convergence_year = int(convergence_year)
+        if convergence_year <= first_allocation_year:
+            raise AllocationError(
+                f"convergence_year ({convergence_year}) must be greater than "
+                f"first_allocation_year ({first_allocation_year})"
+            )
 
     # Determine approach and weight normalization
     use_capability = capability_weight > 0
-    use_responsibility = responsibility_weight > 0
+    use_responsibility = pre_allocation_responsibility_weight > 0
     use_gini_adjustment = use_capability and gini_s is not None
     has_adjustments = use_responsibility or use_capability
 
-    total_adjustment_weight = responsibility_weight + capability_weight
+    total_adjustment_weight = pre_allocation_responsibility_weight + capability_weight
     if total_adjustment_weight > 0:
-        normalized_responsibility_weight = (
-            responsibility_weight / total_adjustment_weight
+        normalized_pre_allocation_responsibility_weight = (
+            pre_allocation_responsibility_weight / total_adjustment_weight
         )
         normalized_capability_weight = capability_weight / total_adjustment_weight
     else:
-        normalized_responsibility_weight = 0.0
+        normalized_pre_allocation_responsibility_weight = 0.0
         normalized_capability_weight = 0.0
 
     if use_gini_adjustment:
@@ -202,34 +317,52 @@ def _cumulative_per_capita_convergence_core(
 
     # Process population data
     cmltv_pop_by_group = process_population_data(
-        population_ts, first_allocation_year, group_level, unit_level, ur
+        population_ts,
+        first_allocation_year,
+        group_level,
+        unit_level,
+        ur,
     )
 
     # Start with cumulative population as the base (no adjustment = equal per capita)
     adjusted_population = cmltv_pop_by_group.copy()
 
-    # Apply responsibility adjustment: higher historical emissions -> lower allocation
-    if responsibility_weight > 0:
+    # Apply pre-allocation responsibility adjustment: higher historical emissions -> lower allocation
+    if pre_allocation_responsibility_weight > 0:
         responsibility_data = calculate_responsibility_adjustment_data_convergence(
             country_actual_emissions_ts=country_actual_emissions_ts,
             population_ts=population_ts,
-            historical_responsibility_year=historical_responsibility_year,
+            pre_allocation_responsibility_year=pre_allocation_responsibility_year,
             first_allocation_year=first_allocation_year,
-            responsibility_per_capita=responsibility_per_capita,
+            pre_allocation_responsibility_per_capita=pre_allocation_responsibility_per_capita,
             group_level=group_level,
             unit_level=unit_level,
             ur=ur,
+            historical_discount_rate=historical_discount_rate,
         )
         responsibility_data = responsibility_data.reindex(cmltv_pop_by_group.index)
         responsibility_adjustment = calculate_relative_adjustment(
             responsibility_data,
-            functional_form=responsibility_functional_form,
-            exponent=normalized_responsibility_weight * responsibility_exponent,
+            functional_form=pre_allocation_responsibility_functional_form,
+            exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
             inverse=True,
         )
         adjusted_population = adjusted_population * responsibility_adjustment
 
-    # Apply capability adjustment: higher GDP -> lower allocation
+    # Apply capability adjustment: higher GDP -> lower allocation.
+    #
+    # GDP window note: ``calculate_capability_adjustment_data`` computes a
+    # per-country capability scalar by summing GDP and population only over
+    # the intersection of their year columns -- there is no forward-fill into
+    # post-observation years. With ``gdp_ts`` typically ending at the last
+    # observed year (e.g. 2023 for wdi-2025) and population running to ~2100,
+    # only the observed-GDP years contribute to the capability metric. The
+    # post-observation window influences the population-cumulation side but
+    # not the capability side. Users who want post-observation GDP dynamics
+    # to enter the capability calculation should extend the input ``gdp_ts``
+    # time series with projected data (SSP2 GDP projections, custom growth
+    # assumptions, or a future-extended WDI release) before calling this
+    # function.
     if capability_weight > 0 and gdp_ts is not None:
         capability_data = calculate_capability_adjustment_data(
             population_ts=population_ts,
@@ -284,19 +417,92 @@ def _cumulative_per_capita_convergence_core(
     else:
         approach_name = "cumulative-per-capita-convergence-adjusted"
 
-    # Find convergence speed and evolve shares
-    diagnostic_params = {
-        "approach": approach_name,
-        "first_allocation_year": first_allocation_year,
-        "responsibility_weight": responsibility_weight,
-        "capability_weight": capability_weight,
-        "historical_responsibility_year": historical_responsibility_year,
-        "max_deviation_sigma": max_deviation_sigma,
-        "max_convergence_speed": max_convergence_speed,
-        "use_gini_adjustment": use_gini_adjustment,
-    }
-    convergence_speed, long_run_shares, adjustment_warnings, adjusted_cumulative = (
-        find_minimum_convergence_speed(
+    # Validate time horizon
+    validate_sufficient_time_horizon(
+        sorted_columns, start_column, first_allocation_year
+    )
+    world_time_columns = emissions_world.columns
+
+    if convergence_method == "sine-deviation":
+        # Sine-deviation convergence (Dekker Eqs. 7-8)
+        # Compute PCC baseline shares (linear blend from GF to EPC)
+        from fair_shares.library.utils import groupby_except_robust
+
+        population_filtered = filter_time_columns(
+            population_ts, first_allocation_year
+        )
+        population_single_unit = set_single_unit(
+            population_filtered, unit_level, ur=ur
+        )
+        pop_year_to_label = {int(c): c for c in population_single_unit.columns}
+        pop_allocation = population_single_unit[
+            pop_year_to_label[first_allocation_year]
+        ]
+        pop_total = groupby_except_robust(pop_allocation, group_level)
+        epc_shares = pop_allocation.divide(pop_total)
+        epc_shares.index = initial_shares.index
+
+        # Build PCC share matrix: linear blend from GF (initial_shares) to EPC
+        pcc_shares = pd.DataFrame(
+            index=initial_shares.index, columns=sorted_columns, dtype=float
+        )
+        denom = float(convergence_year - first_allocation_year)
+        for col in sorted_columns:
+            t = int(col)
+            if t <= first_allocation_year:
+                w = 1.0
+            elif t >= convergence_year:
+                w = 0.0
+            else:
+                w = (convergence_year - t) / denom
+            pcc_shares[col] = initial_shares * w + epc_shares * (1.0 - w)
+            # Renormalize
+            pcc_shares[col] = pcc_shares[col] / pcc_shares[col].sum()
+
+        # Build global pathway series (absolute emissions per year)
+        global_pathway = emissions_world.iloc[0]
+
+        # Target cumulative budgets (absolute, not shares)
+        total_cumulative_emissions = global_pathway.sum()
+        target_cumulative_budgets = (
+            target_cumulative_shares * total_cumulative_emissions
+        )
+
+        shares_df = evolve_shares_sine_deviation(
+            target_cumulative_budgets=target_cumulative_budgets,
+            pcc_shares=pcc_shares,
+            global_pathway=global_pathway,
+            initial_shares=initial_shares,
+            sorted_columns=sorted_columns,
+            start_column=start_column,
+            convergence_year=convergence_year,
+            first_allocation_year=first_allocation_year,
+        )
+
+        shares_by_group = shares_df.reindex(columns=world_time_columns)
+        validate_share_calculation(shares_by_group, "Share calculation")
+
+        # No speed-based convergence metadata for sine-deviation
+        convergence_speed = None
+        adjustment_warnings = None
+    else:
+        # Minimum-speed exponential convergence (default)
+        diagnostic_params = {
+            "approach": approach_name,
+            "first_allocation_year": first_allocation_year,
+            "pre_allocation_responsibility_weight": pre_allocation_responsibility_weight,
+            "capability_weight": capability_weight,
+            "pre_allocation_responsibility_year": pre_allocation_responsibility_year,
+            "max_deviation_sigma": max_deviation_sigma,
+            "max_convergence_speed": max_convergence_speed,
+            "use_gini_adjustment": use_gini_adjustment,
+        }
+        (
+            convergence_speed,
+            long_run_shares,
+            adjustment_warnings,
+            adjusted_cumulative,
+        ) = find_minimum_convergence_speed(
             sorted_columns,
             start_column,
             year_fraction_of_cumulative_emissions,
@@ -306,35 +512,30 @@ def _cumulative_per_capita_convergence_core(
             strict=strict,
             max_convergence_speed=max_convergence_speed,
         )
-    )
 
-    # Use adjusted cumulative targets if fallback was used
-    if adjusted_cumulative is not None:
-        target_cumulative_shares = adjusted_cumulative
-    long_run_shares = long_run_shares / long_run_shares.sum()
+        # Use adjusted cumulative targets if fallback was used
+        if adjusted_cumulative is not None:
+            target_cumulative_shares = adjusted_cumulative
+        long_run_shares = long_run_shares / long_run_shares.sum()
 
-    # Validate time horizon
-    validate_sufficient_time_horizon(
-        sorted_columns, start_column, first_allocation_year
-    )
-    world_time_columns = emissions_world.columns
+        # Evolve shares through convergence
+        shares_df = pd.DataFrame(
+            index=initial_shares.index, columns=sorted_columns, dtype=float
+        )
+        start_idx = sorted_columns.index(start_column)
+        shares_df[start_column] = initial_shares
+        current_shares = initial_shares
 
-    # Evolve shares through convergence
-    shares_df = pd.DataFrame(
-        index=initial_shares.index, columns=sorted_columns, dtype=float
-    )
-    start_idx = sorted_columns.index(start_column)
-    shares_df[start_column] = initial_shares
-    current_shares = initial_shares
+        for column in sorted_columns[start_idx + 1 :]:
+            raw = current_shares + convergence_speed * (
+                long_run_shares - current_shares
+            )
+            validate_share_calculation(raw, "Share evolution")
+            current_shares = raw / raw.sum()
+            shares_df[column] = current_shares
 
-    for column in sorted_columns[start_idx + 1 :]:
-        raw = current_shares + convergence_speed * (long_run_shares - current_shares)
-        validate_share_calculation(raw, "Share evolution")
-        current_shares = raw / raw.sum()
-        shares_df[column] = current_shares
-
-    shares_by_group = shares_df.reindex(columns=world_time_columns)
-    validate_share_calculation(shares_by_group, "Share calculation")
+        shares_by_group = shares_df.reindex(columns=world_time_columns)
+        validate_share_calculation(shares_by_group, "Share calculation")
 
     # Validate world weights alignment
     year_fraction_aligned = year_fraction_of_cumulative_emissions.reindex(
@@ -363,7 +564,7 @@ def _cumulative_per_capita_convergence_core(
     # Build parameters dict (always include normalized weights for reporting)
     parameters = {
         "first_allocation_year": first_allocation_year,
-        "responsibility_weight": normalized_responsibility_weight,
+        "pre_allocation_responsibility_weight": normalized_pre_allocation_responsibility_weight,
         "capability_weight": normalized_capability_weight,
         "convergence_speed": convergence_speed,
         "emission_category": emission_category,
@@ -371,16 +572,18 @@ def _cumulative_per_capita_convergence_core(
         "unit_level": unit_level,
     }
 
-    # Add responsibility parameters if used
-    if responsibility_weight > 0:
+    # Add pre-allocation responsibility parameters if used
+    if pre_allocation_responsibility_weight > 0:
         parameters.update(
             {
-                "historical_responsibility_year": historical_responsibility_year,
-                "responsibility_per_capita": responsibility_per_capita,
-                "responsibility_exponent": responsibility_exponent,
-                "responsibility_functional_form": responsibility_functional_form,
+                "pre_allocation_responsibility_year": pre_allocation_responsibility_year,
+                "pre_allocation_responsibility_per_capita": pre_allocation_responsibility_per_capita,
+                "pre_allocation_responsibility_exponent": pre_allocation_responsibility_exponent,
+                "pre_allocation_responsibility_functional_form": pre_allocation_responsibility_functional_form,
             }
         )
+        if historical_discount_rate > 0.0:
+            parameters["historical_discount_rate"] = historical_discount_rate
 
     # Add capability parameters if used
     if capability_weight > 0:
@@ -410,6 +613,11 @@ def _cumulative_per_capita_convergence_core(
 
     # Add strict parameter
     parameters["strict"] = strict
+
+    # Add convergence method parameters
+    parameters["convergence_method"] = convergence_method
+    if convergence_year is not None:
+        parameters["convergence_year"] = convergence_year
 
     # Format country warnings for result
     country_warnings = None
@@ -444,9 +652,11 @@ def cumulative_per_capita_convergence(
     first_allocation_year: int,
     emission_category: str,
     world_scenario_emissions_ts: TimeseriesDataFrame,
-    max_deviation_sigma: float | None = 2.0,
+    max_deviation_sigma: float | None = None,
     max_convergence_speed: float = 0.9,
     strict: bool = True,
+    convergence_method: str = "minimum-speed",
+    convergence_year: int | None = None,
     group_level: str = "iso3c",
     unit_level: str = "unit",
     ur: pint.facets.PlainRegistry = get_default_unit_registry(),
@@ -550,6 +760,21 @@ def cumulative_per_capita_convergence(
         population-weighted standard deviations. If provided, constrains each
         group's share to be within +/-max_deviation_sigma standard deviations
         from the baseline equal per capita share. If None, no constraint is applied.
+    max_convergence_speed
+        Maximum allowed convergence speed (0 to 1.0). Lower values create smoother
+        pathways but may become infeasible. Default: 0.9.
+    strict
+        If True (default), raise error for infeasible convergence.
+        If False, use nearest feasible solution with warnings.
+    convergence_method
+        Convergence algorithm to use. "minimum-speed" (default): exponential
+        convergence with binary-search for minimum feasible speed.
+        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        from a PCC baseline; requires convergence_year.
+    convergence_year
+        Year by which allocations converge to equal per capita. Required when
+        convergence_method='sine-deviation'. Must be > first_allocation_year.
+        Default: None.
     group_level
         Index level name for grouping (typically 'iso3c'). Default: 'iso3c'
     unit_level
@@ -565,7 +790,7 @@ def cumulative_per_capita_convergence(
     See Also
     --------
     cumulative_per_capita_convergence_adjusted : With
-        responsibility/capability adjustments
+        pre-allocation responsibility/capability adjustments
     cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP
 
     Notes
@@ -657,10 +882,12 @@ def cumulative_per_capita_convergence(
         emission_category=emission_category,
         gdp_ts=None,
         gini_s=None,
-        responsibility_weight=0.0,
+        pre_allocation_responsibility_weight=0.0,
         capability_weight=0.0,
         max_deviation_sigma=max_deviation_sigma,
         strict=strict,
+        convergence_method=convergence_method,
+        convergence_year=convergence_year,
         group_level=group_level,
         unit_level=unit_level,
         ur=ur,
@@ -674,29 +901,32 @@ def cumulative_per_capita_convergence_adjusted(
     emission_category: str,
     world_scenario_emissions_ts: TimeseriesDataFrame,
     gdp_ts: TimeseriesDataFrame | None = None,
-    responsibility_weight: float = 0.0,
+    pre_allocation_responsibility_weight: float = 0.0,
     capability_weight: float = 0.0,
-    historical_responsibility_year: int = 1990,
-    responsibility_per_capita: bool = True,
-    responsibility_exponent: float = 1.0,
-    responsibility_functional_form: str = "asinh",
+    pre_allocation_responsibility_year: int = 1990,
+    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_exponent: float = 1.0,
+    pre_allocation_responsibility_functional_form: str = "asinh",
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
-    max_deviation_sigma: float | None = 2.0,
+    max_deviation_sigma: float | None = None,
     max_convergence_speed: float = 0.9,
     strict: bool = True,
+    historical_discount_rate: float = 0.0,
+    convergence_method: str = "minimum-speed",
+    convergence_year: int | None = None,
     group_level: str = "iso3c",
     unit_level: str = "unit",
     ur: pint.facets.PlainRegistry = get_default_unit_registry(),
 ) -> PathwayAllocationResult:
     r"""
-    Cumulative per capita convergence with responsibility and capability adjustments.
+    Cumulative per capita convergence with pre-allocation responsibility and capability adjustments.
 
     Extends cumulative per capita convergence by incorporating:
 
-    - Responsibility adjustment: Countries with higher historical emissions
-        receive smaller allocations
+    - Pre-allocation responsibility adjustment: Countries with higher historical
+        emissions receive smaller allocations
     - Capability adjustment: Countries with higher GDP receive smaller allocations
 
     Mathematical Foundation
@@ -721,7 +951,7 @@ def cumulative_per_capita_convergence_adjusted(
     **Cumulative Target Shares with Adjustments**
 
     Target shares are computed by adjusting cumulative population for
-    historical responsibility and economic capability:
+    pre-allocation responsibility and economic capability:
 
     $$
     T_{\text{cum}}(g) = \frac{P_{\text{adj}}(g)}{\sum_{g'} P_{\text{adj}}(g')}
@@ -738,15 +968,15 @@ def cumulative_per_capita_convergence_adjusted(
     - $T_{\text{cum}}(g)$: Cumulative target share for country $g$
     - $P_{\text{adj}}(g)$: Adjusted cumulative population
     - $P_{\text{cum}}(g) = \sum_{t \geq t_a} P(g, t)$: Cumulative population from allocation year onwards
-    - $R(g)$: Responsibility adjustment factor (equals 1.0 if not used)
+    - $R(g)$: Pre-allocation responsibility adjustment factor (equals 1.0 if not used)
     - $C(g)$: Capability adjustment factor (equals 1.0 if not used)
 
-    **Responsibility Adjustment**
+    **Pre-Allocation Responsibility Adjustment**
 
-    The responsibility metric is based on cumulative historical emissions
-    from historical_responsibility_year to first_allocation_year.
+    The pre-allocation responsibility metric is based on cumulative emissions
+    from pre_allocation_responsibility_year to first_allocation_year.
 
-    For per capita responsibility (:code:`responsibility_per_capita=True`, default):
+    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`):
 
     $$
     R(g) = \left(\frac{\sum_{t=t_h}^{t_a} E(g, t)}{\sum_{t=t_h}^{t_a} P(g, t)}\right)^{-w_r \times e_r}
@@ -754,14 +984,14 @@ def cumulative_per_capita_convergence_adjusted(
 
     Where:
 
-    - $R(g)$: Responsibility adjustment factor (inverse - higher emissions = lower allocation)
+    - $R(g)$: Pre-allocation responsibility adjustment factor (inverse - higher emissions = lower allocation)
     - $E(g, t)$: Emissions of country $g$ in year $t$
-    - $t_h$: Historical responsibility start year
+    - $t_h$: Pre-allocation responsibility start year
     - $t_a$: First allocation year
-    - $w_r$: Normalized responsibility weight
-    - $e_r$: Responsibility exponent
+    - $w_r$: Normalized pre-allocation responsibility weight
+    - $e_r$: Pre-allocation responsibility exponent
 
-    For absolute responsibility (:code:`responsibility_per_capita=False`):
+    For absolute pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=False`, default):
 
     $$
     R(g) = \left(\sum_{t=t_h}^{t_a} E(g, t)\right)^{-w_r \times e_r}
@@ -798,10 +1028,10 @@ def cumulative_per_capita_convergence_adjusted(
     Parameters
     ----------
     population_ts
-        Population time series for per capita calculations and responsibility
-        adjustment.
+        Population time series for per capita calculations and pre-allocation
+        responsibility adjustment.
     country_actual_emissions_ts
-        Country emissions for initial shares and responsibility calculation.
+        Country emissions for initial shares and pre-allocation responsibility calculation.
     world_scenario_emissions_ts
         World emissions pathway defining time horizon and year weights.
     first_allocation_year
@@ -810,23 +1040,25 @@ def cumulative_per_capita_convergence_adjusted(
         The emission category (e.g., 'co2-ffi', 'all-ghg').
     gdp_ts
         GDP time series for capability adjustment. Required if capability_weight > 0.
-    responsibility_weight
-        Weight for responsibility adjustment (0-1). Higher historical emissions
-        -> smaller allocation. Must satisfy: responsibility_weight +
-        capability_weight <= 1.0
+    pre_allocation_responsibility_weight
+        Weight for pre-allocation responsibility adjustment (0-1). Higher historical
+        emissions -> smaller allocation. Must satisfy:
+        pre_allocation_responsibility_weight + capability_weight <= 1.0
     capability_weight
         Weight for capability adjustment (0-1). Higher GDP -> smaller allocation.
-        Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight <= 1.0
-    historical_responsibility_year
-        First year of responsibility window
-        [historical_responsibility_year, first_allocation_year].
+        Applies from the first allocation year onwards (contrast with pre-allocation
+        responsibility, which looks backward from it). Requires gdp_ts. Must satisfy:
+        pre_allocation_responsibility_weight + capability_weight <= 1.0
+    pre_allocation_responsibility_year
+        First year of pre-allocation responsibility window
+        [pre_allocation_responsibility_year, first_allocation_year].
         Default: 1990
-    responsibility_per_capita
-        If True, use per capita emissions for responsibility. Default: True
-    responsibility_exponent
-        Exponent for responsibility adjustment calculation. Default: 1.0
-    responsibility_functional_form
-        Functional form for responsibility adjustment ('asinh', 'power',
+    pre_allocation_responsibility_per_capita
+        If True, use per capita emissions for pre-allocation responsibility. Default: True
+    pre_allocation_responsibility_exponent
+        Exponent for pre-allocation responsibility adjustment calculation. Default: 1.0
+    pre_allocation_responsibility_functional_form
+        Functional form for pre-allocation responsibility adjustment ('asinh', 'power',
         'linear'). Default: 'asinh'
     capability_per_capita
         If True, use per capita GDP for capability. Default: True
@@ -844,6 +1076,19 @@ def cumulative_per_capita_convergence_adjusted(
     strict
         If True (default), raise error for infeasible convergence.
         If False, use nearest feasible solution with warnings.
+    historical_discount_rate
+        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
+        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
+        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+    convergence_method
+        Convergence algorithm to use. "minimum-speed" (default): exponential
+        convergence with binary-search for minimum feasible speed.
+        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        from a PCC baseline; requires convergence_year.
+    convergence_year
+        Year by which allocations converge to equal per capita. Required when
+        convergence_method='sine-deviation'. Must be > first_allocation_year.
+        Default: None.
     group_level
         Index level name for grouping (typically 'iso3c'). Default: 'iso3c'
     unit_level
@@ -873,13 +1118,24 @@ def cumulative_per_capita_convergence_adjusted(
         docs/science/principle-to-code.md#convergence-pathway-approaches
         docs/science/principle-to-code.md#cbdr-rc
 
-    This approach incorporates historical responsibility and capability adjustments
+    This approach incorporates pre-allocation responsibility and capability adjustments
     to operationalize Common But Differentiated Responsibilities and Respective
     Capabilities (CBDR-RC). Higher past emissions and higher GDP -> smaller allocation.
 
+    **GDP window:** The capability metric for this approach is a per-country
+    scalar computed by summing GDP and population only over the intersection
+    of years where both data are available -- there is no forward-fill into
+    post-observation years. With ``gdp_ts`` typically ending at the last
+    observed year (e.g. 2023 for ``wdi-2025``), only the observed-GDP years
+    contribute to the capability metric, regardless of how far the population
+    series extends. Users who want post-observation GDP dynamics to enter
+    the capability calculation should extend the input ``gdp_ts`` time series
+    with projected data (SSP2 GDP projections, custom growth assumptions, or
+    a future-extended WDI release) before calling this function.
+
     Examples
     --------
-    Basic usage with equal responsibility and capability weights:
+    Basic usage with equal pre-allocation responsibility and capability weights:
 
     >>> from fair_shares.library.utils import create_example_data
     >>> from fair_shares.library.allocations.pathways import (
@@ -897,7 +1153,7 @@ def cumulative_per_capita_convergence_adjusted(
     ...     gdp_ts=data["gdp"],
     ...     first_allocation_year=2020,
     ...     emission_category="co2-ffi",
-    ...     responsibility_weight=0.5,  # 50% adjustment for historical emissions
+    ...     pre_allocation_responsibility_weight=0.5,  # 50% adjustment for historical emissions
     ...     capability_weight=0.5,  # 50% adjustment for GDP
     ...     strict=False,  # Accept approximate targets with limited data
     ... )
@@ -919,7 +1175,7 @@ def cumulative_per_capita_convergence_adjusted(
     ...     gdp_ts=data["gdp"],
     ...     first_allocation_year=2020,
     ...     emission_category="co2-ffi",
-    ...     responsibility_weight=0.3,
+    ...     pre_allocation_responsibility_weight=0.3,
     ...     capability_weight=0.3,
     ...     max_convergence_speed=0.5,
     ...     strict=False,
@@ -929,7 +1185,7 @@ def cumulative_per_capita_convergence_adjusted(
     >>> if result_smooth.country_warnings:  # doctest: +SKIP
     ...     print("Approximate targets:", result_smooth.country_warnings)
 
-    Emphasize responsibility over capability:
+    Emphasize pre-allocation responsibility over capability:
 
     >>> result_responsibility = cumulative_per_capita_convergence_adjusted(
     ...     population_ts=data["population"],
@@ -938,13 +1194,13 @@ def cumulative_per_capita_convergence_adjusted(
     ...     gdp_ts=data["gdp"],
     ...     first_allocation_year=2020,
     ...     emission_category="co2-ffi",
-    ...     responsibility_weight=0.7,
+    ...     pre_allocation_responsibility_weight=0.7,
     ...     capability_weight=0.3,
     ...     strict=False,
     ... )  # doctest: +ELLIPSIS
     Converting units...
     >>> # Historical emitters penalized more than in equal-weight case
-    >>> result_responsibility.parameters["responsibility_weight"]
+    >>> result_responsibility.parameters["pre_allocation_responsibility_weight"]
     0.7
     """
     return _cumulative_per_capita_convergence_core(
@@ -955,18 +1211,21 @@ def cumulative_per_capita_convergence_adjusted(
         emission_category=emission_category,
         gdp_ts=gdp_ts,
         gini_s=None,
-        responsibility_weight=responsibility_weight,
+        pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
         capability_weight=capability_weight,
-        historical_responsibility_year=historical_responsibility_year,
-        responsibility_per_capita=responsibility_per_capita,
-        responsibility_exponent=responsibility_exponent,
-        responsibility_functional_form=responsibility_functional_form,
+        pre_allocation_responsibility_year=pre_allocation_responsibility_year,
+        pre_allocation_responsibility_per_capita=pre_allocation_responsibility_per_capita,
+        pre_allocation_responsibility_exponent=pre_allocation_responsibility_exponent,
+        pre_allocation_responsibility_functional_form=pre_allocation_responsibility_functional_form,
         capability_per_capita=capability_per_capita,
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
         max_deviation_sigma=max_deviation_sigma,
         max_convergence_speed=max_convergence_speed,
         strict=strict,
+        historical_discount_rate=historical_discount_rate,
+        convergence_method=convergence_method,
+        convergence_year=convergence_year,
         group_level=group_level,
         unit_level=unit_level,
         ur=ur,
@@ -981,20 +1240,23 @@ def cumulative_per_capita_convergence_adjusted_gini(
     world_scenario_emissions_ts: TimeseriesDataFrame,
     gdp_ts: TimeseriesDataFrame | None = None,
     gini_s: pd.DataFrame | None = None,
-    responsibility_weight: float = 0.0,
+    pre_allocation_responsibility_weight: float = 0.0,
     capability_weight: float = 0.0,
-    historical_responsibility_year: int = 1990,
-    responsibility_per_capita: bool = True,
-    responsibility_exponent: float = 1.0,
-    responsibility_functional_form: str = "asinh",
+    pre_allocation_responsibility_year: int = 1990,
+    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_exponent: float = 1.0,
+    pre_allocation_responsibility_functional_form: str = "asinh",
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
     income_floor: float = 7500.0,
     max_gini_adjustment: float = 0.8,
-    max_deviation_sigma: float | None = 2.0,
+    max_deviation_sigma: float | None = None,
     max_convergence_speed: float = 0.9,
     strict: bool = True,
+    historical_discount_rate: float = 0.0,
+    convergence_method: str = "minimum-speed",
+    convergence_year: int | None = None,
     group_level: str = "iso3c",
     unit_level: str = "unit",
     ur: pint.facets.PlainRegistry = get_default_unit_registry(),
@@ -1004,8 +1266,8 @@ def cumulative_per_capita_convergence_adjusted_gini(
 
     The most comprehensive variant, incorporating:
 
-    - Responsibility adjustment: Countries with higher historical emissions
-      receive smaller allocations
+    - Pre-allocation responsibility adjustment: Countries with higher historical
+      emissions receive smaller allocations
     - Capability adjustment: Countries with higher GDP receive smaller allocations
     - Gini adjustment: GDP is adjusted for income inequality within countries
 
@@ -1031,7 +1293,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     **Cumulative Target Shares with Adjustments**
 
     Target shares are computed by adjusting cumulative population for
-    historical responsibility and Gini-adjusted economic capability:
+    pre-allocation responsibility and Gini-adjusted economic capability:
 
     $$
     T_{\text{cum}}(g) = \frac{P_{\text{adj}}(g)}{\sum_{g'} P_{\text{adj}}(g')}
@@ -1048,23 +1310,26 @@ def cumulative_per_capita_convergence_adjusted_gini(
     - $T_{\text{cum}}(g)$: Cumulative target share for country $g$
     - $P_{\text{adj}}(g)$: Adjusted cumulative population
     - $P_{\text{cum}}(g) = \sum_{t \geq t_a} P(g, t)$: Cumulative population from allocation year onwards
-    - $R(g)$: Responsibility adjustment factor (equals 1.0 if not used)
+    - $R(g)$: Pre-allocation responsibility adjustment factor (equals 1.0 if not used)
     - $C_{\text{Gini}}(g)$: Gini-adjusted capability factor (equals 1.0 if not used)
 
     **Gini Adjustment Process**
 
-    GDP is adjusted using the Greenhouse Development Rights (GDR) framework:
-    only income above a development threshold counts as capability. When
-    combined with the income floor, higher inequality means more national
-    income sits above the threshold — increasing measured capability.
-    See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
+    GDP is adjusted using an interpretation of the Greenhouse Development
+    Rights (GDR) framework's capability metric (note: GDR was designed for
+    burden-sharing; fair-shares adapts its capability calculation for
+    entitlement allocation). Only income above a development threshold counts
+    as capability. When combined with the income floor, higher inequality
+    means more national income sits above the threshold — increasing measured
+    capability. See
+    :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
     for the full mathematical derivation.
 
-    **Responsibility Adjustment**
+    **Pre-Allocation Responsibility Adjustment**
 
     Identical to adjusted convergence (see that function for details).
 
-    For per capita responsibility (:code:`responsibility_per_capita=True`, default):
+    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`):
 
     $$
     R(g) = \left(\frac{\sum_{t=t_h}^{t_a} E(g, t)}{\sum_{t=t_h}^{t_a} P(g, t)}\right)^{-w_r \times e_r}
@@ -1073,10 +1338,10 @@ def cumulative_per_capita_convergence_adjusted_gini(
     Where:
 
     - $E(g, t)$: Emissions of country $g$ in year $t$
-    - $t_h$: Historical responsibility start year
+    - $t_h$: Pre-allocation responsibility start year
     - $t_a$: First allocation year
-    - $w_r$: Normalized responsibility weight
-    - $e_r$: Responsibility exponent
+    - $w_r$: Normalized pre-allocation responsibility weight
+    - $e_r$: Pre-allocation responsibility exponent
 
     **Capability Adjustment with Gini-Adjusted GDP**
 
@@ -1118,10 +1383,10 @@ def cumulative_per_capita_convergence_adjusted_gini(
     Parameters
     ----------
     population_ts
-        Population time series for per capita calculations and responsibility
-        adjustment.
+        Population time series for per capita calculations and pre-allocation
+        responsibility adjustment.
     country_actual_emissions_ts
-        Country emissions for initial shares and responsibility calculation.
+        Country emissions for initial shares and pre-allocation responsibility calculation.
     world_scenario_emissions_ts
         World emissions pathway defining time horizon and year weights.
     first_allocation_year
@@ -1134,23 +1399,25 @@ def cumulative_per_capita_convergence_adjusted_gini(
     gini_s
         Gini coefficients for GDP inequality adjustment. When provided, GDP is adjusted
         to reflect income distribution within countries.
-    responsibility_weight
-        Weight for responsibility adjustment (0-1). Higher historical emissions
-        -> smaller allocation. Must satisfy: responsibility_weight +
-        capability_weight <= 1.0
+    pre_allocation_responsibility_weight
+        Weight for pre-allocation responsibility adjustment (0-1). Higher historical
+        emissions -> smaller allocation. Must satisfy:
+        pre_allocation_responsibility_weight + capability_weight <= 1.0
     capability_weight
         Weight for capability adjustment (0-1). Higher GDP -> smaller allocation.
-        Requires gdp_ts. Must satisfy: responsibility_weight + capability_weight <= 1.0
-    historical_responsibility_year
-        First year of responsibility window
-        [historical_responsibility_year, first_allocation_year].
+        Applies from the first allocation year onwards (contrast with pre-allocation
+        responsibility, which looks backward from it). Requires gdp_ts. Must satisfy:
+        pre_allocation_responsibility_weight + capability_weight <= 1.0
+    pre_allocation_responsibility_year
+        First year of pre-allocation responsibility window
+        [pre_allocation_responsibility_year, first_allocation_year].
         Default: 1990
-    responsibility_per_capita
-        If True, use per capita emissions for responsibility. Default: True
-    responsibility_exponent
-        Exponent for responsibility adjustment calculation. Default: 1.0
-    responsibility_functional_form
-        Functional form for responsibility adjustment ('asinh', 'power',
+    pre_allocation_responsibility_per_capita
+        If True, use per capita emissions for pre-allocation responsibility. Default: True
+    pre_allocation_responsibility_exponent
+        Exponent for pre-allocation responsibility adjustment calculation. Default: 1.0
+    pre_allocation_responsibility_functional_form
+        Functional form for pre-allocation responsibility adjustment ('asinh', 'power',
         'linear'). Default: 'asinh'
     capability_per_capita
         If True, use per capita GDP for capability. Default: True
@@ -1175,6 +1442,19 @@ def cumulative_per_capita_convergence_adjusted_gini(
     strict
         If True (default), raise error for infeasible convergence.
         If False, use nearest feasible solution with warnings.
+    historical_discount_rate
+        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
+        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
+        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+    convergence_method
+        Convergence algorithm to use. "minimum-speed" (default): exponential
+        convergence with binary-search for minimum feasible speed.
+        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        from a PCC baseline; requires convergence_year.
+    convergence_year
+        Year by which allocations converge to equal per capita. Required when
+        convergence_method='sine-deviation'. Must be > first_allocation_year.
+        Default: None.
     group_level
         Index level name for grouping (typically 'iso3c'). Default: 'iso3c'
     unit_level
@@ -1210,6 +1490,19 @@ def cumulative_per_capita_convergence_adjusted_gini(
     distinction. When combined with the income floor, higher inequality means
     more national income sits above the threshold — increasing measured capability.
 
+    **GDP window:** The capability metric for this approach is a per-country
+    scalar computed by summing (Gini-adjusted) GDP and population only over
+    the intersection of years where both data are available -- there is no
+    forward-fill into post-observation years. With ``gdp_ts`` typically ending
+    at the last observed year (e.g. 2023 for ``wdi-2025``), only the
+    observed-GDP years contribute to the capability metric. Users who want
+    post-observation GDP dynamics to enter the capability calculation should
+    extend the input ``gdp_ts`` time series with projected data (SSP2 GDP
+    projections, custom growth assumptions, or a future-extended WDI release)
+    before calling this function. Gini coefficients are looked up per-country
+    and are not part of this windowing -- only the GDP series is constrained
+    to the observation window.
+
     Examples
     --------
     Basic usage with Gini-adjusted GDP:
@@ -1231,7 +1524,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     ...     gini_s=data["gini"],
     ...     first_allocation_year=2020,
     ...     emission_category="co2-ffi",
-    ...     responsibility_weight=0.5,  # 50% adjustment for historical emissions
+    ...     pre_allocation_responsibility_weight=0.5,  # 50% adjustment for historical emissions
     ...     capability_weight=0.5,  # 50% adjustment for Gini-adjusted GDP
     ... )
     Converting units...
@@ -1251,7 +1544,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     ...         gini_s=data["gini"],
     ...         first_allocation_year=2020,
     ...         emission_category="co2-ffi",
-    ...         responsibility_weight=0.3,
+    ...         pre_allocation_responsibility_weight=0.3,
     ...         capability_weight=0.3,
     ...         income_floor=5000.0,  # Lower income floor
     ...         max_gini_adjustment=0.9,  # Allow stronger inequality adjustment
@@ -1272,12 +1565,12 @@ def cumulative_per_capita_convergence_adjusted_gini(
         emission_category=emission_category,
         gdp_ts=gdp_ts,
         gini_s=gini_s,
-        responsibility_weight=responsibility_weight,
+        pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
         capability_weight=capability_weight,
-        historical_responsibility_year=historical_responsibility_year,
-        responsibility_per_capita=responsibility_per_capita,
-        responsibility_exponent=responsibility_exponent,
-        responsibility_functional_form=responsibility_functional_form,
+        pre_allocation_responsibility_year=pre_allocation_responsibility_year,
+        pre_allocation_responsibility_per_capita=pre_allocation_responsibility_per_capita,
+        pre_allocation_responsibility_exponent=pre_allocation_responsibility_exponent,
+        pre_allocation_responsibility_functional_form=pre_allocation_responsibility_functional_form,
         capability_per_capita=capability_per_capita,
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
@@ -1286,6 +1579,9 @@ def cumulative_per_capita_convergence_adjusted_gini(
         max_deviation_sigma=max_deviation_sigma,
         max_convergence_speed=max_convergence_speed,
         strict=strict,
+        historical_discount_rate=historical_discount_rate,
+        convergence_method=convergence_method,
+        convergence_year=convergence_year,
         group_level=group_level,
         unit_level=unit_level,
         ur=ur,

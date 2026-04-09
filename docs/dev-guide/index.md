@@ -120,16 +120,18 @@ results = run_parameter_grid(
 
 All allocation approaches in this library can be linked to specific (sets of) equity principles. Before contributing new approaches, review the [From Principle to Code](../science/principle-to-code.md) documentation to understand the normative foundations.
 
-Use the **Entry Points Framework** when considering any new approach: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b].
+Use the **Entry Points Framework** when considering any new approach: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
 
 In particular, avoid:
 
-- **Claiming value neutrality** — all allocation choices embed normative judgments [Dooley 2021; Kartha 2018]
-- **Including grandfathering** — it has no philosophical support and contradicts equity purposes [Dooley 2021; Kartha 2018]
-- **Combining contradictory principles** — produces incoherent results [Dooley 2021]
+- **Claiming value neutrality** — all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
+- **Including grandfathering** — it has no philosophical support and contradicts equity purposes [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
+- **Combining contradictory principles** — produces incoherent results [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8)
 
-- **[Adding Allocation Approaches](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/)** - New equity principles
-- **[Adding Data Sources](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)** - New datasets
+### Guides
+
+- **[Adding Allocation Approaches](adding-approaches.md)** — implementing new equity principles
+- **[Adding Data Sources](adding-data-sources.md)** — integrating new datasets
 
 ---
 

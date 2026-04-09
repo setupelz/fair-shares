@@ -4,8 +4,6 @@
 
 **Documentation must match the code.** When they conflict, the code is correct and the docs are wrong.
 
-If you can't explain something accurately in simple terms, link to the authoritative source instead of inventing a simplified version.
-
 ---
 
 ## Documentation Hierarchy

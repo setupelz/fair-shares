@@ -139,8 +139,10 @@ pathway_params = rcb_pathways_config.get("data_parameters", {}).get(
     "pathway_parameters", {}
 )
 
-# Default pathway parameters
-start_year = pathway_params.get("start_year", 2020)
+# Pathway start year: use harmonisation_year from config when available,
+# so pathways begin where historical data is spliced to scenarios.
+# Falls back to pathway_parameters config, then 2020.
+start_year = config.get("harmonisation_year") or pathway_params.get("start_year", 2020)
 end_year = pathway_params.get("end_year", 2100)
 
 # Get generator from top-level config (set by build_data_config)
@@ -162,7 +164,6 @@ adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 print("\nRCB adjustments (NGHGI-consistent, Weber et al. 2026):")
 print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
 print(f"  Bunkers source: {adjustments_config.bunkers.path}")
-print(f"  AR6 constants: {adjustments_config.ar6_constants_path}")
 print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 
 # %%
@@ -290,7 +291,7 @@ if emission_category == "co2":
 
     print("\nNGHGI-consistent world CO2 timeseries constructed:")
     print("  fossil = co2-ffi (PRIMAP)")
-    print(f"  LULUCF = Melo NGHGI ({splice_year} end year, no BM splicing)")
+    print(f"  LULUCF = NGHGI actual ({splice_year} end year, no BM splicing)")
     print("  bunkers = international bunker fuel")
     print("  Formula: total CO2 = fossil - bunkers + LULUCF")
 
@@ -313,7 +314,7 @@ print(f"  Start year emissions ({start_year}): {start_emissions:,.0f} Mt CO2")
 # ## Process RCB data to 2020 baseline
 #
 # Uses `load_and_process_rcbs` — the same NGHGI-consistent pipeline as
-# notebook 100. This ensures per-category net-zero years, Gidden LULUCF
+# notebook 100. This ensures per-category net-zero years, BM LULUCF
 # shift in the rebase, and the precautionary BM LULUCF cap are all applied.
 
 # %%

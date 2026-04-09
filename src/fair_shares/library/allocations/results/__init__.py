@@ -216,9 +216,9 @@ class PathwayAllocationResult(BaseAllocationResult):
     targets while per capita emissions converge to equality by a target
     date. See docs/science/allocations.md for theoretical foundations.
 
-    Pathway allocations may also incorporate capability and responsibility
-    adjustments that vary over time as economic circumstances and historical
-    emission stocks change.
+    Pathway allocations may also incorporate capability and pre-allocation
+    responsibility adjustments that vary over time as economic circumstances
+    and historical emission stocks change.
 
     Attributes
     ----------
@@ -260,7 +260,7 @@ class PathwayAllocationResult(BaseAllocationResult):
         annual emissions budget for each year. The result represents each
         country's fair share emissions pathway.
 
-        When combined with scenario-based global pathways (such as those from
+        When combined with scenario-based global pathways (e.g. from
         IPCC AR6), this enables translation of equity principles into concrete
         national trajectories consistent with specific temperature targets.
 

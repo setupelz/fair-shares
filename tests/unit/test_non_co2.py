@@ -55,23 +55,23 @@ class TestNonCO2Overrides:
     def test_default_all_none(self):
         overrides = NonCO2Overrides()
         assert overrides.convergence_year is None
-        assert overrides.responsibility_weight is None
+        assert overrides.pre_allocation_responsibility_weight is None
         assert overrides.capability_weight is None
 
     def test_partial_override(self):
         overrides = NonCO2Overrides(convergence_year=2060)
         assert overrides.convergence_year == 2060
-        assert overrides.responsibility_weight is None
+        assert overrides.pre_allocation_responsibility_weight is None
         assert overrides.capability_weight is None
 
     def test_full_override(self):
         overrides = NonCO2Overrides(
             convergence_year=2055,
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
         )
         assert overrides.convergence_year == 2055
-        assert overrides.responsibility_weight == 0.5
+        assert overrides.pre_allocation_responsibility_weight == 0.5
         assert overrides.capability_weight == 0.5
 
     def test_merge_with_empty_base(self):
@@ -81,21 +81,21 @@ class TestNonCO2Overrides:
 
     def test_merge_overrides_base_value(self):
         overrides = NonCO2Overrides(convergence_year=2060)
-        base = {"convergence_year": 2050, "responsibility_weight": 0.3}
+        base = {"convergence_year": 2050, "pre_allocation_responsibility_weight": 0.3}
         result = overrides.merge_with(base)
         assert result["convergence_year"] == 2060
-        assert result["responsibility_weight"] == 0.3
+        assert result["pre_allocation_responsibility_weight"] == 0.3
 
     def test_merge_none_fields_do_not_override(self):
-        overrides = NonCO2Overrides(responsibility_weight=0.7)
+        overrides = NonCO2Overrides(pre_allocation_responsibility_weight=0.7)
         base = {
             "convergence_year": 2050,
-            "responsibility_weight": 0.3,
+            "pre_allocation_responsibility_weight": 0.3,
             "capability_weight": 0.4,
         }
         result = overrides.merge_with(base)
         assert result["convergence_year"] == 2050  # not overridden
-        assert result["responsibility_weight"] == 0.7  # overridden
+        assert result["pre_allocation_responsibility_weight"] == 0.7  # overridden
         assert result["capability_weight"] == 0.4  # not overridden
 
     def test_merge_does_not_mutate_base(self):

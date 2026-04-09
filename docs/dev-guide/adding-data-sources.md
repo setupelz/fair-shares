@@ -250,9 +250,43 @@ level.
 
 **For custom scenarios:** If your scenario data uses a different emissions
 convention than PRIMAP/NGHGI, apply the necessary corrections in the
-preprocessing notebook (`104_data_preprocess_scenarios.py`) before
+preprocessing notebook (e.g. `104_data_preprocess_scenarios_ar6.py`) before
 the data enters the pipeline. Do not rely on downstream corrections — the
 allocation functions assume scenario data is already convention-consistent.
+
+### Normalised scenario schema
+
+The pipeline normalises all scenario data into a common schema with
+`climate-assessment` (temperature target) and `quantile` (probability
+percentile) fields. Each scenario source defines its own mapping into this
+schema. For example, AR6 maps C1 to `climate-assessment="1.5C"`,
+`quantile=0.5`. All downstream code works with these normalised fields
+regardless of the upstream source.
+
+Any new data processing notebook that introduces a scenario source **must**
+output data with `climate-assessment` and `quantile` columns conforming to
+this schema. See notebook 104 for the AR6 reference implementation.
+
+---
+
+## RCB Sources and All-GHG Pathway Dependency
+
+When adding or updating remaining carbon budget (RCB) data, keep in mind
+that all-GHG allocations using RCBs require a **decomposition** into CO₂
+(allocated via the budget) and non-CO₂ (allocated via scenario pathways).
+This means:
+
+- New RCBs must have **matching scenario pathways** available in the active
+  data source configuration. Without them the non-CO₂ leg has no data to
+  allocate from and `build_data_config()` will raise a `ConfigurationError`.
+- The scenario pathways must cover the same climate assessments as the RCBs
+  (e.g., 1.5 °C / 2 °C categories).
+- Auto-derivation of pathway approaches for non-CO₂ only works when pathway
+  data is present in the active source set.
+
+See [Other Operations: Decomposition](../science/other-operations.md#decomposition-rules)
+for the science and [Architecture Walkthrough: Composite Category Decomposition](architecture-walkthrough.md#composite-category-decomposition)
+for the code path.
 
 ---
 
@@ -260,7 +294,7 @@ allocation functions assume scenario data is already convention-consistent.
 
 Some data source choices carry normative weight. Contributors should document the rationale for their data source choices. For example, some decision points include:
 
-- **GDP:** PPP vs. MER measurement can significantly affect allocation results — PPP tends to raise developing-country capacity shares [Pelz 2025b].
+- **GDP:** PPP vs. MER measurement can significantly affect allocation results — PPP tends to raise developing-country capacity shares [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
 - **Emissions:** Production vs. consumption accounting embeds different theories of responsibility. Production accounting (territorial) excludes embedded imports; consumption accounting includes them.
 - **Population:** Projection method choices (UN median, SSP scenarios) affect per capita allocations, particularly for countries with high projected growth.
 

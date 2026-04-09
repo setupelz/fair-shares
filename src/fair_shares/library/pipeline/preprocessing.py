@@ -481,7 +481,7 @@ def run_rcb_preprocessing(
         world_emiss,
     )
 
-    # Process and save RCB data — always pass PRIMAP fossil (co2-ffi);
+    # Process and save RCB data — always pass fossil (co2-ffi) emissions;
     # for total CO2, also pass BM LULUCF for rebase inside load_and_process_rcbs
     _process_and_save_rcbs(
         orch,
@@ -548,7 +548,7 @@ def _process_and_save_rcbs(
     Args:
         orch: Orchestrator instance
         config: Configuration dict
-        world_fossil_emissions: PRIMAP fossil world emissions (co2-ffi)
+        world_fossil_emissions: Fossil world emissions, co2-ffi (e.g. PRIMAP)
         actual_bm_lulucf_emissions: BM LULUCF world emissions for co2 rebase
     """
     from ..config.models import AdjustmentsConfig
@@ -693,10 +693,14 @@ def run_non_co2_preprocessing(
 
     non-CO2 = all-ghg-ex-co2-lulucf - co2-ffi
 
-    Both historical (PRIMAP) and scenario (AR6) data are derived by subtraction
+    Both historical (e.g. PRIMAP) and scenario (e.g. AR6) data are derived by subtraction
     from their respective parent categories.  The derived data is saved as
     intermediate files so that ``run_pathway_preprocessing("non-co2")`` can
     load and process it through the standard pipeline.
+
+    Requires scenario pathway data in the active source set that covers the
+    same climate assessments as the RCBs.  Auto-derivation of pathway
+    approaches for non-CO2 also depends on this data being present.
 
     Parameters
     ----------
@@ -734,9 +738,9 @@ def run_non_co2_preprocessing(
     )
 
     # ------------------------------------------------------------------
-    # Step 2: Derive non-CO2 scenarios from AR6
+    # Step 2: Derive non-CO2 scenarios from scenario source (e.g. AR6)
     #
-    # Load AR6 scenario files for co2-ffi and all-ghg-ex-co2-lulucf,
+    # Load scenario files for co2-ffi and all-ghg-ex-co2-lulucf,
     # subtract to get non-CO2 scenarios, and save for the pathway pipeline.
     # ------------------------------------------------------------------
     scenario_dir = base_dir  # scenarios_{cat}.csv lives directly under intermediate/
@@ -812,7 +816,10 @@ def run_composite_preprocessing(
 
     Handles both ``"all-ghg"`` and ``"all-ghg-ex-co2-lulucf"`` by decomposing
     them into a CO2 component (target-specific) and a non-CO2 component
-    (always AR6 pathway-based).
+    (always scenario pathway-based, e.g. AR6).  Decomposition is necessary because RCBs
+    constrain CO2 only; non-CO2 gases need scenario pathways.  New RCBs
+    require matching scenario pathways in the active data source
+    configuration -- without them the non-CO2 leg has no data to allocate.
 
     Preprocessing strategy depends on the target:
 

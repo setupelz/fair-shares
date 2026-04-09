@@ -194,9 +194,9 @@ class TestRCBPathwayEquivalence:
             allocation_year=2020,
             emission_category="co2-ffi",
             rcbs=sample_rcbs,
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
         )
 
         # Extract budget shares (single year column from TimeseriesDataFrame)
@@ -214,9 +214,9 @@ class TestRCBPathwayEquivalence:
             world_scenario_emissions_ts=sample_world_pathway,
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.5,
+            pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
         )
 
         pathway_shares = pathway_result.relative_shares_pathway_emissions
@@ -263,11 +263,11 @@ class TestRCBPathwayEquivalence:
             ), f"Year {year} shares sum to {year_sum}, not 1.0"
 
     @pytest.mark.parametrize(
-        "responsibility_weight,capability_weight",
+        "pre_allocation_responsibility_weight,capability_weight",
         [
             (0.0, 0.0),  # Pure equal per capita
             (0.5, 0.5),  # Balanced
-            (1.0, 0.0),  # Pure responsibility
+            (1.0, 0.0),  # Pure pre-allocation responsibility
             (0.0, 1.0),  # Pure capability
         ],
     )
@@ -278,11 +278,11 @@ class TestRCBPathwayEquivalence:
         sample_rcbs,
         sample_world_pathway,
         sample_country_emissions,
-        responsibility_weight,
+        pre_allocation_responsibility_weight,
         capability_weight,
     ):
         """
-        Test equivalence with different responsibility/capability weights.
+        Test equivalence with different pre-allocation responsibility/capability weights.
         """
         # 1. Run budget allocation
         budget_result = run_allocation(
@@ -293,9 +293,9 @@ class TestRCBPathwayEquivalence:
             allocation_year=2020,
             emission_category="co2-ffi",
             rcbs=sample_rcbs,
-            responsibility_weight=responsibility_weight,
+            pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
             capability_weight=capability_weight,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
         )
 
         # Extract budget shares (single year column from TimeseriesDataFrame)
@@ -313,9 +313,9 @@ class TestRCBPathwayEquivalence:
             world_scenario_emissions_ts=sample_world_pathway,
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=responsibility_weight,
+            pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
             capability_weight=capability_weight,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
         )
 
         # 3. Calculate cumulative pathway shares

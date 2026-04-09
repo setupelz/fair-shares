@@ -14,16 +14,19 @@ fair-shares bundles several datasets to enable allocations without external depe
 
 All bundled data permits redistribution. The licenses are permissive:
 
-| Data Type      | Source                 | License       | Citation Required |
-| -------------- | ---------------------- | ------------- | ----------------- |
-| Emissions      | PRIMAP-hist v2.6.1     | **CC-BY-4.0** | Yes               |
-| Population     | UN/OWID 2025           | **CC-BY-4.0** | Yes               |
-| GDP            | World Bank WDI 2025    | **CC-BY-4.0** | Yes               |
-| GDP            | IMF WEO 2025           | Terms of Use  | Yes               |
-| Gini           | UNU-WIDER WIID 2025    | Academic use  | Yes               |
-| Regions        | regioniso3c (custom)   | **MIT**       | Optional          |
-| Scenarios      | IPCC AR6 (Gidden 2022) | **CC-BY-4.0** | Yes               |
-| Carbon budgets | Lamboll et al. 2023    | See paper     | Yes               |
+| Data Type      | Source                 | License            | Citation Required |
+| -------------- | ---------------------- | ------------------ | ----------------- |
+| Emissions      | PRIMAP-hist v2.6.1     | **CC-BY-4.0**      | Yes               |
+| LULUCF         | Melo et al. 2026 v3.1  | **CC-BY-4.0** (Zenodo) | Yes           |
+| Population     | UN/OWID 2025           | **CC-BY-4.0**      | Yes               |
+| GDP            | World Bank WDI 2025    | **CC-BY-4.0**      | Yes               |
+| GDP            | IMF WEO 2025           | Terms of Use       | Yes               |
+| Gini           | UNU-WIDER WIID 2025    | Academic use       | Yes               |
+| Gini           | WID.world 2025         | Academic use       | Yes               |
+| Regions        | regioniso3c (custom)   | **MIT**            | Optional          |
+| Scenarios      | IPCC AR6 (Gidden 2022) | **CC-BY-4.0**      | Yes               |
+| Carbon budgets | Lamboll et al. 2023    | Published values   | Yes               |
+| Bunker fuels   | Global Carbon Budget 2024 | **CC-BY-4.0**   | Yes               |
 
 ---
 
@@ -40,6 +43,22 @@ All bundled data permits redistribution. The licenses are permissive:
 **Location:** `data/emissions/primap-202503/`
 
 **What it provides:** National greenhouse gas emissions by country (1750-2023), including CO2 from fossil fuels, land use, and other GHGs.
+
+---
+
+## LULUCF Data
+
+### Melo et al. (NGHGI LULUCF)
+
+**Source:** Melo, J., et al. (2026). The LULUCF Data Hub: translating global land use emissions estimates into the national GHG inventory framework (Version 3.1.1, 2025 NGHGI release). Zenodo.
+
+**DOI:** [10.5281/zenodo.18352395](https://doi.org/10.5281/zenodo.18352395)
+
+**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) (Zenodo)
+
+**Location:** `data/lulucf/melo-2026/`
+
+**What it provides:** NGHGI-reported CO2 LULUCF fluxes for 187 countries (2000–2023). Used for all emission categories that include land use (co2, all-ghg). See [Other Operations](../science/other-operations.md) for how NGHGI LULUCF data enters the pipeline.
 
 ---
 
@@ -67,10 +86,13 @@ All bundled data permits redistribution. The licenses are permissive:
 
 **Location:** `data/gdp/wdi-2025/`
 
-**What it provides:** GDP per capita (PPP, constant 2021 USD).
+**What it provides:** GDP per capita (PPP, constant 2021 USD). Observed series; ends at 2023.
 
 !!! note "PPP vs MER: a normative choice"
-The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b]. See [From Principle to Code](../science/principle-to-code.md) for further discussion.
+The choice between PPP and MER GDP measures is not purely technical — it is a normative decision that can significantly affect allocation results [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). See [From Principle to Code](../science/principle-to-code.md) for further discussion.
+
+!!! note "Post-observation GDP window"
+`wdi-2025` is observed data only and ends at 2023, while population data extends to ~2100. When an allocation cumulative window runs past 2023, the per-capita budget and pathway primitives forward-fill GDP per capita from 2023 to cover the rest of the window — holding the cross-country capability ratios of 2023 constant. The cumulative-per-capita-convergence primitives instead compute their per-country capability scalar only over the observed-GDP years (no forward-fill). To use projected GDP for the post-observation window (SSP2, a custom growth assumption, or a future-extended WDI release), extend the input `gdp_ts` time series before calling the allocation function. See [Building Blocks](../science/allocations.md#building-blocks) in the science docs for the full description.
 
 ### IMF World Economic Outlook
 
@@ -95,6 +117,16 @@ The choice between PPP and MER GDP measures is not purely technical — it is a 
 **Location:** `data/gini/unu-wider-2025/`
 
 **What it provides:** Gini coefficients for income inequality.
+
+### WID.world
+
+**Source:** World Inequality Database (2025).
+
+**License:** Academic use permitted with citation.
+
+**Location:** `data/gini/wid-2025/`
+
+**What it provides:** Alternative Gini coefficients from fiscal data. Available as a second inequality source alongside UNU-WIDER.
 
 ---
 
@@ -124,7 +156,6 @@ The global remaining carbon budget (RCB) is a key input for budget-based allocat
 | Source              | Budget              | Temperature | Probability | Notes                                              |
 | ------------------- | ------------------- | ----------- | ----------- | -------------------------------------------------- |
 | Lamboll et al. 2023 | 247 GtCO2 from 2023 | 1.5°C       | 50%         | Default RCB in fair-shares bundled data            |
-| IPCC SR1.5          | 420 GtCO2 from 2018 | 1.5°C       | 66%         | Earlier estimate; larger due to higher probability |
 | IPCC AR6            | Various             | Various     | Various     | Temperature–budget relationships in WG1 Chapter 5  |
 
 **Citation for default budget:**
@@ -132,7 +163,7 @@ The global remaining carbon budget (RCB) is a key input for budget-based allocat
 > Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. _Nature Climate Change_, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
 !!! note "Budget choice is normatively significant"
-The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b]. Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.
+The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.
 
 ---
 
@@ -142,13 +173,27 @@ The choice of carbon budget (source, temperature target, probability level) corr
 
 **Source:** Gidden, M. J., et al. (2022). AR6 Scenarios Database hosted by IIASA.
 
-**DOI:** [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911)
+**DOI:** [10.5281/zenodo.8411053](https://doi.org/10.5281/zenodo.8411053)
 
 **License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 **Location:** `data/scenarios/ipcc_ar6_gidden/`
 
 **What it provides:** IPCC AR6 WGIII emission pathways.
+
+---
+
+## Bunker Fuels
+
+### Global Carbon Budget 2024
+
+**Source:** Friedlingstein, P., et al. (2024). Global Carbon Budget 2024. *Earth System Science Data*.
+
+**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+
+**Location:** `data/bunkers/gcb-2024/`
+
+**What it provides:** International aviation and shipping CO2 emissions, used to deduct bunker fuels from national remaining carbon budgets. See [Other Operations](../science/other-operations.md) for methodology.
 
 ---
 

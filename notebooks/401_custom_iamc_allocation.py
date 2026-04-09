@@ -201,7 +201,7 @@ print("\nReady to proceed to Step 3.")
 #
 # Ask yourself:
 #
-# 1. Which principles? Equal per capita? Historical responsibility? Capability?
+# 1. Which principles? Equal per capita? Pre-allocation responsibility? Capability?
 # 2. Relative weights? If combining principles, what balance?
 # 3. Subsistence protection? Exclude basic-needs emissions?
 #
@@ -225,7 +225,7 @@ approach = "equal-per-capita-budget"  # EDIT THIS
 
 # Configure approach parameters
 # - Equal per capita: No parameters needed
-# - Historical responsibility: Set responsibility_weight, historical_responsibility_year
+# - Pre-allocation responsibility: Set pre_allocation_responsibility_weight, pre_allocation_responsibility_year
 # - Capability: Set capability_weight
 # - Subsistence protection: Set income_floor, max_gini_adjustment
 
@@ -235,19 +235,19 @@ approach_params = {
     # to `first_allocation_year` for pathway approaches (Step 4).
     "allocation_year": 2015,
     # Example parameters (uncomment and edit as needed):
-    # "responsibility_weight": 0.5,
+    # "pre_allocation_responsibility_weight": 0.5,
     # "capability_weight": 0.5,
-    # "historical_responsibility_year": 1990,
+    # "pre_allocation_responsibility_year": 1990,
     # "income_floor": 7500,
     # "max_gini_adjustment": 0.8,
     # "convergence_year": 2050,
 }
 
 # Validate required data for approach parameters
-if "responsibility_weight" in approach_params and emissions_ts is None:
+if "pre_allocation_responsibility_weight" in approach_params and emissions_ts is None:
     raise ValueError(
         "Approach requires historical emissions data. "
-        "Set EMISSIONS_VARIABLE to load emissions or remove 'responsibility_weight' parameter."
+        "Set EMISSIONS_VARIABLE to load emissions or remove 'pre_allocation_responsibility_weight' parameter."
     )
 
 if "capability_weight" in approach_params and gdp_ts is None:
@@ -341,7 +341,7 @@ if "capability_weight" in approach_params:
     kwargs["gdp_ts"] = gdp_ts
 if "gini" in approach:
     kwargs["gini_s"] = data.get("gini")
-if "responsibility_weight" in approach_params:
+if "pre_allocation_responsibility_weight" in approach_params:
     kwargs["country_actual_emissions_ts"] = emissions_ts
 if "convergence" in approach:
     world_emissions_ts = emissions_ts[

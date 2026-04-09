@@ -30,17 +30,19 @@ if TYPE_CHECKING:
 
 
 def validate_weight_constraints(
-    responsibility_weight: float,
+    pre_allocation_responsibility_weight: float,
     capability_weight: float,
 ) -> None:
     """
     Validate that allocation weights satisfy mathematical constraints.
 
     Many allocation approaches in fair shares literature combine multiple
-    principles--equal per capita, historical responsibility, and capability--
-    using explicit weights. The Greenhouse Development Rights framework, for
-    example, uses weighted combinations of responsibility and capability indices
-    (e.g., Greenhouse Development Rights). This function ensures that
+    principles--equal per capita, pre-allocation responsibility, and capability--
+    using explicit weights. The Greenhouse Development Rights (GDR) framework,
+    for example, uses weighted combinations of responsibility and capability
+    indices (note: GDR was designed for burden-sharing; fair-shares uses an
+    interpretation of its capability metric for entitlement allocation). This
+    function ensures that
     user-specified weights are valid for such weighted allocation approaches.
 
     The weight constraints are:
@@ -58,31 +60,33 @@ def validate_weight_constraints(
 
     Parameters
     ----------
-    responsibility_weight
-        Weight for historical responsibility adjustment (must be >= 0).
-        Higher values give more weight to cumulative past emissions when
-        adjusting allocations.
+    pre_allocation_responsibility_weight
+        Weight for relative per-capita rescaling based on emissions in
+        the window [pre_allocation_responsibility_year, allocation_year).
+        Must be >= 0. Higher values give more rescaling power to
+        cumulative per-capita emissions in that pre-allocation window.
     capability_weight
         Weight for economic capability adjustment (must be >= 0).
         Higher values give more weight to ability to pay (typically GDP-based)
-        when adjusting allocations.
+        when adjusting allocations. Applies from the allocation year onwards
+        (contrast with pre-allocation responsibility, which looks backward).
 
     Raises
     ------
     AllocationError
         If weights are negative or sum exceeds 1.0.
     """
-    if responsibility_weight < 0:
-        raise AllocationError("responsibility_weight must be non-negative.")
+    if pre_allocation_responsibility_weight < 0:
+        raise AllocationError("pre_allocation_responsibility_weight must be non-negative.")
     if capability_weight < 0:
         raise AllocationError("capability_weight must be non-negative.")
-    if responsibility_weight + capability_weight > 1.0:
+    if pre_allocation_responsibility_weight + capability_weight > 1.0:
         raise AllocationError(
             format_error(
                 "weights_exceed_limit",
-                resp=responsibility_weight,
+                resp=pre_allocation_responsibility_weight,
                 cap=capability_weight,
-                total=responsibility_weight + capability_weight,
+                total=pre_allocation_responsibility_weight + capability_weight,
             )
         )
 

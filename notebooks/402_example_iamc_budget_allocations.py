@@ -152,13 +152,15 @@ for region in sorted(shares_epc.index):
 # See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)
 
 # %%
-# Capability-adjusted allocation (50% weight on GDP)
+# Capability-adjusted allocation (capability only — pre_allocation_responsibility_weight
+# defaults to 0.0, so capability is the sole adjustment and its specific value doesn't
+# matter; 1.0 is used for clarity)
 result_cap = per_capita_adjusted_budget(
     population_ts=population_ts,
     gdp_ts=gdp_ts,
     allocation_year=2015,
     emission_category=EMISSIONS_VARIABLE,
-    capability_weight=0.5,
+    capability_weight=1.0,
     preserve_allocation_year_shares=False,
     group_level="iso3c",
 )
@@ -167,7 +169,7 @@ shares_cap = result_cap.relative_shares_cumulative_emission["2015"]
 shares_cap = shares_cap.droplevel(["unit", "emission-category"])
 
 print(f"Approach: {result_cap.approach}\n")
-print("Regional Budget Shares (Capability 50%):\n")
+print("Regional Budget Shares (Capability-only):\n")
 print(f"{'Region':8s} {'Share':>10s}")
 print("-" * 20)
 for region in sorted(shares_cap.index):

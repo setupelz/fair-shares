@@ -63,14 +63,14 @@ def build_approach_short_column(
         "preserve-allocation-year-shares": "pa",
         "convergence-year": "c",
         "convergence-speed": "cs",
-        "responsibility-weight": "rw",
+        "pre-allocation-responsibility-weight": "rw",
         "capability-weight": "cw",
-        "historical-responsibility-year": "hr",
-        "responsibility-per-capita": "rpc",
+        "pre-allocation-responsibility-year": "hr",
+        "pre-allocation-responsibility-per-capita": "rpc",
         "capability-per-capita": "cpc",
-        "responsibility-exponent": "re",
+        "pre-allocation-responsibility-exponent": "re",
         "capability-exponent": "ce",
-        "responsibility-functional-form": "rff",
+        "pre-allocation-responsibility-functional-form": "rff",
         "capability-functional-form": "cff",
         "max-deviation-sigma": "s",
         "income-floor": "if",
@@ -102,7 +102,7 @@ def build_approach_short_column(
             "allocation-year",
             "convergence-year",
             "income-floor",
-            "historical-responsibility-year",
+            "pre-allocation-responsibility-year",
         }:
             values = values.astype("Int64").astype("string")
         else:
@@ -287,7 +287,7 @@ def convert_parquet_to_wide_csv(
 
     # Sort rows so that paired allocations from decomposed runs are adjacent.
     # For all-ghg + rcbs, each approach produces a CO2 budget allocation (from
-    # RCBs) and a non-CO2 pathway allocation (from AR6 scenarios).  Stripping
+    # RCBs) and a non-CO2 pathway allocation (from scenario pathways).  Stripping
     # the '-budget' suffix creates a common grouping key so that e.g.
     # "equal-per-capita-budget" (co2) sorts next to "equal-per-capita" (non-co2).
     sort_cols = []
@@ -382,14 +382,14 @@ def convert_parquet_to_wide_csv(
         "preserve-allocation-year-shares",
         "convergence-year",
         "convergence-speed",
-        "responsibility-weight",
+        "pre-allocation-responsibility-weight",
         "capability-weight",
-        "historical-responsibility-year",
-        "responsibility-per-capita",
+        "pre-allocation-responsibility-year",
+        "pre-allocation-responsibility-per-capita",
         "capability-per-capita",
-        "responsibility-exponent",
+        "pre-allocation-responsibility-exponent",
         "capability-exponent",
-        "responsibility-functional-form",
+        "pre-allocation-responsibility-functional-form",
         "capability-functional-form",
         "max-deviation-sigma",
         "income-floor",
@@ -468,7 +468,7 @@ def main():
         default=None,
         help=(
             "Comma-separated list of parameter:prefix pairs "
-            "(e.g., 'first-allocation-year:y,responsibility-weight:rw')"
+            "(e.g., 'first-allocation-year:y,pre-allocation-responsibility-weight:rw')"
         ),
     )
 

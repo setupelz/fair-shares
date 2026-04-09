@@ -64,17 +64,19 @@ HOW TO FIX:
 Invalid allocation weights.
 
 WHAT HAPPENED:
-  responsibility_weight ({resp}) + capability_weight ({cap}) = {total}
+  pre_allocation_responsibility_weight ({resp}) + capability_weight ({cap}) = {total}
   The sum must be <= 1.0
 
 WHY:
-  The remaining weight (1.0 - sum) applies to the per-capita component.
-  See docs/science/allocations.md#combining-principles for how weights work.
+  Only the ratio between weights matters — they are normalized by their sum.
+  (0.3, 0.3) and (0.5, 0.5) produce identical results.
+  When one weight is 0, the other is the sole adjustment regardless of its value.
+  See docs/science/allocations.md#weight-normalization for how weights work.
 
 VALID EXAMPLES:
-  - responsibility_weight=0.5, capability_weight=0.5 (equal weight to both)
-  - responsibility_weight=0.3, capability_weight=0.3 (40% per-capita basis)
-  - responsibility_weight=0.5, capability_weight=0.0 (responsibility only)
+  - pre_allocation_responsibility_weight=0.5, capability_weight=0.5 (equal weight to both)
+  - pre_allocation_responsibility_weight=0.7, capability_weight=0.3 (pre-allocation responsibility-heavy)
+  - pre_allocation_responsibility_weight=1.0, capability_weight=0.0 (pre-allocation responsibility only)
 """,
     "missing_required_data": """
 Missing required data for {adjustment_type} adjustment.
@@ -144,7 +146,7 @@ WHAT HAPPENED:
 LIKELY CAUSE:
   The data source doesn't cover the full time period needed for this allocation.
 
-  For historical responsibility approaches, start date choice affects
+  For pre-allocation responsibility approaches, start date choice affects
   allocations. See docs/science/allocations.md#historical-responsibility.
 
 HOW TO FIX:

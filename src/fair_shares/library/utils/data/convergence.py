@@ -238,6 +238,7 @@ def process_population_data(
     group_level: str,
     unit_level: str,
     ur: pint.facets.PlainRegistry,
+    cumulative_start_year: int | None = None,
 ) -> pd.Series:
     """
     Process population data and calculate cumulative population by group.
@@ -254,13 +255,23 @@ def process_population_data(
         Index level for units.
     ur : pint.facets.PlainRegistry
         Unit registry.
+    cumulative_start_year : int | None
+        If provided, cumulative population is computed from this year instead
+        of first_allocation_year. Must be <= first_allocation_year. This shifts
+        entitlements toward historically populous countries when early start
+        years (e.g. 1850) are used.
 
     Returns
     -------
     pd.Series
         Cumulative population by group.
     """
-    population_filtered = filter_time_columns(population_ts, first_allocation_year)
+    start_year = (
+        cumulative_start_year
+        if cumulative_start_year is not None
+        else first_allocation_year
+    )
+    population_filtered = filter_time_columns(population_ts, start_year)
     population_single_unit = set_single_unit(population_filtered, unit_level, ur=ur)
     population_single_unit = convert_unit_robust(
         population_single_unit, "million", unit_level=unit_level, ur=ur

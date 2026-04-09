@@ -49,8 +49,8 @@ Data sources are configured in `conf/data_sources/`.
 
 | Data Type  | Options                       |
 | ---------- | ----------------------------- |
-| Target     | `rcbs`, `ar6`, `rcb-pathways` |
-| Emissions  | PRIMAP-hist versions          |
+| Target     | `rcbs`, `pathway`, `rcb-pathways` |
+| Emissions  | e.g. PRIMAP-hist              |
 | Population | UN/OWID                       |
 | GDP        | World Bank WDI                |
 | Gini       | UNU-WIDER                     |
@@ -64,7 +64,7 @@ fair-shares currently supports three target sources:
 | Target         | Type    | Allocation Functions | Use When                                            | Output                                         |
 | -------------- | ------- | -------------------- | --------------------------------------------------- | ---------------------------------------------- |
 | `rcbs`         | Budget  | Budget approaches    | Calculating cumulative national budget allocations  | Single value per country                       |
-| `ar6`          | Pathway | Pathway approaches   | Allocating annual emissions following AR6 scenarios | Time series of annual values                   |
+| `pathway`      | Pathway | Pathway approaches   | Allocating annual emissions following scenario pathways (e.g. AR6) | Time series of annual values                   |
 | `rcb-pathways` | Hybrid  | Pathway approaches   | Using budget data but need year-by-year pathways    | Budget to global pathway to allocated annually |
 
 **`rcb-pathways` workflow:** First converts a global remaining carbon budget into a global annual emission pathway (using exponential decay), then allocates that pathway among countries using pathway allocation functions. See [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation) for details on pathway generation.
@@ -76,7 +76,7 @@ fair-shares currently supports three target sources:
 Two questions:
 
 1. **Budget or pathway?** Do you need a single cumulative target or year-by-year emissions?
-2. **Which principles?** Equal entitlements, historical responsibility (cumulative emissions), capability (ability to pay) -- or some combination? Note: "subsistence protection" as a live approach choice has diminished operational value — Shue later acknowledged that what the poor need is energy, not emissions rights. The more relevant operational concept is the GDR development threshold [Baer 2013], which exempts individuals below a development income threshold (~$8,500 PPP) from obligations.
+2. **Which principles?** Equal entitlements, historical differentiation (via early `allocation_year` for cumulative accounting and/or `pre_allocation_responsibility_weight` for per-capita emissions rescaling), capability (ability to pay, from the allocation year onwards) -- or some combination? Note: "subsistence protection" as a live approach choice has diminished operational value — [Shue 2014](../science/references.md#shue-2014) later acknowledged that what the poor need is energy, not emissions rights. The more relevant operational concept is the GDR development threshold [Baer 2013](https://doi.org/10.1002/wcc.201) (note: GDR was designed for burden-sharing; fair-shares adapts its capability metric for entitlement allocation), which exempts individuals below a development income threshold (~$7,500 PPP) from capability calculations.
 
 Then:
 

@@ -1,4 +1,4 @@
-"""Country-level non-CO2 GHG derivation from PRIMAP timeseries data.
+"""Country-level non-CO2 GHG derivation from emissions timeseries data.
 
 Non-CO2 emissions are derived by subtraction:
     non_co2 = all_ghg_ex_co2_lulucf - co2_ffi
@@ -72,16 +72,16 @@ def derive_non_co2_country_timeseries(
     """Derive country-level non-CO2 GHG timeseries by subtracting CO2-FFI from
     all-GHG-ex-CO2-LULUCF.
 
-    Non-CO2 is not a standalone PRIMAP category — it is computed as:
+    Non-CO2 is not a standalone emissions category — it is computed as:
         non_co2 = all_ghg_ex_co2_lulucf - co2_ffi
 
     Parameters
     ----------
     all_ghg_ex_co2_lulucf
-        PRIMAP timeseries for all-GHG-ex-CO2-LULUCF.
+        Historical timeseries for all-GHG-ex-CO2-LULUCF (e.g. PRIMAP).
         MultiIndex: (iso3c, unit, emission-category), columns are year strings.
     co2_ffi
-        PRIMAP timeseries for CO2-FFI.
+        Historical timeseries for CO2-FFI (e.g. PRIMAP).
         MultiIndex: (iso3c, unit, emission-category), columns are year strings.
 
     Returns

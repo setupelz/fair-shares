@@ -205,16 +205,17 @@ print(
 # See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)
 
 # %%
-# Capability-adjusted allocation (50% weight on GDP)
+# Capability-adjusted allocation (capability only — when pre_allocation_responsibility_weight=0.0,
+# capability is the sole adjustment and its specific value doesn't matter; 1.0 is used for clarity)
 result_cap = per_capita_adjusted(
     population_ts=population_ts,
     gdp_ts=gdp_ts,
     country_actual_emissions_ts=emissions_ts,
     first_allocation_year=2015,
     emission_category=EMISSIONS_VARIABLE,
-    capability_weight=0.5,
-    responsibility_weight=0.0,
-    historical_responsibility_year=1990,  # Not used when responsibility_weight=0
+    capability_weight=1.0,
+    pre_allocation_responsibility_weight=0.0,
+    pre_allocation_responsibility_year=1990,  # Not used when pre_allocation_responsibility_weight=0
     preserve_first_allocation_year_shares=False,
     group_level="iso3c",
 )
@@ -222,7 +223,7 @@ result_cap = per_capita_adjusted(
 shares_cap = result_cap.relative_shares_pathway_emissions[sample_years]
 
 print(f"Approach: {result_cap.approach}\n")
-print("Regional Pathway Shares (Capability 50%):\n")
+print("Regional Pathway Shares (Capability-only):\n")
 print(f"{'Region':8s} {' '.join([f'{y:>7s}' for y in sample_years])}")
 print("-" * (8 + len(sample_years) * 8))
 for region in sorted(shares_cap.index.get_level_values("iso3c").unique()):
@@ -305,7 +306,7 @@ ax.plot(
     marker="s",
     markersize=4,
     linewidth=2,
-    label="Capability 50%",
+    label="Capability-only",
     color="#3498db",
 )
 
