@@ -3,7 +3,7 @@ Shared adjustment calculations for allocation approaches.
 
 This module contains reusable adjustment calculations that are common across
 both budget and pathway allocation approaches:
-- Responsibility adjustments (historical emissions-based)
+- Pre-allocation responsibility adjustments (historical emissions-based)
 - Capability adjustments (GDP-based)
 - Gini adjustments (inequality corrections)
 """
@@ -29,20 +29,21 @@ if TYPE_CHECKING:
 def calculate_responsibility_adjustment_data(
     country_actual_emissions_ts: TimeseriesDataFrame,
     population_ts: TimeseriesDataFrame,
-    historical_responsibility_year: int,
+    pre_allocation_responsibility_year: int,
     allocation_year: int,
-    responsibility_per_capita: bool,
+    pre_allocation_responsibility_per_capita: bool,
     group_level: str,
     unit_level: str,
     ur: pint.facets.PlainRegistry,
+    historical_discount_rate: float = 0.0,
 ) -> pd.Series:
     """
-    Calculate historical responsibility data for allocation.
+    Calculate pre-allocation responsibility data for allocation.
 
     Returns cumulative emissions (or per capita emissions) from
-    historical_responsibility_year up to (but not including) allocation_year.
+    pre_allocation_responsibility_year up to (but not including) allocation_year.
 
-    Responsibility window: [historical_responsibility_year, allocation_year - 1].
+    Pre-allocation responsibility window: [pre_allocation_responsibility_year, allocation_year - 1].
 
     This function is used by both budget and pathway allocations.
 
@@ -52,13 +53,13 @@ def calculate_responsibility_adjustment_data(
         Historical emissions timeseries data
     population_ts
         Population timeseries data
-    historical_responsibility_year
-        Start year of responsibility window (inclusive)
+    pre_allocation_responsibility_year
+        Start year of pre-allocation responsibility window (inclusive)
     allocation_year
-        End year of responsibility window (exclusive).
+        End year of pre-allocation responsibility window (exclusive).
         For budgets: the allocation year itself.
         For pathways: the first allocation year.
-    responsibility_per_capita
+    pre_allocation_responsibility_per_capita
         If True, divide cumulative emissions by cumulative population
     group_level
         Index level name for country/region grouping
@@ -66,40 +67,54 @@ def calculate_responsibility_adjustment_data(
         Index level name for units
     ur
         Pint unit registry
+    historical_discount_rate
+        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
+        emissions are weighted less via (1 - rate)^(reference_year - t), where
+        reference_year = allocation_year - 1. Implements natural CO2 removal
+        rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
 
     Returns
     -------
     pd.Series
-        Historical responsibility metric by country/region.
-        Units: emissions (or emissions per capita) depending on responsibility_per_capita.
+        Pre-allocation responsibility metric by country/region.
+        Units: emissions (or emissions per capita) depending on pre_allocation_responsibility_per_capita.
 
     Raises
     ------
     AllocationError
-        If no years found in responsibility window, no country data found,
-        zero population encountered (when per capita), or responsibility sums to non-positive.
+        If no years found in pre-allocation responsibility window, no country
+        data found, zero population encountered (when per capita),
+        pre-allocation responsibility sums to non-positive, or
+        historical_discount_rate is out of range.
 
     See Also
     --------
     docs/science/allocations.md : Theoretical basis for historical responsibility
 
     """
+    # Validate historical_discount_rate
+    if not (0.0 <= historical_discount_rate < 1.0):
+        raise AllocationError(
+            f"historical_discount_rate must be >= 0.0 and < 1.0, "
+            f"got {historical_discount_rate}."
+        )
+
     # Process emissions data
     history_single_unit = set_single_unit(
         country_actual_emissions_ts, unit_level, ur=ur
     )
     history_numeric = history_single_unit.droplevel(unit_level)
 
-    # Filter to historical period [historical_responsibility_year, allocation_year - 1]
+    # Filter to historical period [pre_allocation_responsibility_year, allocation_year - 1]
     numeric_cols = pd.to_numeric(history_numeric.columns, errors="coerce")
-    responsibility_mask = (numeric_cols >= historical_responsibility_year) & (
+    responsibility_mask = (numeric_cols >= pre_allocation_responsibility_year) & (
         numeric_cols < allocation_year
     )
     responsibility_columns = history_numeric.columns[responsibility_mask].tolist()
     if not responsibility_columns:
         raise AllocationError(
-            f"No years found between {historical_responsibility_year} "
-            f"and {allocation_year - 1} for responsibility calculation."
+            f"No years found between {pre_allocation_responsibility_year} "
+            f"and {allocation_year - 1} for pre-allocation responsibility calculation."
         )
 
     history_numeric = history_numeric[responsibility_columns]
@@ -109,15 +124,29 @@ def calculate_responsibility_adjustment_data(
     history_countries = history_numeric[history_group_values != "World"]
     if history_countries.empty:
         raise AllocationError(
-            "No country-level emissions rows found for responsibility window."
+            "No country-level emissions rows found for pre-allocation responsibility window."
         )
+
+    # Apply historical discount weights if rate > 0
+    # Weight = (1 - r_d)^(reference_year - t), where reference_year = allocation_year - 1
+    if historical_discount_rate > 0.0:
+        reference_year = allocation_year - 1
+        years = pd.to_numeric(responsibility_columns, errors="coerce")
+        discount_weights = pd.Series(
+            [
+                (1 - historical_discount_rate) ** (reference_year - y)
+                for y in years
+            ],
+            index=responsibility_columns,
+        )
+        history_countries = history_countries.mul(discount_weights, axis=1)
 
     # Sum emissions across historical period
     cumulative_emissions = history_countries.sum(axis=1, min_count=1)
     responsibility_data = cumulative_emissions.groupby(level=group_level).sum()
 
     # If per capita, divide by cumulative population over the same period
-    if responsibility_per_capita:
+    if pre_allocation_responsibility_per_capita:
         pop_single_unit = set_single_unit(population_ts, unit_level, ur=ur)
         pop_single_unit = convert_unit_robust(
             pop_single_unit, "million", unit_level=unit_level, ur=ur
@@ -125,28 +154,41 @@ def calculate_responsibility_adjustment_data(
         pop_numeric = pop_single_unit.droplevel(unit_level)
 
         pop_cols = pd.to_numeric(pop_numeric.columns, errors="coerce")
-        pop_mask = (pop_cols >= historical_responsibility_year) & (
+        pop_mask = (pop_cols >= pre_allocation_responsibility_year) & (
             pop_cols < allocation_year
         )
         pop_columns = pop_numeric.columns[pop_mask].tolist()
         if not pop_columns:
-            raise AllocationError("No population data found for responsibility window.")
+            raise AllocationError("No population data found for pre-allocation responsibility window.")
 
         pop_numeric = pop_numeric[pop_columns]
+
+        # Apply same discount weights to population for consistency (Dekker Eq. 5)
+        if historical_discount_rate > 0.0:
+            pop_years = pd.to_numeric(pop_columns, errors="coerce")
+            pop_discount_weights = pd.Series(
+                [
+                    (1 - historical_discount_rate) ** (reference_year - y)
+                    for y in pop_years
+                ],
+                index=pop_columns,
+            )
+            pop_numeric = pop_numeric.mul(pop_discount_weights, axis=1)
+
         cumulative_population = pop_numeric.sum(axis=1, min_count=1)
         population_totals = cumulative_population.groupby(level=group_level).sum()
 
         if (population_totals == 0).any():
             zero_groups = population_totals[population_totals == 0].index.tolist()
             raise AllocationError(
-                f"Zero population found for groups {zero_groups} in responsibility window "
-                f"({historical_responsibility_year}-{allocation_year}). Cannot calculate per-capita responsibility."
+                f"Zero population found for groups {zero_groups} in pre-allocation responsibility window "
+                f"({pre_allocation_responsibility_year}-{allocation_year}). Cannot calculate per-capita pre-allocation responsibility."
             )
 
         responsibility_data = responsibility_data / population_totals
 
     if responsibility_data.sum() <= 0:
-        raise AllocationError("Responsibility metric sums to non-positive.")
+        raise AllocationError("Pre-allocation responsibility metric sums to non-positive.")
 
     return responsibility_data
 
@@ -154,23 +196,24 @@ def calculate_responsibility_adjustment_data(
 def calculate_responsibility_adjustment_data_convergence(
     country_actual_emissions_ts: TimeseriesDataFrame,
     population_ts: TimeseriesDataFrame,
-    historical_responsibility_year: int,
+    pre_allocation_responsibility_year: int,
     first_allocation_year: int,
-    responsibility_per_capita: bool,
+    pre_allocation_responsibility_per_capita: bool,
     group_level: str,
     unit_level: str,
     ur: pint.facets.PlainRegistry,
+    historical_discount_rate: float = 0.0,
 ) -> pd.Series:
     """
-    Calculate historical responsibility data for convergence pathway allocation.
+    Calculate pre-allocation responsibility data for convergence pathway allocation.
 
     Returns cumulative emissions (or per capita emissions) from
-    historical_responsibility_year up to and including first_allocation_year.
+    pre_allocation_responsibility_year up to and including first_allocation_year.
 
-    Responsibility window: [historical_responsibility_year, first_allocation_year].
+    Pre-allocation responsibility window: [pre_allocation_responsibility_year, first_allocation_year].
 
     This function is used by convergence pathway allocations where the first
-    allocation year is included in the responsibility calculation.
+    allocation year is included in the pre-allocation responsibility calculation.
 
     Parameters
     ----------
@@ -178,11 +221,11 @@ def calculate_responsibility_adjustment_data_convergence(
         Historical emissions timeseries data
     population_ts
         Population timeseries data
-    historical_responsibility_year
-        Start year of responsibility window (inclusive)
+    pre_allocation_responsibility_year
+        Start year of pre-allocation responsibility window (inclusive)
     first_allocation_year
-        End year of responsibility window (inclusive).
-    responsibility_per_capita
+        End year of pre-allocation responsibility window (inclusive).
+    pre_allocation_responsibility_per_capita
         If True, divide cumulative emissions by cumulative population
     group_level
         Index level name for country/region grouping
@@ -190,18 +233,25 @@ def calculate_responsibility_adjustment_data_convergence(
         Index level name for units
     ur
         Pint unit registry
+    historical_discount_rate
+        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
+        emissions are weighted less via (1 - rate)^(reference_year - t), where
+        reference_year = first_allocation_year. Implements natural CO2 removal
+        rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
 
     Returns
     -------
     pd.Series
-        Historical responsibility metric by country/region.
-        Units: emissions (or emissions per capita) depending on responsibility_per_capita.
+        Pre-allocation responsibility metric by country/region.
+        Units: emissions (or emissions per capita) depending on pre_allocation_responsibility_per_capita.
 
     Raises
     ------
     AllocationError
-        If no years found in responsibility window, no country data found,
-        zero population encountered (when per capita), or responsibility sums to non-positive.
+        If no years found in pre-allocation responsibility window, no country
+        data found, zero population encountered (when per capita),
+        pre-allocation responsibility sums to non-positive, or
+        historical_discount_rate is out of range.
 
     See Also
     --------
@@ -209,36 +259,43 @@ def calculate_responsibility_adjustment_data_convergence(
     docs/science/allocations.md : Theoretical basis for historical responsibility
 
     """
+    # Validate historical_discount_rate
+    if not (0.0 <= historical_discount_rate < 1.0):
+        raise AllocationError(
+            f"historical_discount_rate must be >= 0.0 and < 1.0, "
+            f"got {historical_discount_rate}."
+        )
+
     history_single_unit = set_single_unit(
         country_actual_emissions_ts, unit_level, ur=ur
     )
     history_numeric = history_single_unit.droplevel(unit_level)
 
-    # Filter to historical period [historical_responsibility_year, first_allocation_year]
+    # Filter to historical period [pre_allocation_responsibility_year, first_allocation_year]
     # Note: inclusive on both ends (differs from budget allocation version)
     numeric_cols = pd.to_numeric(history_numeric.columns, errors="coerce")
-    responsibility_mask = (numeric_cols >= historical_responsibility_year) & (
+    responsibility_mask = (numeric_cols >= pre_allocation_responsibility_year) & (
         numeric_cols <= first_allocation_year
     )
     responsibility_columns = history_numeric.columns[responsibility_mask].tolist()
     if not responsibility_columns:
         raise AllocationError(
-            f"Insufficient historical data for responsibility.\n\n"
+            f"Insufficient historical data for pre-allocation responsibility.\n\n"
             f"WHAT HAPPENED:\n"
-            f"  No years found between {historical_responsibility_year} and "
+            f"  No years found between {pre_allocation_responsibility_year} and "
             f"{first_allocation_year}.\n"
-            f"  Responsibility calculation requires historical emissions "
+            f"  Pre-allocation responsibility calculation requires historical emissions "
             f"data.\n\n"
             f"LIKELY CAUSE:\n"
             f"  The emissions dataset doesn't cover the historical period.\n\n"
             f"HOW TO FIX:\n"
             f"  1. Use a dataset with historical coverage (e.g., PRIMAP back "
             f"to 1850)\n"
-            f"  2. Or adjust historical_responsibility_year to match available "
+            f"  2. Or adjust pre_allocation_responsibility_year to match available "
             f"data:\n"
             f"     >>> result = manager.run_allocation(\n"
             f"     ...     ...,\n"
-            f"     ...     historical_responsibility_year=1990  "
+            f"     ...     pre_allocation_responsibility_year=1990  "
             f"# Instead of 1850\n"
             f"     ... )"
         )
@@ -248,7 +305,7 @@ def calculate_responsibility_adjustment_data_convergence(
     history_countries = history_numeric[history_group_values != "World"]
     if history_countries.empty:
         raise AllocationError(
-            "No country data for responsibility calculation.\n\n"
+            "No country data for pre-allocation responsibility calculation.\n\n"
             "WHAT HAPPENED:\n"
             "  No country-level emissions found in the historical period.\n"
             "  All rows appear to be 'World' totals.\n\n"
@@ -262,10 +319,24 @@ def calculate_responsibility_adjustment_data_convergence(
             "# Should have country rows"
         )
 
+    # Apply historical discount weights if rate > 0
+    # Weight = (1 - r_d)^(reference_year - t), where reference_year = first_allocation_year
+    if historical_discount_rate > 0.0:
+        reference_year = first_allocation_year
+        years = pd.to_numeric(responsibility_columns, errors="coerce")
+        discount_weights = pd.Series(
+            [
+                (1 - historical_discount_rate) ** (reference_year - y)
+                for y in years
+            ],
+            index=responsibility_columns,
+        )
+        history_countries = history_countries.mul(discount_weights, axis=1)
+
     cumulative_emissions = history_countries.sum(axis=1, min_count=1)
     responsibility_data = cumulative_emissions.groupby(level=group_level).sum()
 
-    if responsibility_per_capita:
+    if pre_allocation_responsibility_per_capita:
         pop_single_unit = set_single_unit(population_ts, unit_level, ur=ur)
         pop_single_unit = convert_unit_robust(
             pop_single_unit, "million", unit_level=unit_level, ur=ur
@@ -273,16 +344,16 @@ def calculate_responsibility_adjustment_data_convergence(
         pop_numeric = pop_single_unit.droplevel(unit_level)
 
         pop_cols = pd.to_numeric(pop_numeric.columns, errors="coerce")
-        pop_mask = (pop_cols >= historical_responsibility_year) & (
+        pop_mask = (pop_cols >= pre_allocation_responsibility_year) & (
             pop_cols <= first_allocation_year
         )
         pop_columns = pop_numeric.columns[pop_mask].tolist()
         if not pop_columns:
             raise AllocationError(
-                f"Missing population data for responsibility.\n\n"
+                f"Missing population data for pre-allocation responsibility.\n\n"
                 f"WHAT HAPPENED:\n"
                 f"  No population data found between "
-                f"{historical_responsibility_year} and "
+                f"{pre_allocation_responsibility_year} and "
                 f"{first_allocation_year}.\n\n"
                 f"LIKELY CAUSE:\n"
                 f"  Population dataset doesn't cover the historical period.\n\n"
@@ -293,6 +364,19 @@ def calculate_responsibility_adjustment_data_convergence(
             )
 
         pop_numeric = pop_numeric[pop_columns]
+
+        # Apply same discount weights to population for consistency (Dekker Eq. 5)
+        if historical_discount_rate > 0.0:
+            pop_years = pd.to_numeric(pop_columns, errors="coerce")
+            pop_discount_weights = pd.Series(
+                [
+                    (1 - historical_discount_rate) ** (reference_year - y)
+                    for y in pop_years
+                ],
+                index=pop_columns,
+            )
+            pop_numeric = pop_numeric.mul(pop_discount_weights, axis=1)
+
         cumulative_population = pop_numeric.sum(axis=1, min_count=1)
         population_totals = cumulative_population.groupby(level=group_level).sum()
 
@@ -300,9 +384,9 @@ def calculate_responsibility_adjustment_data_convergence(
 
     if responsibility_data.sum() <= 0:
         raise AllocationError(
-            "Invalid responsibility calculation.\n\n"
+            "Invalid pre-allocation responsibility calculation.\n\n"
             "WHAT HAPPENED:\n"
-            "  Responsibility metric sums to zero or negative.\n\n"
+            "  Pre-allocation responsibility metric sums to zero or negative.\n\n"
             "LIKELY CAUSE:\n"
             "  All countries have zero/negative historical emissions.\n\n"
             "HOW TO FIX:\n"
@@ -354,8 +438,10 @@ def calculate_capability_adjustment_data(
         When provided, GDP is adjusted to reflect income distribution.
     income_floor
         Income floor for Gini adjustment (in USD PPP per capita). Income below this
-        threshold is excluded from capability calculations, implementing the Greenhouse
-        Development Rights development threshold [Baer 2013]. Default: 0.0
+        threshold is excluded from capability calculations, adapted from the
+        Greenhouse Development Rights (GDR) development threshold [Baer 2013]
+        (GDR was designed for burden-sharing; fair-shares uses its capability
+        metric in an entitlement allocation context). Default: 0.0
     max_gini_adjustment
         Maximum reduction factor from Gini adjustment (0-1). Default: 0.8
 
@@ -369,9 +455,22 @@ def calculate_capability_adjustment_data(
     AllocationError
         If no common years between population and GDP, or capability sums to non-positive.
 
+    Notes
+    -----
+    **GDP window:** The cumulative sums of GDP and population are computed
+    only over the intersection of years where both data are available. There
+    is no forward-fill into post-observation years. With ``gdp_ts`` typically
+    ending at the last observed year (e.g. 2023 for ``wdi-2025``) and
+    population running to ~2100, only the observed-GDP years contribute to
+    the capability metric. Users who want post-observation GDP dynamics to
+    enter the capability calculation should extend the input ``gdp_ts`` time
+    series with projected data (SSP2 GDP projections, custom growth
+    assumptions, or a future-extended WDI release) before calling this
+    function.
+
     See Also
     --------
-    calculate_responsibility_adjustment_data_convergence : For responsibility adjustments
+    calculate_responsibility_adjustment_data_convergence : For pre-allocation responsibility adjustments
     docs/science/allocations.md : Theoretical basis for capability adjustment
 
     """

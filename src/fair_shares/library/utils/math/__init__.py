@@ -17,6 +17,7 @@ from fair_shares.library.utils.math.allocation import (
     apply_deviation_constraint,
     apply_gini_adjustment,
     calculate_gini_adjusted_gdp,
+    calculate_lognormal_above_threshold_fraction,
     create_gini_lookup_dict,
 )
 from fair_shares.library.utils.math.convergence import (
@@ -35,6 +36,7 @@ __all__ = [
     "calculate_capability_adjustment_data",
     "calculate_exponential_decay_pathway",
     "calculate_gini_adjusted_gdp",
+    "calculate_lognormal_above_threshold_fraction",
     "calculate_responsibility_adjustment_data",
     "calculate_responsibility_adjustment_data_convergence",
     "create_gini_lookup_dict",

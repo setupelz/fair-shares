@@ -25,7 +25,7 @@ ALL_TARGETS: frozenset[str] = frozenset({"pathway", "rcbs", "rcb-pathways"})
 # Composite categories that contain non-CO2 components.
 COMPOSITE_CATEGORIES: frozenset[str] = frozenset({"all-ghg", "all-ghg-ex-co2-lulucf"})
 
-# CO2 categories (both use budget/RCB-based allocations; non-CO2 uses AR6 pathways).
+# CO2 categories (both use budget/RCB-based allocations; non-CO2 uses scenario pathways).
 ALL_GHG_CO2_CATEGORIES: tuple[str, str] = ("co2-ffi", "co2")
 
 
@@ -43,7 +43,12 @@ def needs_decomposition(target: str, emission_category: str) -> bool:
 
     RCB targets can only constrain CO2, so composite categories (all-ghg,
     all-ghg-ex-co2-lulucf) must be decomposed into CO2 (from RCBs) + non-CO2
-    (from AR6 pathways).  AR6 targets have direct data for all categories.
+    (from scenario pathways, e.g. AR6).  Pathway targets have direct data for all categories.
+
+    The non-CO2 pass requires scenario pathway data matching the RCBs'
+    climate assessments in the active data source configuration.
+    ``build_data_config`` validates this and raises ``ConfigurationError``
+    when no scenario source is configured.
     """
     return target != "pathway" and is_composite_category(emission_category)
 
@@ -89,10 +94,10 @@ def get_final_categories(target: str, emission_category: str) -> tuple[str, ...]
 def get_emission_preprocessing_categories(
     target: str, emission_category: str
 ) -> tuple[str, ...]:
-    """Return PRIMAP categories needed for emissions preprocessing.
+    """Return emission categories needed for emissions preprocessing.
 
     These are the categories that the emissions notebook (101) must extract
-    from PRIMAP.  Notebook 107 (LULUCF) always needs co2-ffi, co2-lulucf,
+    from the emissions source (e.g. PRIMAP).  Notebook 107 (LULUCF) always needs co2-ffi, co2-lulucf,
     and all-ghg-ex-co2-lulucf as primitives for computing derived categories,
     so those are always included.
     """

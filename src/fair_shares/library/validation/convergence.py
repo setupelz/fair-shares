@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 
 
 def validate_weights(
-    responsibility_weight: float,
+    pre_allocation_responsibility_weight: float,
     capability_weight: float,
 ) -> None:
     """
@@ -28,26 +28,26 @@ def validate_weights(
 
     Parameters
     ----------
-    responsibility_weight : float
-        Weight for responsibility adjustment (historical emissions).
+    pre_allocation_responsibility_weight : float
+        Weight for pre-allocation responsibility adjustment (historical emissions).
     capability_weight : float
-        Weight for capability adjustment (GDP-based).
+        Weight for capability adjustment (GDP-based, applies from allocation year onwards).
 
     Raises
     ------
     AllocationError
         If weights are negative or sum exceeds 1.0.
     """
-    if responsibility_weight < 0:
+    if pre_allocation_responsibility_weight < 0:
         raise AllocationError(
             "Invalid weight parameter.\n\n"
             "WHAT HAPPENED:\n"
-            f"  responsibility_weight={responsibility_weight} is negative.\n\n"
+            f"  pre_allocation_responsibility_weight={pre_allocation_responsibility_weight} is negative.\n\n"
             "VALID RANGE:\n"
-            "  responsibility_weight must be >= 0.0\n\n"
+            "  pre_allocation_responsibility_weight must be >= 0.0\n\n"
             "HOW TO FIX:\n"
-            "  Use a non-negative value:\n"
-            "  >>> result = manager.run_allocation(..., responsibility_weight=0.5)"
+            "  Use a non-negative value (only the ratio to capability_weight matters):\n"
+            "  >>> result = manager.run_allocation(..., pre_allocation_responsibility_weight=1.0)"
         )
     if capability_weight < 0:
         raise AllocationError(
@@ -57,16 +57,16 @@ def validate_weights(
             "VALID RANGE:\n"
             "  capability_weight must be >= 0.0\n\n"
             "HOW TO FIX:\n"
-            "  Use a non-negative value:\n"
-            "  >>> result = manager.run_allocation(..., capability_weight=0.3)"
+            "  Use a non-negative value (only the ratio to pre_allocation_responsibility_weight matters):\n"
+            "  >>> result = manager.run_allocation(..., capability_weight=1.0)"
         )
-    if responsibility_weight + capability_weight > 1.0:
+    if pre_allocation_responsibility_weight + capability_weight > 1.0:
         raise AllocationError(
             format_error(
                 "weights_exceed_limit",
-                resp=responsibility_weight,
+                resp=pre_allocation_responsibility_weight,
                 cap=capability_weight,
-                total=responsibility_weight + capability_weight,
+                total=pre_allocation_responsibility_weight + capability_weight,
             )
         )
 
@@ -82,7 +82,7 @@ def validate_adjustment_data_requirements(
     Parameters
     ----------
     capability_weight : float
-        Weight for capability adjustment.
+        Weight for capability adjustment (applies from allocation year onwards).
     gdp_ts : TimeseriesDataFrame | None
         GDP data (required if capability_weight > 0 or gini_s provided).
     gini_s : pd.DataFrame | None

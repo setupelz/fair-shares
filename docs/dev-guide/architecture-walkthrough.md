@@ -33,10 +33,10 @@ bottom-to-top.
 
 | Layer | Module | Responsibility | Key entry point |
 |-------|--------|----------------|-----------------|
-| 0 | `notebooks/301_custom_fair_share_allocation.py` | User configuration, data pipeline trigger, visualization | Config cell (lines 57-106), execution cell (lines 250-286) |
+| 0 | `notebooks/301_custom_fair_share_allocation.py` | User configuration, data pipeline trigger, visualization | Config cell (lines 57-109), execution cell (lines 240-270) |
 | 1 | `src/.../notebook_helpers.py` | Extract boilerplate from notebooks; load data, run all allocations, print summary | `load_allocation_data()`, `run_all_allocations()`, `run_and_save_category_allocations()` |
 | 2 | `src/.../allocations/manager.py` | Approach registry, parameter grid expansion, single allocation dispatch, result saving, budget/pathway classification | `run_parameter_grid()`, `run_allocation()`, `get_function()`, `is_budget_approach()` |
-| 3 | `src/.../allocations/budgets/per_capita.py` | Actual math: population shares, capability/responsibility adjustments | `_per_capita_budget_core()`, `equal_per_capita_budget()` |
+| 3 | `src/.../allocations/budgets/per_capita.py` | Actual math: population shares, pre-allocation responsibility/capability adjustments | `_per_capita_budget_core()`, `equal_per_capita_budget()` |
 
 **Result containers** live alongside the math layer:
 
@@ -63,7 +63,7 @@ allocations = {
 }
 ```
 
-### Step 1: Data Pipeline (notebook 301, lines 144-187)
+### Step 1: Data Pipeline (notebook 301, lines 146-170)
 
 The notebook calls `setup_data()` from `src/.../utils/data/setup.py`. This
 function:
@@ -80,13 +80,13 @@ function:
    population, Gini, scenarios) and produces CSV files under
    `output/<source_id>/intermediate/processed/`.
 
-The Snakefile (`Snakefile`, line 174 `rule all`) chains:
+The Snakefile (`Snakefile`, line 208 `rule all`) chains:
 `compose_config` -> `preprocess_emiss` -> `preprocess_gdp` ->
 `preprocess_population` -> `preprocess_gini` -> `preprocess_lulucf` ->
 `master_preprocess`.
 
 For `target=rcbs`, the master notebook is `100_data_preprocess_rcbs`
-(Snakefile line 101-105). No scenario notebook runs because RCBs are
+(Snakefile lines 131-135). No scenario notebook runs because RCBs are
 cumulative budgets, not pathways.
 
 **Output:** `output/<source_id>/intermediate/processed/` containing:
@@ -98,7 +98,7 @@ cumulative budgets, not pathways.
 - `country_population_timeseries.csv`
 - `country_gini_stationary.csv`
 
-### Step 2: Load Data (notebook 301, lines 250-263)
+### Step 2: Load Data (notebook 301, lines 240-245)
 
 `load_allocation_data()` (`notebook_helpers.py`) reads the processed CSVs
 into DataFrames. For RCB runs, it loads:
@@ -111,7 +111,7 @@ into DataFrames. For RCB runs, it loads:
   convert RCB values to total budgets)
 - Socioeconomic DataFrames: GDP, population, Gini (with validation)
 
-### Step 3: Run Allocations (notebook 301, lines 278-286)
+### Step 3: Run Allocations (notebook 301, lines 262-270)
 
 `run_all_allocations()` (`notebook_helpers.py`) orchestrates the full run:
 
@@ -172,13 +172,13 @@ For each row in the RCB table (e.g., "1.5C|0.5 from IPCC AR6"):
 ### Step 7: The Math (budgets/per_capita.py)
 
 `equal_per_capita_budget()` delegates to `_per_capita_budget_core()`
-with `responsibility_weight=0.0` and `capability_weight=0.0`.
+with `pre_allocation_responsibility_weight=0.0` and `capability_weight=0.0`.
 
 Inside `_per_capita_budget_core()`:
 
 1. **Filter population** to allocation year onwards.
 2. **Convert units** to common scale.
-3. Since no adjustments, skip capability/responsibility blocks.
+3. Since no adjustments, skip pre-allocation responsibility/capability blocks.
 4. **Calculate shares**:
    - `group_totals = base_population.sum(axis=1)` -- sum each country's
      population from allocation year onward.
@@ -196,12 +196,12 @@ Back in `_run_budget_allocations()` (`notebook_helpers.py`),
 
 1. Adds metadata columns (approach, climate-assessment, quantile, data
    sources) from `results/metadata.py`.
-2. Writes two parquet files per allocation:
-   - `*_relative.parquet` -- dimensionless shares
-   - `*_absolute.parquet` -- shares multiplied by the global budget (MtCO2)
+2. Appends rows to the consolidated parquet files:
+   - `allocations_relative.parquet` -- dimensionless shares
+   - `allocations_absolute.parquet` -- shares multiplied by the global budget (MtCO2)
 
 After all RCB rows and approaches, `create_param_manifest()` writes
-`param_manifest.csv` and `generate_readme()` writes documentation markdown.
+`param_manifest.csv` and `generate_readme()` writes documentation text files.
 
 ---
 
@@ -222,7 +222,7 @@ allocations = {
 RCBs only constrain CO2. For all-GHG, the system must **decompose** into:
 
 - **CO2 component** (`co2`): allocated via budget approach (RCBs)
-- **non-CO2 component** (`non-co2`): allocated via pathway approach (AR6
+- **non-CO2 component** (`non-co2`): allocated via pathway approach (e.g. AR6
   scenarios)
 
 This logic lives in `utils/data/config.py`:
@@ -236,15 +236,15 @@ This logic lives in `utils/data/config.py`:
 
 The Snakefile detects `is_multi_category = True` and:
 
-1. Runs emissions preprocessing for all PRIMAP source categories:
+1. Runs emissions preprocessing for all source categories (e.g. PRIMAP):
    `co2-ffi`, `co2`, `co2-lulucf`, `all-ghg-ex-co2-lulucf` (Snakefile
-   lines 228-251).
-2. Runs AR6 scenario preprocessing for derivation sources: `co2-ffi` and
-   `all-ghg-ex-co2-lulucf` (Snakefile lines 331-374).
-3. **Derives non-CO2** by subtraction (Snakefile lines 386-429):
+   lines 262-286).
+2. Runs scenario preprocessing (e.g. AR6) for derivation sources: `co2-ffi` and
+   `all-ghg-ex-co2-lulucf` (Snakefile lines 433-483).
+3. **Derives non-CO2** by subtraction (Snakefile lines 493-538):
    - Historical: `non-co2 = all-ghg-ex-co2-lulucf - co2-ffi`
-   - Scenarios: same subtraction on AR6 scenario data.
-4. Runs master preprocessing twice (Snakefile lines 470-487):
+   - Scenarios: same subtraction on scenario data.
+4. Runs master preprocessing twice (Snakefile lines 548-597):
    - CO2 pass: `100_data_preprocess_rcbs.ipynb` for `co2`
    - non-CO2 pass: `100_data_preprocess_pathways.ipynb` for `non-co2`
 
@@ -265,6 +265,10 @@ if budget_allocs and not pathway_allocs:
 - `equal-per-capita-budget` -> `equal-per-capita`
 - `allocation_year` -> `first_allocation_year`
 - `preserve_allocation_year_shares` -> `preserve_first_allocation_year_shares`
+
+Auto-derivation only works when scenario pathway data matching the RCBs'
+climate assessments is available in the active source set.
+See [Composite Category Decomposition](#composite-category-decomposition).
 
 ### Step 3: Category Loop
 
@@ -309,12 +313,17 @@ Pathway allocations flow through `pathways/per_capita.py`
 
 ### Step 6: Scenario Labels
 
-AR6 categories (C1, C2, C3) are relabeled to RCB scenario labels
-(`1.5p50`, `2p83`, `2p66`) during preprocessing in notebook 104.
-This is a 1:1 mapping — each RCB scenario corresponds to exactly one
-AR6 category. The relabeling happens once at data loading time, so
-all downstream code (including non-CO2 pathways) uses the RCB labels
-directly without runtime translation.
+Each scenario source's native categories are mapped to normalised
+`climate-assessment` and `quantile` fields during preprocessing
+(notebook 104). This normalisation happens once at data loading time,
+so all downstream code — including non-CO₂ pathways — works with a
+consistent schema regardless of the upstream source. New scenario
+sources define their own mapping into the same normalised format, and
+any new data processing notebook must output data in this schema.
+
+For example, AR6 categories map as: C1 → `climate-assessment="1.5C"`,
+`quantile=0.5`; C3 → `climate-assessment="2C"`, `quantile=0.66`;
+C2 → `climate-assessment="2C"`, `quantile=0.83`.
 
 ---
 
@@ -369,6 +378,7 @@ output/<source_id>/
     gdp/                               (GDP timeseries)
     population/                        (population timeseries)
     gini/                              (Gini coefficients)
+    scenarios/                         (scenario timeseries, pathway mode)
     processed/                         (final analysis-ready CSVs)
       country_emissions_*.csv
       country_gdp_timeseries.csv
@@ -379,10 +389,11 @@ output/<source_id>/
       world_scenarios_*_complete.csv   (pathway mode only)
   allocations/
     <folder_name>/
-      *_relative.parquet               (dimensionless shares)
-      *_absolute.parquet               (MtCO2/MtCO2eq)
+      allocations_relative.parquet     (dimensionless shares)
+      allocations_absolute.parquet     (MtCO2/MtCO2eq)
+      allocations_wide.csv             (Excel-friendly wide format)
       param_manifest.csv               (all parameter combinations)
-      README_*.md                      (auto-generated docs)
+      README_*.txt                     (auto-generated docs)
 ```
 
 ---
@@ -404,7 +415,7 @@ output/<source_id>/
 | Add a visualization | `visualization/` | `plot_allocation_comparison()`, `plot_decomposition_summary()` |
 | Change how composite categories decompose | `utils/data/config.py`, `pipeline/preprocessing.py` | `needs_decomposition()`, `run_composite_preprocessing()` |
 | Change result serialization | `allocations/results/serializers.py` | `save_allocation_result()` |
-| Modify the budget-to-pathway derivation | `allocations/manager.py` | `_BUDGET_TO_PATHWAY` dict, `derive_pathway_allocations()` |
+| Modify the budget-to-pathway derivation | `allocations/manager.py` | `_BUDGET_TO_PATHWAY` dict, `_PARAM_RENAMES` dict, `derive_pathway_allocations()` |
 
 ---
 
@@ -450,12 +461,19 @@ When `emission_category="all-ghg"` and `target="rcbs"`, the system cannot
 allocate all-GHG directly because RCBs only constrain CO2. The solution:
 
 1. Decompose into CO2 (budget allocation via RCBs) + non-CO2 (pathway
-   allocation via AR6 scenarios).
+   allocation via e.g. AR6 scenarios).
 2. Derive non-CO2 data by subtraction: `all-ghg-ex-co2-lulucf - co2-ffi`.
 3. Auto-derive pathway approach configs from budget configs (the user only
    specifies budget approaches).
 
 The final outputs for each sub-category can be recombined downstream.
+
+**Data dependency:** The non-CO2 leg requires scenario pathway data (e.g.
+AR6) that covers the same climate assessments as the RCBs. Adding new RCBs
+without matching scenario pathways in the active data source configuration
+will cause a `ConfigurationError` at validation time. Auto-derivation of
+pathway approaches also only works when this pathway data is available.
+See [Other Operations: Decomposition](../science/other-operations.md#decomposition-rules).
 
 ### Kebab-Case vs Snake-Case Convention
 

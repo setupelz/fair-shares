@@ -143,31 +143,31 @@ class TestAllocationManager:
         [
             # Base: no adjustments
             (
-                {"capability_weight": 0.0, "responsibility_weight": 0.0},
+                {"capability_weight": 0.0, "pre_allocation_responsibility_weight": 0.0},
                 "cumulative-per-capita-convergence",
                 "cumulative-per-capita-convergence",
-                {"capability_weight": 0.0, "responsibility_weight": 0.0},
+                {"capability_weight": 0.0, "pre_allocation_responsibility_weight": 0.0},
             ),
             # Adjusted: capability only (0.5/0.5 = 1.0, 0.0/0.5 = 0.0)
             (
-                {"capability_weight": 0.5, "responsibility_weight": 0.0},
+                {"capability_weight": 0.5, "pre_allocation_responsibility_weight": 0.0},
                 "cumulative-per-capita-convergence-adjusted",
                 "cumulative-per-capita-convergence-adjusted",
-                {"capability_weight": 1.0, "responsibility_weight": 0.0},
+                {"capability_weight": 1.0, "pre_allocation_responsibility_weight": 0.0},
             ),
-            # Adjusted: responsibility only (0.0/0.5 = 0.0, 0.5/0.5 = 1.0)
+            # Adjusted: pre-allocation responsibility only (0.0/0.5 = 0.0, 0.5/0.5 = 1.0)
             (
-                {"capability_weight": 0.0, "responsibility_weight": 0.5},
+                {"capability_weight": 0.0, "pre_allocation_responsibility_weight": 0.5},
                 "cumulative-per-capita-convergence-adjusted",
                 "cumulative-per-capita-convergence-adjusted",
-                {"capability_weight": 0.0, "responsibility_weight": 1.0},
+                {"capability_weight": 0.0, "pre_allocation_responsibility_weight": 1.0},
             ),
             # Adjusted: both (0.3/0.6 = 0.5, 0.3/0.6 = 0.5)
             (
-                {"capability_weight": 0.3, "responsibility_weight": 0.3},
+                {"capability_weight": 0.3, "pre_allocation_responsibility_weight": 0.3},
                 "cumulative-per-capita-convergence-adjusted",
                 "cumulative-per-capita-convergence-adjusted",
-                {"capability_weight": 0.5, "responsibility_weight": 0.5},
+                {"capability_weight": 0.5, "pre_allocation_responsibility_weight": 0.5},
             ),
         ],
     )
@@ -206,8 +206,8 @@ class TestAllocationManager:
         )
         assert (
             abs(
-                result.parameters["responsibility_weight"]
-                - expected_normalized["responsibility_weight"]
+                result.parameters["pre_allocation_responsibility_weight"]
+                - expected_normalized["pre_allocation_responsibility_weight"]
             )
             < 1e-10
         )

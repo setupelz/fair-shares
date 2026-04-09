@@ -360,7 +360,7 @@ class TestAllocationMathProperties:
     def test_cumulative_per_capita_equal_allocation_per_person(self, test_data):
         """Test base cumulative-per-capita-convergence gives equal cumulative per-capita
 
-        With no adjustments (responsibility_weight=0, capability_weight=0), each
+        With no adjustments (pre_allocation_responsibility_weight=0, capability_weight=0), each
         country's cumulative allocation divided by cumulative population should
         be identical across all countries. This is the core fairness property:
         everyone gets the same emissions per person over the allocation period.

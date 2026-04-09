@@ -58,9 +58,9 @@ def _build_param_label(row: pd.Series, approach: str) -> str:
     """Build a human-readable label for a parameter combination."""
     parts = []
     param_keys = [
-        ("responsibility-weight", "rw"),
+        ("pre-allocation-responsibility-weight", "rw"),
         ("capability-weight", "cw"),
-        ("historical-responsibility-year", "hr"),
+        ("pre-allocation-responsibility-year", "hr"),
         ("allocation-year", "ay"),
         ("first-allocation-year", "y"),
         ("income-floor", "floor"),

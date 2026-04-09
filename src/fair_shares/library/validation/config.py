@@ -125,8 +125,8 @@ def validate_allocation_year_for_co2(
     are limited to the NGHGI data range.
 
     This applies to budget allocations (``allocation_year``), pathway
-    allocations (``first_allocation_year``), and responsibility-adjusted
-    approaches (``historical_responsibility_year``) to ensure
+    allocations (``first_allocation_year``), and pre-allocation-responsibility-adjusted
+    approaches (``pre_allocation_responsibility_year``) to ensure
     methodological consistency.
 
     Parameters
@@ -142,7 +142,7 @@ def validate_allocation_year_for_co2(
     Raises
     ------
     AllocationError
-        If allocation start year or historical_responsibility_year < nghgi_min_year
+        If allocation start year or pre_allocation_responsibility_year < nghgi_min_year
         for LULUCF-containing emission categories ("co2", "all-ghg")
     """
     # Resolve NGHGI min year
@@ -170,8 +170,8 @@ def validate_allocation_year_for_co2(
                         approach, year_param, year, emission_category, min_year
                     )
 
-            # Check historical_responsibility_year
-            hist_year = params_snake.get("historical_responsibility_year")
+            # Check pre_allocation_responsibility_year
+            hist_year = params_snake.get("pre_allocation_responsibility_year")
             if hist_year is not None:
                 hist_years = (
                     hist_year if isinstance(hist_year, (list, tuple)) else [hist_year]
@@ -180,7 +180,7 @@ def validate_allocation_year_for_co2(
                     if hy < min_year:
                         _raise_nghgi_year_error(
                             approach,
-                            "historical_responsibility_year",
+                            "pre_allocation_responsibility_year",
                             hy,
                             emission_category,
                             min_year,
@@ -304,7 +304,7 @@ def validate_target_source_compatibility(
 
         if budget_approaches:
             target_display = {
-                "pathway": "AR6 scenarios",
+                "pathway": "scenario pathways",
                 "rcb-pathways": "RCB-derived pathways",
             }.get(target_source, f"{target_source} pathways")
 

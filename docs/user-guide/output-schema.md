@@ -32,8 +32,8 @@ The parquet files contain the **complete** allocation results with all metadata 
 | -------------------- | ------ | --------------------------------------------------- |
 | `iso3c`              | string | Country code (e.g., 'USA', 'CHN')                   |
 | `approach`           | string | Allocation method (e.g., 'equal-per-capita-budget') |
-| `climate-assessment` | string | Climate scenario (e.g., '1.5C', '2C')               |
-| `quantile`           | string | Probability percentile (e.g., '0.5' for median)     |
+| `climate-assessment` | string | Normalised temperature target from the scenario source (e.g., '1.5C', '2C' for AR6) |
+| `quantile`           | string | Normalised probability percentile from the scenario source (e.g., '0.5' for AR6 C1 median) |
 | `emission-category`  | string | Emission type (e.g., 'co2-ffi', 'all-ghg')          |
 
 ### Data Source Columns
@@ -57,14 +57,14 @@ Individual parameter columns for each allocation approach:
 | `first-allocation-year`                 | int    | Pathway approaches        |
 | `preserve-allocation-year-shares`       | bool   | Budget approaches         |
 | `preserve-first-allocation-year-shares` | bool   | Pathway approaches        |
-| `responsibility-weight`                 | float  | Adjusted approaches       |
+| `pre-allocation-responsibility-weight`                 | float  | Adjusted approaches       |
 | `capability-weight`                     | float  | Adjusted approaches       |
-| `historical-responsibility-year`        | int    | Adjusted approaches       |
-| `responsibility-per-capita`             | bool   | Adjusted approaches       |
+| `pre-allocation-responsibility-year`        | int    | Adjusted approaches       |
+| `pre-allocation-responsibility-per-capita` | bool   | Adjusted approaches       |
 | `capability-per-capita`                 | bool   | Adjusted approaches       |
-| `responsibility-exponent`               | float  | Adjusted approaches       |
+| `pre-allocation-responsibility-exponent` | float  | Adjusted approaches       |
 | `capability-exponent`                   | float  | Adjusted approaches       |
-| `responsibility-functional-form`        | string | Adjusted approaches       |
+| `pre-allocation-responsibility-functional-form` | string | Adjusted approaches       |
 | `capability-functional-form`            | string | Adjusted approaches       |
 | `max-deviation-sigma`                   | float  | All approaches (optional) |
 | `income-floor`                          | float  | Gini-adjusted approaches  |
@@ -120,7 +120,7 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | Parquet Columns                                                                        | CSV `approach-short` |
 | -------------------------------------------------------------------------------------- | -------------------- |
 | `approach="equal-per-capita"`, `first-allocation-year=2020`                            | `EPC-y2020`          |
-| `approach="per-capita-adjusted"`, `responsibility-weight=0.5`, `capability-weight=0.5` | `PC-Adj-rw0.5-cw0.5` |
+| `approach="per-capita-adjusted"`, `pre-allocation-responsibility-weight=0.5`, `capability-weight=0.5` | `PC-Adj-rw0.5-cw0.5` |
 | `approach="cumulative-per-capita-convergence"`, `convergence-speed=0.42`               | `CPCC-cs0.42`        |
 
 **Approach codes:**
@@ -148,14 +148,14 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | `preserve-allocation-year-shares`       | `pa`   |
 | `convergence-year`                      | `c`    |
 | `convergence-speed`                     | `cs`   |
-| `responsibility-weight`                 | `rw`   |
+| `pre-allocation-responsibility-weight`                 | `rw`   |
 | `capability-weight`                     | `cw`   |
-| `historical-responsibility-year`        | `hr`   |
-| `responsibility-per-capita`             | `rpc`  |
+| `pre-allocation-responsibility-year`        | `hr`   |
+| `pre-allocation-responsibility-per-capita` | `rpc`  |
 | `capability-per-capita`                 | `cpc`  |
-| `responsibility-exponent`               | `re`   |
+| `pre-allocation-responsibility-exponent` | `re`   |
 | `capability-exponent`                   | `ce`   |
-| `responsibility-functional-form`        | `rff`  |
+| `pre-allocation-responsibility-functional-form` | `rff`  |
 | `capability-functional-form`            | `cff`  |
 | `max-deviation-sigma`                   | `s`    |
 | `income-floor`                          | `if`   |
@@ -216,7 +216,7 @@ from fair_shares.library.utils.data.parquet_to_csv import convert_parquet_to_wid
 
 # Use custom prefixes for specific parameters
 custom_prefixes = {
-    "responsibility-weight": "resp",
+    "pre-allocation-responsibility-weight": "resp",
     "capability-weight": "cap",
 }
 
@@ -262,7 +262,7 @@ df_absolute = pd.read_parquet("allocations_absolute.parquet")
 epc = df_relative[df_relative["approach"] == "equal-per-capita"]
 
 # Filter by parameter value
-high_responsibility = df_relative[df_relative["responsibility-weight"] >= 0.5]
+high_responsibility = df_relative[df_relative["pre-allocation-responsibility-weight"] >= 0.5]
 ```
 
 ### In Python (CSV)

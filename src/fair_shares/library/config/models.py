@@ -163,14 +163,6 @@ class AdjustmentsConfig(BaseModel):
     bunkers: DataSourceRef = Field(
         ..., description="International bunker fuel CO2 timeseries"
     )
-    ar6_constants_path: str = Field(
-        "data/rcbs/ar6_category_constants.yaml",
-        description=(
-            "Path to auto-generated AR6 category constants file (relative to "
-            "project root). Contains per-category net-zero years computed from "
-            "Gidden et al. AR6 reanalysis by the RCB preprocessing notebook."
-        ),
-    )
     precautionary_lulucf: bool = Field(
         True,
         description=(
@@ -205,17 +197,17 @@ class ScenarioSourceConfig(BaseModel):
     )
     format: str = Field("iamc-zip", description="Data format: iamc-zip, iamc-xlsx, csv")
     notebook: str = Field(
-        "104_data_preprocess_scenarios",
+        "104_data_preprocess_scenarios_ar6",
         description="Notebook stem that processes this source",
     )
     data_parameters: ScenarioDataParameters
 
 
 class AllGhgScenariosConfig(BaseModel):
-    """Configuration for the AR6 scenario data used in all-GHG non-CO2 passes."""
+    """Configuration for scenario data (e.g. AR6) used in all-GHG non-CO2 passes."""
 
     path: str = Field(
-        ..., description="Path to the AR6 scenarios data file (e.g., ar6_gidden.zip)"
+        ..., description="Path to the scenarios data file (e.g., ar6_gidden.zip)"
     )
     interpolation_method: str = Field(
         "linear", description="Method for temporal interpolation"
@@ -230,7 +222,7 @@ class AllGhgScenariosConfig(BaseModel):
 
 
 class TargetDataParameters(BaseModel):
-    """Parameters for target data source (AR6 scenarios or remaining carbon budgets)."""
+    """Parameters for target data source (e.g. AR6 scenarios or remaining carbon budgets)."""
 
     available_categories: list[str] | None = Field(
         None, description="Available emission categories"
@@ -246,7 +238,7 @@ class TargetDataParameters(BaseModel):
     all_ghg_scenarios: AllGhgScenariosConfig | None = Field(
         None,
         description=(
-            "AR6 scenario configuration for the non-CO2 pass of all-GHG runs. "
+            "Scenario configuration (e.g. AR6) for the non-CO2 pass of all-GHG runs. "
             "Required when emission_category='all-ghg' (except for target='pathway')."
         ),
     )
@@ -299,7 +291,7 @@ class NonCO2Overrides(BaseModel):
     """
 
     convergence_year: int | None = None
-    responsibility_weight: float | None = None
+    pre_allocation_responsibility_weight: float | None = None
     capability_weight: float | None = None
 
     def merge_with(self, base: dict) -> dict:
@@ -343,7 +335,7 @@ class DataSourcesConfig(BaseModel):
         default_factory=dict, description="Available scenario data sources (e.g. ar6)"
     )
     targets: dict[str, TargetSourceConfig] = Field(
-        ..., description="Available target sources (AR6 scenarios, RCBs)"
+        ..., description="Available target sources (e.g. pathway scenarios, RCBs)"
     )
 
     # General configuration
@@ -372,7 +364,7 @@ class DataSourcesConfig(BaseModel):
         None, description="Active LULUCF data source"
     )
     active_target_source: str | None = Field(
-        None, description="Active target source (AR6 scenarios or RCBs)"
+        None, description="Active target source (e.g. pathway scenarios or RCBs)"
     )
     active_scenario_source: str | None = Field(
         None,

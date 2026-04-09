@@ -6,7 +6,7 @@ Tests cover:
 - Cumulative emission computation
 - Bunker deduction
 - Scenario-to-AR6-category mapping
-- process_rcb_to_2020_baseline() with Gidden Direct LULUCF shift
+- process_rcb_to_2020_baseline() with BM Direct LULUCF shift
 - NGHGI-consistent world CO2 timeseries construction
 - Precautionary LULUCF cap in _resolve_adjustment_scalars
 """
@@ -24,7 +24,7 @@ from fair_shares.library.utils.data.nghgi import (
     build_nghgi_world_co2_timeseries,
     compute_bunker_deduction,
     compute_cumulative_emissions,
-    load_ar6_category_constants,
+
     load_bunker_timeseries,
     load_world_co2_lulucf,
 )
@@ -227,77 +227,6 @@ class TestLoadBunkerTimeseries:
 
         with pytest.raises(DataLoadingError, match="'source' column not found"):
             load_bunker_timeseries(bad_csv)
-
-
-# ---------------------------------------------------------------------------
-# load_ar6_category_constants
-# ---------------------------------------------------------------------------
-
-
-class TestLoadAr6CategoryConstants:
-    """Tests for load_ar6_category_constants."""
-
-    def test_valid_file(self, tmp_path):
-        """Valid YAML with all required keys is loaded correctly."""
-        import yaml
-
-        constants = {
-            "C1": {
-                "nz_year_median": 2050,
-                "nz_year_min": 2035,
-                "nz_year_q25": 2045,
-                "nz_year_q75": 2055,
-                "nz_year_max": 2070,
-                "n_scenarios": 70,
-                "n_reaching_nz": 68,
-            },
-            "C2": {
-                "nz_year_median": 2058,
-                "nz_year_min": 2040,
-                "nz_year_q25": 2052,
-                "nz_year_q75": 2065,
-                "nz_year_max": 2100,
-                "n_scenarios": 106,
-                "n_reaching_nz": 95,
-            },
-        }
-        path = tmp_path / "constants.yaml"
-        with open(path, "w") as f:
-            yaml.dump(constants, f)
-
-        result = load_ar6_category_constants(path)
-        assert result["C1"]["nz_year_median"] == 2050
-        assert result["C2"]["n_scenarios"] == 106
-
-    def test_missing_file_raises(self, tmp_path):
-        """DataLoadingError when file does not exist."""
-        with pytest.raises(DataLoadingError, match="not found"):
-            load_ar6_category_constants(tmp_path / "nonexistent.yaml")
-
-    def test_missing_required_key_raises(self, tmp_path):
-        """DataProcessingError when a category is missing required keys."""
-        import yaml
-
-        constants = {
-            "C1": {
-                "nz_year_min": 2035,
-                # missing nz_year_median and n_scenarios
-            },
-        }
-        path = tmp_path / "constants.yaml"
-        with open(path, "w") as f:
-            yaml.dump(constants, f)
-
-        with pytest.raises(DataProcessingError, match="missing keys"):
-            load_ar6_category_constants(path)
-
-    def test_non_mapping_raises(self, tmp_path):
-        """DataProcessingError when file content is not a mapping."""
-        path = tmp_path / "constants.yaml"
-        path.write_text("- item1\n- item2\n")
-
-        with pytest.raises(DataProcessingError, match="does not contain a mapping"):
-            load_ar6_category_constants(path)
 
 
 # ---------------------------------------------------------------------------

@@ -84,7 +84,14 @@ def get_allocation_functions() -> dict[str, Callable[..., Any]]:
         "per-capita-adjusted": per_capita_adjusted,
         "per-capita-adjusted-gini": per_capita_adjusted_gini,
         "per-capita-convergence": per_capita_convergence,
-        "cumulative-per-capita-convergence": cumulative_per_capita_convergence,
+        # NOTE (2026-04-08): Both keys route to the `_adjusted` function. The
+        # bare `cumulative_per_capita_convergence` wrapper does not accept
+        # responsibility/capability kwargs, so callers passing those kwargs
+        # via this key were silently degenerate (kwargs filtered out by
+        # `utils/dataframes.py:filter_function_parameters`). The `_adjusted`
+        # function defaults `pre_allocation_responsibility_weight=0.0` and
+        # `capability_weight=0.0`, so bare callers retain identical behavior.
+        "cumulative-per-capita-convergence": cumulative_per_capita_convergence_adjusted,
         "cumulative-per-capita-convergence-adjusted": (
             cumulative_per_capita_convergence_adjusted
         ),
@@ -311,7 +318,7 @@ def run_allocation(
     ...     world_scenario_emissions_ts=data["world_emissions"],
     ...     first_allocation_year=2020,
     ...     emission_category="co2-ffi",
-    ...     responsibility_weight=0.5,
+    ...     pre_allocation_responsibility_weight=0.5,
     ...     capability_weight=0.5,
     ... )
     Converting units...
@@ -343,10 +350,12 @@ def run_allocation(
     **Equity considerations:** Each approach implements different equity
     principles. The equal per capita approaches treat population as the sole
     basis for claims. Adjusted approaches incorporate capability
-    (ability to pay based on GDP) and/or historical responsibility, implementing
-    aspects of CBDR-RC. Parameters like ``responsibility_weight`` and
-    ``capability_weight`` represent explicit normative choices about how to
-    balance these considerations.
+    (ability to pay based on GDP, from the allocation year onwards) and/or
+    pre-allocation responsibility (multiplicative rescaling based on
+    per-capita emissions backward-looking from the allocation year),
+    implementing aspects of CBDR-RC. Parameters like
+    ``pre_allocation_responsibility_weight`` and ``capability_weight`` represent
+    explicit normative choices about how to balance these considerations.
 
     **Transparency:** All parameter choices are recorded in the result
     metadata to enable replication and critical assessment.
@@ -460,7 +469,7 @@ def run_parameter_grid(
     ...     "per-capita-adjusted-budget": [
     ...         {
     ...             "allocation-year": 2020,
-    ...             "responsibility-weight": 0.0,
+    ...             "pre-allocation-responsibility-weight": 0.0,
     ...             "capability-weight": [0.25, 0.5, 0.75],
     ...         }
     ...     ]
@@ -508,26 +517,20 @@ def run_parameter_grid(
 
     **Exploring normative choices:** The parameter grid is useful for exploring
     how different normative choices affect allocations. For example, varying
-    ``responsibility-weight`` and ``capability-weight`` reveals the sensitivity
+    ``pre-allocation-responsibility-weight`` and ``capability-weight`` reveals the sensitivity
     of results to how CBDR-RC principles are operationalized. Similarly, varying
-    ``historical-responsibility-year`` shows how the choice of start date for
+    ``pre-allocation-responsibility-year`` shows how the choice of start date for
     counting historical emissions affects current allocations - a choice that
     remains debated. See docs/science/allocations.md for details.
     """
     results = []
 
-    # Guard: "all-ghg" must be decomposed before reaching run_parameter_grid.
-    # The notebook/orchestrator splits it into co2-ffi, co2, and
-    # all-ghg-ex-co2-lulucf passes. Receiving "all-ghg" here means
-    # the decomposition was skipped, which would bypass per-category
-    # validation (e.g. the 1990 NGHGI restriction for "co2").
-    if emission_category == "all-ghg":
-        raise AllocationError(
-            "emission_category='all-ghg' must be decomposed into "
-            "per-category passes (co2-ffi, co2, all-ghg-ex-co2-lulucf) "
-            "before calling run_parameter_grid(). "
-            "Use the preprocessing orchestrator or notebook decomposition."
-        )
+    # Note: composite categories (all-ghg, all-ghg-ex-co2-lulucf) are valid here
+    # when the target has direct scenario data (pathway mode).  Decomposition
+    # into co2/non-co2 passes is only required for RCB targets and is handled
+    # upstream by the Snakefile + master notebook.  No guard needed — if a
+    # composite category reaches here, the upstream decided it doesn't need
+    # decomposition.
 
     # Validate target source compatibility with allocation approaches
     if target_source:

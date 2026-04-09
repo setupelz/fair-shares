@@ -50,7 +50,7 @@ Converts the **global** remaining carbon budget into a **global** annual emissio
 
 Country allocations happen **after** this step, using pathway allocation approaches (e.g., `equal-per-capita`, `per-capita-adjusted`). The pathway shape does not prescribe country net-zero years — those emerge from the allocation step. When a country's allocated share approaches zero, that approximates their implied net-zero year.
 
-The default generator is `exponential-decay` (shifted exponential). The `generator` parameter supports extensibility — other functional forms can be added without changing the allocation pipeline.
+The default (and currently only) generator is `exponential-decay` (shifted exponential). The `generator` parameter is an extensibility point — alternative functional forms (e.g., linear, sigmoid) can be added without changing the allocation pipeline, provided they satisfy the same constraint: the discrete annual sum must exactly equal the input carbon budget by the end year (typically 2100). Note that even with a 2100 end year, individual regions may reach effective net-zero much earlier when their allocated share of the global pathway becomes negligibly small.
 
 **[API Reference →](https://setupelz.github.io/fair-shares/api/utils/math/#rcb-pathway-generation)**
 
@@ -108,16 +108,21 @@ Extracts world totals for validation. Supports keys: "EARTH", "WLD", "World".
 
 Remaining carbon budgets constrain **CO₂ only** — they are derived from the
 near-linear relationship between cumulative CO₂ emissions and global warming
-[IPCC AR6 WG1]. Non-CO₂ greenhouse gases (CH₄, N₂O, F-gases) pathways are an
+([IPCC 2021](https://doi.org/10.1017/9781009157896), AR6 WG1; see also
+[Lamboll 2023](https://doi.org/10.1038/s41558-023-01848-5) on budget size and
+uncertainty). Non-CO₂ greenhouse gases (CH₄, N₂O, F-gases) pathways are an
 assumption used in deriving the remaining carbon budget quantity.
 
-To produce all-GHG fair share allocations under RCBs, the system
-**decomposes** the problem into two components:
+When users request an all-GHG allocation (e.g. `all-ghg` or `all-ghg-ex-co2-lulucf`) but use RCBs as the target source, a problem arises: RCBs constrain CO₂ only and say nothing about non-CO₂ gases. To produce all-GHG results, the system **decomposes** the problem into two components — allocating CO₂ via the budget approach and non-CO₂ via scenario pathways:
 
 | Component | Gas scope          | Allocation method                | Data source              |
 | --------- | ------------------ | -------------------------------- | ------------------------ |
 | CO₂       | `co2` or `co2-ffi` | Budget approach (RCBs)           | Remaining carbon budgets |
-| Non-CO₂   | `non-co2`          | Pathway approach (AR6 scenarios) | AR6 median pathways      |
+| Non-CO₂   | `non-co2`          | Pathway approach (e.g. AR6 scenarios) | e.g. AR6 median pathways |
+
+!!! note "New RCBs require matching scenario pathways"
+
+    When adding new remaining carbon budgets, complete scenario pathways that meet their climate assessments must also be available in the active data source configuration for pathways. Without them, the non-CO₂ decomposition has no pathway data to allocate from.
 
 ### Decomposition rules
 
@@ -136,24 +141,23 @@ $$
 \text{non-CO}_2 = \text{all-ghg-ex-co2-lulucf} - \text{co2-ffi}
 $$
 
-This subtraction is applied to both historical emissions (from PRIMAP) and
-future scenarios (from AR6), producing non-CO₂ timeseries that are used for
+This subtraction is applied to both historical emissions (e.g. PRIMAP) and
+future scenarios (e.g. AR6), producing non-CO₂ timeseries that are used for
 pathway allocation.
 
 ### Scenario labels
 
-AR6 categories are mapped to clean climate-assessment names and quantiles
-during preprocessing in notebook 104. The mapping splits the combined
-AR6 category label into separate fields matching the RCB convention:
+Scenario source categories are mapped to clean `climate-assessment` names and `quantile` fields during preprocessing (notebook 104). This normalisation ensures that all downstream code — including non-CO₂ pathways — works with a consistent format regardless of the upstream scenario source. For example, AR6 categories map as:
 
 - C1 → `climate-assessment="1.5C"`, `quantile=0.5`
 - C3 → `climate-assessment="2C"`, `quantile=0.66`
 - C2 → `climate-assessment="2C"`, `quantile=0.83`
 
+New scenario sources would define their own mapping into the same clean format. Any new data processing notebook that introduces a scenario source must output data in this normalised schema.
+
 Internally, notebook 104 uses combined labels (e.g., "1.5p50") during
 median calculation to keep C2 and C3 distinct, then remaps to the clean
-format at output. All downstream code — including non-CO₂ pathways —
-uses the clean format directly.
+format at output.
 
 ### Auto-derivation of pathway approaches
 
@@ -167,13 +171,14 @@ system automatically derives equivalent pathway approaches for non-CO₂:
 - `preserve_allocation_year_shares` → `preserve_first_allocation_year_shares`
 
 This ensures methodological consistency: the same equity principle governs
-both gases, adapted to the different allocation modes.
+both gases, adapted to the different allocation modes. This auto-derivation only works when scenario pathway data matching the requested climate assessments is available in the active source set — without it, the non-CO₂ leg has nothing to allocate.
 
-### AR6 single-pass exception
+### Single-pass exception for direct scenario pathways
 
-When `target=pathway`, composite categories are **not** decomposed. AR6
-provides direct scenario data for `all-ghg` and `all-ghg-ex-co2-lulucf`,
-so the system runs a single pathway allocation pass.
+When `target=pathway`, composite categories are **not** decomposed. If the
+scenario source provides direct data for `all-ghg` or `all-ghg-ex-co2-lulucf`
+(as AR6 does), the system runs a single pathway allocation pass instead of
+the CO₂ + non-CO₂ decomposition.
 
 ---
 
@@ -192,9 +197,9 @@ The correction methodology follows Weber et al. (2026). A central design princip
 | Symbol                                | Definition                                                                          |
 | ------------------------------------- | ----------------------------------------------------------------------------------- |
 | $\text{RCB}_{\text{BM}}(\text{base})$ | Published Remaining Carbon Budget from baseline year, in BM convention              |
-| $F_{\text{actual}}(a, b)$             | Cumulative actual fossil CO₂ emissions from year $a$ to year $b$ (PRIMAP)           |
-| $L_{\text{BM}}(a, b)$                 | Cumulative BM LULUCF CO₂ from AR6 scenario median (AFOLU\|Direct), years $a$ to $b$ |
-| $L_{\text{BM,actual}}(a, b)$          | Cumulative actual observed BM LULUCF CO₂ (PRIMAP co2-lulucf), years $a$ to $b$      |
+| $F_{\text{actual}}(a, b)$             | Cumulative actual fossil CO₂ emissions from year $a$ to year $b$ (e.g. PRIMAP)      |
+| $L_{\text{BM}}(a, b)$                 | Cumulative BM LULUCF CO₂ from scenario median (AFOLU\|Direct), years $a$ to $b$     |
+| $L_{\text{BM,actual}}(a, b)$          | Cumulative actual observed BM LULUCF CO₂ (e.g. PRIMAP co2-lulucf), years $a$ to $b$ |
 | $B(a, b)$                             | Cumulative international bunker fuel CO₂ emissions, years $a$ to $b$                |
 | $\text{gap}(a, b)$                    | Cumulative NGHGI--BM convention gap for CO₂, years $a$ to $b$                       |
 | $\text{NZ}$                           | Net-zero year (from scenario data)                                                  |
@@ -205,7 +210,7 @@ The correction methodology follows Weber et al. (2026). A central design princip
 The fossil-allocatable budget isolates the portion of the total carbon budget available for fossil CO₂ emissions, after removing the land-use share and international bunkers:
 
 $$
-\text{fossil\_budget}(2020) = \text{RCB}_{\text{BM}}(\text{base})
+\mathrm{fossil{\_}budget}(2020) = \text{RCB}_{\text{BM}}(\text{base})
   + F_{\text{actual}}(2020,\, \text{base}{-}1)
   - L_{\text{BM}}(\text{base},\, \text{NZ})
   - B(2020,\, \text{NZ})
@@ -215,7 +220,7 @@ The four terms are:
 
 1. **$\text{RCB}_{\text{BM}}(\text{base})$** -- the published carbon budget, which covers _total_ anthropogenic CO₂ (fossil + BM LULUCF) from the baseline year onward.
 
-2. **$F_{\text{actual}}(2020,\, \text{base}{-}1)$** -- the fossil rebase. When the published baseline is after 2020, actual fossil emissions from 2020 to $\text{base}{-}1$ are added back. This uses only observational data (PRIMAP), never scenario projections. When $\text{base} = 2020$, this term is zero.
+2. **$F_{\text{actual}}(2020,\, \text{base}{-}1)$** -- the fossil rebase. When the published baseline is after 2020, actual fossil emissions from 2020 to $\text{base}{-}1$ are added back. This uses only observational data (e.g. PRIMAP), never scenario projections. When $\text{base} = 2020$, this term is zero.
 
 3. **$L_{\text{BM}}(\text{base},\, \text{NZ})$** -- the LULUCF decomposition. Removes the BM LULUCF share of the budget from the baseline year to the scenario net-zero year, using AR6 scenario median pathways (AFOLU|Direct). This is the only way to separate the fossil and land-use portions of the total budget.
 
@@ -251,7 +256,7 @@ The LULUCF decomposition extends from the baseline year to net-zero. Thus we mus
 For budgets covering **total CO₂** including land use, LULUCF stays in the budget but the convention must switch from BM to NGHGI. Unlike the co2-ffi case, there is no LULUCF decomposition -- only a convention gap adjustment:
 
 $$
-\text{nghgi\_budget}(2020) = \text{RCB}_{\text{BM}}(\text{base})
+\mathrm{nghgi{\_}budget}(2020) = \text{RCB}_{\text{BM}}(\text{base})
   + F_{\text{actual}}(2020,\, \text{base}{-}1)
   + L_{\text{BM,actual}}(2020,\, \text{base}{-}1)
   + \text{gap}(2020,\, \text{NZ})
@@ -264,9 +269,9 @@ The five terms are:
 
 2. **$F_{\text{actual}}(2020,\, \text{base}{-}1)$** -- the fossil rebase, identical to co2-ffi.
 
-3. **$L_{\text{BM,actual}}(2020,\, \text{base}{-}1)$** -- the BM LULUCF rebase. Unlike co2-ffi, actual observed BM LULUCF _is_ included in the rebase. This is because there is no LULUCF decomposition to cancel with -- the budget retains the full land-use component. Source: PRIMAP co2-lulucf (already in the pipeline).
+3. **$L_{\text{BM,actual}}(2020,\, \text{base}{-}1)$** -- the BM LULUCF rebase. Unlike co2-ffi, actual observed BM LULUCF _is_ included in the rebase. This is because there is no LULUCF decomposition to cancel with -- the budget retains the full land-use component. Source: e.g. PRIMAP co2-lulucf (already in the pipeline).
 
-4. **$\text{gap}(2020,\, \text{NZ})$** -- the BM-to-NGHGI convention gap. Covers the full period from 2020 (not from $\text{base}$) because the BM LULUCF rebase is in BM convention — the gap for the rebase years converts it to NGHGI. This quantity is negative (NGHGI reports a larger land sink than BM), so it reduces the allocatable budget. Computed from Melo v3.1 NGHGI LULUCF and Gidden AR6 reanalysis data (see [Convention gap decomposition](#convention-gap-decomposition)).
+4. **$\text{gap}(2020,\, \text{NZ})$** -- the BM-to-NGHGI convention gap. Covers the full period from 2020 (not from $\text{base}$) because the BM LULUCF rebase is in BM convention — the gap for the rebase years converts it to NGHGI. This quantity is negative (NGHGI reports a larger land sink than BM), so it reduces the allocatable budget. Computed from NGHGI actual LULUCF and scenario BM LULUCF (AFOLU|Direct) data (see [Convention gap decomposition](#convention-gap-decomposition)).
 
 5. **$B(2020,\, \text{NZ})$** -- the bunker deduction, same as for co2-ffi.
 
@@ -280,8 +285,8 @@ The formulas enforce a strict separation:
 
 | Quantity                                                | Data type                       | Rationale                                                             |
 | ------------------------------------------------------- | ------------------------------- | --------------------------------------------------------------------- |
-| Fossil rebase ($F_{\text{actual}}$)                     | Actual (PRIMAP)                 | Observed emissions -- no projection uncertainty                       |
-| BM LULUCF rebase ($L_{\text{BM,actual}}$, co2 only)     | Actual (PRIMAP co2-lulucf)      | Same rationale                                                        |
+| Fossil rebase ($F_{\text{actual}}$)                     | Actual (e.g. PRIMAP)            | Observed emissions -- no projection uncertainty                       |
+| BM LULUCF rebase ($L_{\text{BM,actual}}$, co2 only)     | Actual (e.g. PRIMAP co2-lulucf) | Same rationale                                                        |
 | BM LULUCF decomposition ($L_{\text{BM}}$, co2-ffi only) | Scenario median (AFOLU\|Direct) | Requires future pathway to NZ; no observational data exists           |
 | Convention gap ($\text{gap}$)                           | Scenario-based                  | Forward-looking NGHGI--BM difference requires modeled indirect fluxes |
 | Net-zero year ($\text{NZ}$)                             | Scenario data                   | By definition a future quantity                                       |
@@ -293,13 +298,15 @@ This means that adding a new RCB source (e.g., Lamboll et al. with baseline 2023
 
 Bookkeeping models (e.g., BLUE, OSCAR) estimate only **direct human-caused** land-use fluxes -- deforestation, afforestation, land management. NGHGIs additionally include **indirect effects** such as CO₂ fertilization of managed forests and climate-driven changes in soil carbon. The NGHGI total is therefore systematically different from the bookkeeping total, even for the same physical land area.
 
-The global difference is substantial: NGHGI-reported LULUCF is a larger net sink than BM estimates, creating a 5--7 GtCO₂/yr discrepancy primarily because CO₂ fertilization enhances carbon uptake on managed land [Weber 2026].
+The global difference is substantial: NGHGI-reported LULUCF is a larger net sink than BM estimates, creating a 5--7 GtCO₂/yr discrepancy primarily because CO₂ fertilization enhances carbon uptake on managed land [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
 
 ### Per-scenario net-zero years as integration bounds
 
-Forward-looking quantities (LULUCF decomposition, convention gap, bunker deduction) are integrated from their start year to the **scenario-specific net-zero year** $t_{\text{nz},i}$ -- the first year when that scenario's total CO₂ emissions (`Emissions|CO2` = fossil + BM LULUCF) reach zero. This prevents post-net-zero negative emissions from inflating the corrections.
+Forward-looking quantities (LULUCF decomposition, convention gap, bunker deduction) are integrated from their start year to the **scenario-specific net-zero year** $t_{\text{nz},i}$ -- the first year when that scenario's total CO₂ emissions (`Emissions|CO2`) reach zero. This prevents post-net-zero negative emissions from inflating the corrections.
 
-Per-scenario net-zero years are computed from the Gidden et al. AR6 reanalysis (OSCAR v3.2) data. Scenario-level summary statistics (median, quartiles) are stored in `data/rcbs/ar6_category_constants.yaml`, keyed by RCB scenario label (e.g., `1.5p50`). The scenario-level median NZ year is used for the bunker integration endpoint (which is observational, not scenario-dependent).
+Note that `Emissions|CO2` in IAM scenario databases is fossil + BM LULUCF by convention — this is a property of how scenarios report total CO₂, not a methodological choice by fair-shares.
+
+Per-scenario net-zero years are computed from scenario data (e.g. Gidden et al. AR6 reanalysis). Scenario-level summary statistics (median, quartiles) are stored in `rcb_scenario_adjustments.yaml` in the pipeline output directory, keyed by RCB scenario label (e.g., `1.5p50`). The scenario-level median NZ year is used for the bunker integration endpoint (which is observational, not scenario-dependent).
 
 Scenarios that never reach net-zero total CO₂ before 2100 are assigned 2100 as a conservative upper integration bound.
 
@@ -307,21 +314,25 @@ Scenarios that never reach net-zero total CO₂ before 2100 are assigned 2100 as
 
 The per-scenario convention gap $\text{Gap}_i$ decomposes into two temporal segments:
 
-**Historical** ($2020 \leq t \leq \text{splice\_year}$): Melo NGHGI (reported values, same for all scenarios) minus Gidden Direct for scenario $i$ (a bookkeeping proxy from the AR6 reanalysis). The splice year is derived dynamically from the data (currently 2023 with Melo v3.1). The gap always covers the full 2020--NZ range because the BM LULUCF rebase years also need convention conversion:
+**Historical** ($2020 \leq t \leq \mathrm{splice{\_}year}$): NGHGI actual LULUCF (reported values, same for all scenarios) minus BM LULUCF for scenario $i$ (the bookkeeping proxy from scenario data). The splice year is derived dynamically from the data (currently 2023). The gap always covers the full 2020--NZ range because the BM LULUCF rebase years also need convention conversion:
 
 $$
-\text{Gap}_{i,\text{hist}} = \sum_{t=2020}^{\min(\text{splice},\, t_{\text{nz},i})} \left[\text{Melo}(t) - \text{Gidden}_{\text{Direct},i}(t)\right]
+\text{Gap}_{i,\text{hist}} = \sum_{t=2020}^{\min(\text{splice},\, t_{\text{nz},i})} \left[\text{NGHGI}_{\text{actual}}(t) - \text{BM}_{\text{Direct},i}(t)\right]
 $$
 
-**Future** ($t > \text{splice\_year}$): Only the Gidden Indirect component for scenario $i$ (CO₂ fertilization and other passive fluxes), because the Direct components cancel in the gap:
+Currently, NGHGI actual LULUCF is sourced from Melo et al. and BM LULUCF from the Gidden et al. AR6 reanalysis (AFOLU|Direct). These are the current data sources for these roles — alternatives providing the same quantities could be substituted.
+
+**Future** ($t > \mathrm{splice{\_}year}$): Only the NGHGI-consistent indirect component for scenario $i$ (CO₂ fertilization and other passive fluxes), because the direct components cancel in the gap:
 
 $$
-\text{Gap}_{i,\text{future}} = \sum_{t=\text{splice}+1}^{t_{\text{nz},i}} \text{Gidden}_{\text{Indirect},i}(t)
+\text{Gap}_{i,\text{future}} = \sum_{t=\text{splice}+1}^{t_{\text{nz},i}} \text{Indirect}_{i}(t)
 $$
 
-The total per-scenario gap is $\text{Gap}_i = \text{Gap}_{i,\text{hist}} + \text{Gap}_{i,\text{future}}$, and the median is taken across all scenarios $i$ in the corresponding AR6 category pool. Each scenario's integration ends at its own $t_{\text{nz},i}$.
+Currently sourced from the Gidden et al. AR6 reanalysis (AFOLU|Indirect).
 
-**Why AR6 scenario data for the BM side?** The convention gap is a per-scenario quantity — each scenario has its own AFOLU|Direct pathway, NZ year, and Indirect fluxes. The Gidden AR6 reanalysis provides this per-scenario decomposition. Global Carbon Budget multi-model averages cannot be substituted here because they would collapse the per-scenario variation into a single number, breaking the integrate-per-scenario-then-median methodology. For actual historical emissions (the RCB rebase from baseline to 2020), PRIMAP observational data is used — no scenario data is involved in that step.
+The total per-scenario gap is $\text{Gap}_i = \text{Gap}_{i,\text{hist}} + \text{Gap}_{i,\text{future}}$, and the median is taken across all scenarios $i$ in the corresponding climate category pool. Each scenario's integration ends at its own $t_{\text{nz},i}$.
+
+**Why per-scenario data for the BM side?** The convention gap is a per-scenario quantity — each scenario has its own AFOLU|Direct pathway, NZ year, and Indirect fluxes. Global Carbon Budget multi-model averages cannot be substituted here because they would collapse the per-scenario variation into a single number, breaking the integrate-per-scenario-then-median methodology. For actual historical emissions (the RCB rebase from baseline to 2020), observational data is used — no scenario data is involved in that step.
 
 ### World CO₂ timeseries for backward extension
 
@@ -333,7 +344,7 @@ $$
 
 Where LULUCF uses:
 
-- **2000 onwards**: Melo NGHGI LULUCF (nationally aggregated inventory data, v3.1)
+- **2000 onwards**: NGHGI LULUCF (e.g. Melo v3.1, nationally aggregated inventory data)
 - **Pre-2000**: Not available in NGHGI convention. Categories including LULUCF are limited to the NGHGI data range (2000+). No NGHGI/BM splicing is performed. While earlier NGHGI LULUCF estimates may exist (e.g., via Grassi et al. or historical extensions of Melo), the official NGHGI data begins in 2000. Extending to 1990 would require splicing heterogeneous datasets, which risks introducing artefacts (the BM-to-NGHGI transition around 1990 shows a large jump). We plan to extend coverage when validated pre-2000 NGHGI LULUCF data becomes available.
 
 This ensures the world timeseries passed to `calculate_budget_from_rcb` is NGHGI-consistent, and that function works identically for both `co2-ffi` and `co2` categories.
@@ -345,8 +356,8 @@ When adding a new RCB source (e.g., a new publication with a different baseline 
 | Data needed                | Used for                               | Source                                  |
 | -------------------------- | -------------------------------------- | --------------------------------------- |
 | RCB value + baseline year  | Starting point                         | Published literature                    |
-| Actual fossil CO₂          | Rebase                                 | PRIMAP (already in pipeline)            |
-| Actual BM LULUCF           | co2 rebase                             | PRIMAP co2-lulucf (already in pipeline) |
+| Actual fossil CO₂          | Rebase                                 | e.g. PRIMAP (already in pipeline)       |
+| Actual BM LULUCF           | co2 rebase                             | e.g. PRIMAP co2-lulucf (already in pipeline) |
 | Per-year BM LULUCF pathway | co2-ffi LULUCF decomposition           | Scenario data (AFOLU\|Direct median)    |
 | Net-zero year              | Integration limit for bunkers + LULUCF | Scenario data                           |
 | Convention gap             | co2 BM-to-NGHGI adjustment             | NGHGI + scenario Indirect AFOLU         |
@@ -385,9 +396,9 @@ Using `ar6_2020` source: 500 GtCO₂ total from 2020, scenario `1.5p50` (70 C1 s
 
 **co2-ffi:** The cumulative BM LULUCF is estimated from AR6 scenarios in the corresponding climate category (here 1.5°C 50th percentile). Each scenario's AFOLU|Direct is integrated from 2020 to its own NZ year, then the median across scenarios is taken. The result is a net sink. Under the **precautionary cap** (default), this sink is not credited to the fossil budget (capped to 0). Without the cap (`precautionary_lulucf: false`), the fossil budget would increase.
 
-**co2:** The convention gap is -90 Gt — NGHGI reports a larger land CO₂ sink than bookkeeping models, reducing the allocatable budget. The gap is computed from Melo v3.1 NGHGI LULUCF and Gidden AR6 reanalysis (see [Convention gap decomposition](#convention-gap-decomposition)). Bunker deduction is ~35 Gt (~870 Mt/yr integrated to median NZ year ~2050). The co2 budget is lower than co2-ffi because the convention gap is a significant negative adjustment.
+**co2:** The convention gap is -90 Gt — NGHGI reports a larger land CO₂ sink than bookkeeping models, reducing the allocatable budget. The gap is computed from NGHGI actual LULUCF and scenario BM LULUCF data (see [Convention gap decomposition](#convention-gap-decomposition)). Bunker deduction is ~35 Gt (~870 Mt/yr integrated to median NZ year ~2050). The co2 budget is lower than co2-ffi because the convention gap is a significant negative adjustment.
 
-For Lamboll 2023 (`1.5C`, 247 Gt from 2023):
+For [Lamboll 2023](https://doi.org/10.1038/s41558-023-01848-5) (`1.5C`, 247 Gt from 2023):
 
 |                               | co2-ffi                | co2                   |
 | ----------------------------- | ---------------------- | --------------------- |

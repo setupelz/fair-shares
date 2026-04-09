@@ -187,7 +187,7 @@ def process_rcb_to_2020_baseline(
     standardized 2020 baseline. It also applies adjustments for international
     bunkers and LULUCF following Weber et al. (2026).
 
-    The rebase always uses actual observational data (PRIMAP), never scenario
+    The rebase always uses actual observational data (e.g. PRIMAP), never scenario
     projections. What enters the rebase depends on the emission category:
 
     - **co2-ffi**: Rebase uses fossil CO2 only. LULUCF is omitted because it
@@ -225,7 +225,7 @@ def process_rcb_to_2020_baseline(
     world_co2_ffi_emissions : pd.DataFrame
         World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e)
     actual_bm_lulucf_emissions : pd.DataFrame or None, optional
-        Actual bookkeeping-model LULUCF CO2 emissions from PRIMAP, with year
+        Actual bookkeeping-model LULUCF CO2 emissions (e.g. PRIMAP), with year
         columns (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
     bunkers_deduction_mt : float, optional
         Total bunker CO2 emissions from 2020-2100 in Mt * CO2e (default: 0.0).

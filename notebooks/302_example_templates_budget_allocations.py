@@ -78,14 +78,14 @@ allocations = {
         }
     ],
     # APPROACH 2: Per Capita Adjusted Budget
-    # Principle: Historical responsibility + capability (CBDR-RC)
+    # Principle: Pre-allocation responsibility + capability (CBDR-RC)
     # See: docs/science/principle-to-code.md (CBDR-RC)
     "per-capita-adjusted-budget": [
-        # Configuration A: Historical responsibility only
+        # Configuration A: Pre-allocation responsibility only
         {
             "allocation_year": [2015],
-            "responsibility_weight": [1.0],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_weight": [1.0],
+            "pre_allocation_responsibility_year": [2000],
             "preserve_allocation_year_shares": [False],
         },
         # Configuration B: Capability only
@@ -98,9 +98,9 @@ allocations = {
         # Configuration C: Combined responsibility and capability
         {
             "allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
             "preserve_allocation_year_shares": [False],
         },
     ],
@@ -119,9 +119,9 @@ allocations = {
         # Configuration B: Responsibility plus Gini-adjusted capability
         {
             "allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
             "income_floor": [7500],
             "max_gini_adjustment": [0.8],
             "preserve_allocation_year_shares": [False],
@@ -268,9 +268,9 @@ plt.show()
 allocation_param_prefixes = {
     "first-allocation-year": "y",
     "allocation-year": "ay",
-    "responsibility-weight": "rw",
+    "pre-allocation-responsibility-weight": "rw",
     "capability-weight": "cw",
-    "historical-responsibility-year": "hr",
+    "pre-allocation-responsibility-year": "hr",
     "income-floor": "floor",
     "max-gini-adjustment": "gini",
 }

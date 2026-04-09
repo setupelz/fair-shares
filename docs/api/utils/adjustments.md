@@ -1,11 +1,11 @@
 ---
 title: Adjustment Functions
-description: API reference for responsibility, capability, Gini, and deviation constraint adjustments
+description: API reference for pre-allocation responsibility, capability, Gini, and deviation constraint adjustments
 ---
 
 # Adjustment Functions
 
-Functions for calculating responsibility, capability, and Gini adjustments.
+Functions for calculating pre-allocation responsibility, capability, and Gini adjustments.
 
 ## Relative Adjustments
 

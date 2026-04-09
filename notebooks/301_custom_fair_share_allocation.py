@@ -299,9 +299,9 @@ from fair_shares.library.utils import convert_parquet_to_wide_csv
 allocation_param_prefixes = {
     "first-allocation-year": "y",
     "allocation-year": "ay",
-    "responsibility-weight": "rw",
+    "pre-allocation-responsibility-weight": "rw",
     "capability-weight": "cw",
-    "historical-responsibility-year": "hr",
+    "pre-allocation-responsibility-year": "hr",
     "income-floor": "floor",
     "max-gini-adjustment": "gini",
     "convergence-year": "cy",

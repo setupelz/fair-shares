@@ -34,12 +34,12 @@ Every allocation approach operationalizes specific equity principles. Before wri
 If unclear, read [Principle-to-Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) first.
 
 !!! warning "Value neutrality"
-    Do not present the approach as value-neutral — all allocation choices embed normative judgments [Dooley 2021; Kartha 2018].
+    Do not present the approach as value-neutral — all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
 
-Use the Entry Points Framework to structure your normative documentation: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b]. See [From Principle to Code](../science/principle-to-code.md).
+Use the Entry Points Framework to structure your normative documentation: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). See [From Principle to Code](../science/principle-to-code.md).
 
 !!! warning "Grandfathering"
-    Grandfathering-based allocation — assigning shares proportional to current emissions — has no support in the equity literature and contradicts the normative foundations of this project [Dooley 2021; Kartha 2018]. Contraction-and-convergence approaches that begin from current national emissions levels embed grandfathering during the convergence period and should be treated with the same caution [Kartha 2018]. New approaches should be grounded in defensible equity principles documented in [From Principle to Code](../science/principle-to-code.md).
+    Grandfathering-based allocation — assigning shares proportional to current emissions — has no support in the equity literature and contradicts the normative foundations of this project [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). Contraction-and-convergence approaches that begin from current national emissions levels embed grandfathering during the convergence period and should be treated with the same caution [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). New approaches should be grounded in defensible equity principles documented in [From Principle to Code](../science/principle-to-code.md).
 
 ---
 
@@ -300,7 +300,7 @@ Please consider the following:
 | Utility                           | Purpose                                       |
 | --------------------------------- | --------------------------------------------- |
 | `filter_time_columns()`           | Extract year columns from DataFrame           |
-| `calculate_relative_adjustment()` | Compute responsibility/capability adjustments |
+| `calculate_relative_adjustment()` | Compute pre-allocation responsibility (backward-looking) and capability (from allocation year onwards) adjustments |
 | `apply_deviation_constraint()`    | Limit extreme allocations                     |
 | `validate_weight_constraints()`   | Check weights sum correctly                   |
 

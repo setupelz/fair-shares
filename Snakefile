@@ -30,6 +30,7 @@ from fair_shares.library.utils.data.config import (
     needs_decomposition,
     ALL_GHG_CO2_CATEGORIES,
 )
+from fair_shares.library.utils.dataframes import determine_processing_categories
 
 # ---------------------------------------------------------------------------
 # Configuration from command line
@@ -43,15 +44,19 @@ active_gini_source = config.get("active_gini_source", None)
 active_lulucf_source = config.get("active_lulucf_source", None)
 active_target_source = config.get("active_target_source", None)
 rcb_generator = config.get("rcb_generator", None)
+harmonisation_year = config.get("harmonisation_year", None)
+# Coerce to int if passed as string from Snakemake --config
+if harmonisation_year is not None:
+    harmonisation_year = int(harmonisation_year)
 
-# Minimal check — all other validation delegated to Pydantic via compose_config rule
+# Minimal checks — all other validation delegated to Pydantic via compose_config rule
 if emission_category is None:
     raise ValueError(
         "Required parameter: emission_category\n"
         "Example: snakemake --config emission_category=co2-ffi "
         "active_emissions_source=primap-202503 active_gdp_source=wdi-2025 "
         "active_population_source=un-owid-2025 active_gini_source=unu-wider-2025 "
-        "active_target_source=pathway\n\n"
+        "active_target_source=pathway active_lulucf_source=melo-2026\n\n"
         "For custom allocations, use: notebooks/301_custom_fair_share_allocation.py"
     )
 
@@ -117,6 +122,23 @@ elif _target_yaml.get("generator"):
 else:
     _allocation_mode = "budget"
 
+# Notebook 107 (LULUCF) is needed only for NGHGI corrections: co2 and all-ghg.
+# Bunker data (previously bundled in 107) is now a separate rule below.
+_needs_lulucf = emission_category in ("co2", "all-ghg")
+
+# Bunker data is needed for all non-pathway targets (RCBs must subtract
+# international bunker emissions before country allocation).
+_needs_bunkers = _allocation_mode != "pathway"
+
+
+if _needs_lulucf and active_lulucf_source is None:
+    raise ValueError(
+        f"Required parameter: active_lulucf_source\n"
+        f"emission_category='{emission_category}' with target='{active_target_source}' "
+        f"needs LULUCF preprocessing (NGHGI corrections and/or bunker data).\n"
+        f"Example: --config ... active_lulucf_source=melo-2026"
+    )
+
 # Resolve scenario source: per-target override → global default
 _scenario_source_key = (
     _target_yaml.get("scenario_source")
@@ -124,8 +146,8 @@ _scenario_source_key = (
 )
 _scenario_yaml = _full_yaml.get("scenarios", {}).get(_scenario_source_key, {}) if _scenario_source_key else {}
 
-# Scenario notebook: read from scenarios config (e.g. "104_data_preprocess_scenarios")
-_scenario_nb_stem = _scenario_yaml.get("notebook", "104_data_preprocess_scenarios")
+# Scenario notebook: read from scenarios config (e.g. "104_data_preprocess_scenarios_ar6")
+_scenario_nb_stem = _scenario_yaml.get("notebook", "104_data_preprocess_scenarios_ar6")
 
 # Master notebook: budget mode uses 100_rcbs, everything else uses 100_pathways.
 MASTER_NOTEBOOKS = {
@@ -168,14 +190,33 @@ if is_multi_category:
 else:
     SCENARIO_CATEGORIES = FINAL_CATEGORIES
 
+# For rcb-pathway decomposition, the scenario notebook runs for each
+# SCENARIO_CATEGORIES entry.  Each run may produce multiple CSVs (e.g.
+# co2 → co2, co2-ffi, co2-lulucf).  Compute the full set from the scenario
+# source's available_categories so the Snakefile declares exactly what will
+# be created — works for AR6, SCI, or any future scenario source.
+_SCENARIO_SUPPORTED = _scenario_yaml.get("data_parameters", {}).get(
+    "available_categories", []
+)
+_SCENARIO_NB_ALL_OUTPUTS = set()
+if is_multi_category and _allocation_mode == "rcb-pathway":
+    for _cat in SCENARIO_CATEGORIES:
+        _info = determine_processing_categories(_cat, _SCENARIO_SUPPORTED)
+        _SCENARIO_NB_ALL_OUTPUTS.update(_info["final"])
+    # The CO2 component CSV is owned by rule 2 (notebook 106) — exclude it here.
+    _SCENARIO_NB_ALL_OUTPUTS.discard(get_co2_component(emission_category))
+
 # ---------------------------------------------------------------------------
 # Helper: build notebook execution command
 # ---------------------------------------------------------------------------
 
-def notebook_cmd_list(input_nb, output_nb, emission_category_override=None):
+def notebook_cmd_list(input_nb, output_nb, emission_category_override=None,
+                      alignment_categories=None):
     """Build notebook execution command as list (for subprocess.run in run: blocks).
 
     Uses emission_category_override if given, otherwise the global emission_category.
+    alignment_categories: comma-separated string of ALL categories for country alignment
+    (used in decomposition to ensure consistent analysis_countries across passes).
     """
     cat = emission_category_override or emission_category
     cmd = [
@@ -192,6 +233,8 @@ def notebook_cmd_list(input_nb, output_nb, emission_category_override=None):
     ]
     if active_lulucf_source is not None:
         cmd += ["--param", f"active_lulucf_source={active_lulucf_source}"]
+    if alignment_categories is not None:
+        cmd += ["--param", f"alignment_categories={alignment_categories}"]
     if _scenario_source_key is not None:
         cmd += ["--param", f"active_scenario_source={_scenario_source_key}"]
     return cmd
@@ -232,7 +275,7 @@ rule compose_config:
             validated_config, source_id = build_data_config(
                 emission_category=params.emission_category,
                 active_sources=params.active_sources,
-                harmonisation_year=None,
+                harmonisation_year=harmonisation_year,
             )
         except (ConfigurationError, DataLoadingError, ValueError) as e:
             raise WorkflowError(
@@ -318,24 +361,43 @@ rule preprocess_gini:
         notebook_cmd("{input.notebook}", "{output.notebook}")
 
 
-rule preprocess_lulucf:
-    """Preprocess LULUCF data (NGHGI-consistent categories).
+if _needs_lulucf:
 
-    Runs notebook 107 after notebook 101 to produce NGHGI-consistent
-    co2-lulucf, co2, non-co2, all-ghg, and all-ghg-ex-co2-lulucf.
-    Overwrites the PRIMAP BM co2-lulucf with Melo NGHGI data.
-    """
-    input:
-        notebook=f"{NOTEBOOK_DIR}/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
-        config=f"{OUTPUT_DIR}/config.yaml",
-        emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
-    output:
-        notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
-        nghgi_world=f"{OUTPUT_DIR}/intermediate/emissions/world_co2-lulucf_timeseries.csv",
-        nghgi_metadata=f"{OUTPUT_DIR}/intermediate/emissions/lulucf_metadata.yaml",
-        bunker_csv=f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv",
-    shell:
-        notebook_cmd("{input.notebook}", "{output.notebook}")
+    rule preprocess_lulucf:
+        """Preprocess LULUCF data (NGHGI-consistent categories).
+
+        Runs notebook 107 after notebook 101 to produce NGHGI-consistent
+        co2-lulucf, co2, non-co2, all-ghg, and all-ghg-ex-co2-lulucf.
+        Overwrites the PRIMAP BM co2-lulucf with Melo NGHGI data.
+        """
+        input:
+            notebook=f"{NOTEBOOK_DIR}/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+            config=f"{OUTPUT_DIR}/config.yaml",
+            emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
+        output:
+            notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+            nghgi_world=f"{OUTPUT_DIR}/intermediate/emissions/world_co2-lulucf_timeseries.csv",
+            nghgi_metadata=f"{OUTPUT_DIR}/intermediate/emissions/lulucf_metadata.yaml",
+        shell:
+            notebook_cmd("{input.notebook}", "{output.notebook}")
+
+
+if _needs_bunkers:
+
+    rule preprocess_bunkers:
+        """Extract international bunker fuel CO2 from GCB data.
+
+        Bunker emissions are subtracted from global RCBs before country
+        allocation.  Independent of LULUCF — uses GCB fossil emissions data.
+        """
+        input:
+            notebook=f"{NOTEBOOK_DIR}/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            config=f"{OUTPUT_DIR}/config.yaml",
+        output:
+            notebook=f"{OUTPUT_DIR}/notebooks/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            bunker_csv=f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv",
+        shell:
+            notebook_cmd("{input.notebook}", "{output.notebook}")
 
 
 # ---------------------------------------------------------------------------
@@ -358,7 +420,7 @@ if uses_scenarios:
                     notebook=f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb",
                     config=f"{OUTPUT_DIR}/config.yaml",
                     emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
-                    lulucf_notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
                     adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
@@ -371,7 +433,8 @@ if uses_scenarios:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
                     emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
-                    lulucf_notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                    bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                     scenario_adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
                 output:
                     notebook=scenario_nb_out,
@@ -411,24 +474,52 @@ if uses_scenarios:
                         f"{OUTPUT_DIR}/intermediate/emissions/emiss_{{cat}}_timeseries.csv",
                         cat=SCENARIO_CATEGORIES,
                     ),
-                    lulucf_notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
                     adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
+                    # Declare all scenario CSVs that notebook 104 produces
+                    # (computed via determine_processing_categories, excluding
+                    # the CO2 component which rule 2 owns via notebook 106).
+                    derivation_scenarios=expand(
+                        f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{{cat}}_timeseries.csv",
+                        cat=sorted(_SCENARIO_NB_ALL_OUTPUTS),
+                    ),
+                    # non-co2 derived here (before rule 2 overwrites co2-ffi with RCB sources)
+                    non_co2_scenarios=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
                 run:
                     import subprocess
                     from pathlib import Path
 
                     scenario_nb = f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb"
 
-                    # Run scenario notebook for every category — it produces adjustment
-                    # scalars and scenario CSVs that the derivation sources need.
+                    # Run 104 for all SCENARIO_CATEGORIES.  The CO2 component run
+                    # produces NGHGI sub-components (co2-lulucf) that the master
+                    # notebook needs.  Its scenarios_{co2_comp}_timeseries.csv is an
+                    # undeclared side-effect — harmless, overwritten by 106 in rule 2.
                     for cat in SCENARIO_CATEGORIES:
                         print(f"[decomposition/scenarios] Running {Path(scenario_nb).stem} for emission_category={cat}")
                         subprocess.run(
                             notebook_cmd_list(scenario_nb, output.notebook, cat),
                             check=True,
                         )
+
+                    # Derive non-co2 scenarios NOW, while co2-ffi still has AR6 source
+                    # labels (from 104).  Rule 2 overwrites co2-ffi with RCB sources
+                    # (e.g. lamboll_2023) which would cause a source-index mismatch.
+                    from fair_shares.library.utils import ensure_string_year_columns
+                    from fair_shares.library.utils.data.non_co2 import derive_non_co2_world_scenarios
+                    import pandas as _pd
+
+                    _scen_dir = Path(f"{OUTPUT_DIR}/intermediate/scenarios")
+                    _idx = ["climate-assessment", "quantile", "source", "iso3c", "unit", "emission-category"]
+                    _ffi = _pd.read_csv(_scen_dir / "scenarios_co2-ffi_timeseries.csv").set_index(_idx)
+                    _ffi = ensure_string_year_columns(_ffi)
+                    _ghg = _pd.read_csv(_scen_dir / "scenarios_all-ghg-ex-co2-lulucf_timeseries.csv").set_index(_idx)
+                    _ghg = ensure_string_year_columns(_ghg)
+                    _nc = derive_non_co2_world_scenarios(_ghg, _ffi)
+                    _nc.reset_index().to_csv(output.non_co2_scenarios, index=False)
+                    print(f"[decomposition/scenarios] Derived non-co2 scenarios: {len(_nc)} rows")
 
         rule preprocess_decomposition_scenarios:
             """Preprocess scenario data for decomposition runs.
@@ -447,16 +538,24 @@ if uses_scenarios:
                     f"{OUTPUT_DIR}/intermediate/emissions/emiss_{{cat}}_timeseries.csv",
                     cat=SCENARIO_CATEGORIES,
                 ),
-                lulucf_notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+                lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                 scenario_adjustments=(
                     f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml"
                     if _allocation_mode == "rcb-pathway" else []
                 ),
             output:
                 notebook=scenario_nb_out,
-                scenarios=expand(
-                    f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{{cat}}_timeseries.csv",
-                    cat=SCENARIO_CATEGORIES,
+                # In rcb-pathway mode, notebook 104 already produced the derivation-
+                # source CSVs (declared by preprocess_scenarios_for_decomposition).
+                # This rule only runs notebook 106 for the CO2 component.
+                scenarios=(
+                    [f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{_co2_comp}_timeseries.csv"]
+                    if _allocation_mode == "rcb-pathway"
+                    else expand(
+                        f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{{cat}}_timeseries.csv",
+                        cat=SCENARIO_CATEGORIES,
+                    )
                 ),
             run:
                 import subprocess
@@ -514,28 +613,32 @@ if is_multi_category:
             print(f"[derive] non-co2 emissions: {len(non_co2)} rows")
 
 
-    rule derive_non_co2_scenarios:
-        """Derive non-CO2 scenarios by subtraction."""
-        input:
-            co2_ffi=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_co2-ffi_timeseries.csv",
-            allghg_ex=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_all-ghg-ex-co2-lulucf_timeseries.csv",
-        output:
-            non_co2=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
-        run:
-            import pandas as pd
-            from fair_shares.library.utils import ensure_string_year_columns
-            from fair_shares.library.utils.data.non_co2 import derive_non_co2_world_scenarios
+    # For rcb-pathway, non-co2 scenarios are derived inside
+    # preprocess_scenarios_for_decomposition (before 106 overwrites co2-ffi).
+    if _allocation_mode != "rcb-pathway":
 
-            idx_cols = ["climate-assessment", "quantile", "source", "iso3c", "unit", "emission-category"]
+        rule derive_non_co2_scenarios:
+            """Derive non-CO2 scenarios by subtraction."""
+            input:
+                co2_ffi=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_co2-ffi_timeseries.csv",
+                allghg_ex=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_all-ghg-ex-co2-lulucf_timeseries.csv",
+            output:
+                non_co2=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
+            run:
+                import pandas as pd
+                from fair_shares.library.utils import ensure_string_year_columns
+                from fair_shares.library.utils.data.non_co2 import derive_non_co2_world_scenarios
 
-            co2_ffi = pd.read_csv(input.co2_ffi).set_index(idx_cols)
-            co2_ffi = ensure_string_year_columns(co2_ffi)
-            allghg_ex = pd.read_csv(input.allghg_ex).set_index(idx_cols)
-            allghg_ex = ensure_string_year_columns(allghg_ex)
+                idx_cols = ["climate-assessment", "quantile", "source", "iso3c", "unit", "emission-category"]
 
-            non_co2 = derive_non_co2_world_scenarios(allghg_ex, co2_ffi)
-            non_co2.reset_index().to_csv(output.non_co2, index=False)
-            print(f"[derive] non-co2 scenarios: {len(non_co2)} rows")
+                co2_ffi = pd.read_csv(input.co2_ffi).set_index(idx_cols)
+                co2_ffi = ensure_string_year_columns(co2_ffi)
+                allghg_ex = pd.read_csv(input.allghg_ex).set_index(idx_cols)
+                allghg_ex = ensure_string_year_columns(allghg_ex)
+
+                non_co2 = derive_non_co2_world_scenarios(allghg_ex, co2_ffi)
+                non_co2.reset_index().to_csv(output.non_co2, index=False)
+                print(f"[derive] non-co2 scenarios: {len(non_co2)} rows")
 
 
 # ---------------------------------------------------------------------------
@@ -556,7 +659,8 @@ rule master_preprocess:
         notebook=master_notebook,
         config=f"{OUTPUT_DIR}/config.yaml",
         emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
-        lulucf_notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+        lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+        bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
         gdp_notebook=f"{OUTPUT_DIR}/notebooks/102_data_preprocess_gdp_{active_gdp_source}.ipynb",
         population_notebook=f"{OUTPUT_DIR}/notebooks/103_data_preprocess_population_{active_population_source}.ipynb",
         gini_notebook=f"{OUTPUT_DIR}/notebooks/105_data_preprocess_gini_{active_gini_source}.ipynb",
@@ -577,8 +681,21 @@ rule master_preprocess:
                 check=True,
             )
         else:
-            # Decomposition: iterate over FINAL_CATEGORIES (co2-component + non-co2)
+            # Decomposition: iterate over FINAL_CATEGORIES (co2-component + non-co2).
+            # All passes share the same alignment_categories so that
+            # analysis_countries is the intersection across ALL categories —
+            # prevents the second pass from overwriting GDP/pop/gini with a
+            # different country set than the first pass.
             pathways_nb = f"{NOTEBOOK_DIR}/100_data_preprocess_pathways.ipynb"
+
+            # Compute ALL emission categories across all passes
+            _all_align_cats = set()
+            for _c in FINAL_CATEGORIES:
+                _info = determine_processing_categories(
+                    _c, _SCENARIO_SUPPORTED or list(EMISSION_CATEGORIES)
+                )
+                _all_align_cats.update(_info["final"])
+            _align_str = ",".join(sorted(_all_align_cats))
 
             for cat in FINAL_CATEGORIES:
                 # CO2 component uses the target-appropriate master notebook;
@@ -592,6 +709,7 @@ rule master_preprocess:
 
                 print(f"[decomposition] Running master notebook for emission_category={cat}")
                 subprocess.run(
-                    notebook_cmd_list(nb_in, nb_out, cat),
+                    notebook_cmd_list(nb_in, nb_out, cat,
+                                     alignment_categories=_align_str),
                     check=True,
                 )

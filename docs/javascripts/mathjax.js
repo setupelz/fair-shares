@@ -12,5 +12,13 @@ window.MathJax = {
 };
 
 document$.subscribe(() => {
-  MathJax.typesetPromise();
+  if (typeof MathJax !== "undefined" && MathJax.startup) {
+    MathJax.startup.promise.then(() => {
+      const content = document.querySelector(".md-content");
+      if (content) {
+        MathJax.typesetClear([content]);
+        MathJax.typesetPromise([content]);
+      }
+    });
+  }
 });

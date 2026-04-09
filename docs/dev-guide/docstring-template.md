@@ -65,7 +65,7 @@ def my_new_allocation(
         Normative foundations and equity principles underlying allocation approaches.
     `Entry Points Framework <https://setupelz.github.io/fair-shares/science/principle-to-code/#the-five-entry-points>`_
         Five-stage structure for transparent fair share documentation: foundational principles,
-        allocation quantity, allocation approach, indicators, implications for all others [Pelz 2025b].
+        allocation quantity, allocation approach, indicators, implications for all others [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
     """
     pass
 ```

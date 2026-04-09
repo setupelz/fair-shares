@@ -51,8 +51,9 @@ def calculate_relative_adjustment(
     Notes
     -----
     This function operationalizes both the Polluter Pays Principle (via historical
-    responsibility adjustments) and the Ability to Pay Principle (via economic
-    capability adjustments).
+    responsibility adjustments, backward-looking from the allocation year) and the
+    Ability to Pay Principle (via economic capability adjustments, from the
+    allocation year onwards).
 
     Negative or NaN values are clamped to 1.0 before transformation to avoid
     numerical issues and ensure valid results for all inputs.
@@ -139,6 +140,55 @@ def apply_deviation_constraint(
     return constrained_shares.divide(constrained_totals)
 
 
+def calculate_lognormal_above_threshold_fraction(
+    mean_incomes: np.ndarray,
+    gini_coefficients: np.ndarray,
+    income_floor: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    r"""
+    Compute the above-threshold income fraction using the lognormal income model.
+
+    For each country, returns (1 - L(p)) -- the share of total income earned by
+    individuals above the development threshold -- and p, the population fraction
+    below the threshold.
+
+    This is the core of the GDR lognormal machinery used by
+    ``calculate_gini_adjusted_gdp`` (capability side).
+
+    Parameters
+    ----------
+    mean_incomes
+        Array of mean income per capita for each country (GDP / population).
+    gini_coefficients
+        Array of Gini coefficients (0-1) for each country.
+    income_floor
+        Development threshold in currency units per capita per year.
+
+    Returns
+    -------
+    above_threshold_income_fraction
+        (1 - L(p)) for each country -- the fraction of total income earned
+        by people above the threshold.
+    below_threshold_population_fraction
+        p for each country -- the fraction of population below the threshold.
+    """
+    # sigma from Gini: sigma = sqrt(2) * Phi^{-1}((1+G)/2)
+    sigmas = 2 * erfinv(gini_coefficients)
+
+    # mu = ln(mean) - sigma^2 / 2
+    sigmas_2d = sigmas.reshape(-1, 1) if mean_incomes.ndim > 1 else sigmas
+    mus = np.log(mean_incomes) - (sigmas_2d**2) / 2
+
+    # p = Phi((ln(floor) - mu) / sigma)
+    floor_proportions = norm.cdf((np.log(income_floor) - mus) / sigmas_2d)
+
+    # L(p) = Phi(Phi^{-1}(p) - sigma)
+    floor_income_shares = norm.cdf(norm.ppf(floor_proportions) - sigmas_2d)
+
+    above_threshold_income_fraction = 1 - floor_income_shares
+    return above_threshold_income_fraction, floor_proportions
+
+
 def calculate_gini_adjusted_gdp(
     total_gdps: np.ndarray,
     gini_coefficients: np.ndarray,
@@ -149,9 +199,12 @@ def calculate_gini_adjusted_gdp(
     r"""
     Gini-adjusted GDP (capability) using the GDR development threshold.
 
-    Implements the Greenhouse Development Rights (GDR) framework approach to
-    national capability (Baer et al. 2009): only income **above** a development
-    threshold counts as "ability to pay" for climate action.
+    Implements an interpretation of the Greenhouse Development Rights (GDR)
+    framework's capability metric for entitlement allocation (Baer et al. 2009).
+    Note: GDR was originally designed for burden-sharing; fair-shares adapts its
+    capability calculation for use in an entitlement context. Only income
+    **above** a development threshold counts as "ability to pay" for climate
+    action.
 
     For each individual, their first ``income_floor`` of annual income is exempt —
     it's needed for basic human development. Only the excess above the floor
@@ -259,26 +312,19 @@ def calculate_gini_adjusted_gdp(
             f"Gini-adjusted GDP. Cannot calculate mean income per capita with zero population."
         )
 
-    # Calculate log-normal distribution parameters for each country
-    sigmas = 2 * erfinv(gini_coefficients)
-
     # Calculate mean income per capita for each country
     mean_incomes = total_gdps / total_populations
 
-    # mu = ln(mean income) - sigma^2 / 2 for each country
-    # Reshape sigmas to match the 2D structure of mean_incomes
-    sigmas_2d = sigmas.reshape(-1, 1) if mean_incomes.ndim > 1 else sigmas
-    mus = np.log(mean_incomes) - (sigmas_2d**2) / 2
-
-    # Calculate floor proportions for each country
-    floor_proportions = norm.cdf((np.log(income_floor) - mus) / sigmas_2d)
-
-    # Calculate income shares below floor using Lorenz function for each country
-    floor_income_shares = norm.cdf(norm.ppf(floor_proportions) - sigmas_2d)
+    # Use shared lognormal helper for L(p) computation
+    above_threshold_income_fraction, floor_proportions = (
+        calculate_lognormal_above_threshold_fraction(
+            mean_incomes, gini_coefficients, income_floor
+        )
+    )
 
     # Calculate adjusted GDPs for each country (GDR capability calculation)
     # Step 1: Total income of above-threshold people
-    above_threshold_income = total_gdps * (1 - floor_income_shares)
+    above_threshold_income = total_gdps * above_threshold_income_fraction
     # Step 2: Subtract the threshold amount for each above-threshold person
     # (their income up to the threshold is exempt, like a tax-free allowance)
     above_threshold_fractions = 1 - floor_proportions

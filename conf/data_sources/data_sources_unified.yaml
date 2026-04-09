@@ -37,8 +37,8 @@ emissions:
 # --- GDP ---------------------------------------------------------------------
 gdp:
   wdi-2025:
-    path_ppp: "data/gdp/wdi-2025/API_NY.GDP.MKTP.PP.CD_DS2_en_csv_v2_1090665.csv"
-    path_mer: "data/gdp/wdi-2025/API_NY.GDP.MKTP.CD_DS2_en_csv_v2_5607117.csv"
+    path_ppp: "data/gdp/wdi-2025/API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_1004.csv"
+    path_mer: "data/gdp/wdi-2025/API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv"
     data_parameters:
       gdp_variant: "PPP" # "PPP" or "MER"
       world_key: "WLD"
@@ -83,7 +83,7 @@ scenarios:
   ar6:
     path: "data/scenarios/ipcc_ar6_gidden/ar6_gidden.zip"
     format: "iamc-zip"
-    notebook: "104_data_preprocess_scenarios"
+    notebook: "104_data_preprocess_scenarios_ar6"
     data_parameters:
       available_categories:
         [co2-ffi, co2-lulucf, co2, non-co2, all-ghg, all-ghg-ex-co2-lulucf]
@@ -119,7 +119,6 @@ targets:
           path: "output/{source_id}/intermediate/emissions/world_co2-lulucf_timeseries.csv"
         bunkers:
           path: "output/{source_id}/intermediate/emissions/bunker_timeseries.csv"
-        ar6_constants_path: "data/rcbs/ar6_category_constants.yaml"
         precautionary_lulucf: true
 
   # RCB converted to annual pathways

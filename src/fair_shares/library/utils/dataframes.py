@@ -463,7 +463,7 @@ def determine_processing_categories(
         create_all_other = False
         final_categories = ["co2", "co2-ffi", "co2-lulucf"]
     elif requested_category == "non-co2":
-        # non-co2 is derived (not a raw PRIMAP category), just process it directly
+        # non-co2 is derived (not a raw emissions category), just process it directly
         process_categories = ["non-co2"]
         create_all_other = False
         final_categories = ["non-co2"]

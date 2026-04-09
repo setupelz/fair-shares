@@ -404,12 +404,12 @@ def check_parameter_consistency() -> list[ValidationResult]:
     core_allocation_params = {
         "allocation_year",
         "first_allocation_year",
-        "responsibility_weight",
+        "pre_allocation_responsibility_weight",
         "capability_weight",
-        "historical_responsibility_year",
-        "responsibility_per_capita",
-        "responsibility_exponent",
-        "responsibility_functional_form",
+        "pre_allocation_responsibility_year",
+        "pre_allocation_responsibility_per_capita",
+        "pre_allocation_responsibility_exponent",
+        "pre_allocation_responsibility_functional_form",
         "capability_per_capita",
         "capability_exponent",
         "capability_functional_form",
@@ -507,7 +507,7 @@ def check_parameter_consistency() -> list[ValidationResult]:
         return results
 
     # Extract parameter names mentioned in docs using backticks
-    # Matches patterns like `allocation_year`, `responsibility_weight`, etc.
+    # Matches patterns like `allocation_year`, `pre_allocation_responsibility_weight`, etc.
     doc_param_pattern = re.compile(r"`([a-z_]+)`")
     doc_params = {
         match.group(1)
@@ -535,7 +535,7 @@ def check_parameter_consistency() -> list[ValidationResult]:
     important_params = {
         "allocation_year",
         "first_allocation_year",
-        "responsibility_weight",
+        "pre_allocation_responsibility_weight",
         "capability_weight",
         "income_floor",
         "max_deviation_sigma",

@@ -17,13 +17,13 @@ Your data must be in standard IAMC format with columns:
 Required Variables by Approach
 ------------------------------
 - equal-per-capita-budget: Population
-- per-capita-adjusted-budget: Population, Emissions (for responsibility),
+- per-capita-adjusted-budget: Population, Emissions (for pre-allocation responsibility),
   GDP|PPP (for capability)
 
 Data Coverage
 -------------
 Your data should span from `allocation_start_year` (typically 1990 for
-historical responsibility) through `budget_end_year` (your model's final
+pre-allocation responsibility) through `budget_end_year` (your model's final
 timestep, e.g., 2100 or 2110).
 
 Example Usage
@@ -99,7 +99,7 @@ def load_iamc_data(
         Default: "Population"
     emissions_variable
         IAMC variable name for emissions data.
-        Required for responsibility-adjusted approaches.
+        Required for pre-allocation-responsibility-adjusted approaches.
         Examples: "Emissions|CO2", "Emissions|Kyoto Gases"
     gdp_variable
         IAMC variable name for GDP data.
@@ -110,7 +110,7 @@ def load_iamc_data(
         Regions not in this list (e.g., "World") are excluded.
         If None, includes all regions except "World".
     allocation_start_year
-        First year of data required (for historical responsibility).
+        First year of data required (for pre-allocation responsibility).
         Default: 1990
     budget_end_year
         Last year of data required (model final timestep).

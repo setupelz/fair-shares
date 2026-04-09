@@ -68,7 +68,7 @@ class AllocationInputs(BaseModel):
     # Optional inputs for adjustments
     gdp_ts: TimeseriesDataFrame | None = Field(
         None,
-        description="GDP time series data (required for capability adjustments)",
+        description="GDP time series data (required for capability adjustments, used from allocation year onwards)",
     )
     gini_s: pd.DataFrame | None = Field(
         None,
@@ -76,19 +76,19 @@ class AllocationInputs(BaseModel):
     )
     country_actual_emissions_ts: TimeseriesDataFrame | None = Field(
         None,
-        description="Country historical emissions (required for responsibility adjustments)",
+        description="Country historical emissions (required for pre-allocation responsibility adjustments)",
     )
     world_scenario_emissions_ts: TimeseriesDataFrame | None = Field(
         None,
         description="World scenario emissions (required for pathway allocations)",
     )
 
-    # Historical responsibility parameters (when applicable)
-    historical_responsibility_year: int | None = Field(
+    # Pre-allocation responsibility parameters (when applicable)
+    pre_allocation_responsibility_year: int | None = Field(
         None,
         ge=1800,
         le=2100,
-        description="Base year for historical responsibility calculation",
+        description="Base year for pre-allocation responsibility calculation",
     )
 
     model_config = {"arbitrary_types_allowed": True}

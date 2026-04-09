@@ -20,7 +20,7 @@ def infeasible_test_data():
 
     Design:
     - Small country (AAA) has very high initial emissions
-    - But after responsibility adjustment, gets tiny target share
+    - But after pre-allocation responsibility adjustment, gets tiny target share
     - This creates negative long-run share requirement
     """
     years = [str(y) for y in range(2015, 2051)]
@@ -110,9 +110,9 @@ class TestStrictFalseMode:
                 world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
                 first_allocation_year=2020,
                 emission_category="co2-ffi",
-                responsibility_weight=0.4,
+                pre_allocation_responsibility_weight=0.4,
                 capability_weight=0.4,
-                historical_responsibility_year=2015,
+                pre_allocation_responsibility_year=2015,
                 strict=True,  # Explicit
             )
 
@@ -126,9 +126,9 @@ class TestStrictFalseMode:
             world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.4,
+            pre_allocation_responsibility_weight=0.4,
             capability_weight=0.4,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
             strict=False,
         )
 
@@ -150,9 +150,9 @@ class TestStrictFalseMode:
             world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.4,
+            pre_allocation_responsibility_weight=0.4,
             capability_weight=0.4,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
             strict=False,
         )
 
@@ -176,9 +176,9 @@ class TestStrictFalseMode:
             world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.4,
+            pre_allocation_responsibility_weight=0.4,
             capability_weight=0.4,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
             strict=False,
         )
 
@@ -199,9 +199,9 @@ class TestStrictFalseMode:
             world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.4,
+            pre_allocation_responsibility_weight=0.4,
             capability_weight=0.4,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
             strict=False,
         )
 
@@ -241,9 +241,9 @@ class TestStrictParameterPropagation:
             world_scenario_emissions_ts=infeasible_test_data["world_pathway"],
             first_allocation_year=2020,
             emission_category="co2-ffi",
-            responsibility_weight=0.3,
+            pre_allocation_responsibility_weight=0.3,
             capability_weight=0.3,
-            historical_responsibility_year=2015,
+            pre_allocation_responsibility_year=2015,
             strict=False,
         )
 

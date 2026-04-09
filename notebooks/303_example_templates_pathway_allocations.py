@@ -23,7 +23,7 @@
 # **What's included:**
 #
 # - **Equal per capita** - Operationalizes equal rights to atmosphere (annual shares)
-# - **Adjusted** - Operationalizes historical responsibility and capability (CBDR-RC)
+# - **Adjusted** - Operationalizes pre-allocation responsibility and capability (CBDR-RC)
 # - **Gini-adjusted** - Adds within-country inequality adjustment for subsistence protection
 # - **Cumulative convergence** - Smooth transitions while preserving cumulative equity budgets
 #
@@ -73,7 +73,7 @@ project_root = here()
 allocation_folder = "reference_pathway_allocations_rcb_pathways"
 
 # Emission category: "co2-ffi" | "co2-lulucf" | "co2" | "non-co2" | "all-ghg" | "all-ghg-ex-co2-lulucf"
-emission_category = "co2-ffi"
+emission_category = "all-ghg"
 
 # Data sources
 active_sources = {
@@ -102,7 +102,7 @@ desired_harmonisation_year = 2020
 # Six principle-based approaches:
 #
 # 1. Equal per capita — equal rights to atmosphere (annual shares)
-# 2. Adjusted — historical responsibility + capability (CBDR-RC)
+# 2. Adjusted — pre-allocation responsibility + capability (CBDR-RC)
 # 3. Gini-adjusted — within-country inequality adjustment for subsistence protection
 # 4. Cumulative convergence — smooth transitions preserving cumulative equity budgets
 # 5. Cumulative convergence adjusted — convergence + CBDR-RC adjustments
@@ -121,13 +121,13 @@ allocations = {
         }
     ],
     # APPROACH 2: Per Capita Adjusted Pathway
-    # Principle: Historical responsibility + capability (CBDR-RC)
+    # Principle: Pre-allocation responsibility + capability (CBDR-RC)
     "per-capita-adjusted": [
-        # Configuration A: Historical responsibility only
+        # Configuration A: Pre-allocation responsibility only
         {
             "first_allocation_year": [2015],
-            "responsibility_weight": [1.0],
-            "historical_responsibility_year": [1990],
+            "pre_allocation_responsibility_weight": [1.0],
+            "pre_allocation_responsibility_year": [2000],
             "preserve_first_allocation_year_shares": [False],
         },
         # Configuration B: Capability only
@@ -139,9 +139,9 @@ allocations = {
         # Configuration C: Combined responsibility and capability
         {
             "first_allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
             "preserve_first_allocation_year_shares": [False],
         },
     ],
@@ -159,9 +159,9 @@ allocations = {
         # Configuration B: Responsibility plus Gini-adjusted capability
         {
             "first_allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
             "income_floor": [7500],
             "max_gini_adjustment": [0.8],
             "preserve_first_allocation_year_shares": [False],
@@ -172,6 +172,7 @@ allocations = {
     "cumulative-per-capita-convergence": [
         {
             "first_allocation_year": [2015],
+            "convergence_year": [2050],
             "strict": [False],
         }
     ],
@@ -180,9 +181,10 @@ allocations = {
     "cumulative-per-capita-convergence-adjusted": [
         {
             "first_allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
+            "convergence_year": [2050],
             "strict": [False],
         }
     ],
@@ -195,16 +197,18 @@ allocations = {
             "capability_weight": [1.0],
             "income_floor": [7500],
             "max_gini_adjustment": [0.8],
+            "convergence_year": [2050],
             "strict": [False],
         },
         # Configuration B: Responsibility plus Gini-adjusted capability
         {
             "first_allocation_year": [2015],
-            "responsibility_weight": [0.5],
+            "pre_allocation_responsibility_weight": [0.5],
             "capability_weight": [0.5],
-            "historical_responsibility_year": [2000],
+            "pre_allocation_responsibility_year": [2000],
             "income_floor": [7500],
             "max_gini_adjustment": [0.8],
+            "convergence_year": [2050],
             "strict": [False],
         },
     ],
@@ -332,9 +336,9 @@ plt.show()
 # %%
 allocation_param_prefixes = {
     "first-allocation-year": "y",
-    "responsibility-weight": "rw",
+    "pre-allocation-responsibility-weight": "rw",
     "capability-weight": "cw",
-    "historical-responsibility-year": "hr",
+    "pre-allocation-responsibility-year": "hr",
     "income-floor": "floor",
     "max-gini-adjustment": "gini",
     "convergence-year": "cy",

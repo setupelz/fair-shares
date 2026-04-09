@@ -66,6 +66,10 @@ active_population_source = None
 active_gini_source = None
 active_lulucf_source = None
 source_id = None
+# For decomposition: comma-separated list of ALL categories across passes.
+# analysis_countries is computed from the intersection of ALL these categories,
+# ensuring consistent country sets across co2 and non-co2 allocations.
+alignment_categories = None
 
 # %%
 _running_via_papermill = emission_category is not None
@@ -310,12 +314,28 @@ world_population = get_world_totals_timeseries(
 )
 
 # %%
-# Get countries with complete data over desired period
+# Get countries with complete data over desired period.
+# For decomposition, alignment_categories ensures ALL passes (co2 + non-co2)
+# use the same analysis_countries — otherwise each pass computes its own
+# intersection and the shared GDP/pop/gini files end up with inconsistent
+# country sets.
+_alignment_cats = (
+    alignment_categories.split(",") if alignment_categories else final_categories
+)
+
 emiss_analysis_countries = {}
-for category in final_categories:
-    if category in emissions_data:
+for category in _alignment_cats:
+    emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+    if emiss_path.exists():
+        if category in emissions_data:
+            emiss_df = emissions_data[category]
+        else:
+            emiss_df = pd.read_csv(emiss_path).set_index(
+                ["iso3c", "unit", "emission-category"]
+            )
+            emiss_df = ensure_string_year_columns(emiss_df)
         emiss_analysis_countries[category] = get_complete_iso3c_timeseries(
-            emissions_data[category],
+            emiss_df,
             expected_index_names=["iso3c", "unit", "emission-category"],
             start=1990,
             end=2019,
@@ -329,14 +349,17 @@ population_analysis_countries = get_complete_iso3c_timeseries(
 )
 gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 
-# Find intersection of all datasets
+# Find intersection of all datasets (including alignment categories)
 analysis_countries = (
     gdp_analysis_countries & population_analysis_countries & gini_analysis_countries
 )
 
-for category in final_categories:
-    if category in emiss_analysis_countries:
-        analysis_countries = analysis_countries & emiss_analysis_countries[category]
+for category in emiss_analysis_countries:
+    analysis_countries = analysis_countries & emiss_analysis_countries[category]
+
+if alignment_categories:
+    print(f"  Decomposition alignment: {len(analysis_countries)} countries "
+          f"from intersection of {_alignment_cats}")
 
 # %% [markdown]
 # ## Create data coverage summary

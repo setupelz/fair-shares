@@ -26,7 +26,7 @@ All examples use real data from PRIMAP (emissions), UN/OWID (population), World 
 
 **Direction:**
 
-- Earlier years → More historical emissions subtracted → High emitters may go negative
+- Earlier years → More cumulative emissions accounted for → High emitters may go negative
 - Later years → Less history considered → Allocations closer to current population shares
 
 **Example:** `equal-per-capita-budget` with varying `allocation_year`, showing remaining budget from 2020
@@ -49,79 +49,79 @@ _Example uses 1.5°C carbon budget (50% probability). Remaining budget = (cumula
 
 ---
 
-## responsibility_weight
+## pre_allocation_responsibility_weight and capability_weight
 
-**Effect:** Activates historical responsibility adjustments. Weights are **relative** — only the ratio of `responsibility_weight` to `capability_weight` matters (see [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)).
+**Effect:** These two weights jointly control CBDR-RC adjustments. They are **relative** — only their ratio matters, not their individual values. `(0.5, 0.5)` is identical to `(1.0, 1.0)` or `(0.3, 0.3)`. When one weight is 0, the other becomes the sole adjustment regardless of its value — `(0.0, 0.3)` is identical to `(0.0, 1.0)`. When both are 0, no adjustment is applied (pure equal per capita). See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization).
+
+`pre_allocation_responsibility_weight` activates per-capita rescaling based on cumulative per-capita emissions in [`pre_allocation_responsibility_year`, `allocation_year`). This is a **separate mechanism** from setting an early `allocation_year` — rescaling is multiplicative and always produces positive allocations if `allocation_year` is the present, whereas cumulative accounting can produce negative allocations (see [comparison table](#if-you-want-x-set-y-guide) below).
+
+`capability_weight` activates capability (ability to pay) adjustments based on GDP per capita from the allocation year onwards. Capability data before the allocation year is not used. When the allocation window extends past the last observed GDP year (default `wdi-2025` ends at 2023), the per-capita budget and pathway primitives forward-fill GDP per capita from the last observed year to cover the rest of the window — holding the cross-country capability ratios of that last year constant for every subsequent year. To use different post-observation capability dynamics (SSP2 projections, custom growth assumptions, or a future-extended WDI release), extend the input `gdp_ts` time series before calling the allocation function.
 
 **Direction:**
 
 - Both weights `0.0` → No adjustment (equal per capita)
-- `responsibility_weight > 0, capability_weight = 0` → Responsibility is the sole adjustment
-- Both non-zero → Balanced by their ratio (e.g., 0.7:0.3 = 70% responsibility, 30% capability)
+- One weight `> 0`, other `= 0` → That adjustment is the sole factor (the specific non-zero value is irrelevant)
+- Both non-zero → Balanced by their ratio (e.g., 0.7:0.3 = 70% pre-allocation responsibility, 30% capability)
 
-**Example:** `per-capita-adjusted-budget` varying `responsibility_weight` (with `capability_weight=0.0`)
+### Each adjustment in isolation
 
-| Country | weight=0.0 | weight=0.5 | weight=1.0 |
-| ------- | ---------- | ---------- | ---------- |
-| USA     | 4.0%       | 0.5%       | 0.5%       |
-| India   | 16.7%      | 8.2%       | 8.2%       |
-| Germany | 0.8%       | 0.1%       | 0.1%       |
+**Pre-allocation responsibility only** (`per-capita-adjusted-budget`, `capability_weight=0.0`):
 
-_Example uses `allocation_year=2020`, `historical_responsibility_year=1990`._
+| Country | No adjustment (both=0) | Pre-allocation responsibility only |
+| ------- | ---------------------- | ---------------------------------- |
+| USA     | 4.0%                   | 0.5%                               |
+| India   | 16.7%                  | 8.2%                               |
+| Germany | 0.8%                   | 0.1%                               |
 
-**Key insight:** Historical responsibility substantially reduces shares for high-emitting developed countries (USA: 4.0% to 0.5%, Germany: 0.8% to 0.1%). India's share also decreases (16.7% to 8.2%) because the adjustment redistributes toward countries with the lowest per capita historical emissions, which are not shown in this three-country excerpt. Note that `weight=0.5` and `weight=1.0` produce identical results here because `capability_weight=0.0` in both cases — any non-zero value with the other at zero normalizes to 100% weighting for that adjustment.
+_Uses `allocation_year=2020`, `pre_allocation_responsibility_year=1990`._
+
+Pre-allocation responsibility rescaling substantially reduces shares for high-emitting developed countries (USA: 4.0% → 0.5%, Germany: 0.8% → 0.1%). India's share also decreases (16.7% → 8.2%) because the adjustment redistributes toward countries with the lowest per capita historical emissions, which are not shown in this three-country excerpt.
+
+**Capability only** (`per-capita-adjusted-budget`, `pre_allocation_responsibility_weight=0.0`):
+
+| Country | No adjustment (both=0) | Capability only |
+| ------- | ---------------------- | --------------- |
+| USA     | 4.0%                   | 3.4%            |
+| India   | 16.7%                  | 16.9%           |
+| Germany | 0.8%                   | 0.7%            |
+
+_Uses `allocation_year=2020`._
+
+Capability adjustments (applied from the allocation year onwards) have a smaller magnitude effect. Wealthy countries see modest reductions (USA: 4.0% → 3.4%) while lower-GDP countries see small increases (India: 16.7% → 16.9%).
+
+### Varying the ratio (both weights non-zero)
+
+The ratio only matters when both weights are non-zero. Here the specific values matter because they determine how much each adjustment contributes:
+
+| Country | 100% pre-alloc resp. (1.0:0.0) | 70:30 | 50:50 | 30:70 | 100% capability (0.0:1.0) |
+| ------- | ------------------------------ | ----- | ----- | ----- | ------------------------- |
+| USA     | 0.5%                           | ←     | ←     | →     | 3.4%                      |
+| India   | 8.2%                           | →     | →     | →     | 16.9%                     |
+| Germany | 0.1%                           | ←     | ←     | →     | 0.7%                      |
+
+_Arrows indicate direction of interpolation between the two extremes. The exact intermediate values depend on data; the key point is that the ratio smoothly blends between pure pre-allocation responsibility and pure capability._
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 **Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
 
-**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility)
-
----
-
-## capability_weight
-
-**Effect:** Activates capability (ability to pay) adjustments. Like `responsibility_weight`, this is **relative** — only the ratio between the two weights matters.
-
-**Direction:**
-
-- Both weights `0.0` → No adjustment (equal per capita)
-- `capability_weight > 0, responsibility_weight = 0` → Capability is the sole adjustment
-- Both non-zero → Balanced by their ratio
-
-**Example:** `per-capita-adjusted-budget` varying `capability_weight` (with `responsibility_weight=0.0`)
-
-| Country | weight=0.0 | weight=0.5 | weight=1.0 |
-| ------- | ---------- | ---------- | ---------- |
-| USA     | 4.0%       | 3.4%       | 3.4%       |
-| India   | 16.7%      | 16.9%      | 16.9%      |
-| Germany | 0.8%       | 0.7%       | 0.7%       |
-
-_Example uses `allocation_year=2020`._
-
-**Key insight:** Capability adjustments have a smaller magnitude effect than historical responsibility adjustments. Wealthy countries see modest reductions (USA: 4.0% → 3.4%, Germany: 0.8% → 0.7%) while lower-GDP countries see small increases (India: 16.7% → 16.9%). As with responsibility above, `weight=0.5` and `weight=1.0` are identical here because the other weight is zero — both normalize to 100% capability weighting.
-
-<!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
-
-**Mathematical detail:** See [per_capita_adjusted_budget API](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget)
-
-**Theoretical basis:** See [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)
+**Theoretical basis:** See [Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility) · [Weight Normalization](https://setupelz.github.io/fair-shares/science/allocations/#weight-normalization)
 
 ---
 
 ## income_floor
 
-**Effect:** Sets a development threshold for capability calculations, following the Greenhouse Development Rights framework (Baer et al. 2009). For every person, only their income **above** this threshold counts towards "capability" or "ability to pay". Income up to the threshold is considered necessary for basic human development.
+**Effect:** Sets a development threshold for capability calculations, adapted from the Greenhouse Development Rights framework ([Baer 2009](https://doi.org/10.1080/13668790903195495); [Baer 2013](https://doi.org/10.1002/wcc.201)). Note that GDR was designed for burden-sharing; fair-shares uses its capability metric in an entitlement allocation context. For every person, only their income **above** this threshold counts towards "capability" or "ability to pay". Income up to the threshold is considered necessary for basic human development.
 
 **Direction:**
 
 - `floor=0` → All income counts toward capability (no development protection)
 - `floor=7500` → $7,500/year (2010 PPP) — GDR framework default, the level at which basic development indicators (nutrition, infant mortality, education) are broadly met
-- `floor=15000` → $15,000/year (2010 PPP) — strong protection for basic needs
+- `floor=15000` → $15,000/year (2010 PPP) subsistence threshold
 
 Higher floors increase the exempt portion, reducing measured capability for all countries and increasing their allocated share of emissions. The effect is largest for middle-income countries where a significant fraction of the population clusters around the threshold.
 
-**Example:** `per-capita-adjusted-gini-budget` varying `income_floor` (with `capability_weight=0.5`)
+**Example:** `per-capita-adjusted-gini-budget` varying `income_floor` (with `capability_weight=1.0`, `pre_allocation_responsibility_weight=0.0` — capability is the sole adjustment, so its specific value is arbitrary; 1.0 is used for clarity)
 
 | Country | floor=0 | floor=7500 | floor=15000 |
 | ------- | ------- | ---------- | ----------- |
@@ -141,29 +141,166 @@ _Example uses `allocation_year=2020`, Gini-adjusted capability calculation._
 
 ---
 
+## historical_discount_rate
+
+<!-- REFERENCE: calculate_responsibility_adjustment_data() in src/fair_shares/library/utils/math/adjustments.py -->
+
+**Effect:** Weights earlier historical emissions less than recent ones when computing pre-allocation responsibility adjustments. Available on all `*-adjusted` families -- `per-capita-adjusted`, `per-capita-adjusted-gini`, `cumulative-per-capita-convergence-adjusted`, and `cumulative-per-capita-convergence-gini-adjusted` (where `pre_allocation_responsibility_weight > 0`) -- not part of equal-per-capita accounting.
+
+**Direction:**
+
+- `rate=0.0` (default) → All historical emissions weighted equally (standard approach)
+- `rate=0.005` → 1850 emissions at ~43% weight relative to 2020
+- `rate=0.01` → Stronger discounting; 1850 emissions at ~18% weight
+
+Higher rates reduce the influence of early-industrialisation emissions. Countries that industrialised early (UK, Germany, USA) benefit most from discounting. Countries whose emissions grew recently (China, India) see relatively smaller changes because their emission mass is concentrated in recent decades where discount weights are near 1.0.
+
+**Key insight:** This parameter is contested in the literature. The physical argument: natural carbon sinks remove CO2 over time, so older emissions contribute less to current concentrations [Dekker 2025](https://doi.org/10.1038/s41558-025-02361-7); [Van Den Berg 2020](https://doi.org/10.1007/s10584-019-02368-y). The moral counterargument: responsibility for harm does not decay with time, and discounting systematically benefits the countries most responsible for cumulative warming [Meyer 2013](https://chicagounbound.uchicago.edu/cjil/vol13/iss2/15/); [Shue 2015](https://doi.org/10.1515/mopp-2013-0009); [Caney 2009](https://doi.org/10.1080/17449620903110300). The choice of any rate above 0.0 is a normative decision, not a technical one.
+
+**Mathematical detail:** See [Historical Emissions Discounting](https://setupelz.github.io/fair-shares/science/allocations/#historical-emissions-discounting)
+
+**Theoretical basis:** See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) · [Historical Responsibility](https://setupelz.github.io/fair-shares/science/allocations/#historical-responsibility)
+
+---
+
+## strict (Convergence Only)
+
+<!-- REFERENCE: find_minimum_convergence_speed() in src/fair_shares/library/utils/math/convergence.py -->
+
+**Effect:** Controls whether infeasible convergence targets raise an error or produce approximate results with warnings. Infeasibility occurs when a country's current emissions are so far from its target share that no valid convergence path exists within the allowed speed range — the solver would need negative or >100% long-run shares, which are physically meaningless.
+
+**Direction:**
+
+- `strict=True` (default) → Error on infeasibility. Use during research to catch impossible configurations early.
+- `strict=False` → Clips infeasible long-run shares to [0, 1], redistributes proportionally, reports per-country deviation ratios. Use during exploration to get results even when some targets are unreachable.
+
+**When infeasibility happens:**
+
+Aggressive equity configurations are the usual trigger. The more you push high-emitting countries toward small targets — via strong pre-allocation responsibility weighting, early allocation years, tight budgets, or combinations — the more likely the solver hits a mathematical wall. Short time horizons (few years between `first_allocation_year` and end of pathway) and low `max_convergence_speed` values also increase the chance.
+
+**Example:** `cumulative-per-capita-convergence-adjusted` with strong pre-allocation responsibility weighting
+
+| Configuration | USA | India | Germany |
+| ------------- | --- | ----- | ------- |
+| `strict=True`, moderate weights | ✓ feasible | ✓ feasible | ✓ feasible |
+| `strict=True`, aggressive weights + early start | ✗ raises error | — | — |
+| `strict=False`, same aggressive config | `0.72` (achieved 72% of target) | ✓ feasible | `0.85` (achieved 85%) |
+
+_Warning values show achieved/target cumulative share ratio. Feasible countries are unaffected by the fallback._
+
+**Key insight:** `strict=False` is a diagnostic tool, not a way to paper over bad configurations. If many countries show low ratios (<0.8), the configuration is asking for something the convergence mechanism can't deliver — consider relaxing weights, using a later allocation year, or extending the time horizon. If only 1-2 countries are slightly infeasible (ratios >0.95), the approximate result may be acceptable for exploratory analysis.
+
+**Mathematical detail:** See [Strict Parameter](https://setupelz.github.io/fair-shares/science/allocations/#strict-parameter-convergence-only)
+
+---
+
+## max_deviation_sigma
+
+<!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
+
+**Effect:** Limits how far any country's adjusted allocation can deviate from equal per capita, measured in standard deviations. Only relevant when applying scaling adjustments (pre-allocation responsibility, capability, or combinations). Without this constraint, extreme adjustment values can produce outlier allocations.
+
+**Direction:**
+
+- `None` (default) → No constraint; adjustments applied without limit
+- `2.0` → Allocations clipped to within ±2 standard deviations of equal per capita
+- Lower values → Tighter constraint, allocations closer to equal per capita
+
+**Key insight:** This is an opt-in tail-compression lever. Setting `max_deviation_sigma=2.0` compresses tails — disclose the choice.
+
+**Mathematical detail:** See [Maximum Deviation Constraint](https://setupelz.github.io/fair-shares/science/allocations/#maximum-deviation-constraint)
+
+---
+
+## preserve_allocation_year_shares / preserve_first_allocation_year_shares
+
+<!-- REFERENCE: equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
+<!-- REFERENCE: equal_per_capita() in src/fair_shares/library/allocations/pathways/per_capita.py -->
+
+**Effect:** Controls whether population (and adjustment) shares are recalculated dynamically over time or frozen at the allocation year. Budget approaches use `preserve_allocation_year_shares`; pathway approaches use `preserve_first_allocation_year_shares`.
+
+**Direction:**
+
+- `False` (default) → Dynamic: shares update with changing population and GDP over time
+- `True` → Preserved: shares fixed at allocation year values, constant across all periods
+
+**Key insight:** The default (dynamic) accounts for demographic change — countries with growing populations receive increasing shares over time. Preserved mode treats the allocation year as a snapshot: useful when you want to isolate the effect of equity parameters from demographic projections, or when population projections are uncertain. For budget approaches, dynamic mode uses cumulative population from the allocation year; preserved mode uses the single-year population at the allocation year.
+
+**Mathematical detail:** See [Dynamic vs Preserved Shares](https://setupelz.github.io/fair-shares/science/allocations/#dynamic-vs-preserved-shares)
+
+---
+
+## convergence_method (Convergence Only)
+
+<!-- REFERENCE: cumulative_per_capita_convergence() in src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py -->
+
+**Effect:** Selects the solver for computing convergence pathways. Two methods produce different transition dynamics while respecting the same cumulative budget constraints.
+
+**Direction:**
+
+- `"minimum-speed"` (default) → Finds the minimum exponential convergence speed that satisfies cumulative constraints. Produces the smoothest feasible transition.
+- `"sine-deviation"` → Iterative sine-shaped deviation from a per-capita-convergence baseline [Dekker 2025](https://doi.org/10.1038/s41558-025-02361-7). Front-loads the adjustment toward cumulative budget targets. Requires `convergence_year`.
+
+**Key insight:** `minimum-speed` is the workhorse — it requires no additional parameters and finds the least disruptive transition path. `sine-deviation` is more aggressive near-term: it front-loads adjustments using a sine-shaped correction, producing steeper initial changes but converging by `convergence_year`. Use `sine-deviation` when the policy question is specifically about accelerated near-term transitions.
+
+**Mathematical detail:** See [Convergence Method](https://setupelz.github.io/fair-shares/science/allocations/#convergence-method)
+
+---
+
+## max_convergence_speed (Convergence Only)
+
+<!-- REFERENCE: cumulative_per_capita_convergence() in src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py -->
+
+**Effect:** Upper bound on the exponential convergence speed parameter. Controls how fast allocations can transition from current emission shares to target shares in a single year.
+
+**Direction:**
+
+- `0.9` (default) → Allows up to 90% of the remaining gap to close per year
+- Lower values → Forces slower, more gradual transitions but increases the risk of infeasibility
+- Higher values (approaching 1.0) → Allows near-instantaneous convergence
+
+**Key insight:** This parameter is rarely tuned directly. The default of 0.9 permits fast transitions when needed while keeping the convergence mathematically stable. Lowering it constrains the solver — if the cumulative target requires rapid transition and `max_convergence_speed` is too low, the solver cannot find a feasible path. When `strict=True`, this manifests as an error; when `strict=False`, as deviation ratios below 1.0.
+
+**Mathematical detail:** See [Convergence Mechanism](https://setupelz.github.io/fair-shares/science/allocations/#convergence-mechanism-pathways-only)
+
+---
+
 ## Understanding Weights vs Exponents
 
 Two distinct parameter types control adjustments. They are often confused:
 
 | Parameter                 | Default | Meaning of default               | What it controls                                           |
 | ------------------------- | ------- | -------------------------------- | ---------------------------------------------------------- |
-| `responsibility_weight`   | 0.0     | Both at 0.0 → no adjustments     | Relative importance of responsibility vs capability        |
+| `pre_allocation_responsibility_weight`   | 0.0     | Both at 0.0 → no adjustments     | Relative importance of responsibility vs capability        |
 | `capability_weight`       | 0.0     | Both at 0.0 → no adjustments     | Relative importance of capability vs responsibility        |
-| `responsibility_exponent` | 1.0     | **Standard** proportional effect | Shape of the responsibility function (1=linear, 2=squared) |
+| `pre_allocation_responsibility_exponent` | 1.0     | **Standard** proportional effect | Shape of the responsibility function (1=linear, 2=squared) |
 | `capability_exponent`     | 1.0     | **Standard** proportional effect | Shape of the capability function (1=linear, 2=squared)     |
 
-**Key distinction:** Weights are **relative** — only the ratio between `responsibility_weight` and `capability_weight` matters. Setting either to any non-zero value (with the other at zero) gives that adjustment 100% of the weighting. Exponents control the functional _shape_ of each adjustment independently.
+**Key distinction:** Weights are **relative** — only the ratio between `pre_allocation_responsibility_weight` and `capability_weight` matters. Setting either to any non-zero value (with the other at zero) gives that adjustment 100% of the weighting. Exponents control the functional _shape_ of each adjustment independently.
+
+**Why exponents matter:** At 1.0 (default), the adjustment is proportional — doubling per-capita emissions doubles the rescaling effect. At values above 1.0, the adjustment becomes convex: high emitters or wealthy countries are penalised disproportionately more, operationalising the argument that marginal emissions or income matter more at higher levels. The default of 1.0 is the most transparent choice; deviations require explicit normative justification. See [Adjustment Shape Parameters](https://setupelz.github.io/fair-shares/science/allocations/#adjustment-shape-parameters) for details on exponents, functional forms, and per-capita vs absolute modes.
 
 ### "If you want X, set Y" guide
 
+Two **independent** mechanisms for historical responsibility exist. They can be used separately or together:
+
+| Mechanism | Parameter | How it works |
+| --------- | --------- | ------------ |
+| **Cumulative accounting** | Early `allocation_year` (e.g. 1990, 1850) | Cumulative population from that year determines shares; negative allocations are a mathematical consequence when shares are applied to budgets |
+| **Relative rescaling** | `pre_allocation_responsibility_weight` + `pre_allocation_responsibility_year` | Multiplicative rescaling of per-capita shares over [`pre_allocation_responsibility_year`, `allocation_year`); always produces positive allocations if `allocation_year` is the present |
+
+The rescaling mechanism requires `pre_allocation_responsibility_year < allocation_year` — when they are equal, the window is empty and the weight has no effect.
+
 | Goal                                   | Parameters                                               |
 | -------------------------------------- | -------------------------------------------------------- |
-| Pure equal per capita (no adjustments) | `responsibility_weight=0.0, capability_weight=0.0`       |
-| Historical responsibility only         | `responsibility_weight=1.0, capability_weight=0.0`       |
-| Balanced CBDR-RC                       | `responsibility_weight=0.5, capability_weight=0.5`       |
-| Responsibility-heavy CBDR-RC           | `responsibility_weight=0.7, capability_weight=0.3`       |
-| Ability to pay only                    | `responsibility_weight=0.0, capability_weight=1.0`       |
-| Stronger-than-linear responsibility    | `responsibility_weight=0.5, responsibility_exponent=2.0` |
+| Pure equal per capita (no adjustments) | `pre_allocation_responsibility_weight=0.0, capability_weight=0.0`       |
+| Historical responsibility via cumulative accounting | Early `allocation_year` (e.g. 1990), no weight needed |
+| Historical responsibility via rescaling | `pre_allocation_responsibility_weight=1.0`, `pre_allocation_responsibility_year` < `allocation_year` |
+| Both mechanisms combined               | Early `allocation_year` + `pre_allocation_responsibility_weight > 0` + `pre_allocation_responsibility_year` < `allocation_year` |
+| Balanced CBDR-RC (rescaling + capability) | `pre_allocation_responsibility_weight=0.5, capability_weight=0.5`       |
+| CBDR-RC with 0.7:0.3 responsibility-to-capability ratio | `pre_allocation_responsibility_weight=0.7, capability_weight=0.3`       |
+| Ability to pay only                    | `pre_allocation_responsibility_weight=0.0, capability_weight=1.0`       |
+| Stronger-than-linear rescaling         | `pre_allocation_responsibility_weight=1.0, pre_allocation_responsibility_exponent=2.0` |
 
 ---
 
@@ -171,41 +308,43 @@ Two distinct parameter types control adjustments. They are often confused:
 
 Real allocation approaches combine multiple principles. Common patterns:
 
-### Moderate Equity (Responsibility + Capability)
+### Pre-Allocation Responsibility Scaling + Capability
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 ```python
 per_capita_adjusted_budget(
-    responsibility_weight=0.5,
+    allocation_year=2020,
+    pre_allocation_responsibility_weight=0.5,
     capability_weight=0.5,
-    historical_responsibility_year=1990,
+    pre_allocation_responsibility_year=1990,  # window: [1990, 2020)
 )
 ```
 
-Balances historical emissions and ability to pay with equal per-capita baseline.
+Rescales per-capita shares using both 1990-2019 per-capita emissions and GDP from 2020 onwards, weighted equally (0.5:0.5 ratio, identical to 1.0:1.0). No cumulative accounting of past emissions in the budget (allocation starts at 2020). Note the temporal asymmetry: pre-allocation responsibility looks backward from the allocation year, capability looks forward from it.
 
-### Strong Historical Accountability
+### Both Responsibility Mechanisms (Cumulative Accounting + Rescaling)
 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 ```python
 per_capita_adjusted_budget(
-    responsibility_weight=1.0,
+    allocation_year=1990,
+    pre_allocation_responsibility_weight=1.0,
     capability_weight=0.0,
-    historical_responsibility_year=1850,  # Industrial revolution
+    pre_allocation_responsibility_year=1850,  # window: [1850, 1990)
 )
 ```
 
-Maximum penalty for historical emissions since industrialization.
+Cumulative population from 1990 determines shares (via `allocation_year=1990`). Per-capita emissions from 1850-1989 rescale those shares (via `pre_allocation_responsibility_weight=1.0`). Remaining budgets are computed as a post-processing step by the analyst.
 
-### Development-Protective Capability
+### Capability with Development Threshold
 
 <!-- REFERENCE: per_capita_adjusted_gini_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 
 ```python
 per_capita_adjusted_gini_budget(
-    responsibility_weight=0.0,
+    pre_allocation_responsibility_weight=0.0,
     capability_weight=1.0,
     income_floor=7500,  # ~$20/day
 )
@@ -217,26 +356,22 @@ Adjusts for wealth while protecting subsistence needs.
 
 ## Understanding Parameter Interactions
 
-### Weight Normalization in Examples
-
-In the examples above, `weight=0.5` and `weight=1.0` produce identical results because the other weight is zero in both cases — both normalize to 100% weighting for that adjustment. To see the effect of different weight ratios, vary both weights simultaneously (e.g., compare 0.7:0.3 vs 0.3:0.7).
-
 ### Parameter Sensitivity Ranking
 
 Based on the examples:
 
-1. **`responsibility_weight`** (largest effect) - Can change allocations by 3-4 percentage points
-2. **`capability_weight`** (moderate effect) - Typically 0.5-1 percentage point changes
-3. **`income_floor`** (smallest effect) - Typically <0.5 percentage point changes
-4. **`allocation_year`** (context-dependent) - Effect depends on historical population changes
+1. **`allocation_year`** (largest absolute effect) - Cumulative accounting swings allocations by hundreds of GtCO2 and can flip them negative (USA: +12.3 to -329.2 GtCO2)
+2. **`pre_allocation_responsibility_weight`** (largest percentage-point effect on shares) - Can change allocations by 3-4 percentage points via multiplicative rescaling
+3. **`capability_weight`** (typically 0.5-1 percentage point changes)
+4. **`income_floor`** (smallest effect) - Typically <0.5 percentage point changes
 
 ### Multi-Parameter Trade-offs
 
 When combining adjustments:
 
-- High responsibility weight + high capability weight → Very low allocations for developed countries
-- Low responsibility weight + moderate capability weight → Focus on current capacity to act
-- Responsibility alone → "Polluter pays" framing
+- High pre-allocation responsibility weight + high capability weight → Very low allocations for developed countries
+- Capability-dominant weighting (e.g., 0.2:0.8) → Allocations shift primarily by GDP per capita
+- Pre-allocation responsibility alone → "Polluter pays" framing
 - Capability alone → "Common but differentiated" without historical accountability
 
 ---
