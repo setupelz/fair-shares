@@ -432,7 +432,10 @@ ecpc_data = load_allocation_data(
 ecpc_allocations = {
     "equal-per-capita-budget": [
         {
-            "allocation_year": [1850, 1970, 1990],
+            # TODO: Paper uses 1850 as a historical start year, but fair-shares
+            # validates allocation_year >= 1900. Relaxing this requires reviewing
+            # data availability (emissions, population) pre-1900.
+            "allocation_year": [1970, 1990],
             "cumulative_end_year": [2100],
             "preserve_allocation_year_shares": [False],
         },

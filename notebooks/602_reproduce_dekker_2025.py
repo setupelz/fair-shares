@@ -407,7 +407,10 @@ ecpc_data = load_allocation_data(
 ecpc_allocations = {
     "equal-per-capita-budget": [
         {
-            "allocation_year": [1850, 1950, 1990],
+            # TODO: Dekker uses 1850 as a historical start year, but fair-shares
+            # validates allocation_year >= 1900. Relaxing this requires reviewing
+            # data availability (emissions, population) pre-1900.
+            "allocation_year": [1950, 1990],
             "cumulative_end_year": [2050],
             "preserve_allocation_year_shares": [False],
         },
