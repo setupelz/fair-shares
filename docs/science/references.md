@@ -87,6 +87,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Weber 2026]** Konstantin Weber, Cyril Brunner, and Reto Knutti. "Tracking country-level mitigation progress using NGHGI-consistent carbon budgets." _Nature Communications_. DOI: [10.1038/s41467-026-69078-9](https://doi.org/10.1038/s41467-026-69078-9)
 
+**[Winkler 2018]** Harald Winkler, Niklas Höhne, Guy Cunliffe, Takeshi Kuramochi, Amanda April, and Maria Jose de Villafranca Casas. "Countries start to explain how their climate contributions are fair: more rigour needed." _International Environmental Agreements: Politics, Law and Economics_, 18, 99–115. DOI: [10.1007/s10784-017-9381-x](https://doi.org/10.1007/s10784-017-9381-x)
+
 **[Winkler 2020]** Harald Winkler. "Putting equity into practice in the global stocktake under the Paris Agreement." _Climate Policy_. DOI: [10.1080/14693062.2019.1680337](https://doi.org/10.1080/14693062.2019.1680337)
 
 **[Zimm 2024]** Caroline Zimm, Kian Mintz-Woo, Elina Brutschin, Susanne Hanger-Kopp, Roman Hoffmann, Jarmo S. Kikstra, Michael Kuhn, Jihoon Min, Raya Muttarak, Shonali Pachauri, Omkar Patange, Keywan Riahi, and Thomas Schinko. "Justice considerations in climate research." _Nature Climate Change_. DOI: [10.1038/s41558-023-01869-0](https://doi.org/10.1038/s41558-023-01869-0)

@@ -16,7 +16,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 
 !!! info "Key concept: allocation_year"
 
-    All approaches incorporate historical differentiation via `allocation_year` (budget) or `first_allocation_year` (pathway). When set in the past, cumulative population from that year determines each country's share of the total budget — leaving different **remaining allocations** for each country. The `*-adjusted` approaches add pre-allocation responsibility rescaling on top of this mechanism.
+    All approaches incorporate historical differentiation via `allocation_year` (budget) or `first_allocation_year` (pathway). When set in the past, cumulative population from that year determines each country's share of the total budget — leaving different **remaining allocations** for each country. The `*-adjusted` approaches additionally apply pre-allocation responsibility and capability rescaling on top of this mechanism.
 
 ### Budget Approaches
 
@@ -92,7 +92,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 : Start year for cumulative emissions in the pre-allocation responsibility window. Must be strictly less than `allocation_year` for the adjustment to have effect — when equal, the window is empty.
 
 **`pre_allocation_responsibility_per_capita`** (type: `bool`, default: `False`)
-: Per capita (True) or absolute (False) emissions for pre-allocation responsibility calculation. Default is `False` (absolute) to match the polluter-pays framing of GDR (Baer 2009), Matthews (2016), and most historical-responsibility literature. Set to `True` if your research framing calls for per-capita responsibility.
+: Per capita (True) or absolute (False) emissions for pre-allocation responsibility calculation. Default is `False` (absolute) to match the polluter-pays framing used in most of the historical-responsibility literature, which treats responsibility as a country's total cumulative contribution to atmospheric CO2 — see [Matthews 2016](https://doi.org/10.1038/NCLIMATE2774) (absolute cumulative emissions as the debt metric) and the [Greenhouse Development Rights framework (Baer 2009)](https://doi.org/10.1080/13668790903195495), which starts from country-level absolute cumulative emissions and applies a within-country subsistence filter (not a per-capita normalisation). Set to `True` if your research framing genuinely calls for per-capita historical responsibility.
 
 **`pre_allocation_responsibility_exponent`** (type: `float`, default: `1.0`)
 : Exponent for pre-allocation responsibility adjustment. >1.0 increases non-linearity.
@@ -222,7 +222,7 @@ See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide
 
 ---
 
-## Equity Principles
+## Key Concepts
 
 Brief definitions. For detailed explanations and operationalization, see [Allocation Approaches](allocations.md) and [From Principle to Code](principle-to-code.md).
 
@@ -231,7 +231,7 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : See: [References](references.md)
 
 **Cascading Biases**
-: Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7) identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches). [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
+: Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7) identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches).
 : See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **CBDR-RC**
@@ -239,7 +239,7 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : See: [Allocation Approaches](allocations.md)
 
 **Egalitarianism**
-: Ethical tradition grounding equal per capita entitlement to atmospheric space.
+: Ethical tradition grounding equal per capita entitlement to atmospheric space. [Agarwal 1991](https://cdn.cseindia.org/userfiles/GlobalWarming%20Book.pdf) makes the foundational per-capita argument from an anti-colonial standpoint; [Caney 2009](https://doi.org/10.1080/17449620903110300) develops the philosophical case for egalitarian allocation of greenhouse gas emission rights.
 : See: [Allocation Approaches](allocations.md)
 
 **Equal per capita**
@@ -259,12 +259,12 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : See: [Allocation Approaches](allocations.md) · [From Principle to Code](principle-to-code.md)
 
 **Subsistence protection**
-: Basic needs emissions protected from mitigation burdens. Operationalized via `income_floor` and Gini adjustments.
+: Basic needs emissions protected from mitigation burdens. Grounded in [Shue 2014](references.md#shue-2014)'s distinction between subsistence and luxury emissions; operationalised in the [Greenhouse Development Rights framework (Baer 2009)](https://doi.org/10.1080/13668790903195495) via a development threshold that excludes both income and emissions of low-income individuals from a country's responsibility and capacity calculations. In fair-shares, implemented via `income_floor` and Gini adjustments.
 : See: [Allocation Approaches](allocations.md#gini-adjustment)
 
 ---
 
-## Abbreviations
+## Abbreviations and Terms
 
 **API**
 : Application Programming Interface. In this documentation, refers to the function-level reference for allocation approaches.
@@ -273,7 +273,7 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : IPCC Sixth Assessment Report (2021-2023). Source of global emissions scenarios used in fair-shares.
 
 **BAU**
-: Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued in the literature as inconsistent with CBDR-RC (see [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)).
+: Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued as inconsistent with CBDR-RC — fair shares must be assessed relative to other parties, not against a country's own BAU ([Winkler 2018](https://doi.org/10.1007/s10784-017-9381-x); [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
 
 **Bookkeeping (BM)**
 : LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: [NGHGI-Consistent RCB Corrections](other-operations.md#why-two-lulucf-conventions-matter)

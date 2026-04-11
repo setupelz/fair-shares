@@ -8,7 +8,7 @@ icon: material/flask
 
 !!! note "Scope"
 
-    This draws on ~30 climate equity papers -- a working subset, not comprehensive. Corrections and expansions welcome. See [References](https://setupelz.github.io/fair-shares/science/references/).
+    This draws on a working subset of the climate equity literature -- not comprehensive. Corrections and expansions welcome. See [References](https://setupelz.github.io/fair-shares/science/references/).
 
 ---
 

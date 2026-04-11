@@ -370,7 +370,20 @@ In permissive mode, country-level warnings report the ratio of achieved-to-targe
 
 ## Adjustment Shape Parameters
 
-The `*-adjusted` and `*-adjusted-gini` approaches expose several parameters that control the functional shape of pre-allocation responsibility and capability adjustments. Pre-allocation responsibility looks backward from the allocation year; capability adjustments apply from the allocation year onwards. These are advanced tuning parameters — the defaults are appropriate for most analyses. They are documented here for completeness; see the [API Reference](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) for full mathematical details.
+As described in [Building Blocks](#building-blocks), two distinct mechanisms exist for accounting for past emissions in the adjusted approaches:
+
+- **Earlier allocation year** (`allocation_year` / `first_allocation_year`): cumulative population from that year determines each country's share. When applied to a global budget, high historical emitters can end up with negative remaining allocations — past emissions are counted directly in the budget arithmetic.
+- **Pre-allocation responsibility rescaling** (`pre_allocation_responsibility_weight` + `pre_allocation_responsibility_year`): keeps the allocation year at the present, but multiplicatively rescales each country's equal-per-capita share by relative historical per-capita emissions over the responsibility window. Always produces positive allocations — it adjusts *proportions*, not *levels*.
+
+Both are distinct from **GDP-based capability rescaling**, which reduces a country's share based on its current or cumulative wealth rather than its historical emissions. The Gini adjustment (`*-adjusted-gini` approaches) is a further refinement of the capability component only, correcting GDP for within-country income inequality.
+
+The parameters below control the *functional shape* of these adjustments — how steeply allocations respond to differences in emissions or GDP. Both responsibility and capability adjustments share the same exponent and functional-form parameters because both implement the same underlying inversion: converting a raw metric into an allocation multiplier where a **higher raw value produces a lower entitlement**. The framework is allocating a budget or pathway, so high emitters and high-GDP countries both receive downward adjustments to their shares.
+
+Note that this is a shape-level symmetry, not a temporal one. Pre-allocation responsibility looks **backward** from the allocation year over `[pre_allocation_responsibility_year, allocation_year)`, capturing historical emissions before the allocation begins. Capability looks **forward** from the allocation year onwards, using contemporary and future GDP. The two adjustments share functional-form parameters but act on temporally disjoint inputs.
+
+The functional transformation achieves the inversion and as a side effect can compress the distribution — this is where the parameters matter.
+
+These are advanced tuning parameters — the defaults are appropriate for most analyses. They are documented here for completeness; see the [API Reference](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) for full mathematical details.
 
 ### Per Capita vs Absolute Mode
 
@@ -434,7 +447,7 @@ The `per-capita-convergence` approach includes grandfathering elements and is av
 
 ### BAU Deviation Framing
 
-Treating deviation from business-as-usual emissions as a cost or sacrifice. [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f) argues this framing is inconsistent with CBDR-RC because it treats current emission levels as a baseline entitlement — a concealed form of grandfathering.
+Treating deviation from business-as-usual emissions as a cost or sacrifice. [Winkler 2018](https://doi.org/10.1007/s10784-017-9381-x) establishes that fair shares must be assessed *relative to other parties*, not against a country's own BAU — BAU deviation framing violates this by making effort self-referential. [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504) excludes self-referenced progression and grandfathering-based approaches from principled fair share assessments, finding both lack justification under international environmental law. [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f) makes the connection explicit: BAU deviation framing treats current emission levels as a baseline entitlement — a concealed form of grandfathering.
 
 ### Small Share Justification
 
