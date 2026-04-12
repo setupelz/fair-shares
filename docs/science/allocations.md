@@ -194,7 +194,7 @@ Only relevant when applying scaling adjustments (pre-allocation responsibility, 
 <!-- REFERENCE: per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py -->
 <!-- REFERENCE: per_capita_adjusted() in src/fair_shares/library/allocations/pathways/per_capita.py -->
 
-Combines pre-allocation responsibility scaling (backward-looking from the allocation year) and capability adjustments (from the allocation year onwards) as multiplicative factors applied to the equal-per-capita baseline:
+Combines pre-allocation responsibility scaling (over the window prior to the allocation year) and capability adjustments (from the allocation year onwards) as multiplicative factors applied to the equal per capita distribution:
 
 ```
 Adjusted population = Population × responsibility_metric^(-w_r) × capability_metric^(-w_c)

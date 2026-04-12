@@ -7,14 +7,14 @@ and is included for comparison only. Grandfathering rewards past high emissions
 and lacks ethical basis per fair shares literature.
 
 For detailed critique of why grandfathering lacks ethical basis, see:
-    docs/science/allocations.md#per-capita-convergence-pcc-why-its-not-an-equity-based-approach
+    docs/science/allocations.md#per-capita-convergence-pcc
 
 This module implements the per capita convergence approach, which transitions
 allocation shares from current emission shares to equal per capita shares over
 a convergence period. Related to Contraction and Convergence [GCI 2003].
 
-For allocations grounded in CBDR-RC principles, consider per_capita_adjusted
-or cumulative_per_capita_convergence approaches.
+For approaches with pre-allocation responsibility rescaling and/or capability
+adjustments, see per_capita_adjusted or cumulative_per_capita_convergence_adjusted.
 """
 
 from __future__ import annotations
@@ -278,22 +278,7 @@ def per_capita_convergence(
     Notes
     -----
     WARNING: This is NOT an equity-based approach. For detailed critique, see:
-        docs/science/allocations.md#per-capita-convergence-pcc-why-its-not-an-equity-based-approach
-
-    **When to Use**
-
-    - Academic comparison with Contraction and Convergence scenarios
-    - Exploring sensitivity of allocations to transition period length
-    - When a gradual transition from status quo is explicitly desired
-
-    **Limitations**
-
-    - Does not incorporate pre-allocation responsibility rescaling for past emissions
-    - Does not incorporate capability/ability to pay
-    - The grandfathering starting point lacks ethical basis (see referenced docs)
-
-    For allocations grounded in CBDR-RC principles, consider using
-    per_capita_adjusted or cumulative_per_capita_convergence approaches.
+        docs/science/allocations.md#per-capita-convergence-pcc
 
     Examples
     --------

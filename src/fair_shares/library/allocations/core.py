@@ -4,8 +4,8 @@ Core allocation logic shared between budget and pathway allocations.
 This module provides foundational functions used by both budget and pathway
 allocation approaches: weight validation and population-based share calculation.
 
-For theoretical foundations of equity principles, see:
-    docs/science/allocations.md#equity-principles-framework
+For theoretical foundations and building blocks, see:
+    docs/science/allocations.md#building-blocks
 """
 
 from __future__ import annotations
@@ -69,7 +69,7 @@ def validate_weight_constraints(
         Weight for economic capability adjustment (must be >= 0).
         Higher values give more weight to ability to pay (typically GDP-based)
         when adjusting allocations. Applies from the allocation year onwards
-        (contrast with pre-allocation responsibility, which looks backward).
+        (contrast with pre-allocation responsibility, which covers the window prior to it).
 
     Raises
     ------
@@ -108,7 +108,7 @@ def calculate_base_shares(
     be proportional to population.
 
     For theoretical foundations, see:
-        docs/science/allocations.md#1-equal-per-capita-principle
+        docs/science/allocations.md#building-blocks
 
     Parameters
     ----------

@@ -4,8 +4,10 @@ Per capita pathway allocations (equal, adjusted, and Gini-adjusted).
 This module implements three related per capita pathway allocation approaches:
 
 - **equal_per_capita**: Allocates emission pathways proportional to population.
-- **per_capita_adjusted**: Extends equal per capita with pre-allocation responsibility
-  and capability adjustments, operationalizing CBDR-RC principles.
+  With a past first_allocation_year, accounts for historical responsibility
+  directly (past emissions consume pathway allocation).
+- **per_capita_adjusted**: Extends equal per capita with optional pre-allocation
+  responsibility rescaling and/or capability adjustments.
 - **per_capita_adjusted_gini**: Further incorporates intra-national inequality
   through Gini adjustments.
 
@@ -114,7 +116,7 @@ def _per_capita_core(
     capability_weight
         Weight for economic capability adjustment (0.0 to 1.0). Applies from the
         first allocation year onwards (contrast with pre-allocation responsibility,
-        which looks backward from it).
+        which covers the window prior to it).
     pre_allocation_responsibility_year
         Start year for pre-allocation responsibility calculation. Default: 1990.
     pre_allocation_responsibility_per_capita
@@ -577,7 +579,7 @@ def equal_per_capita(
     first_allocation_year
         First year that should be used for calculating the allocation.
         This must be a column in population_ts.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
+        See the ``allocation_year`` section in docs/science/parameter-effects.md for how this affects
         country shares
     emission_category
         Emission category to include in the output.
@@ -599,15 +601,13 @@ def equal_per_capita(
 
     Notes
     -----
+    **Theoretical grounding:**
+
     The equal per capita principle treats the atmosphere as a finite shared resource
-    with equal claims per person. It serves as a widely used baseline in climate
-    equity analysis.
-
-    **When to Use**
-
-    - As a baseline to compare against adjusted approaches
-    - When transparency and simplicity are priorities
-    - As a reference point before applying pre-allocation responsibility or capability adjustments
+    with equal claims per person. With a past first_allocation_year, it also
+    accounts for historical responsibility: emissions since that year consume
+    part of each country's pathway allocation, giving less to higher-emitting
+    countries.
 
     See docs/science/allocations.md for theoretical grounding and limitations.
 
@@ -776,7 +776,7 @@ def per_capita_adjusted(
         Population time series for per capita calculations.
     first_allocation_year
         Starting year for the allocation.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
+        See the ``allocation_year`` section in docs/science/parameter-effects.md for how this affects
         country shares
     emission_category
         The emission category (e.g., 'co2-ffi', 'all-ghg').
@@ -790,15 +790,15 @@ def per_capita_adjusted(
         Weight for pre-allocation responsibility adjustment (0-1). Higher historical
         emissions -> smaller allocation. Must satisfy:
         pre_allocation_responsibility_weight + capability_weight <= 1.0
-        See docs/science/parameter-effects.md#pre_allocation_responsibility_weight for real
-        allocation examples showing how this affects country shares
+        See the ``pre_allocation_responsibility_weight`` section in
+        docs/science/parameter-effects.md for real allocation examples
     capability_weight
         Weight for capability adjustment (0-1), applied from the first allocation
-        year onwards (contrast with pre-allocation responsibility, which looks
-        backward from it). Higher cumulative GDP per capita -> smaller allocation.
+        year onwards (contrast with pre-allocation responsibility, which covers
+        the window prior to it). Higher cumulative GDP per capita -> smaller allocation.
         Must satisfy: pre_allocation_responsibility_weight + capability_weight <= 1.0
-        See docs/science/parameter-effects.md#capability_weight for real
-        allocation examples showing how this affects country shares
+        See the ``capability_weight`` section in docs/science/parameter-effects.md
+        for real allocation examples
     pre_allocation_responsibility_year
         First year of pre-allocation responsibility window [pre_allocation_responsibility_year,
         first_allocation_year]. Default: 1990
@@ -840,15 +840,21 @@ def per_capita_adjusted(
 
     Notes
     -----
-    This approach operationalizes Common But Differentiated Responsibilities and
-    Respective Capabilities (CBDR-RC) by combining:
+    **Theoretical grounding:**
 
-    - **Pre-allocation Responsibility (Polluter Pays Principle)**: Multiplicative
-      rescaling of shares based on cumulative per-capita emissions in a historical
-      window — countries that contributed more to the problem bear greater obligations
-    - **Capability (Ability to Pay Principle)**: Adjusts based on economic resources
-      from the first allocation year onwards — countries with greater capacity bear
-      greater obligations
+    This approach provides explicit mechanisms for differentiating allocations:
+
+    - **Pre-allocation Responsibility Rescaling**: Multiplicative rescaling of
+      shares based on cumulative per-capita emissions in a historical window —
+      an alternative to the responsibility accounting that comes from setting
+      first_allocation_year in the past (where past emissions consume allocation)
+    - **Capability (Ability to Pay)**: Adjusts based on economic resources
+      from the first allocation year onwards — countries with greater capacity
+      bear greater obligations
+
+    CBDR-RC can be operationalized either through a past first_allocation_year
+    (responsibility via consumed budget) combined with capability adjustments,
+    or through pre-allocation responsibility rescaling, or both.
 
     Parameter choices involve normative judgments that should be made transparently:
 
@@ -1024,7 +1030,7 @@ def per_capita_adjusted_gini(
         Population time series for per capita calculations.
     first_allocation_year
         Starting year for the allocation.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
+        See the ``allocation_year`` section in docs/science/parameter-effects.md for how this affects
         country shares
     emission_category
         The emission category (e.g., 'co2-ffi', 'all-ghg').
@@ -1092,6 +1098,8 @@ def per_capita_adjusted_gini(
 
     Notes
     -----
+    **Theoretical grounding:**
+
     This approach extends capability-based allocation by incorporating intra-national
     inequality via the GDR development threshold (adapted for entitlement
     allocation from GDR's burden-sharing context). Only income above the
@@ -1099,13 +1107,6 @@ def per_capita_adjusted_gini(
     floor, higher inequality means more national income sits above the threshold.
     See :func:`~fair_shares.library.utils.math.allocation.calculate_gini_adjusted_gdp`
     for the mathematical formulation.
-
-    **When to Use**
-
-    - When capability assessment should account for income distribution within countries
-    - When the development threshold (income floor) should affect capability measurement
-    - For comprehensive allocation incorporating population, historical
-      responsibility, and inequality-adjusted capability
 
     See docs/science/allocations.md for theoretical grounding.
 

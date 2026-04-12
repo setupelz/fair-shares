@@ -5,7 +5,10 @@ This module implements three related per capita budget allocation approaches
 grounded in fair shares literature:
 
 - **equal_per_capita_budget**: Allocates emission budgets proportional to population.
-- **per_capita_adjusted_budget**: Extends equal per capita with pre-allocation responsibility and capability adjustments.
+  With a past allocation_year, accounts for historical responsibility directly
+  (past emissions consume budget).
+- **per_capita_adjusted_budget**: Extends equal per capita with optional pre-allocation
+  responsibility rescaling and/or capability adjustments.
 - **per_capita_adjusted_gini_budget**: Incorporates intra-national inequality through Gini adjustments.
 
 See docs/science/allocations.md for theoretical grounding and academic context.
@@ -112,7 +115,7 @@ def _per_capita_budget_core(
     capability_weight
         Weight for economic capability adjustment (0.0 to 1.0). Applies from the
         allocation year onwards (contrast with pre-allocation responsibility, which
-        looks backward from it).
+        covers the window prior to it).
     pre_allocation_responsibility_year
         Start year for pre-allocation responsibility calculation. Default: 1990.
     pre_allocation_responsibility_per_capita
@@ -650,8 +653,8 @@ def equal_per_capita_budget(
         Timeseries of population for each group of interest
     allocation_year
         Year from which to start calculating allocations and budgets.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
-        country shares
+        See the ``allocation_year`` section in docs/science/parameter-effects.md
+        for how this affects country shares
     emission_category
         Emission category to include in the output
     preserve_allocation_year_shares
@@ -677,12 +680,17 @@ def equal_per_capita_budget(
     -----
     **Theoretical grounding:**
 
-    See docs/science/allocations.md#equal-per-capita for detailed mathematical
-    formulation, limitations, and when to use this approach.
+    See docs/science/allocations.md for mathematical formulation and limitations.
+    The allocation_year choice affects normative positioning: a recent year
+    yields a near-purely population-proportional split; an earlier year
+    accounts for more historical responsibility, as emissions since that
+    year consume a larger part of each country's budget. See
+    docs/science/principle-to-code.md for implementation examples.
 
-    For translating the egalitarian tradition (which grounds the equal per capita
-    principle) into code, see docs/science/principle-to-code.md#egalitarianism
-    for implementation guidance.
+    See Also
+    --------
+    per_capita_adjusted_budget : With pre-allocation responsibility and/or capability adjustments
+    per_capita_adjusted_gini_budget : With Gini-adjusted GDP capability weighting
 
     Examples
     --------
@@ -870,8 +878,8 @@ def per_capita_adjusted_budget(
         Timeseries of population for each group of interest
     allocation_year
         Year from which to start calculating allocations and budgets.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
-        country shares
+        See the ``allocation_year`` section in docs/science/parameter-effects.md
+        for how this affects country shares
     emission_category
         Emission category to include in the output
     country_actual_emissions_ts
@@ -880,14 +888,14 @@ def per_capita_adjusted_budget(
         GDP data (required if capability_weight > 0)
     pre_allocation_responsibility_weight
         Weight for pre-allocation responsibility adjustment (0.0 to 1.0).
-        See docs/science/parameter-effects.md#pre_allocation_responsibility_weight for real
-        allocation examples showing how this affects country shares
+        See the ``pre_allocation_responsibility_weight`` section in
+        docs/science/parameter-effects.md for real allocation examples
     capability_weight
         Weight for economic capability adjustment (0.0 to 1.0). Applies from the
         allocation year onwards (contrast with pre-allocation responsibility,
-        which looks backward from it).
-        See docs/science/parameter-effects.md#capability_weight for real
-        allocation examples showing how this affects country shares
+        which covers the window prior to it).
+        See the ``capability_weight`` section in docs/science/parameter-effects.md
+        for real allocation examples
     pre_allocation_responsibility_year
         Start year for pre-allocation responsibility calculation (default: 1990)
     pre_allocation_responsibility_per_capita
@@ -944,16 +952,10 @@ def per_capita_adjusted_budget(
     -----
     **Theoretical grounding:**
 
-    See docs/science/allocations.md#per-capita-adjusted for detailed mathematical
-    formulation, parameter considerations, and CBDR-RC alignment.
-
-    For translating equity principles into code, see:
-
-    - docs/science/principle-to-code.md#historical-responsibility-polluter-pays
-      for pre-allocation responsibility weight implementation
-    - docs/science/principle-to-code.md#capability-ability-to-pay for capability
-      weight implementation
-    - docs/science/principle-to-code.md#cbdr-rc for combining both principles
+    See docs/science/allocations.md#historical-responsibility for CBDR-RC
+    alignment and parameter considerations. For implementation examples
+    combining pre-allocation responsibility and capability adjustments,
+    see docs/science/principle-to-code.md.
 
     **GDP window:** When the allocation cumulative window extends past the last
     year of the input ``gdp_ts``, the GDP per capita values from the last
@@ -965,6 +967,11 @@ def per_capita_adjusted_budget(
     release) should extend the input ``gdp_ts`` time series before calling
     this function. The forward-fill is the minimum-disruption default when
     no projected GDP data is supplied.
+
+    See Also
+    --------
+    equal_per_capita_budget : Without responsibility or capability adjustments
+    per_capita_adjusted_gini_budget : With Gini-adjusted GDP capability weighting
 
     Examples
     --------
@@ -1183,16 +1190,16 @@ def per_capita_adjusted_gini_budget(
         DataFrame containing Gini coefficient data for each group (required)
     allocation_year
         Year from which to start calculating allocations and budgets.
-        See docs/science/parameter-effects.md#allocation_year for how this affects
-        country shares
+        See the ``allocation_year`` section in docs/science/parameter-effects.md
+        for how this affects country shares
     emission_category
         Emission category to include in the output
     country_actual_emissions_ts
         Historical emissions data (required if pre_allocation_responsibility_weight > 0)
     pre_allocation_responsibility_weight
         Weight for pre-allocation responsibility adjustment (0.0 to 1.0).
-        See docs/science/parameter-effects.md#pre_allocation_responsibility_weight for real
-        allocation examples showing how this affects country shares
+        See the ``pre_allocation_responsibility_weight`` section in
+        docs/science/parameter-effects.md for real allocation examples
     capability_weight
         Weight for economic capability adjustment (0.0 to 1.0, default 1.0)
     pre_allocation_responsibility_year
@@ -1259,15 +1266,9 @@ def per_capita_adjusted_gini_budget(
     -----
     **Theoretical grounding:**
 
-    See docs/science/allocations.md#gini-adjusted for detailed mathematical
-    formulation, intra-national equity considerations, and when to use this approach.
-
-    For translating equity principles into code, see:
-
-    - docs/science/principle-to-code.md#subsistence-protection for income floor
-      and Gini adjustment implementation
-    - docs/science/principle-to-code.md#cbdr-rc for combining with pre-allocation
-      responsibility and capability
+    See docs/science/allocations.md#gini-adjustment for intra-national equity
+    considerations. For implementation examples combining capability with
+    subsistence protection, see docs/science/principle-to-code.md.
 
     **GDP window:** When the allocation cumulative window extends past the last
     year of the input ``gdp_ts``, the (Gini-adjusted) GDP per capita values
@@ -1280,6 +1281,11 @@ def per_capita_adjusted_gini_budget(
     series before calling this function. Gini coefficients are looked up
     per-country and are not part of this forward-fill — only the GDP series
     is extended in time.
+
+    See Also
+    --------
+    equal_per_capita_budget : Without responsibility or capability adjustments
+    per_capita_adjusted_budget : Without Gini adjustment to capability weighting
 
     Examples
     --------

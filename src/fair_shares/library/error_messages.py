@@ -198,7 +198,7 @@ WHAT HAPPENED:
 
 CONTEXT:
   Convergence approaches transition from current emissions toward per capita targets.
-  See docs/science/allocations.md#convergence for mechanism details.
+  See docs/science/allocations.md#convergence-mechanism-pathways-only for mechanism details.
 
 LIKELY CAUSE:
   - max_convergence_speed={speed} may be insufficient given the gap between
@@ -226,7 +226,7 @@ WHAT HAPPENED:
 
 CONTEXT:
   Allocation shares must sum to 1.0 to ensure complete distribution.
-  See docs/science/allocations.md#share-normalization for details.
+  See docs/science/allocations.md#weight-normalization for details.
 
 LIKELY CAUSE:
   Numerical precision issue or implementation bug.

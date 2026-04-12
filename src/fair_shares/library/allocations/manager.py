@@ -348,14 +348,16 @@ def run_allocation(
     approaches use ``first_allocation_year``.
 
     **Equity considerations:** Each approach implements different equity
-    principles. The equal per capita approaches treat population as the sole
-    basis for claims. Adjusted approaches incorporate capability
-    (ability to pay based on GDP, from the allocation year onwards) and/or
-    pre-allocation responsibility (multiplicative rescaling based on
-    per-capita emissions backward-looking from the allocation year),
-    implementing aspects of CBDR-RC. Parameters like
-    ``pre_allocation_responsibility_weight`` and ``capability_weight`` represent
-    explicit normative choices about how to balance these considerations.
+    principles. All equal per capita approaches account for historical
+    responsibility when the allocation year is set in the past (past
+    emissions consume budget). Adjusted approaches additionally offer
+    pre-allocation responsibility rescaling (multiplicative rescaling based
+    on cumulative per-capita emissions in the window prior to the allocation
+    year) and/or
+    capability adjustments (ability to pay based on GDP, from the allocation
+    year onwards). Parameters like ``pre_allocation_responsibility_weight``
+    and ``capability_weight`` represent explicit normative choices about how
+    to balance these considerations.
 
     **Transparency:** All parameter choices are recorded in the result
     metadata to enable replication and critical assessment.

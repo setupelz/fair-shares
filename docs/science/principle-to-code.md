@@ -102,7 +102,7 @@ allocations = {
 
 ### Example 2: Both Responsibility Mechanisms (Cumulative Accounting + Rescaling)
 
-**Value judgment:** Historical responsibility is the primary basis for differentiation. Countries that caused the climate problem through cumulative emissions should bear proportionally greater mitigation burdens. Equal per capita provides the baseline, but historical excess emissions strongly reduce allocation.
+**Value judgment:** Historical responsibility is the primary basis for differentiation. Countries that caused the climate problem through cumulative emissions should bear proportionally greater mitigation burdens. A past allocation year already accounts for responsibility (consumed budget); pre-allocation responsibility rescaling further reduces allocations for high-emitting countries.
 
 **Configuration:**
 
@@ -225,7 +225,7 @@ allocations = {
 **What this reflects:**
 
 - `first_allocation_year=2025` → Start pathway allocations from 2025
-- `capability_weight=0.5`, `pre_allocation_responsibility_weight=0.5` → Balanced CBDR-RC in each year. Capability adjustments apply from the first allocation year onwards; pre-allocation responsibility looks backward from it — this temporal asymmetry is inherent to CBDR-RC.
+- `capability_weight=0.5`, `pre_allocation_responsibility_weight=0.5` → Balanced CBDR-RC in each year. Capability adjustments apply from the first allocation year onwards; pre-allocation responsibility covers the window prior to it — this temporal asymmetry is inherent to CBDR-RC.
 - No convergence → Countries immediately receive fair shares in 2025, adjusted each year
 - Immediate allocation → No grandfathering, high emitters get reduced shares immediately
 
@@ -265,7 +265,7 @@ allocations = {
 **What this reflects:**
 
 - `first_allocation_year=2025` → Begin convergence pathway from 2025
-- `capability_weight=0.5`, `pre_allocation_responsibility_weight=0.5` → Equal weighting of capability (GDP, from first allocation year onwards) and historical responsibility (per-capita emissions, looking backward from it). These weights are relative — only the ratio matters. `(0.5, 0.5)` is identical to `(0.3, 0.3)` or `(1.0, 1.0)`. If one weight is 0, the other becomes the sole adjustment regardless of its value.
+- `capability_weight=0.5`, `pre_allocation_responsibility_weight=0.5` → Equal weighting of capability (GDP, from first allocation year onwards) and historical responsibility (per-capita emissions in the window prior to it). These weights are relative — only the ratio matters. `(0.5, 0.5)` is identical to `(0.3, 0.3)` or `(1.0, 1.0)`. If one weight is 0, the other becomes the sole adjustment regardless of its value.
 - `pre_allocation_responsibility_year=1990` → Responsibility rescaling window covers 1990–2025
 - `strict=False` → Accept approximate solutions if some countries' targets are mathematically infeasible. The solver reports per-country deviation ratios as warnings rather than raising an error. Use `strict=True` (default) when you need exact results and want to know immediately if a configuration is infeasible.
 - Cumulative constraint → Total pathway emissions respect global budget

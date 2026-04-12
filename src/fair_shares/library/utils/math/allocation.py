@@ -51,7 +51,7 @@ def calculate_relative_adjustment(
     Notes
     -----
     This function operationalizes both the Polluter Pays Principle (via historical
-    responsibility adjustments, backward-looking from the allocation year) and the
+    responsibility adjustments over the window prior to the allocation year) and the
     Ability to Pay Principle (via economic capability adjustments, from the
     allocation year onwards).
 

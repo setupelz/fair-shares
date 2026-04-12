@@ -24,7 +24,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Population-proportional allocation. Historical accountability via `allocation_year` only.
 
 **`per-capita-adjusted-budget`**
-: Adds `pre_allocation_responsibility_weight` (backward-looking from allocation year) and `capability_weight` (forward-looking from allocation year onwards) adjustments. CBDR-RC.
+: Adds `pre_allocation_responsibility_weight` (covers the window prior to allocation year) and `capability_weight` (from allocation year onwards) adjustments. CBDR-RC.
 
 **`per-capita-adjusted-gini-budget`**
 : Adds Gini adjustment for within-country inequality. Subsistence protection.
@@ -84,7 +84,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 : Weight for relative per-capita rescaling based on emissions in [`pre_allocation_responsibility_year`, `allocation_year`). Higher relative to `capability_weight` = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early `allocation_year`. Always produces positive allocations if `allocation_year` is the present.
 
 **`capability_weight`** (type: `float`, default: `0.0`)
-: Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility looks backward from the allocation year, while capability looks forward from it.
+: Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility covers the window prior to the allocation year, while capability applies from it onwards.
 
 ### Pre-allocation Responsibility Parameters
 

@@ -321,7 +321,7 @@ per_capita_adjusted_budget(
 )
 ```
 
-Rescales per-capita shares using both 1990-2019 per-capita emissions and GDP from 2020 onwards, weighted equally (0.5:0.5 ratio, identical to 1.0:1.0). No cumulative accounting of past emissions in the budget (allocation starts at 2020). Note the temporal asymmetry: pre-allocation responsibility looks backward from the allocation year, capability looks forward from it.
+Rescales per-capita shares using both 1990-2019 per-capita emissions and GDP from 2020 onwards, weighted equally (0.5:0.5 ratio, identical to 1.0:1.0). No cumulative accounting of past emissions in the budget (allocation starts at 2020). Note the temporal asymmetry: pre-allocation responsibility covers the window prior to the allocation year, capability applies from it onwards.
 
 ### Both Responsibility Mechanisms (Cumulative Accounting + Rescaling)
 

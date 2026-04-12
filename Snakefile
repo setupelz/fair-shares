@@ -320,12 +320,25 @@ rule preprocess_emiss:
         ),
     run:
         import subprocess
+        import shutil
         for cat in EMISSION_CATEGORIES:
+            cat_nb_out = output.notebook.replace(".ipynb", f"_{cat}.ipynb")
             print(f"[preprocessing] Running emissions notebook for emission_category={cat}")
             subprocess.run(
-                notebook_cmd_list(input.notebook, output.notebook, cat),
+                notebook_cmd_list(input.notebook, cat_nb_out, cat),
                 check=True,
             )
+        # Copy the primary category's notebook to the declared output path
+        # so downstream rules and Snakemake's DAG see the expected file.
+        # Per-category notebooks remain for inspection.
+        if emission_category in EMISSION_CATEGORIES:
+            primary = emission_category
+        else:
+            primary = EMISSION_CATEGORIES[-1]
+        shutil.copy2(
+            output.notebook.replace(".ipynb", f"_{primary}.ipynb"),
+            output.notebook,
+        )
 
 
 rule preprocess_gdp:
@@ -489,6 +502,7 @@ if uses_scenarios:
                     non_co2_scenarios=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
                 run:
                     import subprocess
+                    import shutil
                     from pathlib import Path
 
                     scenario_nb = f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb"
@@ -498,11 +512,17 @@ if uses_scenarios:
                     # notebook needs.  Its scenarios_{co2_comp}_timeseries.csv is an
                     # undeclared side-effect — harmless, overwritten by 106 in rule 2.
                     for cat in SCENARIO_CATEGORIES:
+                        cat_nb_out = output.notebook.replace(".ipynb", f"_{cat}.ipynb")
                         print(f"[decomposition/scenarios] Running {Path(scenario_nb).stem} for emission_category={cat}")
                         subprocess.run(
-                            notebook_cmd_list(scenario_nb, output.notebook, cat),
+                            notebook_cmd_list(scenario_nb, cat_nb_out, cat),
                             check=True,
                         )
+                    # Copy last category's notebook to declared output for DAG
+                    shutil.copy2(
+                        output.notebook.replace(".ipynb", f"_{SCENARIO_CATEGORIES[-1]}.ipynb"),
+                        output.notebook,
+                    )
 
                     # Derive non-co2 scenarios NOW, while co2-ffi still has AR6 source
                     # labels (from 104).  Rule 2 overwrites co2-ffi with RCB sources
@@ -559,6 +579,7 @@ if uses_scenarios:
                 ),
             run:
                 import subprocess
+                import shutil
                 from pathlib import Path
 
                 scenario_nb = f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb"
@@ -575,11 +596,21 @@ if uses_scenarios:
                 else:
                     # pathway or budget mode: run scenario notebook for all categories
                     for cat in SCENARIO_CATEGORIES:
+                        cat_nb_out = output.notebook.replace(".ipynb", f"_{cat}.ipynb")
                         print(f"[decomposition/scenarios] Running {Path(scenario_nb).stem} for emission_category={cat}")
                         subprocess.run(
-                            notebook_cmd_list(scenario_nb, output.notebook, cat),
+                            notebook_cmd_list(scenario_nb, cat_nb_out, cat),
                             check=True,
                         )
+                    # Copy primary category's notebook to declared output for DAG
+                    if emission_category in SCENARIO_CATEGORIES:
+                        primary = emission_category
+                    else:
+                        primary = SCENARIO_CATEGORIES[-1]
+                    shutil.copy2(
+                        output.notebook.replace(".ipynb", f"_{primary}.ipynb"),
+                        output.notebook,
+                    )
 
 
 # ---------------------------------------------------------------------------

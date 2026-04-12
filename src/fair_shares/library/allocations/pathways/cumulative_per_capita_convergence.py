@@ -5,11 +5,11 @@ This module implements allocation approaches that distribute emissions budgets
 based on cumulative population shares over the full scenario time horizon,
 with optional adjustments for pre-allocation responsibility and capability.
 
-For theoretical foundations and academic context, see:
-    docs/science/allocations.md#convergence-mechanism-theoretical-foundations
+For theoretical foundations, see:
+    docs/science/allocations.md#convergence-mechanism-pathways-only
 
-For CBDR-RC principles and normative considerations, see:
-    docs/science/allocations.md#4-common-but-differentiated-responsibilities-cbdr-rc
+For how historical responsibility and capability enter allocations, see:
+    docs/science/allocations.md#historical-responsibility
 
 **Three Allocation Variants**
 
@@ -136,7 +136,7 @@ def _cumulative_per_capita_convergence_core(
     capability_weight
         Weight for economic capability adjustment (0-1). Applies from the first
         allocation year onwards (contrast with pre-allocation responsibility,
-        which looks backward from it).
+        which covers the window prior to it).
     pre_allocation_responsibility_year
         Start year for pre-allocation responsibility calculation. Default: 1990.
     pre_allocation_responsibility_per_capita
@@ -787,25 +787,24 @@ def cumulative_per_capita_convergence(
     PathwayAllocationResult
         Relative shares over time, summing to unity each year.
 
-    See Also
-    --------
-    cumulative_per_capita_convergence_adjusted : With
-        pre-allocation responsibility/capability adjustments
-    cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP
-
     Notes
     -----
     **Theoretical grounding:**
 
-    For theoretical foundations, use cases, and limitations, see:
-        docs/science/allocations.md#convergence-mechanism-theoretical-foundations
+    For convergence mechanism foundations, use cases, and limitations, see:
+        docs/science/allocations.md#convergence-mechanism-pathways-only
 
-    For translating the egalitarian tradition (which grounds the equal per capita
-    principle) into pathway allocations, see:
-        docs/science/principle-to-code.md#convergence-pathway-approaches
+    The base convergence approach drives toward equal cumulative per capita
+    targets. The first_allocation_year choice affects normative positioning:
+    a past year means historical emissions since then consume part of each
+    country's cumulative target, directly incorporating responsibility.
+    Combined with capability adjustments (available in the ``_adjusted``
+    variants), this already operationalizes CBDR-RC without needing explicit
+    pre-allocation responsibility rescaling.
+    See docs/science/principle-to-code.md for implementation examples.
 
-    For CBDR-RC principles (responsibility and capability), use
-    cumulative_per_capita_convergence_adjusted or
+    For capability adjustments or explicit pre-allocation responsibility
+    rescaling, use cumulative_per_capita_convergence_adjusted or
     cumulative_per_capita_convergence_adjusted_gini.
 
     **Convergence Speed**
@@ -814,6 +813,12 @@ def cumulative_per_capita_convergence(
     that ensures cumulative targets are met, creating the smoothest possible
     transition path while still achieving equity goals. The ``strict`` parameter
     controls whether an error is raised if exact targets cannot be achieved.
+
+    See Also
+    --------
+    cumulative_per_capita_convergence_adjusted : With
+        pre-allocation responsibility/capability adjustments
+    cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP
 
     Examples
     --------
@@ -1047,7 +1052,7 @@ def cumulative_per_capita_convergence_adjusted(
     capability_weight
         Weight for capability adjustment (0-1). Higher GDP -> smaller allocation.
         Applies from the first allocation year onwards (contrast with pre-allocation
-        responsibility, which looks backward from it). Requires gdp_ts. Must satisfy:
+        responsibility, which covers the window prior to it). Requires gdp_ts. Must satisfy:
         pre_allocation_responsibility_weight + capability_weight <= 1.0
     pre_allocation_responsibility_year
         First year of pre-allocation responsibility window
@@ -1101,26 +1106,23 @@ def cumulative_per_capita_convergence_adjusted(
     PathwayAllocationResult
         Relative shares over time, summing to unity each year.
 
-    See Also
-    --------
-    cumulative_per_capita_convergence : Without adjustments
-    cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP
-
     Notes
     -----
     **Theoretical grounding:**
 
-    For theoretical foundations and CBDR-RC principles, see:
-        docs/science/allocations.md#convergence-mechanism-theoretical-foundations
-        docs/science/allocations.md#4-common-but-differentiated-responsibilities-cbdr-rc
+    For convergence mechanism foundations, see:
+        docs/science/allocations.md#convergence-mechanism-pathways-only
 
-    For translating equity principles into pathway allocations, see:
-        docs/science/principle-to-code.md#convergence-pathway-approaches
-        docs/science/principle-to-code.md#cbdr-rc
+    For how historical responsibility and capability enter allocations, see:
+        docs/science/allocations.md#historical-responsibility
 
-    This approach incorporates pre-allocation responsibility and capability adjustments
-    to operationalize Common But Differentiated Responsibilities and Respective
-    Capabilities (CBDR-RC). Higher past emissions and higher GDP -> smaller allocation.
+    For implementation examples, see docs/science/principle-to-code.md.
+
+    This approach provides explicit pre-allocation responsibility rescaling
+    and capability adjustments. These are one way to operationalize CBDR-RC;
+    another is setting first_allocation_year in the past (responsibility
+    via consumed budget) combined with capability adjustments.
+    Higher past emissions and/or higher GDP -> smaller allocation.
 
     **GDP window:** The capability metric for this approach is a per-country
     scalar computed by summing GDP and population only over the intersection
@@ -1132,6 +1134,18 @@ def cumulative_per_capita_convergence_adjusted(
     the capability calculation should extend the input ``gdp_ts`` time series
     with projected data (SSP2 GDP projections, custom growth assumptions, or
     a future-extended WDI release) before calling this function.
+
+    **Convergence Speed**
+
+    The convergence speed is automatically determined to be the minimum speed
+    that ensures cumulative targets are met, creating the smoothest possible
+    transition path while still achieving equity goals. The ``strict`` parameter
+    controls whether an error is raised if exact targets cannot be achieved.
+
+    See Also
+    --------
+    cumulative_per_capita_convergence : Without adjustments
+    cumulative_per_capita_convergence_adjusted_gini : With Gini-adjusted GDP
 
     Examples
     --------
@@ -1406,7 +1420,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     capability_weight
         Weight for capability adjustment (0-1). Higher GDP -> smaller allocation.
         Applies from the first allocation year onwards (contrast with pre-allocation
-        responsibility, which looks backward from it). Requires gdp_ts. Must satisfy:
+        responsibility, which covers the window prior to it). Requires gdp_ts. Must satisfy:
         pre_allocation_responsibility_weight + capability_weight <= 1.0
     pre_allocation_responsibility_year
         First year of pre-allocation responsibility window
@@ -1467,22 +1481,16 @@ def cumulative_per_capita_convergence_adjusted_gini(
     PathwayAllocationResult
         Relative shares over time, summing to unity each year.
 
-    See Also
-    --------
-    cumulative_per_capita_convergence : Without adjustments
-    cumulative_per_capita_convergence_adjusted : Without Gini adjustment
-
     Notes
     -----
     **Theoretical grounding:**
 
-    For theoretical foundations, intra-national equity, and Gini adjustment rationale, see:
-        docs/science/allocations.md#convergence-mechanism-theoretical-foundations
-        docs/science/allocations.md#gini-adjustment-for-within-country-inequality
+    For convergence mechanism foundations and Gini adjustment rationale, see:
+        docs/science/allocations.md#convergence-mechanism-pathways-only
+        docs/science/allocations.md#gini-adjustment
 
-    For translating equity principles into pathway allocations, see:
-        docs/science/principle-to-code.md#convergence-pathway-approaches
-        docs/science/principle-to-code.md#subsistence-protection
+    For implementation examples combining convergence with subsistence
+    protection, see docs/science/principle-to-code.md.
 
     This approach extends the adjusted convergence method by incorporating
     Gini-adjusted GDP to account for income inequality within countries. The
@@ -1502,6 +1510,18 @@ def cumulative_per_capita_convergence_adjusted_gini(
     before calling this function. Gini coefficients are looked up per-country
     and are not part of this windowing -- only the GDP series is constrained
     to the observation window.
+
+    **Convergence Speed**
+
+    The convergence speed is automatically determined to be the minimum speed
+    that ensures cumulative targets are met, creating the smoothest possible
+    transition path while still achieving equity goals. The ``strict`` parameter
+    controls whether an error is raised if exact targets cannot be achieved.
+
+    See Also
+    --------
+    cumulative_per_capita_convergence : Without adjustments
+    cumulative_per_capita_convergence_adjusted : Without Gini adjustment
 
     Examples
     --------
