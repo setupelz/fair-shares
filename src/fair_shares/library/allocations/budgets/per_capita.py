@@ -650,79 +650,42 @@ def equal_per_capita_budget(
     Parameters
     ----------
     population_ts
-        Timeseries of population for each group of interest
+        Population time series for each group of interest.
     allocation_year
-        Year from which to start calculating allocations and budgets.
-        See the ``allocation_year`` section in docs/science/parameter-effects.md
-        for how this affects country shares
+        Year from which to calculate budget shares. See
+        ``docs/science/parameter-effects.md`` §allocation_year for how
+        the choice of year affects country shares.
     emission_category
-        Emission category to include in the output
+        Emission category (e.g., ``'co2-ffi'``, ``'all-ghg'``).
     preserve_allocation_year_shares
-        If False (default), shares are calculated using cumulative population
-        from allocation_year onwards. If True, shares calculated at
-        allocation_year are preserved
+        **Mode.** If ``False`` (default), shares are calculated using
+        cumulative population from ``allocation_year`` onwards. If
+        ``True``, shares from ``allocation_year`` only are used.
+    cumulative_end_year
+        Upper bound of the cumulative population window. ``None``
+        (default) uses the last year in the population data.
     group_level
-        Level in the index which specifies group information
+        Index level name for grouping. Default: ``'iso3c'``.
     unit_level
-        Level in the index which specifies the unit of each timeseries
+        Index level name for units. Default: ``'unit'``.
     ur
-        The unit registry to use for calculations
+        Pint unit registry for unit conversions.
 
     Returns
     -------
     BudgetAllocationResult
-        Container with relative shares for cumulative emissions budget allocation.
-        The TimeseriesDataFrame contains only the allocation_year column with
-        population shares that sum to 1 across groups for the specified
-        emission category.
+        Relative shares for cumulative emissions budget allocation,
+        summing to 1 across groups.
 
     Notes
     -----
-    **Theoretical grounding:**
-
-    See docs/science/allocations.md for mathematical formulation and limitations.
-    The allocation_year choice affects normative positioning: a recent year
-    yields a near-purely population-proportional split; an earlier year
-    accounts for more historical responsibility, as emissions since that
-    year consume a larger part of each country's budget. See
-    docs/science/principle-to-code.md for implementation examples.
+    See ``docs/science/allocations.md`` for mathematical formulation.
+    See ``docs/science/principle-to-code.md`` for implementation examples.
 
     See Also
     --------
     per_capita_adjusted_budget : With pre-allocation responsibility and/or capability adjustments
     per_capita_adjusted_gini_budget : With Gini-adjusted GDP capability weighting
-
-    Examples
-    --------
-    Calculate equal per capita budget allocation for 2020:
-
-    >>> from fair_shares.library.utils import create_example_data
-    >>> data = create_example_data()
-    >>> result = equal_per_capita_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     allocation_year=2020,
-    ...     emission_category="co2-ffi",
-    ... )
-    Converting units...
-    >>> result.approach
-    'equal-per-capita-budget'
-    >>> # Shares are proportional to population
-    >>> shares = result.relative_shares_cumulative_emission
-    >>> bool(abs(shares["2020"].sum() - 1.0) < 1e-10)  # Should sum to 1.0
-    True
-
-    Using preserve_allocation_year_shares to fix shares at allocation year:
-
-    >>> result_preserved = equal_per_capita_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     allocation_year=2020,
-    ...     emission_category="co2-ffi",
-    ...     preserve_allocation_year_shares=True,
-    ... )
-    Converting units...
-    >>> # Shares are based only on 2020 population, not cumulative from 2020 onwards
-    >>> result_preserved.parameters["preserve_allocation_year_shares"]
-    True
     """
     return _per_capita_budget_core(
         population_ts=population_ts,
@@ -875,70 +838,80 @@ def per_capita_adjusted_budget(
     Parameters
     ----------
     population_ts
-        Timeseries of population for each group of interest
+        Population time series for each group of interest.
     allocation_year
-        Year from which to start calculating allocations and budgets.
-        See the ``allocation_year`` section in docs/science/parameter-effects.md
-        for how this affects country shares
+        Year from which to calculate budget shares. See
+        ``docs/science/parameter-effects.md`` §allocation_year for how
+        the choice of year affects country shares.
     emission_category
-        Emission category to include in the output
+        Emission category (e.g., ``'co2-ffi'``, ``'all-ghg'``).
     country_actual_emissions_ts
-        Historical emissions data (required if pre_allocation_responsibility_weight > 0)
+        **Pre-allocation responsibility.** Historical emissions data.
+        Required when ``pre_allocation_responsibility_weight > 0``.
     gdp_ts
-        GDP data (required if capability_weight > 0)
+        **Capability.** GDP data used from ``allocation_year`` onwards.
+        Required when ``capability_weight > 0``.
     pre_allocation_responsibility_weight
-        Weight for pre-allocation responsibility adjustment (0.0 to 1.0).
-        See the ``pre_allocation_responsibility_weight`` section in
-        docs/science/parameter-effects.md for real allocation examples
+        **Pre-allocation responsibility.** Relative weight (0–1). Only the
+        ratio to ``capability_weight`` matters. When 0, pre-allocation
+        responsibility is disabled.
+        See ``docs/science/parameter-effects.md`` §weights.
     capability_weight
-        Weight for economic capability adjustment (0.0 to 1.0). Applies from the
-        allocation year onwards (contrast with pre-allocation responsibility,
-        which covers the window prior to it).
-        See the ``capability_weight`` section in docs/science/parameter-effects.md
-        for real allocation examples
+        **Capability.** Relative weight (0–1). Applies from
+        ``allocation_year`` onwards (contrast with pre-allocation
+        responsibility, which covers the window before it). When 0,
+        capability is disabled.
+        See ``docs/science/parameter-effects.md`` §weights.
     pre_allocation_responsibility_year
-        Start year for pre-allocation responsibility calculation (default: 1990)
+        **Pre-allocation responsibility.** Start year of the historical
+        window ``[pre_allocation_responsibility_year,
+        allocation_year)``. Default: 1990.
     pre_allocation_responsibility_per_capita
-        If True, use per capita emissions; if False, use absolute emissions
+        **Pre-allocation responsibility.** If ``True``, uses per-capita
+        cumulative emissions. If ``False`` (default), uses absolute
+        cumulative emissions.
     pre_allocation_responsibility_exponent
-        Exponent for the pre-allocation responsibility adjustment function
+        **Pre-allocation responsibility.** Exponent applied to the
+        emissions metric. Default: 1.0.
     pre_allocation_responsibility_functional_form
-        Functional form for pre-allocation responsibility: "asinh" or "power"
+        **Pre-allocation responsibility.** Transformation: ``'asinh'``
+        (default) or ``'power'``.
+    capability_per_capita
+        **Capability.** If ``True`` (default), GDP is divided by
+        population. If ``False``, absolute GDP is used.
     capability_exponent
-        Exponent for the capability adjustment function
+        **Capability.** Exponent applied to the GDP metric. Default: 1.0.
     capability_functional_form
-        Functional form for capability: "asinh" or "power"
+        **Capability.** Transformation: ``'asinh'`` (default) or
+        ``'power'``.
     capability_reference_year
-        Year to use as the capability snapshot. When ``None`` (default),
-        capability is computed year-by-year. When set to an integer, a single
-        GDP column is used and broadcast across the allocation window, matching
-        the PRR2023 ``allocationCPC`` construction. The reference year may be
-        before OR after the allocation year. When
-        ``capability_reference_year < allocation_year`` (e.g. PRR2023 lag-1:
-        ``allocation_year=2015, capability_reference_year=2014``), the snapshot
-        is sourced from the full unfiltered ``gdp_ts``; Gini adjustment is NOT
-        applied in that branch. Ignored if ``capability_weight == 0.0``.
-        Emits a ``UserWarning`` if ``capability_reference_year`` exceeds the
-        last observed GDP year.
+        **Capability.** When ``None`` (default), capability is computed
+        year-by-year. When set to an integer, GDP from that single year
+        is broadcast across the allocation window (matching PRR2023
+        ``allocationCPC``). May be before or after ``allocation_year``.
+        When before, Gini adjustment is NOT applied to the snapshot.
+        Ignored when ``capability_weight == 0``.
     max_deviation_sigma
-        Maximum allowed deviation from equal per capita in standard deviations.
-        Constrains allocations to remain within a statistically reasonable range of
-        the equal per capita baseline, preventing extreme adjustments.
-        If None, no constraint is applied
+        **Constraint.** Maximum allowed deviation from equal per capita,
+        in standard deviations. ``None`` (default) means no constraint.
     preserve_allocation_year_shares
-        If False (default), shares are calculated using cumulative adjusted
-        population from allocation_year onwards. If True, shares calculated at
-        allocation_year are preserved
+        **Mode.** If ``False`` (default), uses cumulative adjusted
+        population from ``allocation_year`` onwards. If ``True``, uses
+        population at ``allocation_year`` only.
     historical_discount_rate
-        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
-        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
-        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        **Pre-allocation responsibility.** Discount rate for historical
+        emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
+        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        responsibility calculation.
+    cumulative_end_year
+        Upper bound of the cumulative window. ``None`` (default) uses the
+        last year in the population data.
     group_level
-        Level in the index which specifies group information
+        Index level name for grouping. Default: ``'iso3c'``.
     unit_level
-        Level in the index which specifies the unit of each timeseries
+        Index level name for units. Default: ``'unit'``.
     ur
-        The unit registry to use for calculations
+        Pint unit registry for unit conversions.
 
     Returns
     -------
@@ -973,54 +946,6 @@ def per_capita_adjusted_budget(
     equal_per_capita_budget : Without responsibility or capability adjustments
     per_capita_adjusted_gini_budget : With Gini-adjusted GDP capability weighting
 
-    Examples
-    --------
-    Calculate allocation with both pre-allocation responsibility and capability adjustments:
-
-    >>> from fair_shares.library.utils import create_example_data
-    >>> data = create_example_data()
-    >>> result = per_capita_adjusted_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     allocation_year=2030,
-    ...     emission_category="co2-ffi",
-    ...     country_actual_emissions_ts=data["emissions"],
-    ...     gdp_ts=data["gdp"],
-    ...     pre_allocation_responsibility_weight=0.5,
-    ...     capability_weight=0.5,
-    ...     pre_allocation_responsibility_year=2020,
-    ... )
-    Converting units...
-    >>> result.approach
-    'per-capita-adjusted-budget'
-    >>> # Shares sum to 1.0
-    >>> shares = result.relative_shares_cumulative_emission
-    >>> bool(abs(shares["2030"].sum() - 1.0) < 1e-10)
-    True
-    >>> # Parameters include normalized weights
-    >>> result.parameters["pre_allocation_responsibility_weight"]  # doctest: +ELLIPSIS
-    0.5...
-    >>> result.parameters["capability_weight"]  # doctest: +ELLIPSIS
-    0.5...
-
-    Using only pre-allocation responsibility adjustment (no capability):
-
-    >>> result_resp_only = per_capita_adjusted_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     allocation_year=2030,
-    ...     emission_category="co2-ffi",
-    ...     country_actual_emissions_ts=data["emissions"],
-    ...     pre_allocation_responsibility_weight=1.0,
-    ...     capability_weight=0.0,
-    ...     pre_allocation_responsibility_year=2020,
-    ... )
-    Converting units...
-    >>> # Countries with higher historical emissions get lower allocations
-    >>> result_resp_only.approach
-    'per-capita-adjusted-budget'
-    >>> result_resp_only.parameters["pre_allocation_responsibility_weight"]  # doctest: +ELLIPSIS
-    1.0...
-    >>> result_resp_only.parameters["capability_weight"]  # doctest: +ELLIPSIS
-    0.0...
     """
     return _per_capita_budget_core(
         population_ts=population_ts,
@@ -1183,76 +1108,89 @@ def per_capita_adjusted_gini_budget(
     Parameters
     ----------
     population_ts
-        Timeseries of population for each group of interest
+        Population time series for each group of interest.
     gdp_ts
-        Timeseries of GDP for each group of interest (required)
+        **Capability.** GDP time series (required). Used from
+        ``allocation_year`` onwards for capability calculations.
     gini_s
-        DataFrame containing Gini coefficient data for each group (required)
+        **Gini.** Gini coefficients for within-country income inequality
+        (required). Used to adjust GDP before computing the capability
+        factor.
     allocation_year
-        Year from which to start calculating allocations and budgets.
-        See the ``allocation_year`` section in docs/science/parameter-effects.md
-        for how this affects country shares
+        Year from which to calculate budget shares. See
+        ``docs/science/parameter-effects.md`` §allocation_year.
     emission_category
-        Emission category to include in the output
+        Emission category (e.g., ``'co2-ffi'``, ``'all-ghg'``).
     country_actual_emissions_ts
-        Historical emissions data (required if pre_allocation_responsibility_weight > 0)
+        **Pre-allocation responsibility.** Historical emissions data.
+        Required when ``pre_allocation_responsibility_weight > 0``.
     pre_allocation_responsibility_weight
-        Weight for pre-allocation responsibility adjustment (0.0 to 1.0).
-        See the ``pre_allocation_responsibility_weight`` section in
-        docs/science/parameter-effects.md for real allocation examples
+        **Pre-allocation responsibility.** Relative weight (0–1). Only the
+        ratio to ``capability_weight`` matters. When 0, pre-allocation
+        responsibility is disabled.
+        See ``docs/science/parameter-effects.md`` §weights.
     capability_weight
-        Weight for economic capability adjustment (0.0 to 1.0, default 1.0)
+        **Capability.** Relative weight (0–1, default 1.0). Applies from
+        ``allocation_year`` onwards. When 0, capability is disabled.
     pre_allocation_responsibility_year
-        Start year for pre-allocation responsibility calculation (default: 1990)
+        **Pre-allocation responsibility.** Start year of the historical
+        window. Default: 1990.
     pre_allocation_responsibility_per_capita
-        If True, use per capita emissions; if False, use absolute emissions
+        **Pre-allocation responsibility.** If ``True``, uses per-capita
+        cumulative emissions. If ``False`` (default), uses absolute
+        cumulative emissions.
     pre_allocation_responsibility_exponent
-        Exponent for the pre-allocation responsibility adjustment function
+        **Pre-allocation responsibility.** Exponent applied to the
+        emissions metric. Default: 1.0.
     pre_allocation_responsibility_functional_form
-        Functional form for pre-allocation responsibility: "asinh" or "power"
+        **Pre-allocation responsibility.** Transformation: ``'asinh'``
+        (default) or ``'power'``.
+    capability_per_capita
+        **Capability.** If ``True`` (default), Gini-adjusted GDP is
+        divided by population. If ``False``, absolute Gini-adjusted GDP
+        is used.
     capability_exponent
-        Exponent for the capability adjustment function
+        **Capability.** Exponent applied to the Gini-adjusted GDP metric.
+        Default: 1.0.
     capability_functional_form
-        Functional form for capability: "asinh" or "power"
+        **Capability.** Transformation: ``'asinh'`` (default) or
+        ``'power'``.
     capability_reference_year
-        Year to use as the capability snapshot. When ``None`` (default),
-        capability is computed year-by-year. When set to an integer, a single
-        GDP column is used and broadcast across the allocation window, matching
-        the PRR2023 ``allocationCPC`` construction. When
-        ``capability_reference_year < allocation_year``, the snapshot is
-        sourced from the full unfiltered ``gdp_ts``; Gini adjustment is NOT
-        applied in that branch. Ignored if ``capability_weight == 0.0``.
-        Emits a ``UserWarning`` if ``capability_reference_year`` exceeds the
-        last observed GDP year.
+        **Capability.** When ``None`` (default), capability is computed
+        year-by-year. When set to an integer, GDP from that single year
+        is broadcast across the allocation window (matching PRR2023
+        ``allocationCPC``). When before ``allocation_year``, Gini
+        adjustment is NOT applied to the snapshot.
+        Ignored when ``capability_weight == 0``.
     income_floor
-        Income floor for Gini adjustment (in USD PPP per capita). Income below
-        this threshold is excluded from capability calculations, adapted from the
-        Greenhouse Development Rights (GDR) development threshold [Baer 2013]
-        (GDR was designed for burden-sharing; fair-shares uses its capability
-        metric in an entitlement allocation context).
-        See docs/science/parameter-effects.md#income_floor for real allocation
-        examples showing how this affects country shares
+        **Gini.** Development threshold in USD PPP per capita. Income
+        below this is excluded from capability calculations, adapted from
+        GDR (Baer 2013). Default: 0.0. See
+        ``docs/science/parameter-effects.md`` §income_floor.
     max_gini_adjustment
-        Maximum allowed Gini adjustment factor
+        **Gini.** Maximum reduction factor from threshold deduction (0–1).
+        Default: 0.8.
     max_deviation_sigma
-        Maximum allowed deviation from equal per capita in standard deviations.
-        Constrains allocations to remain within a statistically reasonable range of
-        the equal per capita baseline, preventing extreme adjustments.
-        If None, no constraint is applied
+        **Constraint.** Maximum allowed deviation from equal per capita,
+        in standard deviations. ``None`` (default) means no constraint.
     preserve_allocation_year_shares
-        If False (default), shares are calculated using cumulative adjusted
-        population from allocation_year onwards. If True, shares calculated at
-        allocation_year are preserved
+        **Mode.** If ``False`` (default), uses cumulative adjusted
+        population from ``allocation_year`` onwards. If ``True``, uses
+        population at ``allocation_year`` only.
     historical_discount_rate
-        Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
-        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
-        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        **Pre-allocation responsibility.** Discount rate for historical
+        emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
+        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        responsibility calculation.
+    cumulative_end_year
+        Upper bound of the cumulative window. ``None`` (default) uses the
+        last year in the population data.
     group_level
-        Level in the index which specifies group information
+        Index level name for grouping. Default: ``'iso3c'``.
     unit_level
-        Level in the index which specifies the unit of each timeseries
+        Index level name for units. Default: ``'unit'``.
     ur
-        The unit registry to use for calculations
+        Pint unit registry for unit conversions.
 
     Returns
     -------
@@ -1287,59 +1225,6 @@ def per_capita_adjusted_gini_budget(
     equal_per_capita_budget : Without responsibility or capability adjustments
     per_capita_adjusted_budget : Without Gini adjustment to capability weighting
 
-    Examples
-    --------
-    Calculate allocation with Gini-adjusted capability (no pre-allocation responsibility):
-
-    >>> from fair_shares.library.utils import create_example_data
-    >>> data = create_example_data()
-    >>> result = per_capita_adjusted_gini_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     gdp_ts=data["gdp"],
-    ...     gini_s=data["gini"],
-    ...     allocation_year=2030,
-    ...     emission_category="co2-ffi",
-    ...     pre_allocation_responsibility_weight=0.0,
-    ...     capability_weight=1.0,
-    ... )
-    Converting units...
-    >>> result.approach
-    'per-capita-adjusted-gini-budget'
-    >>> # Shares are adjusted for inequality in addition to GDP
-    >>> shares = result.relative_shares_cumulative_emission
-    >>> bool(abs(shares["2030"].sum() - 1.0) < 1e-10)  # Should sum to 1.0
-    True
-    >>> # Gini parameters are stored in result
-    >>> result.parameters["income_floor"]  # doctest: +ELLIPSIS
-    0.0...
-    >>> result.parameters["max_gini_adjustment"]  # doctest: +ELLIPSIS
-    0.8...
-
-    Calculate allocation with both pre-allocation responsibility and Gini-adjusted capability:
-
-    >>> result_full = per_capita_adjusted_gini_budget(  # doctest: +ELLIPSIS
-    ...     population_ts=data["population"],
-    ...     gdp_ts=data["gdp"],
-    ...     gini_s=data["gini"],
-    ...     allocation_year=2030,
-    ...     emission_category="co2-ffi",
-    ...     country_actual_emissions_ts=data["emissions"],
-    ...     pre_allocation_responsibility_weight=0.5,
-    ...     capability_weight=0.5,
-    ...     pre_allocation_responsibility_year=2020,
-    ... )
-    Converting units...
-    >>> result_full.approach
-    'per-capita-adjusted-gini-budget'
-    >>> # Both adjustments are reflected in parameters
-    >>> result_full.parameters["pre_allocation_responsibility_weight"]  # doctest: +ELLIPSIS
-    0.5...
-    >>> result_full.parameters["capability_weight"]  # doctest: +ELLIPSIS
-    0.5...
-    >>> # With income floor, high inequality means more income above threshold
-    >>> shares_full = result_full.relative_shares_cumulative_emission
-    >>> bool(abs(shares_full["2030"].sum() - 1.0) < 1e-10)
-    True
     """
     return _per_capita_budget_core(
         population_ts=population_ts,

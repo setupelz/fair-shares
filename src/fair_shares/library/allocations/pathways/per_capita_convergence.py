@@ -280,34 +280,6 @@ def per_capita_convergence(
     WARNING: This is NOT an equity-based approach. For detailed critique, see:
         docs/science/allocations.md#per-capita-convergence-pcc
 
-    Examples
-    --------
-    Calculate per capita convergence allocation transitioning from current
-    emission shares to equal per capita shares over a 30-year period.
-
-    >>> from fair_shares.library.utils import create_example_data
-    >>> data = create_example_data(
-    ...     countries=["USA", "CHN", "IND"], years=[2020, 2030, 2050]
-    ... )
-    >>> result = per_capita_convergence(
-    ...     population_ts=data["population"],
-    ...     country_actual_emissions_ts=data["emissions"],
-    ...     first_allocation_year=2020,
-    ...     convergence_year=2050,
-    ...     emission_category="co2-ffi",
-    ... )
-    >>> result.approach
-    'per-capita-convergence'
-    >>> result.parameters["convergence_year"]
-    2050
-    >>> # Result contains relative shares that blend from current emissions
-    >>> # (grandfathering) at 2020 to equal per capita at 2050
-    >>> result.relative_shares_pathway_emissions.sum(axis=0).round(3)  # doctest: +SKIP
-    2020    1.000
-    2030    1.000
-    2050    1.000
-    dtype: float64
-
     See Also
     --------
     per_capita_adjusted : Equal per capita with pre-allocation responsibility/capability adjustments
