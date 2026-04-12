@@ -136,18 +136,13 @@ def _per_capita_budget_core(
         each population year in the allocation window. When set to an integer,
         the capability metric is taken from that single year and broadcast as
         a constant across all years in the window — equivalent to
-        ``C(g, t) ≡ C(g, t_ref)`` for all ``t``. This matches the PRR2023
-        ``allocationCPC`` construction (``pf(gdp_pc(t_ref)) * cumulative_pop``)
-        and should be used when reproducing that paper's results. The reference
-        year may be before OR after the allocation year. When
-        ``capability_reference_year < allocation_year`` (e.g. PRR2023
-        ``allocation_year=2015, capability_reference_year=2014`` lag-1
-        convention), the snapshot is sourced from the full unfiltered
-        ``gdp_ts`` and ``population_ts`` inputs; Gini adjustment is NOT
-        applied in that case. See ``per_capita_adjusted_budget`` for
-        workaround options. Ignored if ``capability_weight == 0.0``.
-        Emits a ``UserWarning`` if ``capability_reference_year`` exceeds the
-        last observed GDP year.
+        ``C(g, t) ≡ C(g, t_ref)`` for all ``t``. The reference year may be
+        before OR after the allocation year. When
+        ``capability_reference_year < allocation_year``, the snapshot is
+        sourced from the full unfiltered ``gdp_ts`` and ``population_ts``
+        inputs; Gini adjustment is NOT applied in that case.
+        Ignored if ``capability_weight == 0.0``. Emits a ``UserWarning``
+        if ``capability_reference_year`` exceeds the last observed GDP year.
     income_floor
         Income floor for Gini adjustment (in USD PPP per capita). Default: 0.0.
     max_gini_adjustment
@@ -160,8 +155,8 @@ def _per_capita_budget_core(
         onwards. If True, shares calculated at allocation_year are preserved.
     historical_discount_rate
         Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
-        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
-        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        emissions are weighted less via (1 - rate)^(reference_year - t).
+        Default: 0.0 (no discounting).
     group_level
         Level in the index which specifies group information.
     unit_level
@@ -357,7 +352,6 @@ def _per_capita_budget_core(
             )
         else:
             # Snapshot mode: take one column and broadcast it across the window.
-            # Matches PRR2023 allocationCPC: pf(gdp_pc(t_ref)) * cumulative_pop.
             # When capability_reference_year is set, only that one GDP year is
             # used — forward-fill is irrelevant and the snapshot value is
             # broadcast across the window.
@@ -387,8 +381,6 @@ def _per_capita_budget_core(
                 # ref_year < allocation_year: the reference year was stripped by
                 # filter_time_columns, so we must source the snapshot from the
                 # UNFILTERED gdp_ts and population_ts inputs.
-                # This is the PRR2023 lag-1 case: allocation_year=2015,
-                # capability_reference_year=2014.
                 # Apply the same unit processing used in the main capability path.
                 gdp_full_single_unit = set_single_unit(gdp_ts, unit_level, ur=ur)
                 gdp_full_single_unit = convert_unit_robust(
@@ -797,17 +789,11 @@ def per_capita_adjusted_budget(
     capability over the full allocation window. When ``capability_reference_year``
     is set to an integer $t_{\text{ref}}$, the capability is frozen at that
     year: $C(g, t) \equiv C(g, t_{\text{ref}})$ for all $t$ in the cumulative
-    window. This matches the PRR2023 (ESABCC 2023) ``allocationCPC``
-    construction, where ``pf(gdp_pc(t_ref)) * cumulative_pop`` yields a
-    scalar-per-region weight. Use this when reproducing PRR2023 results
-    (e.g. ``allocation_year=1990, capability_reference_year=1990`` or
-    ``allocation_year=2015, capability_reference_year=2014``).
-    When ``capability_reference_year`` is before ``allocation_year`` (e.g.
-    PRR2023 lag-1), the snapshot is sourced from the full unfiltered
-    ``gdp_ts``. When ``capability_reference_year`` exceeds the last observed
-    GDP year, the last observed column is used as the snapshot (forward-fill
-    fallback, consistent with year-by-year default mode), and a
-    ``UserWarning`` is emitted.
+    window. When ``capability_reference_year`` is before ``allocation_year``,
+    the snapshot is sourced from the full unfiltered ``gdp_ts``. When
+    ``capability_reference_year`` exceeds the last observed GDP year, the last
+    observed column is used as the snapshot (forward-fill fallback, consistent
+    with year-by-year default mode), and a ``UserWarning`` is emitted.
 
     For per capita capability (:code:`capability_per_capita=True`, default):
 
@@ -887,8 +873,8 @@ def per_capita_adjusted_budget(
     capability_reference_year
         **Capability.** When ``None`` (default), capability is computed
         year-by-year. When set to an integer, GDP from that single year
-        is broadcast across the allocation window (matching PRR2023
-        ``allocationCPC``). May be before or after ``allocation_year``.
+        is broadcast across the allocation window. May be before or
+        after ``allocation_year``.
         When before, Gini adjustment is NOT applied to the snapshot.
         Ignored when ``capability_weight == 0``.
     max_deviation_sigma
@@ -901,7 +887,7 @@ def per_capita_adjusted_budget(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
-        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        Default: 0.0. Only affects the pre-allocation
         responsibility calculation.
     cumulative_end_year
         Upper bound of the cumulative window. ``None`` (default) uses the
@@ -1158,14 +1144,14 @@ def per_capita_adjusted_gini_budget(
     capability_reference_year
         **Capability.** When ``None`` (default), capability is computed
         year-by-year. When set to an integer, GDP from that single year
-        is broadcast across the allocation window (matching PRR2023
-        ``allocationCPC``). When before ``allocation_year``, Gini
+        is broadcast across the allocation window. When before
+        ``allocation_year``, Gini
         adjustment is NOT applied to the snapshot.
         Ignored when ``capability_weight == 0``.
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income
         below this is excluded from capability calculations, adapted from
-        GDR (Baer 2013). Default: 0.0. See
+        GDR. Default: 0.0. See
         ``docs/science/parameter-effects.md`` §income_floor.
     max_gini_adjustment
         **Gini.** Maximum reduction factor from threshold deduction (0–1).
@@ -1180,7 +1166,7 @@ def per_capita_adjusted_gini_budget(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
-        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        Default: 0.0. Only affects the pre-allocation
         responsibility calculation.
     cumulative_end_year
         Upper bound of the cumulative window. ``None`` (default) uses the

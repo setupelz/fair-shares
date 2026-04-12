@@ -11,7 +11,7 @@ For detailed critique of why grandfathering lacks ethical basis, see:
 
 This module implements the per capita convergence approach, which transitions
 allocation shares from current emission shares to equal per capita shares over
-a convergence period. Related to Contraction and Convergence [GCI 2003].
+a convergence period. Related to Contraction and Convergence.
 
 For approaches with pre-allocation responsibility rescaling and/or capability
 adjustments, see per_capita_adjusted or cumulative_per_capita_convergence_adjusted.
@@ -62,7 +62,7 @@ def _per_capita_convergence_core(
     (current emission shares) and equal per capita allocation over the
     specified convergence period.
 
-    The approach is related to Contraction and Convergence [GCI 2003], where
+    The approach is related to Contraction and Convergence, where
     global emissions contract to meet climate targets while per capita emissions
     converge to equality by a target date.
 
@@ -207,8 +207,8 @@ def per_capita_convergence(
 
     This approach transitions from grandfathering (GF) to equal per capita (EPC)
     from allocation time, $t_{a}$, to convergence time, $t_{conv}$, using a
-    linear weight $M(t)$. It implements a variant of Contraction and Convergence
-    [GCI 2003], where global emissions contract while per capita emissions
+    linear weight $M(t)$. It implements a variant of Contraction and Convergence,
+    where global emissions contract while per capita emissions
     converge to equality by a target date.
 
     Mathematical Foundation

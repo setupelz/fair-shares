@@ -165,12 +165,12 @@ def _cumulative_per_capita_convergence_core(
         Maximum allowed convergence speed (0 to 1.0). Default: 0.9.
     historical_discount_rate
         Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
-        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
-        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        emissions are weighted less via (1 - rate)^(reference_year - t).
+        Default: 0.0 (no discounting).
     convergence_method
         Convergence algorithm to use. "minimum-speed" (default): exponential
         convergence with binary-search for minimum feasible speed.
-        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        "sine-deviation": iterative sine-shaped correction
         from a PCC baseline; requires convergence_year.
     convergence_year
         Year by which allocations converge to equal per capita. Required when
@@ -424,7 +424,7 @@ def _cumulative_per_capita_convergence_core(
     world_time_columns = emissions_world.columns
 
     if convergence_method == "sine-deviation":
-        # Sine-deviation convergence (Dekker Eqs. 7-8)
+        # Sine-deviation convergence
         # Compute PCC baseline shares (linear blend from GF to EPC)
         from fair_shares.library.utils import groupby_except_robust
 
@@ -769,7 +769,7 @@ def cumulative_per_capita_convergence(
     convergence_method
         Convergence algorithm to use. "minimum-speed" (default): exponential
         convergence with binary-search for minimum feasible speed.
-        "sine-deviation" (Dekker Eqs. 7-8): iterative sine-shaped correction
+        "sine-deviation": iterative sine-shaped correction
         from a PCC baseline; requires convergence_year.
     convergence_year
         Year by which allocations converge to equal per capita. Required when
@@ -1036,12 +1036,12 @@ def cumulative_per_capita_convergence_adjusted(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
-        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        Default: 0.0. Only affects the pre-allocation
         responsibility calculation.
     convergence_method
         **Convergence.** Algorithm to use. ``'minimum-speed'`` (default):
         exponential convergence with binary-search for minimum feasible
-        speed. ``'sine-deviation'`` (Dekker Eqs. 7-8): iterative
+        speed. ``'sine-deviation'``: iterative
         sine-shaped correction from a PCC baseline; requires
         ``convergence_year``.
     convergence_year
@@ -1352,11 +1352,11 @@ def cumulative_per_capita_convergence_adjusted_gini(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
-        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        Default: 0.0. Only affects the pre-allocation
         responsibility calculation.
     convergence_method
         **Convergence.** Algorithm: ``'minimum-speed'`` (default) or
-        ``'sine-deviation'`` (Dekker Eqs. 7-8, requires
+        ``'sine-deviation'`` (requires
         ``convergence_year``).
     convergence_year
         **Convergence.** Year by which allocations converge to equal per

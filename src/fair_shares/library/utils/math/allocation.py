@@ -200,7 +200,7 @@ def calculate_gini_adjusted_gdp(
     Gini-adjusted GDP (capability) using the GDR development threshold.
 
     Implements an interpretation of the Greenhouse Development Rights (GDR)
-    framework's capability metric for entitlement allocation (Baer et al. 2009).
+    framework's capability metric for entitlement allocation.
     Note: GDR was originally designed for burden-sharing; fair-shares adapts its
     capability calculation for use in an entitlement context. Only income
     **above** a development threshold counts as "ability to pay" for climate
@@ -281,14 +281,6 @@ def calculate_gini_adjusted_gdp(
     np.ndarray
         Array of adjusted GDP values (capability) for each country.
 
-    References
-    ----------
-    Baer, P., Athanasiou, T., Kartha, S., & Kemp-Benedict, E. (2009).
-    *Greenhouse Development Rights: A proposal for a fair global climate
-    treaty.* Ethics, Place & Environment, 12(3), 267-281.
-
-    See also: `Climate Equity Reference Calculator
-    <https://calculator.climateequityreference.org/>`_
     """
     # Validation checks
     if income_floor < 0:

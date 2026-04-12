@@ -532,24 +532,19 @@ def evolve_shares_sine_deviation(
     first_allocation_year: int,
 ) -> pd.DataFrame:
     """
-    Iterative sine-deviation convergence solver (Dekker Eqs. 7-8).
+    Iterative sine-deviation convergence solver.
 
     Computes year-by-year allocations that deviate from a PCC baseline using
     a sine-shaped correction, front-loading the adjustment toward cumulative
     budget targets. Each year's allocation depends on all previous allocations.
 
-    .. note::
-        Validated with synthetic data in unit and integration tests. Pending
-        validation against real AR6/PRIMAP pipeline output and the published
-        results in Dekker et al. (2025).
-
     The method works in two steps per year:
 
-    **Step 1** -- Track remaining debt/leftover (Eq. 7):
+    **Step 1** -- Track remaining debt/leftover:
 
         D(t, g) = B_ECPC(g) - sum_{t_i=t_a}^{t-1} E_alloc(t_i, g) + E_PCC(t, g)
 
-    **Step 2** -- Sine-shaped deviation from PCC (Eq. 8):
+    **Step 2** -- Sine-shaped deviation from PCC:
 
         E_alloc(t, g) = D(t,g)/(t_conv - t) * sin((t - t_a)/(t_conv - t_a) * pi)
                         + E_PCC(t, g)
@@ -574,7 +569,7 @@ def evolve_shares_sine_deviation(
     convergence_year : int
         Year by which allocations converge.
     first_allocation_year : int
-        First allocation year (t_a, equivalent to t_0 in Dekker).
+        First allocation year.
 
     Returns
     -------

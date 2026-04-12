@@ -70,8 +70,8 @@ def calculate_responsibility_adjustment_data(
     historical_discount_rate
         Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
         emissions are weighted less via (1 - rate)^(reference_year - t), where
-        reference_year = allocation_year - 1. Implements natural CO2 removal
-        rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        reference_year = allocation_year - 1.
+        Default: 0.0 (no discounting).
 
     Returns
     -------
@@ -163,7 +163,7 @@ def calculate_responsibility_adjustment_data(
 
         pop_numeric = pop_numeric[pop_columns]
 
-        # Apply same discount weights to population for consistency (Dekker Eq. 5)
+        # Apply same discount weights to population for consistency
         if historical_discount_rate > 0.0:
             pop_years = pd.to_numeric(pop_columns, errors="coerce")
             pop_discount_weights = pd.Series(
@@ -236,8 +236,8 @@ def calculate_responsibility_adjustment_data_convergence(
     historical_discount_rate
         Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
         emissions are weighted less via (1 - rate)^(reference_year - t), where
-        reference_year = first_allocation_year. Implements natural CO2 removal
-        rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        reference_year = first_allocation_year.
+        Default: 0.0 (no discounting).
 
     Returns
     -------
@@ -365,7 +365,7 @@ def calculate_responsibility_adjustment_data_convergence(
 
         pop_numeric = pop_numeric[pop_columns]
 
-        # Apply same discount weights to population for consistency (Dekker Eq. 5)
+        # Apply same discount weights to population for consistency
         if historical_discount_rate > 0.0:
             pop_years = pd.to_numeric(pop_columns, errors="coerce")
             pop_discount_weights = pd.Series(
@@ -439,9 +439,8 @@ def calculate_capability_adjustment_data(
     income_floor
         Income floor for Gini adjustment (in USD PPP per capita). Income below this
         threshold is excluded from capability calculations, adapted from the
-        Greenhouse Development Rights (GDR) development threshold [Baer 2013]
-        (GDR was designed for burden-sharing; fair-shares uses its capability
-        metric in an entitlement allocation context). Default: 0.0
+        Greenhouse Development Rights (GDR) development threshold.
+        Default: 0.0
     max_gini_adjustment
         Maximum reduction factor from Gini adjustment (0-1). Default: 0.8
 

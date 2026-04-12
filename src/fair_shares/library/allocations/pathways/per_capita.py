@@ -143,8 +143,8 @@ def _per_capita_core(
         calculated at first_allocation_year are preserved across all periods.
     historical_discount_rate
         Discount rate for historical emissions (0.0 to <1.0). When > 0, earlier
-        emissions are weighted less via (1 - rate)^(reference_year - t). Implements
-        natural CO2 removal rationale (Dekker Eq. 5). Default: 0.0 (no discounting).
+        emissions are weighted less via (1 - rate)^(reference_year - t).
+        Default: 0.0 (no discounting).
     group_level
         Level in the index which specifies group information.
     unit_level
@@ -818,7 +818,7 @@ def per_capita_adjusted(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0). Weights earlier emissions less via
-        ``(1 - rate)^(reference_year - t)`` (Dekker Eq. 5). Default: 0.0
+        ``(1 - rate)^(reference_year - t)``. Default: 0.0
         (no discounting). Only affects the pre-allocation responsibility
         calculation.
     group_level
@@ -1042,7 +1042,7 @@ def per_capita_adjusted_gini(
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income
         below this is excluded from capability calculations, adapted from
-        GDR (Baer 2013). Default: 7500.0. See
+        GDR. Default: 7500.0. See
         ``docs/science/parameter-effects.md`` §income_floor.
     max_gini_adjustment
         **Gini.** Maximum reduction factor from threshold deduction (0–1).
@@ -1059,7 +1059,7 @@ def per_capita_adjusted_gini(
     historical_discount_rate
         **Pre-allocation responsibility.** Discount rate for historical
         emissions (0.0 to <1.0), via ``(1 - rate)^(reference_year - t)``
-        (Dekker Eq. 5). Default: 0.0. Only affects the pre-allocation
+        Default: 0.0. Only affects the pre-allocation
         responsibility calculation.
     group_level
         Index level name for grouping. Default: ``'iso3c'``.
