@@ -26,6 +26,7 @@ All bundled data permits redistribution. The licenses are permissive:
 | Regions        | regioniso3c (custom)   | **MIT**            | Optional          |
 | Scenarios      | IPCC AR6 (Gidden 2022) | **CC-BY-4.0**      | Yes               |
 | Carbon budgets | Lamboll et al. 2023    | Published values   | Yes               |
+| Carbon budgets | Forster et al. 2024    | Published values   | Yes               |
 | Bunker fuels   | Global Carbon Budget 2024 | **CC-BY-4.0**   | Yes               |
 
 ---
@@ -153,14 +154,17 @@ When working with IAMC-format files, the library uses **the regions defined in y
 
 The global remaining carbon budget (RCB) is a key input for budget-based allocations. Different sources, temperature targets, and probability levels produce substantially different budgets. The table below documents the primary sources used and referenced in fair-shares:
 
-| Source              | Budget              | Temperature | Probability | Notes                                              |
-| ------------------- | ------------------- | ----------- | ----------- | -------------------------------------------------- |
-| Lamboll et al. 2023 | 247 GtCO2 from 2023 | 1.5°C       | 50%         | Default RCB in fair-shares bundled data            |
-| IPCC AR6            | Various             | Various     | Various     | Temperature–budget relationships in WG1 Chapter 5  |
+| Source              | Budget              | Temperature | Probability | Baseline | Notes                                              |
+| ------------------- | ------------------- | ----------- | ----------- | -------- | -------------------------------------------------- |
+| Lamboll et al. 2023 | 250 GtCO2           | 1.5°C       | 50%         | 2023     | Methodology paper for updated RCB estimates        |
+| Forster et al. 2024 | 200 GtCO2           | 1.5°C       | 50%         | 2024     | IGCC 2023; latest usable with PRIMAP v2.6.1 (through 2023) |
+| IPCC AR6 WGI        | 500 GtCO2           | 1.5°C       | 50%         | 2020     | Original AR6 estimates from WG1 Chapter 5          |
 
-**Citation for default budget:**
+**Citations:**
 
 > Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. _Nature Climate Change_, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
+
+> Forster, P. M., et al. (2024). Indicators of Global Climate Change 2023. _Earth System Science Data_, 16, 2625–2680. [doi:10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
 
 !!! note "Budget choice is normatively significant"
 The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.

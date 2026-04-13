@@ -53,6 +53,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Klinsky 2018]** Sonja Klinsky and Harald Winkler. "Building equity in: strategies for integrating equity into modelling for a 1.5C world." _Philosophical Transactions of the Royal Society A_. DOI: [10.1098/rsta.2016.0461](https://doi.org/10.1098/rsta.2016.0461)
 
+**[Forster 2024]** Piers M. Forster, Christopher J. Smith, Tristram Walsh, William F. Lamb, Robin Lamboll, Bradley Hall, Mathew W. Jones, and others. "Indicators of Global Climate Change 2023: annual update of key indicators of the state of the climate system and human influence." _Earth System Science Data_, 16, 2625-2680. DOI: [10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
+
 **[Lamboll 2023]** Robin D. Lamboll, Zebedee R. J. Nicholls, Christopher J. Smith, Jarmo S. Kikstra, Edward Byers, and Joeri Rogelj. "Assessing the size and uncertainty of remaining carbon budgets." _Nature Climate Change_, 13, 1360-1367. DOI: [10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
 **[Matthews 2016]** H. Damon Matthews. "Quantifying historical carbon and climate debts among nations." _Nature Climate Change_. DOI: [10.1038/NCLIMATE2774](https://doi.org/10.1038/NCLIMATE2774)

@@ -3,25 +3,32 @@
 #   - baseline_year: The year from which the RCB is calculated
 #   - unit: The unit of the RCB values (typically Gt CO2)
 #   - scenarios: Temperature and probability combinations with their RCB values
+#
+# Probability labels (e.g. 2p66) map to AR6 climate categories:
+#   1.5p50 -> C1, 2p83 -> C2, 2p66 -> C3
+#
+# Sources report at slightly different probability levels:
+#   - AR6/Forster: 67% and 83% (mapped to 2p66, 2p83)
+#   - Lamboll: 66% and 90% (mapped to 2p66; no 83% reported)
 
 rcb_data:
-  lamboll_2023: # Lamboll et al, from "https://doi.org/10.1038/s41558-023-01848-5"
-    baseline_year: 2023
-    unit: "Gt * CO2"
-    scenarios:
-      "1.5p50": 247
-      "2p66": 944
-      "2p83": 504
-
-  forster_2023: # Forster et al, from "https://doi.org/10.1038/s41558-023-01848-5"
+  lamboll_2023: # Lamboll et al (2023), "https://doi.org/10.1038/s41558-023-01848-5"
     baseline_year: 2023
     unit: "Gt * CO2"
     scenarios:
       "1.5p50": 250
-      "2p66": 950
-      "2p83": 800
+      "2p66": 940
+      # Lamboll reports 2°C at 90% = 500 GtCO2, not at 83%
 
-  ar6_2020: # AR6 WGI, from "https://www.ipcc.ch/report/ar6/wg1/"
+  forster_2024: # Forster et al (2024), IGCC 2023, "https://doi.org/10.5194/essd-16-2625-2024"
+    baseline_year: 2024
+    unit: "Gt * CO2"
+    scenarios:
+      "1.5p50": 200
+      "2p66": 900
+      "2p83": 750
+
+  ar6_2020: # AR6 WGI, "https://www.ipcc.ch/report/ar6/wg1/"
     baseline_year: 2020
     unit: "Gt * CO2"
     scenarios:
