@@ -21,9 +21,10 @@ if TYPE_CHECKING:
 
 def calculate_relative_adjustment(
     values: TimeseriesDataFrame | pd.Series,
-    functional_form: str = "power",
+    functional_form: str = "asinh",
     exponent: float = 1.0,
     inverse: bool = True,
+    normalize: bool = True,
 ) -> TimeseriesDataFrame | pd.Series:
     """
     Calculate relative adjustment factors for allocations.
@@ -32,17 +33,32 @@ def calculate_relative_adjustment(
     emissions) to produce adjustment factors. See docs/science/allocations.md
     for theoretical grounding.
 
+    When ``normalize=True`` (default), values are divided by their median before
+    transformation. This ensures unit invariance: multiplying all inputs by a
+    constant (e.g., converting USD to EUR) produces identical adjustment factors,
+    because the constant cancels in the ratio ``x / median(x)``.
+
     Parameters
     ----------
     values
         Input values (GDP per capita, cumulative emissions, etc.)
     functional_form
-        Transformation to apply: "asinh" or "power"
+        Transformation to apply. Default is ``"asinh"`` (inverse hyperbolic sine),
+        which handles the full real line including negatives (net-sink countries)
+        and zeros natively. ``"power"`` is the legacy form; values are clamped to
+        a small epsilon for numerical safety.
     exponent
-        Exponent for the transformation
+        Controls how aggressively the adjustment squashes the range.
+        With ``inverse=True``: exponent=1.0 gives ``1/transform(x)``,
+        exponent=2.0 gives ``1/transform(x)²``, exponent=0.5 gives
+        ``1/sqrt(transform(x))``. Greater exponent = more squashing.
     inverse
         If True (default), higher values -> lower relative adjustment factor.
         If False, higher values -> higher relative adjustment factor.
+    normalize
+        If True (default), divide values by their median before transformation
+        to achieve unit invariance. Set to False for legacy behaviour or when
+        inputs are already dimensionless.
 
     Returns
     -------
@@ -55,21 +71,53 @@ def calculate_relative_adjustment(
     Ability to Pay Principle (via economic capability adjustments, from the
     allocation year onwards).
 
-    Negative or NaN values are clamped to 1.0 before transformation to avoid
-    numerical issues and ensure valid results for all inputs.
+    The arcsinh form handles negative values (net-sink countries) natively, mapping
+    them to negative transformed values. No clamping is applied for asinh. The
+    power form clamps to a small epsilon (1e-10) for numerical safety with
+    negative exponents.
     """
     sign = -1 if inverse else 1
 
-    # Handle negative values and NaN for both functional forms
-    # Set problematic values to 1.0 before transformation
-    # This treats net-sink countries and missing data as having minimal responsibility
-    # Result: adjustment_factor = transform(1.0)^(sign*exponent)
-    values_clamped = np.where((values <= 0) | np.isnan(values), 1.0, values)
+    # Median normalisation for unit invariance
+    if normalize:
+        median = values.median()
+        # Guard: if median is zero (degenerate case), skip normalisation
+        if isinstance(median, pd.Series):
+            median = median.replace(0, np.nan)
+        elif median == 0:
+            median = np.nan
+        values_norm = values / median
+        values_norm = values_norm.fillna(0.0)
+    else:
+        values_norm = values
 
-    if functional_form == "power":
+    if functional_form == "asinh":
+        # arcsinh handles full real line: negatives, zero, positives
+        # NaN values become 0.0 after normalisation (or need explicit handling
+        # if normalize=False)
+        transformed = (
+            values_norm.copy()
+            if isinstance(values_norm, (pd.DataFrame, pd.Series))
+            else values_norm
+        )
+        if not normalize:
+            # Legacy path: handle NaN without normalisation
+            if isinstance(transformed, (pd.DataFrame, pd.Series)):
+                transformed = transformed.fillna(0.0)
+            else:
+                transformed = np.where(np.isnan(transformed), 0.0, transformed)
+        return np.arcsinh(transformed) ** (sign * exponent)
+    elif functional_form == "power":
+        # Power form needs epsilon clamp for numerical safety with negative
+        # exponents
+        if isinstance(values_norm, (pd.DataFrame, pd.Series)):
+            values_clamped = values_norm.clip(lower=1e-10)
+            values_clamped = values_clamped.fillna(1e-10)
+        else:
+            values_clamped = np.where(
+                (values_norm <= 0) | np.isnan(values_norm), 1e-10, values_norm
+            )
         return values_clamped ** (sign * exponent)
-    elif functional_form == "asinh":
-        return np.arcsinh(values_clamped) ** (sign * exponent)
     else:
         raise AllocationError(
             f"Unknown functional_form: {functional_form}. Must be 'power' or 'asinh'"

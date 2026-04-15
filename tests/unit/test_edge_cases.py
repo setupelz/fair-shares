@@ -74,7 +74,12 @@ class TestNaNPropagation:
 
     @pytest.mark.parametrize("label", ["responsibility", "capability"])
     def test_nan_in_relative_adjustment_handles_gracefully(self, label):
-        """NaN values in adjustment input are clamped to neutral (1.0)."""
+        """NaN values become 0 after median normalisation + fillna.
+
+        arcsinh(0) = 0, so with inverse=True the result is 0^(-exponent) = inf.
+        With inverse=False the result is 0^(exponent) = 0.
+        Either way, no NaN propagates.
+        """
         values_with_nan = pd.DataFrame(
             {"2020": [5000.0, np.nan, 3000.0]},
             index=pd.MultiIndex.from_tuples(
@@ -90,7 +95,8 @@ class TestNaNPropagation:
         )
 
         assert not np.isnan(result).any()
-        assert result[1] == 1.0  # CHN (NaN) clamped to neutral
+        # NaN -> 0 after normalisation, arcsinh(0)=0, 0^(-0.5)=inf
+        assert np.isinf(result.iloc[1])
 
 
 class TestSingleCountryAllocation:

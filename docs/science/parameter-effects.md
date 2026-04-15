@@ -206,7 +206,18 @@ _Warning values show achieved/target cumulative share ratio. Feasible countries 
 - `2.0` → Allocations clipped to within ±2 standard deviations of equal per capita
 - Lower values → Tighter constraint, allocations closer to equal per capita
 
-**Key insight:** This is an opt-in tail-compression lever. Setting `max_deviation_sigma=2.0` compresses tails — disclose the choice.
+**Key insight:** This is an opt-in tail-compression lever. The default is `None` (no constraint applied). When you set a value, allocations for countries in the tails of the distribution are clipped inward -- disclose the choice explicitly, since it materially affects results for the most and least adjusted countries.
+
+**Practical guidance:**
+
+| sigma | Effect | Use when |
+|-------|--------|----------|
+| 1.0 | Tight -- allocations stay close to equal per capita | Testing sensitivity, or when equity adjustments should be modest |
+| 2.0 | Moderate -- allows substantial deviation but compresses extremes | General use when you want a safety net against outlier adjustments |
+| 3.0 | Loose -- nearly unconstrained for most distributions | Only catching truly extreme outliers |
+| None | No constraint (default) | When you trust the adjustment parameters to produce reasonable results |
+
+Examples and tests use `max_deviation_sigma=2.0` for illustration; the default is `None` (unconstrained).
 
 **Mathematical detail:** See [Maximum Deviation Constraint](https://setupelz.github.io/fair-shares/science/allocations/#maximum-deviation-constraint)
 

@@ -15,6 +15,7 @@ from fair_shares.library.exceptions import AllocationError
 from fair_shares.library.utils.math.allocation import (
     apply_deviation_constraint,
     calculate_gini_adjusted_gdp,
+    calculate_relative_adjustment,
 )
 
 
@@ -150,3 +151,118 @@ class TestDeviationConstraintEdgeCases:
         assert result.shape == shares.shape
         # Shares should sum to approximately 1 for each year
         assert np.allclose(result.sum(axis=0), 1.0, rtol=1e-5)
+
+
+class TestRelativeAdjustmentAsinhNormalisation:
+    """Test the asinh transform with median normalisation in calculate_relative_adjustment."""
+
+    @pytest.fixture
+    def positive_series(self):
+        """Positive values typical of GDP per capita."""
+        return pd.Series(
+            [5000.0, 10000.0, 20000.0, 40000.0],
+            index=pd.MultiIndex.from_tuples(
+                [("A", "usd"), ("B", "usd"), ("C", "usd"), ("D", "usd")],
+                names=["iso3c", "unit"],
+            ),
+        )
+
+    def test_negative_values_produce_valid_results_with_asinh(self):
+        """Net-sink countries (negative emissions) produce valid finite results.
+
+        Uses exponent=1.0 because fractional exponents on negative arcsinh outputs
+        produce NaN (negative base with fractional power). With exponent=1.0 the
+        full real line maps cleanly through arcsinh.
+        """
+        values = pd.Series(
+            [-500.0, 1000.0, 3000.0, 5000.0],
+            index=pd.MultiIndex.from_tuples(
+                [("A", "Mt"), ("B", "Mt"), ("C", "Mt"), ("D", "Mt")],
+                names=["iso3c", "unit"],
+            ),
+        )
+        result = calculate_relative_adjustment(
+            values, functional_form="asinh", exponent=1.0, inverse=False
+        )
+        assert not np.isnan(result).any()
+        assert np.all(np.isfinite(result))
+        # Negative input should produce negative arcsinh output
+        assert result.iloc[0] < 0
+
+    def test_unit_invariance_with_normalisation(self, positive_series):
+        """Multiplying all inputs by 1000 produces the same result when normalize=True."""
+        result_base = calculate_relative_adjustment(
+            positive_series,
+            functional_form="asinh",
+            exponent=0.5,
+            inverse=True,
+            normalize=True,
+        )
+        result_scaled = calculate_relative_adjustment(
+            positive_series * 1000,
+            functional_form="asinh",
+            exponent=0.5,
+            inverse=True,
+            normalize=True,
+        )
+        pd.testing.assert_series_equal(result_base, result_scaled, rtol=1e-10)
+
+    def test_normalize_false_differs_from_normalize_true(self, positive_series):
+        """normalize=False gives different results than normalize=True."""
+        result_norm = calculate_relative_adjustment(
+            positive_series,
+            functional_form="asinh",
+            exponent=0.5,
+            inverse=True,
+            normalize=True,
+        )
+        result_raw = calculate_relative_adjustment(
+            positive_series,
+            functional_form="asinh",
+            exponent=0.5,
+            inverse=True,
+            normalize=False,
+        )
+        # They should NOT be equal (unless the median happens to be 1, which it isn't)
+        assert not np.allclose(result_norm.values, result_raw.values)
+
+    def test_zero_median_guard_all_zeros(self):
+        """When all values are zero (degenerate), median is zero and guard kicks in.
+
+        Median is 0 -> replaced with NaN -> values/NaN = NaN -> fillna(0) -> all zeros.
+        arcsinh(0) = 0.
+        """
+        values = pd.Series(
+            [0.0, 0.0, 0.0],
+            index=pd.MultiIndex.from_tuples(
+                [("A", "x"), ("B", "x"), ("C", "x")],
+                names=["iso3c", "unit"],
+            ),
+        )
+        result = calculate_relative_adjustment(
+            values, functional_form="asinh", exponent=1.0, inverse=False
+        )
+        assert not np.isnan(result).any()
+        # arcsinh(0)^1 = 0 for all entries
+        np.testing.assert_array_equal(result.values, [0.0, 0.0, 0.0])
+
+    def test_default_functional_form_is_asinh(self, positive_series):
+        """Default functional_form changed from 'power' to 'asinh'."""
+        result_default = calculate_relative_adjustment(positive_series, exponent=0.5)
+        result_explicit = calculate_relative_adjustment(
+            positive_series, functional_form="asinh", exponent=0.5
+        )
+        pd.testing.assert_series_equal(result_default, result_explicit)
+
+    def test_power_form_still_works(self, positive_series):
+        """Power form with normalisation produces finite positive results."""
+        result = calculate_relative_adjustment(
+            positive_series,
+            functional_form="power",
+            exponent=0.5,
+            inverse=True,
+            normalize=True,
+        )
+        assert not np.isnan(result).any()
+        assert np.all(np.isfinite(result))
+        assert np.all(result > 0)

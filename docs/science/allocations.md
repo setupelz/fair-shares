@@ -399,17 +399,19 @@ The historical default for responsibility was `True` (per-capita); it was flippe
 
 Parameters: `pre_allocation_responsibility_exponent` (default: 1.0), `capability_exponent` (default: 1.0)
 
-**Why these exist:** The exponent controls the shape of the adjustment function — how steeply allocations decline as emissions or GDP increase. At 1.0 (default), the adjustment is proportional: doubling per-capita emissions roughly doubles the adjustment. At values above 1.0, the adjustment is convex: high emitters or wealthy countries are penalised disproportionately more. This operationalises the argument that the first tonne of emissions or dollar of GDP matters less than the hundredth — a form of diminishing marginal value.
+**Why these exist:** The exponent controls how aggressively the adjustment squashes the range of allocations. With `inverse=True`, the adjustment is `1 / transform(x)^exponent`: exponent=1.0 gives `1/transform(x)`, exponent=2.0 gives `1/transform(x)²`, exponent=0.5 gives `1/√transform(x)`. Greater exponent = more squashing.
 
-Values below 1.0 produce concave adjustments (diminishing penalties), which have no clear equity justification and are not recommended.
+Values below 1.0 produce weaker adjustments.
 
 ### Functional Form
 
 Parameters: `pre_allocation_responsibility_functional_form` (default: `"asinh"`), `capability_functional_form` (default: `"asinh"`)
 
-**Why these exist:** The functional form determines how the raw metric (emissions or GDP) is transformed before the exponent is applied. `"asinh"` (inverse hyperbolic sine) is the default and handles zero values gracefully — it behaves like a logarithm for large values but passes through zero without blowing up. `"power"` applies a simple power function, which is undefined at zero and can produce extreme outliers when the input distribution has a long tail.
+**Why these exist:** The functional form determines how the median-normalised metric is transformed before the exponent is applied. `"asinh"` (inverse hyperbolic sine) is the default and handles zero values gracefully — it behaves like a logarithm for large values but passes through zero without blowing up. `"power"` applies a simple power function, which is undefined at zero and can produce extreme outliers when the input distribution has a long tail.
 
 Use `"asinh"` unless you have a specific reason to prefer `"power"` (e.g., replicating a published methodology that uses power-law adjustments).
+
+Inputs are median-normalised before transformation, making results unit-invariant. Negative values (e.g., net-sink countries) are handled natively by arcsinh; the power form clamps to a small epsilon for numerical safety.
 
 ### Maximum Gini Adjustment
 
