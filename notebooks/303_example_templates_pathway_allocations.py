@@ -72,7 +72,7 @@ project_root = here()
 # Output folder name
 allocation_folder = "reference_pathway_allocations_rcb_pathways"
 
-# Emission category: "co2-ffi" | "co2-lulucf" | "co2" | "non-co2" | "all-ghg" | "all-ghg-ex-co2-lulucf"
+# Emission category: "co2-ffi" | "co2" | "all-ghg-ex-co2-lulucf" | "all-ghg"
 emission_category = "all-ghg"
 
 # Data sources

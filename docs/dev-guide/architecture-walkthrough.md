@@ -106,7 +106,7 @@ into DataFrames. For RCB runs, it loads:
 - `emissions_data["co2-ffi"]` -- country emissions indexed by
   `[iso3c, unit, emission-category]`
 - `rcbs_data["co2-ffi"]` -- RCB table with columns: `source`,
-  `climate-assessment`, `quantile`, `rcb_2020_mt`
+  `climate-assessment`, `quantile`, `rcb_2020_nghgi_mt`
 - `world_emissions_data["co2-ffi"]` -- world historical emissions (used to
   convert RCB values to total budgets)
 - Socioeconomic DataFrames: GDP, population, Gini (with validation)

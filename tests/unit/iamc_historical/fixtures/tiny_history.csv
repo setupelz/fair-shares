@@ -1,0 +1,17 @@
+model,scenario,region,variable,unit,1990,2000,2005,2010,2020
+CEDS_mock,historical,bra,Emissions|CO2|Energy Sector,Mt CO2/yr,100,150,180,200,220
+CEDS_mock,historical,bra,Emissions|CO2|Industrial Sector,Mt CO2/yr,20,30,40,50,60
+CEDS_mock,historical,bra,Emissions|CO2|Agriculture,Mt CO2/yr,5,5,5,5,5
+CEDS_mock,historical,bra,Emissions|CO2|Aircraft,Mt CO2/yr,0,0,0,0,0
+CEDS_mock,historical,bra,Emissions|CH4|Energy Sector,Mt CH4/yr,2,3,4,5,6
+CEDS_mock,historical,bra,Emissions|CH4|Agriculture,Mt CH4/yr,10,11,12,13,14
+CEDS_mock,historical,ind,Emissions|CO2|Energy Sector,Mt CO2/yr,500,800,1000,1200,1400
+CEDS_mock,historical,ind,Emissions|CO2|Industrial Sector,Mt CO2/yr,100,150,200,250,300
+CEDS_mock,historical,ind,Emissions|CO2|Agriculture,Mt CO2/yr,10,11,12,13,14
+CEDS_mock,historical,ind,Emissions|CH4|Energy Sector,Mt CH4/yr,5,7,9,11,13
+CEDS_mock,historical,ind,Emissions|CH4|Agriculture,Mt CH4/yr,20,22,24,26,28
+CEDS_mock,historical,usa,Emissions|CO2|Energy Sector,Mt CO2/yr,4000,5000,5500,5200,4800
+CEDS_mock,historical,usa,Emissions|CO2|Industrial Sector,Mt CO2/yr,600,650,700,650,600
+CEDS_mock,historical,usa,Emissions|CO2|Agriculture,Mt CO2/yr,20,20,20,20,20
+CEDS_mock,historical,usa,Emissions|CH4|Energy Sector,Mt CH4/yr,10,12,13,11,10
+CEDS_mock,historical,usa,Emissions|CH4|Agriculture,Mt CH4/yr,8,9,10,11,12

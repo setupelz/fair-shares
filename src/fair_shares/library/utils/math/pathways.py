@@ -248,7 +248,7 @@ def generate_rcb_pathway_scenarios(
     ----------
     rcbs_df : pd.DataFrame
         Processed RCBs with columns: source, climate-assessment, quantile,
-        emission-category, rcb_2020_mt.
+        emission-category, rcb_2020_nghgi_mt.
     world_emissions_df : pd.DataFrame
         World historical emissions with MultiIndex (iso3c, unit, emission-category)
         and year columns as strings.
@@ -340,7 +340,7 @@ def generate_rcb_pathway_scenarios(
         source = row["source"]
         climate_assessment = row["climate-assessment"]
         quantile = row["quantile"]
-        total_budget = float(row["rcb_2020_mt"])
+        total_budget = float(row["rcb_2020_nghgi_mt"])
 
         # Generate pathway using the selected generator
         pathway = pathway_func(

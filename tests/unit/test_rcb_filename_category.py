@@ -68,7 +68,7 @@ def _make_mock_rcb_df(rcb_value: float) -> pd.DataFrame:
             "source": ["test-source"],
             "climate-assessment": ["1.5C"],
             "quantile": [0.5],
-            "rcb_2020_mt": [rcb_value * 1000],
+            "rcb_2020_nghgi_mt": [rcb_value * 1000],
         }
     )
 
@@ -151,11 +151,11 @@ class TestRCBCategorySpecificFilenames:
         assert ffi_path.exists(), "rcbs_co2-ffi.csv should exist after co2-ffi pass"
         assert co2_path.exists(), "rcbs_co2.csv should exist after co2 pass"
 
-        # Files must have different content (different rcb_2020_mt values)
+        # Files must have different content (different rcb_2020_nghgi_mt values)
         ffi_df = pd.read_csv(ffi_path)
         co2_df = pd.read_csv(co2_path)
-        assert ffi_df["rcb_2020_mt"].iloc[0] == 500000.0
-        assert co2_df["rcb_2020_mt"].iloc[0] == 600000.0
+        assert ffi_df["rcb_2020_nghgi_mt"].iloc[0] == 500000.0
+        assert co2_df["rcb_2020_nghgi_mt"].iloc[0] == 600000.0
 
     def test_old_rcbs_csv_not_created(self, tmp_path):
         """The old undifferentiated rcbs.csv should NOT be created."""

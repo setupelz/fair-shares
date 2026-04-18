@@ -323,14 +323,14 @@ class TestProcessRcbTo2020BaselineRegression:
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
             bunkers_deduction_mt=0.0,
-            lulucf_deduction_mt=0.0,
+            lulucf_future_deduction_mt=0.0,
             verbose=False,
         )
         assert result["rebase_total_mt"] == 0
         assert result["rebase_fossil_mt"] == 0
         assert result["rebase_lulucf_mt"] == 0
         # 400 Gt = 400,000 Mt
-        assert result["rcb_2020_mt"] == 400_000
+        assert result["rcb_2020_nghgi_mt"] == 400_000
 
     def test_baseline_2023_fossil_shift_co2ffi(self, ffi_emissions):
         """Baseline at 2023 with co2-ffi: rebase equals fossil-only component."""
@@ -343,7 +343,7 @@ class TestProcessRcbTo2020BaselineRegression:
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
             bunkers_deduction_mt=0.0,
-            lulucf_deduction_mt=0.0,
+            lulucf_future_deduction_mt=0.0,
             verbose=False,
         )
 
@@ -360,13 +360,13 @@ class TestProcessRcbTo2020BaselineRegression:
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
             bunkers_deduction_mt=47_000.0,
-            lulucf_deduction_mt=0.0,
+            lulucf_future_deduction_mt=0.0,
             verbose=False,
         )
         assert result["deduction_bunkers_mt"] == -47_000
 
-    def test_lulucf_deduction_passthrough(self, ffi_emissions):
-        """LULUCF deduction is passed through as-is (sign-ready from caller)."""
+    def test_lulucf_future_deduction_passthrough(self, ffi_emissions):
+        """LULUCF future deduction is passed through as-is (sign-ready)."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
@@ -374,14 +374,14 @@ class TestProcessRcbTo2020BaselineRegression:
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
             bunkers_deduction_mt=0.0,
-            lulucf_deduction_mt=20_000.0,
+            lulucf_future_deduction_mt=20_000.0,
             verbose=False,
         )
-        # lulucf_deduction_mt is sign-ready: added directly to budget
-        assert result["deduction_lulucf_mt"] == 20_000
+        assert result["deduction_lulucf_future_mt"] == 20_000
+        assert result["correction_lulucf_nghgi_mt"] == 0
 
     def test_net_adjustment_matches_components(self, ffi_emissions):
-        """net_adjustment_mt = rebase_total + deduction_bunkers + deduction_lulucf."""
+        """net_adjustment_mt = rebase + bunkers + future + nghgi_correction."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
@@ -389,13 +389,14 @@ class TestProcessRcbTo2020BaselineRegression:
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
             bunkers_deduction_mt=47_000.0,
-            lulucf_deduction_mt=20_000.0,
+            lulucf_future_deduction_mt=20_000.0,
             verbose=False,
         )
         expected_total = (
             result["rebase_total_mt"]
             + result["deduction_bunkers_mt"]
-            + result["deduction_lulucf_mt"]
+            + result["deduction_lulucf_future_mt"]
+            + result["correction_lulucf_nghgi_mt"]
         )
         assert result["net_adjustment_mt"] == expected_total
 
@@ -410,7 +411,7 @@ class TestProcessRcbTo2020BaselineRegression:
             verbose=False,
         )
         required_keys = {
-            "rcb_2020_mt",
+            "rcb_2020_nghgi_mt",
             "rcb_original_value",
             "rcb_original_unit",
             "baseline_year",
@@ -418,7 +419,8 @@ class TestProcessRcbTo2020BaselineRegression:
             "rebase_fossil_mt",
             "rebase_lulucf_mt",
             "deduction_bunkers_mt",
-            "deduction_lulucf_mt",
+            "deduction_lulucf_future_mt",
+            "correction_lulucf_nghgi_mt",
             "net_adjustment_mt",
         }
         assert required_keys.issubset(result.keys())
@@ -456,7 +458,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             world_co2_ffi_emissions=ffi_emissions,
             actual_bm_lulucf_emissions=actual_bm_lulucf,
             bunkers_deduction_mt=0.0,
-            lulucf_deduction_mt=0.0,
+            lulucf_future_deduction_mt=0.0,
             verbose=False,
         )
         expected_fossil = 9000.0 + 9100.0 + 9200.0
@@ -484,7 +486,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
         assert result_ffi["rebase_total_mt"] == round(expected_fossil)
 
     def test_co2_rebase_larger_than_ffi_only(self, ffi_emissions, actual_bm_lulucf):
-        """co2 rebase (fossil + LULUCF) produces larger rcb_2020_mt than co2-ffi."""
+        """co2 rebase (fossil + LULUCF) produces larger rcb_2020_nghgi_mt than co2-ffi."""
         result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
@@ -502,7 +504,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             actual_bm_lulucf_emissions=actual_bm_lulucf,
             verbose=False,
         )
-        assert result_co2["rcb_2020_mt"] > result_ffi["rcb_2020_mt"]
+        assert result_co2["rcb_2020_nghgi_mt"] > result_ffi["rcb_2020_nghgi_mt"]
 
     def test_baseline_2020_no_rebase_regardless_of_category(
         self, ffi_emissions, actual_bm_lulucf
@@ -691,8 +693,8 @@ class TestPrecautionaryLulucfCap:
     def test_sink_capped_to_zero_with_precautionary(
         self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
-        """When BM is a sink, precautionary cap sets lulucf_mt to 0."""
-        _, lulucf_mt = _resolve_adjustment_scalars(
+        """When BM is a sink, precautionary cap sets lulucf_future_mt to 0."""
+        _, lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -703,13 +705,13 @@ class TestPrecautionaryLulucfCap:
             precautionary_lulucf=True,
             verbose=False,
         )
-        assert lulucf_mt == 0.0
+        assert lulucf_future_mt == 0.0
 
     def test_source_still_reduces_budget_with_precautionary(
         self, bunker_ts, lulucf_shift_source, rcb_adj_source
     ):
         """When BM is a source, precautionary cap still reduces fossil budget."""
-        _, lulucf_mt = _resolve_adjustment_scalars(
+        _, lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -720,15 +722,15 @@ class TestPrecautionaryLulucfCap:
             precautionary_lulucf=True,
             verbose=False,
         )
-        assert lulucf_mt < 0.0
+        assert lulucf_future_mt < 0.0
         # bm_lulucf_cumulative_median = 3100 (source), -max(0, 3100) = -3100
-        assert lulucf_mt == pytest.approx(-3100.0)
+        assert lulucf_future_mt == pytest.approx(-3100.0)
 
     def test_sink_increases_budget_without_precautionary(
         self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """When precautionary is off, BM sink increases fossil budget."""
-        _, lulucf_mt = _resolve_adjustment_scalars(
+        _, lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -739,15 +741,15 @@ class TestPrecautionaryLulucfCap:
             precautionary_lulucf=False,
             verbose=False,
         )
-        # bm_lulucf_cumulative_median = -3100, lulucf_mt = -(-3100) = 3100
-        assert lulucf_mt > 0.0
-        assert lulucf_mt == pytest.approx(3100.0)
+        # bm_lulucf_cumulative_median = -3100, lulucf_future_mt = -(-3100) = 3100
+        assert lulucf_future_mt > 0.0
+        assert lulucf_future_mt == pytest.approx(3100.0)
 
     def test_co2_category_unaffected_by_precautionary(
         self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """Precautionary cap only applies to co2-ffi, not co2."""
-        _, lulucf_on = _resolve_adjustment_scalars(
+        _, _, lulucf_on = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -758,7 +760,7 @@ class TestPrecautionaryLulucfCap:
             precautionary_lulucf=True,
             verbose=False,
         )
-        _, lulucf_off = _resolve_adjustment_scalars(
+        _, _, lulucf_off = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -775,7 +777,7 @@ class TestPrecautionaryLulucfCap:
         self, bunker_ts, lulucf_shift_sink, rcb_adj_sink
     ):
         """Bunker deduction is identical regardless of precautionary setting."""
-        bunkers_on, _ = _resolve_adjustment_scalars(
+        bunkers_on, _, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -786,7 +788,7 @@ class TestPrecautionaryLulucfCap:
             precautionary_lulucf=True,
             verbose=False,
         )
-        bunkers_off, _ = _resolve_adjustment_scalars(
+        bunkers_off, _, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -850,7 +852,7 @@ class TestBaselineAwareLulucfIntegration:
         self, bunker_ts, lulucf_shift_ts, rcb_adj
     ):
         """baseline_year=2023 subtracts 2020-2022 prefix from cumulative."""
-        _, lulucf_2020 = _resolve_adjustment_scalars(
+        _, lulucf_2020, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -861,7 +863,7 @@ class TestBaselineAwareLulucfIntegration:
             precautionary_lulucf=False,
             verbose=False,
         )
-        _, lulucf_2023 = _resolve_adjustment_scalars(
+        _, lulucf_2023, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2023,
             net_zero_year=2050,
@@ -879,7 +881,7 @@ class TestBaselineAwareLulucfIntegration:
 
     def test_baseline_2020_vs_2023_magnitude(self, bunker_ts, lulucf_shift_ts, rcb_adj):
         """baseline_year=2020 uses full cumulative, so abs(lulucf) is larger."""
-        _, lulucf_2020 = _resolve_adjustment_scalars(
+        _, lulucf_2020, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2020,
             net_zero_year=2050,
@@ -890,7 +892,7 @@ class TestBaselineAwareLulucfIntegration:
             precautionary_lulucf=False,
             verbose=False,
         )
-        _, lulucf_2023 = _resolve_adjustment_scalars(
+        _, lulucf_2023, _ = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2023,
             net_zero_year=2050,
@@ -907,7 +909,7 @@ class TestBaselineAwareLulucfIntegration:
 
     def test_exact_prefix_subtraction(self, bunker_ts, lulucf_shift_ts, rcb_adj):
         """Verify exact LULUCF value with baseline_year=2023 prefix subtraction."""
-        _, lulucf_mt = _resolve_adjustment_scalars(
+        _, lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
             scenario="1.5p50",
             baseline_year=2023,
             net_zero_year=2050,
@@ -922,4 +924,4 @@ class TestBaselineAwareLulucfIntegration:
         # Prefix 2020-2022: 100 + 110 + 120 = 330
         # Adjusted: 7750 - 330 = 7420
         # Negated: -7420
-        assert lulucf_mt == pytest.approx(-7420.0)
+        assert lulucf_future_mt == pytest.approx(-7420.0)

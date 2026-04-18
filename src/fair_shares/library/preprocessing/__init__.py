@@ -16,14 +16,22 @@ from fair_shares.library.preprocessing.loaders import (
     load_population_data,
     load_scenarios_data,
 )
+from fair_shares.library.preprocessing.paths import (
+    NGHGI_CORRECTED_CATEGORIES,
+    emissions_filename,
+    emissions_path,
+)
 from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 from fair_shares.library.preprocessing.row import add_row_to_datasets
 from fair_shares.library.preprocessing.scenarios import process_complete_scenarios
 
 __all__ = [
+    "NGHGI_CORRECTED_CATEGORIES",
     "add_row_to_datasets",
     "compute_analysis_countries",
     "create_coverage_summary",
+    "emissions_filename",
+    "emissions_path",
     "load_and_process_rcbs",
     "load_emissions_data",
     "load_gdp_data",

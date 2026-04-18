@@ -57,6 +57,7 @@ def _per_capita_budget_core(
     emission_category: str,
     # Optional data for adjustments
     country_actual_emissions_ts: TimeseriesDataFrame | None = None,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     gdp_ts: TimeseriesDataFrame | None = None,
     gini_s: pd.DataFrame | None = None,
     # Explicit weights (must sum to <= 1.0)
@@ -436,10 +437,15 @@ def _per_capita_budget_core(
             )
 
     # Compute raw pre-allocation responsibility data if needed (used by both modes)
+    responsibility_input = (
+        responsibility_emissions_ts
+        if responsibility_emissions_ts is not None
+        else country_actual_emissions_ts
+    )
     responsibility_data = None
     if use_responsibility:
         responsibility_data = calculate_responsibility_adjustment_data(
-            country_actual_emissions_ts=country_actual_emissions_ts,
+            country_actual_emissions_ts=responsibility_input,
             population_ts=population_ts,
             pre_allocation_responsibility_year=pre_allocation_responsibility_year,
             allocation_year=allocation_year,
@@ -699,6 +705,7 @@ def per_capita_adjusted_budget(
     emission_category: str,
     # Optional adjustment data
     country_actual_emissions_ts: TimeseriesDataFrame | None = None,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     gdp_ts: TimeseriesDataFrame | None = None,
     # Adjustment weights
     pre_allocation_responsibility_weight: float = 0.0,
@@ -938,6 +945,7 @@ def per_capita_adjusted_budget(
         allocation_year=allocation_year,
         emission_category=emission_category,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         gdp_ts=gdp_ts,
         gini_s=None,
         pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
@@ -968,6 +976,7 @@ def per_capita_adjusted_gini_budget(
     emission_category: str,
     # Optional adjustment data
     country_actual_emissions_ts: TimeseriesDataFrame | None = None,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     # Adjustment weights
     pre_allocation_responsibility_weight: float = 0.0,
     capability_weight: float = 1.0,
@@ -1217,6 +1226,7 @@ def per_capita_adjusted_gini_budget(
         allocation_year=allocation_year,
         emission_category=emission_category,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         gdp_ts=gdp_ts,
         gini_s=gini_s,
         pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,

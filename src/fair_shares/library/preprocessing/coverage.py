@@ -4,7 +4,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from fair_shares.library.utils import get_complete_iso3c_timeseries
+from fair_shares.library.utils import (
+    get_complete_iso3c_timeseries,
+    last_year_column,
+)
 
 
 def compute_analysis_countries(
@@ -25,21 +28,28 @@ def compute_analysis_countries(
     -------
         Set of ISO3C country codes with complete data
     """
-    # Get countries with complete data for each dataset
+    # Completeness is checked through each dataset's own last year so
+    # countries without full coverage land in ROW via the intersection.
     emiss_analysis_countries = {}
     for category, emiss_df in emissions_data.items():
         emiss_analysis_countries[category] = get_complete_iso3c_timeseries(
             emiss_df,
             expected_index_names=["iso3c", "unit", "emission-category"],
             start=1990,
-            end=2019,
+            end=last_year_column(emiss_df),
         )
 
     gdp_analysis_countries = get_complete_iso3c_timeseries(
-        gdp, expected_index_names=["iso3c", "unit"], start=1990, end=2023
+        gdp,
+        expected_index_names=["iso3c", "unit"],
+        start=1990,
+        end=last_year_column(gdp),
     )
     population_analysis_countries = get_complete_iso3c_timeseries(
-        population, expected_index_names=["iso3c", "unit"], start=1990, end=2019
+        population,
+        expected_index_names=["iso3c", "unit"],
+        start=1990,
+        end=last_year_column(population),
     )
     gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 
@@ -80,21 +90,26 @@ def create_coverage_summary(
     -------
         Coverage summary DataFrame
     """
-    # Get complete data countries for each dataset
     emiss_analysis_countries = {}
     for category, emiss_df in emissions_data.items():
         emiss_analysis_countries[category] = get_complete_iso3c_timeseries(
             emiss_df,
             expected_index_names=["iso3c", "unit", "emission-category"],
             start=1990,
-            end=2019,
+            end=last_year_column(emiss_df),
         )
 
     gdp_analysis_countries = get_complete_iso3c_timeseries(
-        gdp, expected_index_names=["iso3c", "unit"], start=1990, end=2023
+        gdp,
+        expected_index_names=["iso3c", "unit"],
+        start=1990,
+        end=last_year_column(gdp),
     )
     population_analysis_countries = get_complete_iso3c_timeseries(
-        population, expected_index_names=["iso3c", "unit"], start=1990, end=2019
+        population,
+        expected_index_names=["iso3c", "unit"],
+        start=1990,
+        end=last_year_column(population),
     )
     gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 

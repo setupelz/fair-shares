@@ -227,10 +227,19 @@ if rcb_data["rcb_data"]:
 
 
 def _load_world_emissions(
-    emissions_dir: Path, category: str, world_keys: list[str]
+    emissions_dir: Path,
+    category: str,
+    world_keys: list[str],
+    active_lulucf_source: str | None = None,
 ) -> pd.DataFrame:
-    """Load emissions and extract world totals for a single category."""
-    emiss_path = emissions_dir / f"emiss_{category}_timeseries.csv"
+    """Load emissions and extract world totals for a single category.
+
+    Passes ``active_lulucf_source`` through to the path resolver so
+    LULUCF-affected categories use the NGHGI-consistent variant.
+    """
+    from fair_shares.library.preprocessing import emissions_path as _emiss_path
+
+    emiss_path = _emiss_path(emissions_dir, category, active_lulucf_source)
     if not emiss_path.exists():
         raise DataLoadingError(
             f"Emissions data not found at: {emiss_path}. "
@@ -271,10 +280,10 @@ if emission_category == "co2":
 
     # Load component timeseries
     world_co2_ffi_df = _load_world_emissions(
-        emissions_intermediate_dir, "co2-ffi", world_keys
+        emissions_intermediate_dir, "co2-ffi", world_keys, active_lulucf_source
     )
     world_co2_lulucf_df = _load_world_emissions(
-        emissions_intermediate_dir, "co2-lulucf", world_keys
+        emissions_intermediate_dir, "co2-lulucf", world_keys, active_lulucf_source
     )
 
     # Load NGHGI LULUCF world timeseries and bunker timeseries
@@ -298,7 +307,7 @@ if emission_category == "co2":
 else:
     # co2-ffi: load directly
     world_emissions_df = _load_world_emissions(
-        emissions_intermediate_dir, emission_category, world_keys
+        emissions_intermediate_dir, emission_category, world_keys, active_lulucf_source
     )
 
 # Extract start year emissions value for later use
@@ -342,7 +351,7 @@ rcbs_df = load_and_process_rcbs(
 
 print(f"\nProcessed {len(rcbs_df)} RCB records")
 print("\nRCB scenarios:")
-print(rcbs_df[["source", "climate-assessment", "quantile", "rcb_2020_mt"]].to_string())
+print(rcbs_df[["source", "climate-assessment", "quantile", "rcb_2020_nghgi_mt"]].to_string())
 
 # %% [markdown]
 # ## Generate pathways from RCBs
@@ -373,7 +382,7 @@ print("\nPathway validation (budget conservation):")
 
 # Get expected budgets from RCBs (including source)
 expected_budgets = rcbs_df.set_index(["climate-assessment", "quantile", "source"])[
-    "rcb_2020_mt"
+    "rcb_2020_nghgi_mt"
 ]
 
 for idx in scenarios_df.index:
@@ -559,7 +568,7 @@ print("\nNote: Each RCB source generates a separate pathway (not averaged)")
 rcb_summary = rcbs_df.pivot_table(
     index=["climate-assessment", "quantile"],
     columns="source",
-    values="rcb_2020_mt",
+    values="rcb_2020_nghgi_mt",
     aggfunc="first",
 )
 
@@ -570,7 +579,7 @@ print(rcb_summary.to_string())
 print("\n--- RCB Statistics by Temperature/Probability ---")
 print("(Statistics show variation across different RCB sources)")
 for (ca, q), group in rcbs_df.groupby(["climate-assessment", "quantile"]):
-    values = group["rcb_2020_mt"].values
+    values = group["rcb_2020_nghgi_mt"].values
     mean_val = values.mean()
     std_val = values.std()
     min_val = values.min()
@@ -579,7 +588,7 @@ for (ca, q), group in rcbs_df.groupby(["climate-assessment", "quantile"]):
 
     print(f"\n{ca} (q={q}): {n_sources} separate pathways generated")
     print("  RCB values:")
-    for source, rcb in zip(group["source"], group["rcb_2020_mt"]):
+    for source, rcb in zip(group["source"], group["rcb_2020_nghgi_mt"]):
         print(f"    - {source}: {rcb:,.0f} Mt CO2")
     print(f"  Mean:   {mean_val:,.0f} Mt CO2")
     print(f"  Std Dev: {std_val:,.0f} Mt CO2")

@@ -1,0 +1,34 @@
+# =============================================================================
+# IAMC historical back-fill sources
+# =============================================================================
+#
+# Configuration for ``fair_shares.library.iamc_historical.backfill``. Defines
+# which historical emissions releases the adapter loads.
+#
+# * ``iamc_historical`` — composite country-level IAMC historical (CEDS +
+#   GFED + Velders + WMO + Adam). Current entries come from the CMIP7
+#   ScenarioMIP pipeline (Nicholls et al., concept DOI
+#   https://doi.org/10.5281/zenodo.15357372). Future entries from CMIP8 or
+#   any subsequent pipeline plug in here under the same section.
+#
+# To drop in a new release:
+#   1. Place the files under ``data/emissions/<release-dir>/`` alongside
+#      a ``CITATION.md``.
+#   2. Add a new entry with the release tag as the key.
+#   3. Update ``active_iamc_historical`` if you want it as the default.
+# No Python changes required.
+# =============================================================================
+
+active_iamc_historical: "2025.12.07"
+
+iamc_historical:
+  "2025.12.07":
+    package_dir: "data/emissions/cmip7-historical-2025.12.07"
+    concept_doi: "10.5281/zenodo.15357372"
+    version_doi: "10.5281/zenodo.17845154"
+    authors: "Nicholls, Kikstra, Zecchetto, Hoegner"
+    title: "CMIP7 ScenarioMIP historical timeseries for harmonisation and simple climate model workflow"
+    licence: "CC-BY-SA-4.0"
+    files:
+      country_feather: "country-history.feather"
+      global_csv: "global-workflow-history.csv"

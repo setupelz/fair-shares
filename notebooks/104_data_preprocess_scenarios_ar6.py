@@ -59,6 +59,7 @@ from fair_shares.library.utils import (
     interpolate_scenarios_data,
     process_iamc_zip,
 )
+from fair_shares.library.preprocessing import emissions_path
 from fair_shares.library.utils.units import _clean_unit_string
 
 # %% tags=["parameters"]
@@ -313,7 +314,9 @@ emissions_world_key = emissions_data_parameters.get("world_key")
 
 historical_emissions_data = {}
 for category in timeseries_specs:
-    emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+    emiss_path = emissions_path(
+        emiss_intermediate_dir, category, active_lulucf_source
+    )
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
@@ -1155,16 +1158,21 @@ for timeseries_name, timeseries_df in all_timeseries.items():
     # Create the plot
     fig, ax = plt.subplots(1, 1, figsize=(15, 8))
 
-    # Plot scenarios
+    # Plot one line per (climate-assessment, quantile). Pooling quantiles into
+    # a single ax.plot call interleaves year-by-year rows and produces a
+    # sawtooth between the quantile trajectories.
     for ca in climate_assessments:
         ca_data = timeseries_long[timeseries_long["climate-assessment"] == ca]
-
-        if not ca_data.empty:
-            # Plot scenario
+        if ca_data.empty:
+            continue
+        for quantile, q_data in ca_data.groupby("quantile"):
+            q_sorted = q_data.sort_values("year")
+            n_q = ca_data["quantile"].nunique()
+            label = f"{ca}" if n_q == 1 else f"{ca} (q={quantile})"
             ax.plot(
-                ca_data["year"],
-                ca_data[timeseries_name],
-                label=f"{ca}",
+                q_sorted["year"],
+                q_sorted[timeseries_name],
+                label=label,
                 color=palette[ca],
                 alpha=0.9,
                 linewidth=2,

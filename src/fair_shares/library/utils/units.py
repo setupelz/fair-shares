@@ -6,6 +6,16 @@ It provides:
 - A configured Pint registry with climate-specific units
 - Robust unit conversion with automatic cleaning
 - Single-unit normalization for DataFrames
+
+SI convention
+-------------
+The tonne ladder is SI-consistent: ``kt=10**6 kg=Gg``,
+``Mt=10**9 kg=Tg``, ``Gt=10**12 kg=Pg``. The registry redefines these
+units so ``Mt``/``kt``/``Gt`` are the canonical display names rather
+than openscm's ``megametric_ton`` aliases, while preserving the SI
+identity with the gram ladder.
+``tests/unit/utils/test_unit_registry_si_identities.py`` locks the
+identities in.
 """
 
 from __future__ import annotations
@@ -85,13 +95,16 @@ def get_default_unit_registry() -> pint.facets.PlainRegistry:
     ur.define("million = thousand * 1000")
     ur.define("billion = million * 1000")
 
-    # CO2 emission units
-    ur.define("kt = 1000 * kg")
-    ur.define("Mt = 1000000 * kg")
-    ur.define("Gt = 1000000000 * kg")  # 1 Gt = 1000 Mt
+    # CO2 emission units.
+    # kt/Mt/Gt redefined so Pint renders them as the canonical name
+    # (not openscm's megametric_ton aliases), at their SI magnitudes.
+    ur.define("kt = 1e6 * kg")
+    ur.define("Mt = 1e9 * kg")
+    ur.define("Gt = 1e12 * kg")
     ur.define("CO2e = CO2")  # CO2e is equivalent to CO2
 
-    # Gigagram units for PRIMAP data processing
+    # Gigagram alias for PRIMAP data processing. kt is already defined
+    # by openscm_units as 10**6 kg, which is the gigagram.
     ur.define("gigagram = kt")
 
     # Set annum (a) as 1 to convert annual rates to totals.

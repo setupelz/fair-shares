@@ -174,7 +174,8 @@ def process_rcb_to_2020_baseline(
     world_co2_ffi_emissions: pd.DataFrame,
     actual_bm_lulucf_emissions: pd.DataFrame | None = None,
     bunkers_deduction_mt: float = 0.0,
-    lulucf_deduction_mt: float = 0.0,
+    lulucf_future_deduction_mt: float = 0.0,
+    lulucf_nghgi_correction_mt: float = 0.0,
     target_baseline_year: int = 2020,
     source_name: str = "",
     scenario: str = "",
@@ -192,10 +193,14 @@ def process_rcb_to_2020_baseline(
 
     - **co2-ffi**: Rebase uses fossil CO2 only. LULUCF is omitted because it
       cancels algebraically with the LULUCF decomposition term.
-      lulucf_deduction = -L_BM(base,NZ) (positive, increases fossil budget).
+      ``lulucf_future_deduction_mt`` subtracts expected future (base→NZ) BM
+      LULUCF, converting the published total-CO2 RCB to an FFI-only RCB.
+      ``lulucf_nghgi_correction_mt`` is not used for this category.
     - **co2**: Rebase uses fossil CO2 + actual bookkeeping-model LULUCF.
-      lulucf_deduction = convention_gap(base,NZ) (negative, reduces budget
-      per Weber).
+      ``lulucf_nghgi_correction_mt`` applies the NGHGI-vs-BM convention gap
+      from Weber et al. (2026) to re-express the budget against national-
+      inventory accounting. ``lulucf_future_deduction_mt`` is not used for
+      this category; the budget retains both FFI and LULUCF.
 
     The calculation follows these steps:
     1. Convert RCB from source unit to Mt * CO2e
@@ -207,9 +212,13 @@ def process_rcb_to_2020_baseline(
 
     Sign convention for deduction parameters:
     - bunkers_deduction_mt: always positive (cumulative emissions), subtracted
-    - lulucf_deduction_mt: sign-ready from caller (added directly to budget):
-        - For co2: convention gap, negative -> reduces budget (per Weber)
-        - For co2-ffi: negated BM LULUCF, positive -> increases fossil budget
+    - lulucf_future_deduction_mt: sign-ready from caller (added directly).
+      For co2-ffi: negated BM LULUCF → positive if LULUCF is a net source
+      (increases fossil budget), capped at 0 if caller applies a
+      precautionary rule. Zero for co2.
+    - lulucf_nghgi_correction_mt: sign-ready from caller (added directly).
+      For co2: the NGHGI-vs-BM convention gap from Weber et al. (2026),
+      typically negative. Zero for co2-ffi.
 
     Parameters
     ----------
@@ -230,9 +239,14 @@ def process_rcb_to_2020_baseline(
     bunkers_deduction_mt : float, optional
         Total bunker CO2 emissions from 2020-2100 in Mt * CO2e (default: 0.0).
         Always positive; subtracted from budget.
-    lulucf_deduction_mt : float, optional
-        LULUCF adjustment in Mt * CO2e, sign-ready (default: 0.0).
-        Added directly to the budget -- caller is responsible for correct sign.
+    lulucf_future_deduction_mt : float, optional
+        Projected future (2020/base → NZ) BM LULUCF adjustment in Mt * CO2e,
+        sign-ready (default: 0.0). Non-zero for co2-ffi only, where it
+        subtracts LULUCF to convert a total-CO2 RCB to FFI-only.
+    lulucf_nghgi_correction_mt : float, optional
+        NGHGI-vs-BM convention correction in Mt * CO2e, sign-ready
+        (default: 0.0). Non-zero for co2 only, where it re-expresses the
+        budget from bookkeeping-model to NGHGI accounting.
     target_baseline_year : int, optional
         Target baseline year for standardization (default: 2020)
     source_name : str, optional
@@ -246,7 +260,7 @@ def process_rcb_to_2020_baseline(
     -------
     dict
         Dictionary containing:
-        - 'rcb_2020_mt': RCB adjusted to 2020 baseline in Mt * CO2e
+        - 'rcb_2020_nghgi_mt': RCB adjusted to 2020 baseline in Mt * CO2e
         - 'rcb_original_value': Original RCB value (in source units)
         - 'rcb_original_unit': Original RCB unit
         - 'baseline_year': Original baseline year
@@ -257,10 +271,12 @@ def process_rcb_to_2020_baseline(
         - 'rebase_lulucf_mt': Actual BM LULUCF component of rebase (Mt * CO2e);
           only non-zero for co2
         - 'deduction_bunkers_mt': Bunker fuel deduction (negative, Mt * CO2e)
-        - 'deduction_lulucf_mt': LULUCF deduction (Mt * CO2e; sign depends on
-          emission category)
+        - 'deduction_lulucf_future_mt': projected-LULUCF deduction applied
+          to convert total-CO2 → FFI-only. Non-zero for co2-ffi, zero for co2.
+        - 'correction_lulucf_nghgi_mt': NGHGI-vs-BM convention correction.
+          Non-zero for co2, zero for co2-ffi.
         - 'net_adjustment_mt': Total change from original to 2020 baseline
-          (rebase + deductions, Mt * CO2e)
+          (rebase + deductions + correction, Mt * CO2e)
     """
     # Get unit registry
     ureg = get_default_unit_registry()
@@ -345,14 +361,27 @@ def process_rcb_to_2020_baseline(
     # Apply bunkers deduction (always reduces budget)
     deduction_bunkers_mt = -bunkers_deduction_mt
 
-    # Apply LULUCF deduction (sign-ready from caller)
-    deduction_lulucf_mt = lulucf_deduction_mt
+    # Both LULUCF adjustments are sign-ready from caller and additive.
+    # Only one is non-zero per category (co2-ffi uses future_deduction,
+    # co2 uses nghgi_correction), but carry both fields always so the
+    # schema is category-agnostic.
+    deduction_lulucf_future_mt = lulucf_future_deduction_mt
+    correction_lulucf_nghgi_mt = lulucf_nghgi_correction_mt
 
-    rcb_2020_mt = rcb_adjusted_mt - bunkers_deduction_mt + lulucf_deduction_mt
+    rcb_2020_nghgi_mt = (
+        rcb_adjusted_mt
+        - bunkers_deduction_mt
+        + deduction_lulucf_future_mt
+        + correction_lulucf_nghgi_mt
+    )
 
     # Net adjustment = total change from original to 2020 baseline
-    # (includes rebase + all deductions)
-    net_adjustment_mt = rebase_total_mt + deduction_bunkers_mt + deduction_lulucf_mt
+    net_adjustment_mt = (
+        rebase_total_mt
+        + deduction_bunkers_mt
+        + deduction_lulucf_future_mt
+        + correction_lulucf_nghgi_mt
+    )
 
     if verbose:
         if bunkers_deduction_mt > 0:
@@ -360,18 +389,23 @@ def process_rcb_to_2020_baseline(
                 f"      Bunkers deduction (2020-2100): "
                 f"{deduction_bunkers_mt:.1f} Mt * CO2e"
             )
-        if lulucf_deduction_mt != 0:
+        if deduction_lulucf_future_mt != 0:
             print(
-                f"      LULUCF deduction (2020-2100): "
-                f"{deduction_lulucf_mt:.1f} Mt * CO2e"
+                f"      LULUCF future deduction (2020-NZ): "
+                f"{deduction_lulucf_future_mt:.1f} Mt * CO2e"
+            )
+        if correction_lulucf_nghgi_mt != 0:
+            print(
+                f"      LULUCF NGHGI correction: "
+                f"{correction_lulucf_nghgi_mt:.1f} Mt * CO2e"
             )
         print(
             f"      Final RCB ({target_baseline_year} baseline): "
-            f"{rcb_2020_mt:.1f} Mt * CO2e"
+            f"{rcb_2020_nghgi_mt:.1f} Mt * CO2e"
         )
 
     return {
-        "rcb_2020_mt": round(rcb_2020_mt),
+        "rcb_2020_nghgi_mt": round(rcb_2020_nghgi_mt),
         "rcb_original_value": rcb_value,
         "rcb_original_unit": rcb_unit,
         "baseline_year": rcb_baseline_year,
@@ -379,6 +413,7 @@ def process_rcb_to_2020_baseline(
         "rebase_fossil_mt": round(rebase_fossil_mt),
         "rebase_lulucf_mt": round(rebase_lulucf_mt),
         "deduction_bunkers_mt": round(deduction_bunkers_mt),
-        "deduction_lulucf_mt": round(deduction_lulucf_mt),
+        "deduction_lulucf_future_mt": round(deduction_lulucf_future_mt),
+        "correction_lulucf_nghgi_mt": round(correction_lulucf_nghgi_mt),
         "net_adjustment_mt": round(net_adjustment_mt),
     }

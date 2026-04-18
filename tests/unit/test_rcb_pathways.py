@@ -286,7 +286,7 @@ class TestGenerateRCBPathwayScenarios:
                 "climate-assessment": ["1.5C", "2C", "1.5C", "2C"],
                 "quantile": ["0.5", "0.5", "0.5", "0.5"],
                 "emission-category": ["co2-ffi"] * 4,
-                "rcb_2020_mt": [306640, 500000, 350000, 450000],  # Achievable budgets
+                "rcb_2020_nghgi_mt": [306640, 500000, 350000, 450000],  # Achievable budgets
             }
         )
 
@@ -381,7 +381,7 @@ class TestGenerateRCBPathwayScenarios:
         # Get expected budgets (one per row, including source)
         expected_budgets = sample_rcbs_df.set_index(
             ["climate-assessment", "quantile", "source"]
-        )["rcb_2020_mt"]
+        )["rcb_2020_nghgi_mt"]
 
         for idx in result.index:
             climate_assessment = idx[0]

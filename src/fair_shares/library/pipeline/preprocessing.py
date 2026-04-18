@@ -31,6 +31,7 @@ from ..utils import (
     ensure_string_year_columns,
     get_complete_iso3c_timeseries,
     get_world_totals_timeseries,
+    last_year_column,
     set_post_net_zero_emissions_to_nan,
 )
 from ..utils.data.config import (
@@ -193,8 +194,8 @@ class DataPreprocessor:
         -------
             Set of iso3c country codes present in all datasets with complete data
         """
-        # Get complete country list across all datasets
-        # Call once per dataset and intersect results
+        # Completeness is checked through each dataset's own last year so
+        # countries without full coverage land in ROW via the intersection.
         complete_sets = []
 
         for emiss_df in emissions_data.values():
@@ -202,6 +203,8 @@ class DataPreprocessor:
                 get_complete_iso3c_timeseries(
                     emiss_df,
                     expected_index_names=["iso3c", "unit", "emission-category"],
+                    start=1990,
+                    end=last_year_column(emiss_df),
                 )
             )
 
@@ -209,6 +212,8 @@ class DataPreprocessor:
             get_complete_iso3c_timeseries(
                 gdp,
                 expected_index_names=["iso3c", "unit"],
+                start=1990,
+                end=last_year_column(gdp),
             )
         )
 
@@ -216,7 +221,15 @@ class DataPreprocessor:
             get_complete_iso3c_timeseries(
                 population,
                 expected_index_names=["iso3c", "unit"],
+                start=1990,
+                end=last_year_column(population),
             )
+        )
+
+        # Gini is stationary (no year columns), so completeness is a presence
+        # check on iso3c.
+        complete_sets.append(
+            set(gini.index.get_level_values("iso3c").unique().tolist())
         )
 
         country_iso3c = complete_sets[0].intersection(*complete_sets[1:])

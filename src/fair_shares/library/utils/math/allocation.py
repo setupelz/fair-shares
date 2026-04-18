@@ -43,10 +43,12 @@ def calculate_relative_adjustment(
     values
         Input values (GDP per capita, cumulative emissions, etc.)
     functional_form
-        Transformation to apply. Default is ``"asinh"`` (inverse hyperbolic sine),
-        which handles the full real line including negatives (net-sink countries)
-        and zeros natively. ``"power"`` is the legacy form; values are clamped to
-        a small epsilon for numerical safety.
+        Transformation to apply. Default is ``"asinh"`` (inverse hyperbolic sine).
+        ``arcsinh`` itself is defined on the full real line and preserves sign,
+        but the subsequent ``** (sign * exponent)`` step produces ``NaN`` on
+        negative inputs and ``inf`` on zero for non-integer exponents — see the
+        Notes section for caller responsibilities. ``"power"`` is the legacy
+        form; values are clamped to a small epsilon for numerical safety.
     exponent
         Controls how aggressively the adjustment squashes the range.
         With ``inverse=True``: exponent=1.0 gives ``1/transform(x)``,
@@ -71,10 +73,19 @@ def calculate_relative_adjustment(
     Ability to Pay Principle (via economic capability adjustments, from the
     allocation year onwards).
 
-    The arcsinh form handles negative values (net-sink countries) natively, mapping
-    them to negative transformed values. No clamping is applied for asinh. The
-    power form clamps to a small epsilon (1e-10) for numerical safety with
-    negative exponents.
+    The ``arcsinh`` function itself is defined on the full real line and preserves
+    sign (it is odd), so negative inputs map to negative transformed values and
+    zero maps to zero. However, the subsequent exponentiation step
+    ``arcsinh(x) ** (sign * exponent)`` is not closed over the reals: for a
+    non-integer real exponent (the typical case, since ``inverse=True`` is the
+    default), numpy does not promote to complex, so negative bases yield ``NaN``
+    and a zero base with a negative exponent yields ``inf``. In other words,
+    asinh applies no clamping — callers that may pass negative values (e.g.
+    cumulative CO2 including LULUCF sinks) or exact zeros must handle the sign
+    upstream, either by flooring inputs at a small positive value or by using
+    an emission basis that cannot be negative (e.g. fossil-fuel-and-industry
+    only). The power form clamps to a small epsilon (1e-10) for numerical
+    safety with negative exponents.
     """
     sign = -1 if inverse else 1
 

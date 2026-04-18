@@ -15,26 +15,23 @@
 # ---
 
 # %% [markdown]
-# # IAMC Budget Allocation Examples (Reference)
+# # 402 — IAMC budget allocation examples (reference)
 #
-# **Pre-configured examples for IAMC model regions demonstrating equity principles.**
-# For custom analysis, use **notebook 401**.
+# Pre-configured budget examples for IAMC model regions. Runs on the
+# output of notebook 400 (`output/iamc/iamc_covered.xlsx`). Run
+# 400 first.
 #
-# **What's included:**
+# - **Equal per capita** — equal rights to the atmosphere
+# - **Capability-adjusted** — wealthier regions shoulder more mitigation
 #
-# - **Equal per capita** - Operationalizes equal rights to atmosphere
-# - **Capability-adjusted** - Operationalizes capability (ability to pay)
-#
-# Each demonstrates how different equity principles translate to IAMC regional budget allocations.
-#
-# **For model input preparation**, see notebook 401.
+# For custom analysis or model-ready remaining budgets, use notebook 401.
 #
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports (run this first)
 import matplotlib.pyplot as plt
-import pandas as pd
+import pyam
 from pyprojroot import here
 
 # Import fair-shares library components
@@ -42,7 +39,6 @@ from fair_shares.library.allocations.budgets.per_capita import (
     equal_per_capita_budget,
     per_capita_adjusted_budget,
 )
-from fair_shares.library.utils import ensure_string_year_columns
 from fair_shares.library.utils.data.iamc import (
     load_iamc_data,
 )
@@ -52,23 +48,22 @@ plt.style.use("default")
 plt.rcParams["axes.grid"] = True
 plt.rcParams["grid.alpha"] = 0.3
 
+BLUE = "#005baa"
+
 project_root = here()
 
 # %% [markdown]
 # ---
-# ## Step 1: Load IAMC Data
+# ## Step 1: Load IAMC data (output of notebook 400)
 #
-# **Datasets**: Population, GDP|PPP, Emissions|Covered
+# Needs Population, GDP|PPP, Emissions|Covered.
 
 # %%
-# =============================================================================
-# DATA SOURCE CONFIGURATION
-# =============================================================================
-
-# Path to your IAMC-format data file (replace with your own)
-DATA_FILE = (
-    project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
-)
+DATA_FILE = project_root / "output" / "iamc" / "iamc_covered.xlsx"
+if not DATA_FILE.exists():
+    raise FileNotFoundError(
+        f"Data file not found: {DATA_FILE}. Run notebook 400 first."
+    )
 
 # IAMC variable names
 POPULATION_VARIABLE = "Population"
@@ -76,13 +71,11 @@ GDP_VARIABLE = "GDP|PPP"
 EMISSIONS_VARIABLE = "Emissions|Covered"  # The emissions being allocated
 
 # Time range configuration
-EARLIEST_DATA_YEAR = 2015  # Data must be available from this year
+EARLIEST_DATA_YEAR = 1990  # Data must be available from this year
 MODEL_HORIZON_YEAR = 2100  # Last year in model time horizon
 
-# Load region list
-df = pd.read_excel(DATA_FILE)
-df = ensure_string_year_columns(df)
-regions = [r for r in df["region"].unique() if r != "World"]
+# Load region list via pyam (handles case-insensitive columns)
+regions = [r for r in pyam.IamDataFrame(DATA_FILE).region if r != "World"]
 
 print(f"Data file: {DATA_FILE}")
 print(f"Regions: {', '.join(sorted(regions))}")
@@ -97,10 +90,9 @@ data = load_iamc_data(
     regions=regions,
     allocation_start_year=EARLIEST_DATA_YEAR,
     budget_end_year=MODEL_HORIZON_YEAR,
-    expand_to_annual=True,
 )
 
-print("\nYes Data loaded successfully!")
+print("\nData loaded.")
 print(f"Variables: {data['metadata']['variables_loaded']}")
 print(f"Time range: {data['metadata']['year_range']}")
 
@@ -194,14 +186,13 @@ ax.barh(
     shares_epc[sorted_regions] * 100,
     width,
     label="Equal Per Capita",
-    color="#2ecc71",
+    color=BLUE,
 )
 ax.barh(
     [i + width / 2 for i in x],
     shares_cap[sorted_regions] * 100,
     width,
     label="Capability-Adjusted",
-    color="#3498db",
 )
 
 ax.set_yticks(x)

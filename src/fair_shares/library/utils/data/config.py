@@ -100,6 +100,11 @@ def get_emission_preprocessing_categories(
     from the emissions source (e.g. PRIMAP).  Notebook 107 (LULUCF) always needs co2-ffi, co2-lulucf,
     and all-ghg-ex-co2-lulucf as primitives for computing derived categories,
     so those are always included.
+
+    ``non-co2`` is NEVER a direct 101 output — it is always derived by
+    subtraction (``all-ghg-ex-co2-lulucf − co2-ffi``) in the derive_non_co2
+    pipeline rule.  When ``non-co2`` is the main category, we return its
+    ingredients instead.
     """
     # Base primitives always needed by notebook 107 (LULUCF → derived categories)
     _LULUCF_PRIMITIVES = {"co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
@@ -107,6 +112,9 @@ def get_emission_preprocessing_categories(
     if not is_composite_category(emission_category):
         if emission_category == "co2":
             needed = {"co2", "co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
+        elif emission_category == "non-co2":
+            # non-co2 is derived by subtraction, not extracted by 101
+            needed = _LULUCF_PRIMITIVES.copy()
         else:
             needed = {emission_category} | _LULUCF_PRIMITIVES
         return tuple(sorted(needed))
@@ -178,10 +186,13 @@ def build_source_id(
     else:
         target_with_generator = target
 
-    # LULUCF only affects categories that use NGHGI corrections:
-    # co2 (directly), all-ghg (decomposes into co2 + non-co2).
-    # all-ghg-ex-co2-lulucf is NOT dependent — its CO2 component is co2-ffi.
-    _LULUCF_DEPENDENT = {"co2", "all-ghg"}
+    # LULUCF only affects categories whose content depends on the LULUCF
+    # source: co2-lulucf (IS LULUCF), co2 (FFI + LULUCF), all-ghg (includes
+    # LULUCF).  all-ghg-ex-co2-lulucf and non-co2 are LULUCF-independent.
+    # Kept in sync with ``NGHGI_CORRECTED_CATEGORIES`` in
+    # ``fair_shares.library.preprocessing.paths`` and Snakefile's
+    # ``_needs_lulucf``.
+    _LULUCF_DEPENDENT = {"co2", "co2-lulucf", "all-ghg"}
 
     parts = [emissions, gdp, population, gini]
     if lulucf and emission_category in _LULUCF_DEPENDENT:

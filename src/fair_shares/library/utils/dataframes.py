@@ -36,6 +36,7 @@ __all__ = [
     # Year column utilities
     "ensure_string_year_columns",
     "get_year_columns",
+    "last_year_column",
     # Path validation
     "validate_path_exists",
     # Data processing
@@ -160,6 +161,20 @@ def get_year_columns(df: TimeseriesDataFrame, return_type: str = "string") -> li
             year_columns.append(col)
 
     return year_columns
+
+
+def last_year_column(df: TimeseriesDataFrame) -> int:
+    """Return the largest integer-castable column label in a timeseries frame.
+
+    Raises
+    ------
+    DataProcessingError
+        If the frame has no year-shaped columns.
+    """
+    year_cols = get_year_columns(df, return_type="int")
+    if not year_cols:
+        raise DataProcessingError("No year columns found in dataframe")
+    return max(year_cols)
 
 
 # ============================================================================

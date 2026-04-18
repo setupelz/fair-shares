@@ -21,7 +21,7 @@ class TestUnitConversion:
 
     def test_ar6gwp100_conversions_to_mt_co2e(self, ur):
         """Test AR6GWP100 conversions to Mt CO2e for key greenhouse gases."""
-        # Test CO2 (1:1 ratio) - 1000 Gg = 1 Mt
+        # Test CO2 (1:1 ratio) - 1000 Gg = 1 Tg = 1 Mt under SI identity
         assert ur("1000 CO2 * gigagram / a").to("Mt * CO2e").magnitude == 1.0
         assert ur("1000 CO2 * gigagram / a").to("Mt * CO2e").units == "Mt * CO2e"
         # Test CH4 (AR6 GWP100 = 27.9) - 1000 Gg * 27.9 = 27.9 Mt (Radiative forcing

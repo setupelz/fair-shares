@@ -46,8 +46,10 @@ from fair_shares.library.utils import (
     ensure_string_year_columns,
     get_complete_iso3c_timeseries,
     get_world_totals_timeseries,
+    last_year_column,
     set_post_net_zero_emissions_to_nan,
 )
+from fair_shares.library.preprocessing import emissions_path
 from fair_shares.library.validation import (
     validate_all_datasets_totals,
     validate_emissions_data,
@@ -147,6 +149,25 @@ processing_info = determine_processing_categories(
 final_categories = processing_info["final"]
 emissions_world_key = emissions_data_parameters.get("world_key")
 
+# For LULUCF-inclusive categories (co2, all-ghg) the downstream responsibility
+# calculation loads country-level FFI emissions as a positive-real-line proxy
+# for pre-allocation responsibility.  The country_emissions_co2-ffi_*.csv
+# isn't an allocation output in pathway single-pass mode, so we include
+# co2-ffi as an extra "responsibility-only" category that gets the same
+# country alignment + ROW treatment and is saved under the processed
+# directory.  Decomposition runs already produce it via the co2-ffi pass.
+_LULUCF_INCLUSIVE_CATEGORIES = ("co2", "all-ghg")
+responsibility_extra_categories: tuple[str, ...] = tuple(
+    cat
+    for cat in ("co2-ffi",)
+    if any(fc in _LULUCF_INCLUSIVE_CATEGORIES for fc in final_categories)
+    and cat not in final_categories
+)
+if responsibility_extra_categories:
+    print(
+        f"  Responsibility-only extras for save: {responsibility_extra_categories}"
+    )
+
 # Extract GDP parameters
 gdp_data_parameters = config["gdp"][active_gdp_source]["data_parameters"]
 active_gdp_variant = gdp_data_parameters.get("gdp_variant")
@@ -196,10 +217,15 @@ root_intermediate_dir.mkdir(parents=True, exist_ok=True)
 # ## Load data
 
 # %%
-# Load emission data
+# Load emission data. Path resolver picks NGHGI-consistent variants for
+# LULUCF-affected categories when active_lulucf_source is set.
+# Also loads responsibility-only extras (co2-ffi for LULUCF-inclusive
+# categories) so the corresponding processed CSV is written alongside.
 emissions_data = {}
-for category in final_categories:
-    emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+for category in list(final_categories) + list(responsibility_extra_categories):
+    emiss_path = emissions_path(
+        emiss_intermediate_dir, category, active_lulucf_source
+    )
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
@@ -295,9 +321,9 @@ print("All datasets validated successfully")
 # ## Data coverage completion (Rest Of World additions)
 
 # %%
-# Get world totals for each dataset
+# Get world totals for each dataset (including responsibility-only extras)
 world_emiss = {}
-for category in final_categories:
+for category in list(final_categories) + list(responsibility_extra_categories):
     if category in emissions_data:
         world_emiss[category] = get_world_totals_timeseries(
             emissions_data[category],
@@ -323,9 +349,13 @@ _alignment_cats = (
     alignment_categories.split(",") if alignment_categories else final_categories
 )
 
+# Completeness is checked through each dataset's own last year; countries
+# without full coverage land in ROW via the intersection.
 emiss_analysis_countries = {}
 for category in _alignment_cats:
-    emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+    emiss_path = emissions_path(
+        emiss_intermediate_dir, category, active_lulucf_source
+    )
     if emiss_path.exists():
         if category in emissions_data:
             emiss_df = emissions_data[category]
@@ -338,14 +368,17 @@ for category in _alignment_cats:
             emiss_df,
             expected_index_names=["iso3c", "unit", "emission-category"],
             start=1990,
-            end=2019,
+            end=last_year_column(emiss_df),
         )
 
 gdp_analysis_countries = get_complete_iso3c_timeseries(
-    gdp, expected_index_names=["iso3c", "unit"], start=1990, end=2023
+    gdp, expected_index_names=["iso3c", "unit"], start=1990, end=last_year_column(gdp)
 )
 population_analysis_countries = get_complete_iso3c_timeseries(
-    population, expected_index_names=["iso3c", "unit"], start=1990, end=2019
+    population,
+    expected_index_names=["iso3c", "unit"],
+    start=1990,
+    end=last_year_column(population),
 )
 gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 
@@ -465,9 +498,9 @@ print(
 # ## Create analysis datasets with ROW added
 
 # %%
-# Add ROW (Rest Of World) to each dataset
+# Add ROW (Rest Of World) to each dataset (including responsibility-only extras)
 emiss_complete = {}
-for category in final_categories:
+for category in list(final_categories) + list(responsibility_extra_categories):
     if category in emissions_data and category in world_emiss:
         emiss_complete[category] = add_row_timeseries(
             emissions_data[category],
@@ -511,8 +544,8 @@ gini_complete = pd.concat([gini_analysis, gini_row])
 analysis_datasets = {"GDP": gdp_complete, "Population": population_complete}
 world_totals = {"GDP": world_gdp, "Population": world_population}
 
-# Emissions datasets
-for category in final_categories:
+# Emissions datasets (including responsibility-only extras)
+for category in list(final_categories) + list(responsibility_extra_categories):
     if category in emiss_complete and category in world_emiss:
         analysis_datasets[f"Emissions ({category})"] = emiss_complete[category]
         world_totals[f"Emissions ({category})"] = world_emiss[category]

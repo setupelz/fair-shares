@@ -5,18 +5,26 @@ from pathlib import Path
 import pandas as pd
 
 from fair_shares.library.exceptions import DataLoadingError
+from fair_shares.library.preprocessing.paths import emissions_path
 from fair_shares.library.utils import ensure_string_year_columns
 
 
 def load_emissions_data(
     emiss_intermediate_dir: Path,
     final_categories: list[str],
+    active_lulucf_source: str | None = None,
 ) -> dict[str, pd.DataFrame]:
     """Load emissions data for specified categories.
+
+    When ``active_lulucf_source`` is set, NGHGI-consistent variants
+    (``emiss_<cat>_nghgi_timeseries.csv``) are loaded for LULUCF-affected
+    categories; see :mod:`fair_shares.library.preprocessing.paths`.
 
     Args:
         emiss_intermediate_dir: Path to emissions intermediate directory
         final_categories: List of emission categories to load
+        active_lulucf_source: Active LULUCF source (if any). Controls the
+            PRIMAP-vs-NGHGI filename resolution.
 
     Returns
     -------
@@ -24,7 +32,9 @@ def load_emissions_data(
     """
     emissions_data = {}
     for category in final_categories:
-        emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+        emiss_path = emissions_path(
+            emiss_intermediate_dir, category, active_lulucf_source
+        )
         if emiss_path.exists():
             emiss_df = pd.read_csv(emiss_path)
             emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])

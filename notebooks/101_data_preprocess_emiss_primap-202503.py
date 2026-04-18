@@ -40,7 +40,6 @@ from fair_shares.library.exceptions import (
 from fair_shares.library.utils import (
     build_source_id,
     convert_unit_robust,
-    determine_processing_categories,
     ensure_string_year_columns,
     get_default_unit_registry,
     set_single_unit,
@@ -159,12 +158,10 @@ if emission_category not in available_categories:
         f"source. Available categories: {available_categories}"
     )
 
-# Determine which categories to process using utility function
-processing_info = determine_processing_categories(
-    emission_category, available_categories
-)
-processing_categories = processing_info["process"]
-final_categories = processing_info["final"]
+# Atomic per-pass: one emission_category produces one CSV and one plot.
+# The Snakefile loops externally over the primitives needed by the target.
+processing_categories = (emission_category,)
+final_categories = (emission_category,)
 
 print(f"Processing categories: {processing_categories}")
 

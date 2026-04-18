@@ -50,7 +50,9 @@ from fair_shares.library.utils import (
     ensure_string_year_columns,
     get_complete_iso3c_timeseries,
     get_world_totals_timeseries,
+    last_year_column,
 )
+from fair_shares.library.preprocessing import emissions_path
 from fair_shares.library.validation import (
     validate_all_datasets_totals,
     validate_emissions_data,
@@ -223,10 +225,13 @@ root_intermediate_dir.mkdir(parents=True, exist_ok=True)
 # ## Load data
 
 # %%
-# Load emission data
+# Load emission data. The path resolver swaps in NGHGI-consistent variants
+# for LULUCF-affected categories when active_lulucf_source is set.
 emissions_data = {}
 for category in final_categories:
-    emiss_path = emiss_intermediate_dir / f"emiss_{category}_timeseries.csv"
+    emiss_path = emissions_path(
+        emiss_intermediate_dir, category, active_lulucf_source
+    )
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
@@ -306,7 +311,8 @@ world_population = get_world_totals_timeseries(
 )
 
 # %%
-# Get countries with complete data over desired period
+# Completeness is checked through each dataset's own last year; countries
+# without full coverage land in ROW via the intersection.
 emiss_analysis_countries = {}
 for category in final_categories:
     if category in emissions_data:
@@ -314,14 +320,17 @@ for category in final_categories:
             emissions_data[category],
             expected_index_names=["iso3c", "unit", "emission-category"],
             start=1990,
-            end=2019,
+            end=last_year_column(emissions_data[category]),
         )
 
 gdp_analysis_countries = get_complete_iso3c_timeseries(
-    gdp, expected_index_names=["iso3c", "unit"], start=1990, end=2023
+    gdp, expected_index_names=["iso3c", "unit"], start=1990, end=last_year_column(gdp)
 )
 population_analysis_countries = get_complete_iso3c_timeseries(
-    population, expected_index_names=["iso3c", "unit"], start=1990, end=2019
+    population,
+    expected_index_names=["iso3c", "unit"],
+    start=1990,
+    end=last_year_column(population),
 )
 gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 

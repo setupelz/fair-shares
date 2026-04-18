@@ -206,17 +206,22 @@ def _resolve_adjustment_scalars(
 
     Returns
     -------
-    tuple[float, float]
-        (bunkers_mt, lulucf_mt) — bunkers positive, lulucf sign-ready
+    tuple[float, float, float]
+        (bunkers_mt, lulucf_future_mt, lulucf_nghgi_correction_mt).
+        Bunkers is positive; the two LULUCF scalars are sign-ready.
+        Exactly one of the LULUCF scalars is non-zero per category
+        (future_mt for co2-ffi, nghgi_correction_mt for co2).
     """
-    # --- LULUCF/convention adjustment ---
+    lulucf_future_mt = 0.0
+    lulucf_nghgi_correction_mt = 0.0
+
     if emission_category == "co2":
-        # Convention gap (BM -> NGHGI) from 2020 to NZ.
-        # Covers the full period because the rebase uses BM LULUCF —
-        # gap(2020, base-1) converts the BM rebase to NGHGI convention.
+        # NGHGI-vs-BM convention correction from 2020 to NZ (Weber 2026).
+        # The rebase uses BM LULUCF; this re-expresses the result against
+        # national-inventory accounting. Budget still contains FFI + LULUCF.
         adj = rcb_adjustments.get(scenario, {})
-        lulucf_mt = adj.get("convention_gap_median", 0.0)
-        if lulucf_mt == 0.0:
+        lulucf_nghgi_correction_mt = adj.get("convention_gap_median", 0.0)
+        if lulucf_nghgi_correction_mt == 0.0:
             import warnings
 
             warnings.warn(
@@ -227,10 +232,8 @@ def _resolve_adjustment_scalars(
                 stacklevel=2,
             )
     else:
-        # co2-ffi: use pre-computed median-of-per-scenario-cumulatives.
-        # bm_lulucf_cumulative_median integrates each scenario from 2020
-        # to its own NZ year, then takes the median — consistent with the
-        # convention gap approach per Weber 2026.
+        # co2-ffi: subtract projected future (base→NZ) BM LULUCF to convert
+        # a published total-CO2 RCB into an FFI-only RCB.
         adj = rcb_adjustments.get(scenario, {})
         bm_lulucf_mt = adj.get("bm_lulucf_cumulative_median", 0.0)
 
@@ -250,9 +253,9 @@ def _resolve_adjustment_scalars(
                 )
 
         if precautionary_lulucf:
-            lulucf_mt = -max(0.0, bm_lulucf_mt)
+            lulucf_future_mt = -max(0.0, bm_lulucf_mt)
         else:
-            lulucf_mt = -bm_lulucf_mt
+            lulucf_future_mt = -bm_lulucf_mt
 
     # --- Bunkers deduction (always positive; caller negates) ---
     bunkers_mt = compute_bunker_deduction(
@@ -264,10 +267,12 @@ def _resolve_adjustment_scalars(
     if verbose:
         print(
             f"    Scenario {scenario}: "
-            f"bunkers={bunkers_mt:.0f} Mt, lulucf={lulucf_mt:.0f} Mt"
+            f"bunkers={bunkers_mt:.0f} Mt, "
+            f"lulucf_future={lulucf_future_mt:.0f} Mt, "
+            f"lulucf_nghgi_correction={lulucf_nghgi_correction_mt:.0f} Mt"
         )
 
-    return bunkers_mt, lulucf_mt
+    return bunkers_mt, lulucf_future_mt, lulucf_nghgi_correction_mt
 
 
 def load_and_process_rcbs(
@@ -426,16 +431,18 @@ def load_and_process_rcbs(
             nz_year = rcb_adjustments[scenario]["nz_year_median"]
 
             # Resolve adjustment scalars from pre-computed values
-            bunkers_mt, lulucf_mt = _resolve_adjustment_scalars(
-                scenario=scenario,
-                baseline_year=baseline_year,
-                net_zero_year=nz_year,
-                bunker_ts=bunker_ts,
-                lulucf_shift_ts=direct_median,
-                rcb_adjustments=rcb_adjustments,
-                emission_category=emission_category,
-                precautionary_lulucf=adjustments_config.precautionary_lulucf,
-                verbose=verbose,
+            bunkers_mt, lulucf_future_mt, lulucf_nghgi_mt = (
+                _resolve_adjustment_scalars(
+                    scenario=scenario,
+                    baseline_year=baseline_year,
+                    net_zero_year=nz_year,
+                    bunker_ts=bunker_ts,
+                    lulucf_shift_ts=direct_median,
+                    rcb_adjustments=rcb_adjustments,
+                    emission_category=emission_category,
+                    precautionary_lulucf=adjustments_config.precautionary_lulucf,
+                    verbose=verbose,
+                )
             )
 
             # Process RCB to 2020 baseline
@@ -446,7 +453,8 @@ def load_and_process_rcbs(
                 world_co2_ffi_emissions=world_fossil_emissions,
                 emission_category=emission_category,
                 bunkers_deduction_mt=bunkers_mt,
-                lulucf_deduction_mt=lulucf_mt,
+                lulucf_future_deduction_mt=lulucf_future_mt,
+                lulucf_nghgi_correction_mt=lulucf_nghgi_mt,
                 actual_bm_lulucf_emissions=actual_bm_lulucf_emissions,
                 target_baseline_year=2020,
                 source_name=source_key,
@@ -463,13 +471,14 @@ def load_and_process_rcbs(
                 "baseline_year": baseline_year,
                 "rcb_original_value": result["rcb_original_value"],
                 "rcb_original_unit": result["rcb_original_unit"],
-                "rcb_2020_mt": result["rcb_2020_mt"],
+                "rcb_2020_nghgi_mt": result["rcb_2020_nghgi_mt"],
                 "net_adjustment_mt": result["net_adjustment_mt"],
                 "rebase_total_mt": result["rebase_total_mt"],
                 "rebase_fossil_mt": result["rebase_fossil_mt"],
                 "rebase_lulucf_mt": result["rebase_lulucf_mt"],
                 "deduction_bunkers_mt": result["deduction_bunkers_mt"],
-                "deduction_lulucf_mt": result["deduction_lulucf_mt"],
+                "deduction_lulucf_future_mt": result["deduction_lulucf_future_mt"],
+                "correction_lulucf_nghgi_mt": result["correction_lulucf_nghgi_mt"],
             }
 
             rcb_records.append(record)

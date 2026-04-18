@@ -15,27 +15,20 @@
 # ---
 
 # %% [markdown]
-# # IAMC Fair Shares Allocation Analysis
+# # 401 — Custom IAMC allocation
 #
-# **Allocate carbon budgets or emission pathways to IAMC model regions using equity principles.**
+# Allocate carbon budgets or emission pathways to IAMC model regions. Works
+# on the output of notebook 400 (`output/iamc/iamc_covered.xlsx` by
+# default). Run 400 first.
 #
-# This notebook works with IAMC-format data (e.g., MESSAGEix) to calculate
-# regional fair shares. **Start with principles, not parameters.**
+# Start with principles, not parameters. See
+# [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/).
 #
-# **Before configuring, read:**
+# For pre-configured examples, use `402` (budgets) or `403` (pathways).
 #
-# - [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) - Principles-first workflow
-#
-# **Pre-configured examples:**
-#
-# - `402_example_iamc_budget_allocations.py` - Budget templates
-# - `403_example_iamc_pathway_allocations.py` - Pathway templates
-#
-# **Workflow:**
-# 1. **Load IAMC Data** - From Excel/CSV/pyam
-# 2. **Choose Type** - Budget or pathway allocations?
-# 3. **Define Approach** - Operationalize equity principles
-# 4. **Run & Explore** - Calculate and visualize
+# Workflow: load IAMC data → choose budget or pathway → define approach →
+# run → visualise → export → (optional) prepare model-ready remaining
+# budget.
 
 # %%
 # Imports (run this first)
@@ -57,49 +50,37 @@ from fair_shares.library.allocations.pathways import (
     per_capita_adjusted,
     per_capita_adjusted_gini,
 )
-from fair_shares.library.utils.data.iamc import load_iamc_data
+from fair_shares.library.utils.data.iamc import (
+    calculate_cumulative_emissions,
+    calculate_world_total_timeseries,
+    load_iamc_data,
+)
 
 # Set matplotlib style
 plt.style.use("default")
 plt.rcParams["axes.grid"] = True
 plt.rcParams["grid.alpha"] = 0.3
 
+BLUE = "#005baa"
+
 project_root = here()
 
 # %% [markdown]
 # ---
-# ## Workflow Overview
+# ## Step 1: Load IAMC data (output of notebook 400)
 #
-# This notebook guides you through IAMC regional allocations:
-#
-# 1. **Step 1**: Load your IAMC-format data file
-# 2. **Step 2**: Choose allocation type (budget or pathway)
-# 3. **Step 3**: Define your allocation approach and parameters
-# 4. **Step 4**: Run the allocation
-# 5. **Step 5-7**: Visualize, export, and prepare model inputs
-#
-# [Learn more about allocation approaches](https://setupelz.github.io/fair-shares/science/allocations/)
-
-# %% [markdown]
-# ---
-# ## Step 1: Load IAMC Data
-#
-# Load scenario data in IAMC format (Excel, CSV, or pyam database).
-#
-# **Required variables:**
-# - Population (for per capita calculations)
-# - GDP (for capability-based adjustments, optional)
-# - Emissions (the target being allocated, e.g., `Emissions|CO2`)
+# 400 writes `output/iamc/iamc_covered.xlsx`. That file contains
+# Population, GDP|PPP, the three GHG components, and `Emissions|Covered`
+# across 1990 history + scenario years.
 
 # %%
 # CONFIGURE YOUR DATA SOURCE HERE
 
-# Path to your IAMC-format data file
-DATA_FILE = (
-    project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
-)
+DATA_FILE = project_root / "output" / "iamc" / "iamc_covered.xlsx"
 if not DATA_FILE.exists():
-    raise FileNotFoundError(f"Data file not found: {DATA_FILE}")
+    raise FileNotFoundError(
+        f"Data file not found: {DATA_FILE}. Run notebook 400 first."
+    )
 
 # IAMC variable names in your file
 POPULATION_VARIABLE = "Population"
@@ -107,7 +88,7 @@ GDP_VARIABLE = "GDP|PPP"
 EMISSIONS_VARIABLE = "Emissions|Covered"  # The emissions being allocated
 
 # Time range configuration
-EARLIEST_DATA_YEAR = 2015  # Must be <= allocation_year in Step 3
+EARLIEST_DATA_YEAR = 1990  # Must be <= allocation_year in Step 3
 MODEL_HORIZON_YEAR = 2100  # Last year in your optimisation framework
 
 # Model/scenario selection
@@ -118,7 +99,7 @@ MODEL_FILTER = None
 SCENARIO_FILTER = None
 
 # Label for this allocation run — used to organise output files.
-# Outputs go to: output/iamc/{data_file_stem}/{ALLOCATION_LABEL}/
+# Outputs go to: output/iamc/{ALLOCATION_LABEL}/
 ALLOCATION_LABEL = "my_iamc_analysis"  # EDIT THIS: name your analysis
 
 # %%
@@ -147,8 +128,6 @@ data = load_iamc_data(
     budget_end_year=MODEL_HORIZON_YEAR,
     model_filter=MODEL_FILTER,
     scenario_filter=SCENARIO_FILTER,
-    expand_to_annual=True,
-    interpolation_method="linear",
 )
 
 print("\nData loaded successfully!")
@@ -233,7 +212,7 @@ approach_params = {
     # Allocation year (required) — the year your allocation begins.
     # Always use "allocation_year" here. The notebook automatically maps it
     # to `first_allocation_year` for pathway approaches (Step 4).
-    "allocation_year": 2015,
+    "allocation_year": 1990,
     # Example parameters (uncomment and edit as needed):
     # "pre_allocation_responsibility_weight": 0.5,
     # "capability_weight": 0.5,
@@ -349,8 +328,6 @@ if "convergence" in approach:
     ]
     if world_emissions_ts.empty:
         # No "World" region in data — compute by summing all regions
-        from fair_shares.library.utils.data.iamc import calculate_world_total_timeseries
-
         world_emissions_ts = calculate_world_total_timeseries(
             emissions_ts, unit_level="unit", group_level="iso3c"
         )
@@ -397,7 +374,7 @@ if allocation_type == "budget":
     # Bar chart for budget allocations (single year)
     fig, ax = plt.subplots(figsize=(10, 6))
     sorted_regions = shares.sort_values(ascending=True).index
-    ax.barh(sorted_regions, shares[sorted_regions] * 100, color="#3498db")
+    ax.barh(sorted_regions, shares[sorted_regions] * 100, color=BLUE)
     ax.set_xlabel("Share (%)")
     ax.set_title(f"Regional Budget Shares - {approach}")
     ax.grid(axis="x", alpha=0.3)
@@ -440,7 +417,7 @@ else:
 
 # %%
 # Export to CSV
-output_dir = project_root / "output" / "iamc" / DATA_FILE.stem / ALLOCATION_LABEL
+output_dir = project_root / "output" / "iamc" / ALLOCATION_LABEL
 output_dir.mkdir(parents=True, exist_ok=True)
 output_file = output_dir / f"iamc_{allocation_type}_allocation_{approach}.csv"
 
@@ -501,8 +478,6 @@ else:
 
 # %%
 if PREPARE_MODEL_INPUT and allocation_type == "budget":
-    from fair_shares.library.utils.data.iamc import calculate_cumulative_emissions
-
     # Check that emissions data was loaded
     if emissions_ts is None:
         raise ValueError(
@@ -510,8 +485,9 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
             "Ensure EMISSIONS_VARIABLE is set to load emissions data."
         )
 
-    # Use pyam-loaded emissions data
-    emissions_df = emissions_ts.droplevel(["unit", "emission-category"])
+    # Use pyam-loaded emissions data (keep the 'unit' index level — the
+    # registry-aware cumulative helper reads native units from it).
+    emissions_df = emissions_ts.droplevel("emission-category")
 
     # Calculate global cumulative budget from scenario
     print("\n" + "=" * 70)
@@ -525,7 +501,6 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
         emissions_ts=emissions_df,
         start_year=allocation_year,
         end_year=MODEL_HORIZON_YEAR,
-        unit_conversion=1.0 / 1000,  # Mt to Gt
     )
 
     total_budget_gt = regional_cumulative.sum()
@@ -553,7 +528,6 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
         emissions_ts=emissions_df,
         start_year=allocation_year,
         end_year=FIRST_PERIOD_START - 1,
-        unit_conversion=1.0 / 1000,  # Mt to Gt
     )
 
     print(f"{'Region':8s} {'Emissions (Gt)':>15s}")

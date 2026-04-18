@@ -55,7 +55,7 @@ def sample_rcbs():
             "source": ["test_source"],
             "climate-assessment": ["1.5C"],
             "quantile": [0.5],
-            "rcb_2020_mt": [10000.0],
+            "rcb_2020_nghgi_mt": [10000.0],
         }
     )
 

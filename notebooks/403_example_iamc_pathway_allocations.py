@@ -15,25 +15,25 @@
 # ---
 
 # %% [markdown]
-# # IAMC Pathway Allocation Examples (Reference)
+# # 403 — IAMC pathway allocation examples (reference)
 #
-# **Pre-configured pathway examples for IAMC model regions demonstrating equity principles.**
-# For custom analysis, use **notebook 401**.
+# Pre-configured pathway examples for IAMC model regions. Runs on the
+# output of notebook 400 (`output/iamc/iamc_covered.xlsx`). Run
+# 400 first.
 #
-# **What's included:**
+# - **Equal per capita** — annual shares by population
+# - **Capability-adjusted** — GDP-adjusted annual shares
+# - **Cumulative convergence** — smooth transition, preserves cumulative
+#   equity budgets
 #
-# - **Equal per capita** - Operationalizes equal rights to atmosphere (annual shares)
-# - **Capability-adjusted** - Operationalizes capability (ability to pay)
-# - **Cumulative convergence** - Smooth transitions while preserving cumulative equity budgets
-#
-# Each demonstrates how different equity principles translate to IAMC regional pathway allocations.
+# For custom analysis, use notebook 401.
 #
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
 
 # %%
 # Imports (run this first)
 import matplotlib.pyplot as plt
-import pandas as pd
+import pyam
 from pyprojroot import here
 
 # Import fair-shares library components
@@ -42,7 +42,6 @@ from fair_shares.library.allocations.pathways import (
     equal_per_capita,
     per_capita_adjusted,
 )
-from fair_shares.library.utils import ensure_string_year_columns
 from fair_shares.library.utils.data.iamc import (
     calculate_world_total_timeseries,
     load_iamc_data,
@@ -53,23 +52,22 @@ plt.style.use("default")
 plt.rcParams["axes.grid"] = True
 plt.rcParams["grid.alpha"] = 0.3
 
+BLUE = "#005baa"
+
 project_root = here()
 
 # %% [markdown]
 # ---
-# ## Step 1: Load IAMC Data
+# ## Step 1: Load IAMC data (output of notebook 400)
 #
-# **Datasets**: Population, GDP|PPP, Emissions|Covered
+# Needs Population, GDP|PPP, Emissions|Covered.
 
 # %%
-# =============================================================================
-# DATA SOURCE CONFIGURATION
-# =============================================================================
-
-# Path to your IAMC-format data file (replace with your own)
-DATA_FILE = (
-    project_root / "data" / "scenarios" / "iamc_example" / "iamc_reporting_example.xlsx"
-)
+DATA_FILE = project_root / "output" / "iamc" / "iamc_covered.xlsx"
+if not DATA_FILE.exists():
+    raise FileNotFoundError(
+        f"Data file not found: {DATA_FILE}. Run notebook 400 first."
+    )
 
 # IAMC variable names
 POPULATION_VARIABLE = "Population"
@@ -77,13 +75,11 @@ GDP_VARIABLE = "GDP|PPP"
 EMISSIONS_VARIABLE = "Emissions|Covered"  # The emissions being allocated
 
 # Time range configuration
-EARLIEST_DATA_YEAR = 2015  # Must be <= first_allocation_year in examples
+EARLIEST_DATA_YEAR = 1990  # Must be <= first_allocation_year in examples
 MODEL_HORIZON_YEAR = 2100  # Last year in optimisation framework
 
-# Load region list
-df = pd.read_excel(DATA_FILE)
-df = ensure_string_year_columns(df)
-regions = [r for r in df["region"].unique() if r != "World"]
+# Load region list via pyam (handles case-insensitive columns)
+regions = [r for r in pyam.IamDataFrame(DATA_FILE).region if r != "World"]
 
 print(f"Data file: {DATA_FILE}")
 print(f"Regions: {', '.join(sorted(regions))}")
@@ -98,10 +94,9 @@ data = load_iamc_data(
     regions=regions,
     allocation_start_year=EARLIEST_DATA_YEAR,
     budget_end_year=MODEL_HORIZON_YEAR,
-    expand_to_annual=True,
 )
 
-print("\nYes Data loaded successfully!")
+print("\nData loaded.")
 print(f"Variables: {data['metadata']['variables_loaded']}")
 print(f"Time range: {data['metadata']['year_range']}")
 
@@ -275,8 +270,10 @@ for region in sorted(shares_conv.index.get_level_values("iso3c").unique()):
 # Visualize how different approaches allocate emissions over time for a sample region.
 
 # %%
-# Select a region to visualize
-TEST_REGION = "NAM"  # North America
+# Select a region to visualise. Use any region name present in the
+# loaded IamDataFrame. Replace with an explicit string if you want a
+# specific region.
+TEST_REGION = sorted(regions)[0]
 
 # Extract data for this region
 epc_region = shares_epc[shares_epc.index.get_level_values("iso3c") == TEST_REGION]
@@ -297,7 +294,7 @@ ax.plot(
     markersize=4,
     linewidth=2,
     label="Equal Per Capita",
-    color="#2ecc71",
+    color=BLUE,
 )
 
 ax.plot(
@@ -307,7 +304,6 @@ ax.plot(
     markersize=4,
     linewidth=2,
     label="Capability-only",
-    color="#3498db",
 )
 
 ax.plot(
@@ -317,7 +313,6 @@ ax.plot(
     markersize=4,
     linewidth=2,
     label="Cumulative Convergence",
-    color="#e74c3c",
 )
 
 ax.set_xlabel("Year", fontsize=12)

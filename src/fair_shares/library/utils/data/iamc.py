@@ -1,43 +1,42 @@
 """
 IAMC Data Format Adapter for fair-shares Allocations.
 
-This module provides utilities to load IAMC-format data using pyam and transform it
-for use with fair-shares allocation functions.
+Load IAMC-format data via pyam and reshape it for fair-shares allocation
+functions. Typical upstream producer is notebook 400, which back-fills
+CEDS-based regional history, builds `Emissions|Covered`, and writes an
+annual-resolution file that 401/402/403 consume.
 
 IAMC Format Requirements
 ------------------------
-Your data must be in standard IAMC format with columns:
-- model: Model name (e.g., "MESSAGEix-GLOBIOM")
-- scenario: Scenario name (e.g., "SSP2-Baseline")
-- region: Region identifier (e.g., "USA", "R12_CHN")
-- variable: Variable name (e.g., "Population", "Emissions|CO2")
-- unit: Unit string (e.g., "million", "Mt CO2/yr")
-- Year columns: 1990, 2000, 2010, ..., 2100 (numeric or string)
+Standard IAMC columns: model, scenario, region, variable, unit, and year
+columns (numeric or string).
 
 Required Variables by Approach
 ------------------------------
 - equal-per-capita-budget: Population
-- per-capita-adjusted-budget: Population, Emissions (for pre-allocation responsibility),
-  GDP|PPP (for capability)
+- per-capita-adjusted-budget: Population; Emissions (when
+  ``pre_allocation_responsibility_weight > 0``); GDP|PPP (when
+  ``capability_weight > 0``)
+- cumulative-per-capita-convergence: Population, Emissions (regional and
+  world-total)
 
 Data Coverage
 -------------
-Your data should span from `allocation_start_year` (typically 1990 for
-pre-allocation responsibility) through `budget_end_year` (your model's final
-timestep, e.g., 2100 or 2110).
+Data should span ``allocation_start_year`` (typically 1990 for approaches
+using pre-allocation responsibility) through ``budget_end_year`` (your
+model's final timestep).
 
 Example Usage
 -------------
 >>> from fair_shares.library.utils.data.iamc import load_iamc_data
 >>> data = load_iamc_data(
-...     data_file="my_scenario.csv",
+...     data_file="output/iamc/iamc_covered.xlsx",
 ...     population_variable="Population",
-...     emissions_variable="Emissions|CO2",
+...     emissions_variable="Emissions|Covered",
 ...     gdp_variable="GDP|PPP",
-...     regions=["USA", "CHN", "EUR", "IND", "JPN", "OAS", "LAM", "AFR", "MEA", "FSU"],
 ...     allocation_start_year=1990,
 ...     budget_end_year=2100,
-... )
+... )  # doctest: +SKIP
 """
 
 from __future__ import annotations
@@ -420,65 +419,34 @@ def _normalize_gdp_units(
     gdp_df: pd.DataFrame, unit_level: str = "unit"
 ) -> pd.DataFrame:
     """
-    Normalize GDP units from billion to million for allocation functions.
+    Normalize GDP units to the simple label ``"million"`` for allocation functions.
 
-    IAMC data commonly uses "billion USD/yr" but allocation functions expect
-    "million USD/yr". This converts the units and scales values appropriately.
-
-    Parameters
-    ----------
-    gdp_df
-        GDP timeseries DataFrame with MultiIndex including unit level
-    unit_level
-        Name of the unit index level (default: "unit")
-
-    Returns
-    -------
-    DataFrame
-        GDP data with normalized units in million USD/yr
+    IAMC GDP rows carry labels like ``"billion US$2010/yr"`` whose currency-year
+    token (``US$2010``) the fair-shares pint registry cannot parse. Downstream
+    allocation functions need GDP in millions so that per-capita quantities are
+    dimensionally consistent with the ``"million"`` population unit. This helper
+    rescales billion → million where needed and strips the currency-year token
+    from the label. No change is applied to already-millions data beyond the
+    label simplification.
     """
-    # Get current units
     units = gdp_df.index.get_level_values(unit_level).unique()
-
-    # Check if conversion is needed
     if len(units) != 1:
         raise IAMCDataError(f"Expected single GDP unit, found multiple: {list(units)}")
 
-    current_unit = units[0]
+    current_unit = units[0].lower()
 
-    # Normalize units to simple "million" for pint compatibility
-    # IAMC units often have complex strings like "billion US$2010/yr" which
-    # contain characters ($, numbers) that pint can't parse
-
-    if "billion" in current_unit.lower():
-        # Convert values: billion to million is *1000
-        gdp_df = gdp_df * 1000
-        new_unit = "million"
-
-        # Recreate index with new unit
-        new_index = gdp_df.index.to_frame()
-        new_index[unit_level] = new_unit
-        gdp_df.index = pd.MultiIndex.from_frame(new_index)
-
-    elif "million" in current_unit.lower():
-        # Units already in millions, just simplify the label
-        new_unit = "million"
-
-        # Recreate index with new unit
-        new_index = gdp_df.index.to_frame()
-        new_index[unit_level] = new_unit
-        gdp_df.index = pd.MultiIndex.from_frame(new_index)
-
-    else:
-        # Unknown units - warn user
-        import warnings
-
-        warnings.warn(
-            f"GDP units '{current_unit}' don't contain 'billion' or 'million'. "
-            f"Allocation functions expect GDP in millions. Results may be incorrect.",
-            UserWarning,
+    if "billion" in current_unit:
+        gdp_df = gdp_df * 1000  # billion → million
+    elif "million" not in current_unit:
+        raise IAMCDataError(
+            f"GDP unit '{units[0]}' is not recognised (expected 'billion' or "
+            f"'million' substring). Allocation functions require GDP in millions; "
+            f"rescale and relabel before calling load_iamc_data()."
         )
 
+    new_index = gdp_df.index.to_frame()
+    new_index[unit_level] = "million"
+    gdp_df.index = pd.MultiIndex.from_frame(new_index)
     return gdp_df
 
 
@@ -556,43 +524,52 @@ def calculate_cumulative_emissions(
     emissions_ts: pd.DataFrame,
     start_year: int,
     end_year: int,
-    unit_conversion: float = 1.0 / 1000,  # Default: Mt to Gt
+    target_unit: str = "Gt CO2/yr",
+    unit_level: str = "unit",
+    gwp: str = "AR6GWP100",
 ) -> pd.Series:
     """
     Calculate cumulative emissions over a time period from annual timeseries data.
 
     Expects annual data (e.g., expanded via ``expand_to_annual`` with linear
     interpolation). Each year column represents the annual rate for that year,
-    and the cumulative is simply the sum of those annual values.
+    and the cumulative is the sum of those annual values, converted to
+    ``target_unit`` using the fair-shares pint registry.
 
     Parameters
     ----------
     emissions_ts
-        Emissions timeseries DataFrame with annual year columns and region index.
-        Should be expanded to annual resolution before calling this function.
+        Emissions timeseries DataFrame with annual year columns and an index
+        that includes ``unit_level``. Native units are read row-wise from that
+        level; the returned series drops it.
     start_year
         First year to include in cumulative sum
     end_year
         Last year to include in cumulative sum
-    unit_conversion
-        Factor to convert units (default: Mt to Gt = 1/1000)
+    target_unit
+        Output unit; default ``"Gt CO2/yr"``. CO2-equivalent inputs are
+        converted via the ``gwp`` context.
+    unit_level
+        Name of the index level holding each row's native unit.
+    gwp
+        GWP context activated for CO2e → CO2 conversions. Default AR6GWP100.
 
     Returns
     -------
     pd.Series
-        Cumulative emissions by region in converted units
+        Cumulative emissions in ``target_unit``, indexed by the non-unit index
+        levels (e.g. region).
 
     Examples
     --------
-    Calculate regional cumulative budgets from IAMC emissions data:
-
     >>> cumulative = calculate_cumulative_emissions(
     ...     emissions_ts=emissions_df,
     ...     start_year=2015,
     ...     end_year=2100,
-    ...     unit_conversion=1.0 / 1000,  # Mt to Gt
     ... )  # doctest: +SKIP
     """
+    from fair_shares.library.utils.units import get_default_unit_registry
+
     year_cols = [
         str(y)
         for y in range(start_year, end_year + 1)
@@ -605,7 +582,22 @@ def calculate_cumulative_emissions(
             f"Available years: {[c for c in emissions_ts.columns if c.isdigit()]}"
         )
 
-    return emissions_ts[year_cols].sum(axis=1) * unit_conversion
+    index_names = list(emissions_ts.index.names or [])
+    if unit_level not in index_names:
+        raise IAMCDataError(
+            f"emissions_ts must retain the '{unit_level}' index level for "
+            f"unit-aware conversion. Available levels: {index_names}."
+        )
+
+    summed = emissions_ts[year_cols].sum(axis=1)
+    units = summed.index.get_level_values(unit_level)
+    ur = get_default_unit_registry()
+    with ur.context(gwp):
+        factors = {
+            u: float((1.0 * ur(u)).to(target_unit).magnitude) for u in set(units)
+        }
+    factor_series = pd.Series([factors[u] for u in units], index=summed.index)
+    return (summed * factor_series).droplevel(unit_level)
 
 
 def calculate_world_total_timeseries(
@@ -641,10 +633,14 @@ def calculate_world_total_timeseries(
     ...     regional_ts=regional_emissions_df, unit_level="unit", group_level="iso3c"
     ... )  # doctest: +SKIP
     """
-    # Sum across all groups/regions
-    world_totals = regional_ts.groupby(level=unit_level).sum()
+    units = regional_ts.index.get_level_values(unit_level).unique()
+    if len(units) > 1:
+        raise IAMCDataError(
+            f"Cannot sum across regions with mixed units {list(units)}. "
+            f"Normalize to a single unit before calling calculate_world_total_timeseries()."
+        )
 
-    # Add group level back with "World" identifier
+    world_totals = regional_ts.groupby(level=unit_level).sum()
     world_totals[group_level] = "World"
     world_totals = world_totals.set_index(group_level, append=True)
     world_totals = world_totals.reorder_levels([group_level, unit_level])

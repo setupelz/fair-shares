@@ -68,6 +68,7 @@ from .dataframes import (
     TimeseriesDataFrame,
     ensure_string_year_columns,
     get_year_columns,
+    last_year_column,
 )
 from .io import generate_parquet_readme
 from .units import convert_unit_robust, get_default_unit_registry, set_single_unit
@@ -103,6 +104,7 @@ __all__ = [
     "get_world_totals_timeseries",
     "get_year_columns",
     "get_year_coverage",
+    "last_year_column",
     "groupby_except_robust",
     "harmonize_to_historical_with_convergence",
     "interpolate_scenarios_data",

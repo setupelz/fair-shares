@@ -76,6 +76,7 @@ def _cumulative_per_capita_convergence_core(
     first_allocation_year: int,
     emission_category: str,
     world_scenario_emissions_ts: TimeseriesDataFrame,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     gdp_ts: TimeseriesDataFrame | None = None,
     gini_s: pd.DataFrame | None = None,
     pre_allocation_responsibility_weight: float = 0.0,
@@ -329,8 +330,13 @@ def _cumulative_per_capita_convergence_core(
 
     # Apply pre-allocation responsibility adjustment: higher historical emissions -> lower allocation
     if pre_allocation_responsibility_weight > 0:
+        responsibility_input = (
+            responsibility_emissions_ts
+            if responsibility_emissions_ts is not None
+            else country_actual_emissions_ts
+        )
         responsibility_data = calculate_responsibility_adjustment_data_convergence(
-            country_actual_emissions_ts=country_actual_emissions_ts,
+            country_actual_emissions_ts=responsibility_input,
             population_ts=population_ts,
             pre_allocation_responsibility_year=pre_allocation_responsibility_year,
             first_allocation_year=first_allocation_year,
@@ -847,6 +853,7 @@ def cumulative_per_capita_convergence_adjusted(
     first_allocation_year: int,
     emission_category: str,
     world_scenario_emissions_ts: TimeseriesDataFrame,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     gdp_ts: TimeseriesDataFrame | None = None,
     pre_allocation_responsibility_weight: float = 0.0,
     capability_weight: float = 0.0,
@@ -1105,6 +1112,7 @@ def cumulative_per_capita_convergence_adjusted(
     return _cumulative_per_capita_convergence_core(
         population_ts=population_ts,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         world_scenario_emissions_ts=world_scenario_emissions_ts,
         first_allocation_year=first_allocation_year,
         emission_category=emission_category,
@@ -1137,6 +1145,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     first_allocation_year: int,
     emission_category: str,
     world_scenario_emissions_ts: TimeseriesDataFrame,
+    responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     gdp_ts: TimeseriesDataFrame | None = None,
     gini_s: pd.DataFrame | None = None,
     pre_allocation_responsibility_weight: float = 0.0,
@@ -1420,6 +1429,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     return _cumulative_per_capita_convergence_core(
         population_ts=population_ts,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         world_scenario_emissions_ts=world_scenario_emissions_ts,
         first_allocation_year=first_allocation_year,
         emission_category=emission_category,

@@ -72,9 +72,15 @@ def load_allocation_data(
     Returns
     -------
     dict with keys:
-        emissions_data, scenarios_data, rcbs_data, world_emissions_data,
-        country_gdp_df, country_population_df, country_gini_df,
-        net_negative_metadata
+        emissions_data, responsibility_emissions_data, scenarios_data,
+        rcbs_data, world_emissions_data, country_gdp_df,
+        country_population_df, country_gini_df, net_negative_metadata.
+
+        ``emissions_data`` is the category's own historical emissions frame,
+        used for pathway shape and budget math. ``responsibility_emissions_data``
+        is keyed the same way but substitutes the ``co2-ffi`` frame for
+        LULUCF-inclusive categories (``co2``, ``all-ghg``) so the
+        pre-allocation responsibility step stays on the positive real line.
     """
     emissions_data = {}
     scenarios_data = {}
@@ -124,6 +130,25 @@ def load_allocation_data(
                 scenarios_data[category]
             )
 
+    # Pre-allocation responsibility takes the FFI frame for categories whose
+    # composite flux can go net-negative (co2 with LULUCF, all-ghg). This
+    # follows the Baer/CSC convention that historical responsibility is a
+    # property of fossil-fuel-and-industry CO2 loading, and keeps the
+    # ``(cumulative)**exponent`` step on the positive real line.
+    responsibility_emissions_data: dict[str, pd.DataFrame] = {}
+    _lulucf_inclusive = {"co2", "all-ghg"}
+    for category in final_categories:
+        if category in _lulucf_inclusive:
+            ffi_path = processed_dir / "country_emissions_co2-ffi_timeseries.csv"
+            ffi_df = pd.read_csv(ffi_path).set_index(
+                ["iso3c", "unit", "emission-category"]
+            )
+            responsibility_emissions_data[category] = ensure_string_year_columns(
+                ffi_df
+            )
+        else:
+            responsibility_emissions_data[category] = emissions_data[category]
+
     print(
         f"  Loaded data for {len(final_categories)} categories: "
         f"{', '.join(final_categories)}"
@@ -162,6 +187,7 @@ def load_allocation_data(
 
     return {
         "emissions_data": emissions_data,
+        "responsibility_emissions_data": responsibility_emissions_data,
         "scenarios_data": scenarios_data,
         "rcbs_data": rcbs_data,
         "world_emissions_data": world_emissions_data,
@@ -262,6 +288,9 @@ def run_all_allocations(
             category=category,
             target_source=target_src,
             country_emissions=loaded_data["emissions_data"][category],
+            responsibility_emissions=loaded_data["responsibility_emissions_data"][
+                category
+            ],
             world_data=loaded_data["scenarios_data"].get(category),
             rcbs_df=loaded_data["rcbs_data"].get(category),
             gdp=loaded_data["country_gdp_df"],
@@ -323,6 +352,7 @@ def run_and_save_category_allocations(
     category: str,
     target_source: str,
     country_emissions: pd.DataFrame,
+    responsibility_emissions: pd.DataFrame,
     world_data: pd.DataFrame,
     rcbs_df: pd.DataFrame | None,
     gdp: pd.DataFrame,
@@ -346,7 +376,17 @@ def run_and_save_category_allocations(
         Emission category being processed (e.g. ``"co2-ffi"``).
     target_source : str
         Target type (``"rcbs"``, ``"pathway"``, ``"rcb-pathways"``).
-    country_emissions, world_data, rcbs_df, gdp, population, gini : DataFrame
+    country_emissions : DataFrame
+        Category-native historical country emissions, used for initial-share
+        and shape logic in convergence allocators (must match the world
+        scenario category in sum).
+    responsibility_emissions : DataFrame
+        Historical country emissions passed to the pre-allocation
+        responsibility step. Substitutes the ``co2-ffi`` frame for
+        LULUCF-inclusive categories (``co2``, ``all-ghg``) so the
+        ``(cumulative)**exponent`` step stays on the positive real line;
+        for other categories this is the category's own frame.
+    world_data, rcbs_df, gdp, population, gini : DataFrame
         Input data — see ``run_all_allocations`` for details.
     output_dir : Path
         Directory for output parquet files.
@@ -372,6 +412,7 @@ def run_and_save_category_allocations(
             category=category,
             target_source=target_source,
             country_emissions=country_emissions,
+            responsibility_emissions=responsibility_emissions,
             rcbs_df=rcbs_df,
             gdp=gdp,
             population=population,
@@ -387,6 +428,7 @@ def run_and_save_category_allocations(
             category=category,
             target_source=target_source,
             country_emissions=country_emissions,
+            responsibility_emissions=responsibility_emissions,
             world_data=world_data,
             gdp=gdp,
             population=population,
@@ -431,6 +473,7 @@ def _run_budget_allocations(
     category: str,
     target_source: str,
     country_emissions: pd.DataFrame,
+    responsibility_emissions: pd.DataFrame,
     rcbs_df: pd.DataFrame,
     gdp: pd.DataFrame,
     population: pd.DataFrame,
@@ -451,6 +494,7 @@ def _run_budget_allocations(
         gdp_ts=gdp,
         gini_s=gini,
         country_actual_emissions_ts=country_emissions,
+        responsibility_emissions_ts=responsibility_emissions,
         emission_category=category,
         target_source=target_source,
         harmonisation_year=harmonisation_year,
@@ -460,7 +504,7 @@ def _run_budget_allocations(
         rcb_source = rcb_row["source"]
         climate_assessment = rcb_row["climate-assessment"]
         quantile = rcb_row["quantile"]
-        rcb_value = rcb_row["rcb_2020_mt"]
+        rcb_value = rcb_row["rcb_2020_nghgi_mt"]
 
         for result in results:
             allocation_year = result.parameters.get("allocation_year")
@@ -512,6 +556,7 @@ def _run_pathway_allocations(
     category: str,
     target_source: str,
     country_emissions: pd.DataFrame,
+    responsibility_emissions: pd.DataFrame,
     world_data: pd.DataFrame,
     gdp: pd.DataFrame,
     population: pd.DataFrame,
@@ -553,6 +598,7 @@ def _run_pathway_allocations(
             gdp_ts=gdp,
             gini_s=gini,
             country_actual_emissions_ts=country_emissions,
+            responsibility_emissions_ts=responsibility_emissions,
             emission_category=category,
             world_scenario_emissions_ts=world_ts,
             target_source=target_source,

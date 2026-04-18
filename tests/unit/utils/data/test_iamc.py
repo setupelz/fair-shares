@@ -392,19 +392,14 @@ def example_iamc_file():
 
 @pytest.mark.integration
 def test_iamc_example_file_allocation_integration(example_iamc_file):
+    """Integration test: load the example IAMC file and verify population data.
+
+    Exercises ``load_iamc_data`` on the packaged MESSAGEix-GLOBIOM 2.1-R12
+    example file.
     """
-    Integration test: verify IAMC loader + allocation reproduces expected values.
+    iamc_df = pyam.IamDataFrame(example_iamc_file)
+    all_regions = [r for r in iamc_df.region if r != "World"]
 
-    The example file contains pre-calculated ECPC (Equal Cumulative Per Capita)
-    allocations. This test verifies that loading the file and running
-    equal_per_capita_budget() reproduces those values.
-    """
-
-    # Load regions from file (excluding World)
-    df = pd.read_excel(example_iamc_file)
-    all_regions = [r for r in df["region"].unique() if r != "World"]
-
-    # Load population data using IAMC loader
     data = load_iamc_data(
         data_file=example_iamc_file,
         population_variable="Population",
@@ -416,94 +411,62 @@ def test_iamc_example_file_allocation_integration(example_iamc_file):
     assert "population" in data
     population = data["population"]
 
-    # Check we got all expected regions
     loaded_regions = set(population.index.get_level_values("region"))
-    assert len(loaded_regions) == 12  # 12 regions in the example file
+    assert len(loaded_regions) == 12
 
-    # Verify IAMC format was loaded correctly
     assert all(isinstance(c, str) for c in population.columns)
     assert "2015" in population.columns
     assert population.index.names == ["region", "unit"]
 
 
 @pytest.mark.integration
-def test_iamc_allocation_reproduces_expected_values(example_iamc_file):
-    """
-    Verify that equal_per_capita_budget() reproduces the pre-calculated allocations.
+def test_iamc_allocation_shares_sum_to_one(example_iamc_file):
+    """Run equal_per_capita_budget on the example file and verify invariants.
 
-    The example file contains allocations calculated using ECPC (Equal Cumulative
-    Per Capita) from 2015-2100 with period weighting:
-    - 2015 x 1 (first year)
-    - 2020-2060 x 5 (5-year intervals)
-    - 2070-2100 x 10 (10-year intervals)
-
-    Using expand_to_annual=True with bfill correctly accounts for the period
-    weighting by expanding non-annual data to annual values.
+    Loads population via the IAMC loader, runs ECPC, and checks that the
+    relative shares sum to 1.0 at the allocation year (property test — the
+    example file does not ship pre-calculated reference allocations).
     """
     from fair_shares.library.allocations.budgets.per_capita import (
         equal_per_capita_budget,
     )
 
-    # Load the raw file
-    df = pd.read_excel(example_iamc_file)
-    all_regions = [r for r in df["region"].unique() if r != "World"]
+    iamc_df = pyam.IamDataFrame(example_iamc_file)
+    all_regions = [r for r in iamc_df.region if r != "World"]
 
-    # Extract expected allocations from file
-    expected_alloc = df[df["variable"] == "Emissions|Allocation|Starting"]
-    expected_by_region = expected_alloc.set_index("region")["2015"]
-    total_budget = expected_by_region.sum()  # ~1981.52 Gt
-
-    # Load population data using IAMC loader WITH annual expansion
     data = load_iamc_data(
         data_file=example_iamc_file,
         population_variable="Population",
         regions=all_regions,
         allocation_start_year=2015,
         budget_end_year=2100,
-        expand_to_annual=True,  # Expand to annual for period weighting
-        interpolation_method="bfill",  # Each value fills preceding interval
+        expand_to_annual=True,
+        interpolation_method="bfill",
     )
 
-    # Rename index from "region" to "iso3c" to match allocation function expectations
     population = data["population"].rename_axis(index={"region": "iso3c"})
 
-    # Run equal per capita allocation (dynamic shares, not preserved)
     result = equal_per_capita_budget(
         population_ts=population,
         allocation_year=2015,
         emission_category="co2",
-        preserve_allocation_year_shares=False,  # Dynamic shares (ECPC)
+        preserve_allocation_year_shares=False,
         group_level="iso3c",
     )
 
-    # Get the relative shares and calculate absolute allocations
-    # shares has MultiIndex (iso3c, unit, emission-category) and column "2015"
     shares = result.relative_shares_cumulative_emission["2015"]
-
-    # Calculate absolute allocations by multiplying shares by total budget
-    calculated_alloc = shares * total_budget
-
-    # Compare to expected values
-    tolerance = 0.01  # 0.01 Gt = 10 Mt tolerance
-
-    for region in all_regions:
-        expected = expected_by_region[region]
-        # Extract calculated value for this region (any unit/emission-category)
-        calc_value = calculated_alloc.xs(region, level="iso3c").iloc[0]
-        diff = abs(expected - calc_value)
-        assert diff < tolerance, (
-            f"Region {region}: expected {expected:.4f}, "
-            f"got {calc_value:.4f}, diff {diff:.4f}"
-        )
+    assert abs(shares.sum() - 1.0) < 1e-9, (
+        f"Shares should sum to 1.0, got {shares.sum()}"
+    )
+    assert (shares >= 0).all(), "Shares must be non-negative"
 
 
 @pytest.mark.integration
 def test_iamc_example_file_variable_loading(example_iamc_file):
     """Test loading multiple variables from the example IAMC file."""
-    df = pd.read_excel(example_iamc_file)
-    all_regions = [r for r in df["region"].unique() if r != "World"]
+    iamc_df = pyam.IamDataFrame(example_iamc_file)
+    all_regions = [r for r in iamc_df.region if r != "World"]
 
-    # Load all variables from the file
     data = load_iamc_data(
         data_file=example_iamc_file,
         population_variable="Population",
@@ -523,19 +486,18 @@ def test_iamc_example_file_helpers(example_iamc_file):
     """Test helper functions with the example IAMC file."""
     iamc_df = pyam.IamDataFrame(example_iamc_file)
 
-    # Test get_available_variables
     variables = get_available_variables(iamc_df)
     assert "Population" in variables
     assert "GDP|PPP" in variables
-    assert "Emissions|Allocation|Starting" in variables
+    assert "Emissions|CO2" in variables
 
-    # Test get_available_regions
     regions = get_available_regions(iamc_df)
-    assert "AFR" in regions
-    assert "CHN" in regions
-    assert len(regions) >= 12  # 12 regions + World
+    # Example file uses MESSAGEix-GLOBIOM 2.1-R12 region names.
+    assert any("China" in r for r in regions)
+    assert any("Sub-Saharan Africa" in r for r in regions)
+    # 12 model regions + World
+    assert len(regions) >= 12
 
-    # Test get_year_coverage
     min_year, max_year = get_year_coverage(iamc_df)
-    assert min_year == 1990
-    assert max_year == 2100
+    assert min_year == 2015
+    assert max_year >= 2100

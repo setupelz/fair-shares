@@ -100,6 +100,13 @@ EMISSION_CATEGORIES = get_emission_preprocessing_categories(_target, emission_ca
 FINAL_CATEGORIES = get_final_categories(_target, emission_category)
 is_multi_category = needs_decomposition(_target, emission_category)
 
+# non-co2 is always derived by subtraction (never a direct 101 output).
+# True for the decomposition passes of composite categories AND when non-co2
+# is the single requested category on a pathway target.
+_needs_non_co2_derivation = (
+    is_multi_category or "non-co2" in FINAL_CATEGORIES
+)
+
 # ---------------------------------------------------------------------------
 # Notebook selection — config-driven via allocation_mode and scenario_source
 # ---------------------------------------------------------------------------
@@ -122,9 +129,12 @@ elif _target_yaml.get("generator"):
 else:
     _allocation_mode = "budget"
 
-# Notebook 107 (LULUCF) is needed only for NGHGI corrections: co2 and all-ghg.
+# Notebook 107 (LULUCF) is needed for NGHGI corrections: co2, co2-lulucf,
+# and all-ghg.  Kept in sync with ``_LULUCF_DEPENDENT`` in
+# ``fair_shares.library.utils.data.config.build_source_id`` and
+# ``NGHGI_CORRECTED_CATEGORIES`` in ``fair_shares.library.preprocessing.paths``.
 # Bunker data (previously bundled in 107) is now a separate rule below.
-_needs_lulucf = emission_category in ("co2", "all-ghg")
+_needs_lulucf = emission_category in ("co2", "co2-lulucf", "all-ghg")
 
 # Bunker data is needed for all non-pathway targets (RCBs must subtract
 # international bunker emissions before country allocation).
@@ -384,11 +394,11 @@ if _needs_lulucf:
         Overwrites the PRIMAP BM co2-lulucf with Melo NGHGI data.
         """
         input:
-            notebook=f"{NOTEBOOK_DIR}/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+            notebook=f"{NOTEBOOK_DIR}/107_derive_nghgi_categories_{active_lulucf_source}.ipynb",
             config=f"{OUTPUT_DIR}/config.yaml",
             emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
         output:
-            notebook=f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb",
+            notebook=f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb",
             nghgi_world=f"{OUTPUT_DIR}/intermediate/emissions/world_co2-lulucf_timeseries.csv",
             nghgi_metadata=f"{OUTPUT_DIR}/intermediate/emissions/lulucf_metadata.yaml",
         shell:
@@ -433,7 +443,7 @@ if uses_scenarios:
                     notebook=f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb",
                     config=f"{OUTPUT_DIR}/config.yaml",
                     emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
-                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
                     adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
@@ -446,7 +456,7 @@ if uses_scenarios:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
                     emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
-                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                     bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                     scenario_adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
                 output:
@@ -487,7 +497,7 @@ if uses_scenarios:
                         f"{OUTPUT_DIR}/intermediate/emissions/emiss_{{cat}}_timeseries.csv",
                         cat=SCENARIO_CATEGORIES,
                     ),
-                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
                     adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
@@ -558,7 +568,7 @@ if uses_scenarios:
                     f"{OUTPUT_DIR}/intermediate/emissions/emiss_{{cat}}_timeseries.csv",
                     cat=SCENARIO_CATEGORIES,
                 ),
-                lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+                lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                 scenario_adjustments=(
                     f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml"
@@ -620,7 +630,7 @@ if uses_scenarios:
 # Simple subtraction, runs after emissions and scenarios are preprocessed.
 # Creates the intermediate files that the pathways master notebook expects.
 
-if is_multi_category:
+if _needs_non_co2_derivation:
 
     rule derive_non_co2_emissions:
         """Derive non-CO2 historical emissions by subtraction."""
@@ -690,16 +700,28 @@ rule master_preprocess:
         notebook=master_notebook,
         config=f"{OUTPUT_DIR}/config.yaml",
         emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
-        lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_data_preprocess_lulucf_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
+        lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
         bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
         gdp_notebook=f"{OUTPUT_DIR}/notebooks/102_data_preprocess_gdp_{active_gdp_source}.ipynb",
         population_notebook=f"{OUTPUT_DIR}/notebooks/103_data_preprocess_population_{active_population_source}.ipynb",
         gini_notebook=f"{OUTPUT_DIR}/notebooks/105_data_preprocess_gini_{active_gini_source}.ipynb",
         future_data_notebook=scenario_nb_out if uses_scenarios else [],
-        non_co2_data=[
-            f"{OUTPUT_DIR}/intermediate/emissions/emiss_non-co2_timeseries.csv",
-            f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
-        ] if is_multi_category else [],
+        # non-co2 emissions are always derived by subtraction (never direct 101
+        # output).  Declare the derived CSV as an input whenever non-co2 is one
+        # of the FINAL_CATEGORIES — covers both the decomposition case and the
+        # single-category non-co2 pathway case.  Scenario-side non-co2 is
+        # needed only for decomposition (104 derives it directly for the
+        # single-category case).
+        non_co2_data=(
+            (
+                [f"{OUTPUT_DIR}/intermediate/emissions/emiss_non-co2_timeseries.csv"]
+                if _needs_non_co2_derivation else []
+            )
+            + (
+                [f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv"]
+                if is_multi_category else []
+            )
+        ),
     output:
         notebook=master_nb_out,
     run:

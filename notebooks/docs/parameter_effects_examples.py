@@ -109,7 +109,7 @@ world_emissions_df = ensure_string_year_columns(world_emissions_df)
 rcb_row = rcbs_df[
     (rcbs_df["climate-assessment"] == "1.5C") & (rcbs_df["quantile"] == 0.5)
 ].iloc[0]
-rcb_value = rcb_row["rcb_2020_mt"]
+rcb_value = rcb_row["rcb_2020_nghgi_mt"]
 
 # Calculate carbon budget
 budget = calculate_budget_from_rcb(

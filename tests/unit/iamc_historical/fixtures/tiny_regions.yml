@@ -1,0 +1,8 @@
+- TINY 1.0:
+  - TINY 1.0|BRA-only:
+      countries:
+        - Brazil
+  - TINY 1.0|IND-USA:
+      countries:
+        - India
+        - United States
