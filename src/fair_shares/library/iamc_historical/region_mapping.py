@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import ast
+import difflib
 import logging
 import os
 import socket
@@ -119,6 +120,85 @@ class RegionMapping:
         }
         return cls(model=model, regions=iso3)
 
+    @staticmethod
+    def write_excel_template(
+        path: str | Path, *, model: str, regions: list[str] | None = None
+    ) -> Path:
+        """Write a blank fill-in workbook for a model not in common-definitions.
+
+        One sheet, three columns — ``model``, ``region``, ``country`` — one
+        country per row. ``region`` is the bare label (the ``"<model>|"``
+        prefix is added on load); ``country`` is a name or ISO3 code. Pass
+        ``regions`` to pre-list the model's region labels. Hand the file over,
+        get it filled in, then load with :meth:`from_excel_template`.
+        """
+        path = Path(path)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        if regions:
+            rows = [{"model": model, "region": r, "country": ""} for r in regions]
+        else:
+            rows = [
+                {"model": model, "region": "Latin America", "country": "Brazil"},
+                {"model": model, "region": "Latin America", "country": "Argentina"},
+                {"model": model, "region": "Western Europe", "country": "France"},
+            ]
+        pd.DataFrame(rows, columns=["model", "region", "country"]).to_excel(
+            path, sheet_name="mapping", index=False
+        )
+        return path
+
+    @classmethod
+    def from_excel_template(
+        cls, path: str | Path, *, model: str | None = None
+    ) -> RegionMapping:
+        """Load a mapping from a filled-in :meth:`write_excel_template` workbook.
+
+        Reads the ``mapping`` sheet (columns ``model``, ``region``, ``country``;
+        one country per row). ``country`` may be a name or ISO3 code. The model
+        comes from the ``model`` column unless ``model=`` is passed.
+        """
+        path = Path(path)
+        if not path.exists():
+            raise ConfigurationError(f"Region template workbook not found: {path}")
+        try:
+            df = pd.read_excel(path, sheet_name="mapping", dtype=str)
+        except ValueError as exc:
+            raise ConfigurationError(
+                f"No 'mapping' sheet in {path}. Generate one with "
+                f"RegionMapping.write_excel_template()."
+            ) from exc
+        df.columns = [str(c).strip().lower() for c in df.columns]
+        missing = {"region", "country"} - set(df.columns)
+        if missing:
+            raise ConfigurationError(
+                f"Template {path} missing columns: {sorted(missing)}. "
+                f"Expected: model, region, country."
+            )
+        df = df.fillna("").apply(lambda s: s.str.strip())
+        df = df[df["region"].ne("") & df["country"].ne("")]
+        if df.empty:
+            raise ConfigurationError(
+                f"No filled-in region/country rows in {path}. "
+                f"Add at least one row before loading."
+            )
+        if model is None:
+            models = sorted(set(df["model"]) - {""}) if "model" in df else []
+            if len(models) != 1:
+                raise ConfigurationError(
+                    f"Template {path} must name exactly one model in the 'model' "
+                    f"column; found {models}. Pass model= to disambiguate."
+                )
+            model = models[0]
+        regions: dict[str, list[str]] = {}
+        for region, country in zip(df["region"], df["country"], strict=True):
+            key = region if "|" in region else f"{model}|{region}"
+            regions.setdefault(key, []).append(country)
+        iso3_regions = {
+            region: _names_to_iso3(countries, region=region, source=str(path))
+            for region, countries in regions.items()
+        }
+        return cls(model=model, regions=iso3_regions)
+
     @classmethod
     def from_common_definitions(
         cls,
@@ -198,9 +278,24 @@ class RegionMapping:
             known = sorted(
                 {n.split("|", 1)[0] for n in df["name"].astype(str) if "|" in n}
             )
+            # Show the full list (it is short) — truncating hides whether the
+            # model is present at all. Offer close matches for typo/version slips.
+            suggestions = difflib.get_close_matches(model, known, n=3, cutoff=0.5)
+            hint = (
+                f"Closest matches: {suggestions}. "
+                if suggestions
+                else "No close matches — this model has no mapping in "
+                "common-definitions. Either point ref= at a branch that defines "
+                "it, or provide the regions yourself: generate a fill-in sheet "
+                "with RegionMapping.write_excel_template('regions.xlsx', "
+                f"model={model!r}) and load the filled copy with "
+                "RegionMapping.from_excel_template('regions.xlsx'). "
+            )
             raise ConfigurationError(
-                f"No regions for model {model!r} in region_df.csv. "
-                f"Known models ({len(known)}): {known[:10]}..."
+                f"No regions for model {model!r} in region_df.csv "
+                f"(ref={ref!r}, cache={cache_path}). "
+                f"{hint}"
+                f"Known models ({len(known)}): {known}"
             )
         subset = df[mask]
 
