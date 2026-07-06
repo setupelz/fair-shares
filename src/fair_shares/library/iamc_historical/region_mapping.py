@@ -6,7 +6,6 @@ import ast
 import difflib
 import logging
 import os
-import socket
 import urllib.error
 import urllib.request
 from dataclasses import dataclass
@@ -250,12 +249,12 @@ class RegionMapping:
             if tmp.exists():
                 tmp.unlink()
             try:
-                with urllib.request.urlopen(url, timeout=30) as response, tmp.open(  # noqa: S310
+                with urllib.request.urlopen(url, timeout=30) as response, tmp.open(
                     "wb"
                 ) as out:
                     while chunk := response.read(1 << 16):
                         out.write(chunk)
-            except (urllib.error.URLError, socket.timeout) as exc:
+            except (TimeoutError, urllib.error.URLError) as exc:
                 raise ConfigurationError(
                     f"could not fetch region_df.csv from {url}: {exc}. "
                     f"Pass ref=<git sha> to use a cached version, or set "
@@ -315,10 +314,12 @@ class RegionMapping:
 
     @property
     def region_names(self) -> list[str]:
+        """Sorted region names (the mapping's keys)."""
         return sorted(self.regions)
 
     @property
     def countries(self) -> set[str]:
+        """All ISO3 codes across every region."""
         return {c for cs in self.regions.values() for c in cs}
 
     def region_for(self, iso3: str) -> str | None:
