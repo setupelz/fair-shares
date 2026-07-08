@@ -255,7 +255,11 @@ def _verify_region_coverage(
 ) -> None:
     scen_regions = set(scenario.region)
     hist_regions = set(history_slim["region"])
-    unmapped = sorted(scen_regions - hist_regions - {"World"})
+    unmapped = sorted(
+        r
+        for r in (scen_regions - hist_regions)
+        if r.strip().lower() != "world"
+    )
     if not unmapped:
         return
     # Compute emissions share that falls outside mapping at the join year for
