@@ -148,13 +148,25 @@ class RegionMapping:
 
     @classmethod
     def from_excel_template(
-        cls, path: str | Path, *, model: str | None = None
+        cls,
+        path: str | Path,
+        *,
+        model: str | None = None,
+        prefix_regions: bool = True,
     ) -> RegionMapping:
         """Load a mapping from a filled-in :meth:`write_excel_template` workbook.
 
         Reads the ``mapping`` sheet (columns ``model``, ``region``, ``country``;
         one country per row). ``country`` may be a name or ISO3 code. The model
         comes from the ``model`` column unless ``model=`` is passed.
+
+        ``prefix_regions`` (default ``True``) namespaces each region key as
+        ``"<model>|<region>"``, matching the ``common-definitions`` convention
+        that ``backfill()`` expects on the *scenario's* region column too. Set
+        to ``False`` when the scenario's own region column already uses bare
+        region codes (e.g. a model's native reporting regions) — the mapping's
+        region keys must match the scenario's region values verbatim, or
+        every region will read as unmapped.
         """
         path = Path(path)
         if not path.exists():
@@ -190,7 +202,10 @@ class RegionMapping:
             model = models[0]
         regions: dict[str, list[str]] = {}
         for region, country in zip(df["region"], df["country"], strict=True):
-            key = region if "|" in region else f"{model}|{region}"
+            if not prefix_regions or "|" in region:
+                key = region
+            else:
+                key = f"{model}|{region}"
             regions.setdefault(key, []).append(country)
         iso3_regions = {
             region: _names_to_iso3(countries, region=region, source=str(path))
