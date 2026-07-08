@@ -228,6 +228,126 @@ def calculate_exponential_decay_pathway(
     return pathway
 
 
+def distribute_remaining_budgets_pathways(
+    base_year_emissions: pd.Series,
+    population: pd.Series,
+    global_pathway: pd.Series,
+    remaining_budgets: pd.Series,
+    convergence_year: int = 2050,
+    deviation_end_year: int = 2100,
+) -> pd.DataFrame:
+    """
+    Distribute net remaining budgets (negative allowed) into regional pathways.
+
+    Not used by any library allocation method. The library's allocation methods
+    distribute positive budgets only; this function exists for downstream users
+    who hold net remaining budgets (entitlement minus actual historical
+    emissions, so possibly negative) and need time-explicit regional pathways
+    that integrate to them — e.g. models that cannot impose cumulative budget
+    constraints directly.
+
+    Construction: a per-capita-convergence baseline (each region blends linearly
+    from its base-year emission share to its population share of the global
+    pathway by ``convergence_year``) plus a half-sine deviation over
+    [start year, ``deviation_end_year``] whose per-region amplitude is solved in
+    closed form so each pathway's cumulative sum equals its remaining budget:
+
+        E(t, c) = E_base(t, c) + A_c * sin(pi * (t - t0) / (t_end - t0))
+        A_c = (B_c - sum_t E_base(t, c)) / sum_t sin(pi * (t - t0) / (t_end - t0))
+
+    The cumulative sum is linear in the amplitude, so the budget match is exact
+    for any sign and magnitude. The sine is zero in the first year, so each
+    pathway starts at actual base-year emissions. When the remaining budgets sum
+    to the global pathway total, the amplitudes sum to zero and the regional
+    pathways sum to the global pathway in every year.
+
+    The allocation principle lives in ``remaining_budgets`` (ECPC-derived,
+    capability-weighted, or any other cumulative allocation); this function only
+    sets the time profile against the per-capita-convergence shape.
+
+    Parameters
+    ----------
+    base_year_emissions : pd.Series
+        Actual emissions per region in the global pathway's first year.
+        Defines starting shares; regions index.
+    population : pd.Series
+        Population per region, used only for the equal-per-capita target
+        shares of the baseline.
+    global_pathway : pd.Series
+        Global emissions indexed by year (int or str labels). Its sum is the
+        global budget being distributed.
+    remaining_budgets : pd.Series
+        Net remaining budget per region, same emissions unit as the pathway.
+        Negative values allowed. Should sum to ``global_pathway.sum()`` for
+        year-by-year global consistency.
+    convergence_year : int, optional
+        Year by which baseline shares reach equal per capita. Default 2050.
+    deviation_end_year : int, optional
+        Last year of the sine deviation. Later values spread a debt over more
+        years, giving a shallower net-negative dip. Default 2100.
+
+    Returns
+    -------
+    pd.DataFrame
+        Regions x years annual emissions. Cumulative sum per region equals
+        ``remaining_budgets`` exactly.
+
+    Raises
+    ------
+    AllocationError
+        If region indices do not align or the year parameters do not leave a
+        valid deviation window.
+    """
+    years = np.array([int(y) for y in global_pathway.index])
+    t0 = int(years[0])
+    regions = base_year_emissions.index
+
+    missing = [
+        name
+        for name, series in (
+            ("population", population),
+            ("remaining_budgets", remaining_budgets),
+        )
+        if not regions.isin(series.index).all()
+    ]
+    if missing:
+        raise AllocationError(
+            f"Regions in base_year_emissions missing from: {', '.join(missing)}"
+        )
+    if convergence_year <= t0:
+        raise AllocationError(
+            f"convergence_year ({convergence_year}) must be after the pathway "
+            f"start year ({t0})"
+        )
+    if not t0 < deviation_end_year <= years[-1]:
+        raise AllocationError(
+            f"deviation_end_year ({deviation_end_year}) must lie after the "
+            f"start year ({t0}) and within the pathway horizon ({years[-1]})"
+        )
+    if (base_year_emissions <= 0).any():
+        raise AllocationError("base_year_emissions must be positive")
+
+    # Baseline: blend from base-year emission shares to per-capita shares,
+    # held at per capita after the convergence year.
+    gf_shares = base_year_emissions / base_year_emissions.sum()
+    epc_shares = population.reindex(regions) / population.reindex(regions).sum()
+    blend = np.clip((convergence_year - years) / (convergence_year - t0), 0.0, 1.0)
+    baseline = pd.DataFrame(
+        np.outer(gf_shares, blend) + np.outer(epc_shares, 1.0 - blend),
+        index=regions,
+        columns=global_pathway.index,
+    ).mul(global_pathway.to_numpy(dtype=float), axis=1)
+
+    # Half-sine deviation, amplitude solved so cumulative sums equal budgets.
+    envelope = np.where(
+        years <= deviation_end_year,
+        np.sin(np.pi * (years - t0) / (deviation_end_year - t0)),
+        0.0,
+    )
+    gap = remaining_budgets.reindex(regions) - baseline.sum(axis=1)
+    return baseline + np.outer(gap / envelope.sum(), envelope)
+
+
 def generate_rcb_pathway_scenarios(
     rcbs_df: pd.DataFrame,
     world_emissions_df: pd.DataFrame,
