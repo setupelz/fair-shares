@@ -26,6 +26,7 @@ from fair_shares.library.utils.math.convergence import (
 )
 from fair_shares.library.utils.math.pathways import (
     calculate_exponential_decay_pathway,
+    distribute_remaining_budgets_pathways,
     generate_rcb_pathway_scenarios,
 )
 
@@ -40,6 +41,7 @@ __all__ = [
     "calculate_responsibility_adjustment_data",
     "calculate_responsibility_adjustment_data_convergence",
     "create_gini_lookup_dict",
+    "distribute_remaining_budgets_pathways",
     "filter_time_columns",
     "find_minimum_convergence_speed",
     "generate_rcb_pathway_scenarios",
