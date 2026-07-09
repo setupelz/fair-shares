@@ -79,7 +79,11 @@ EARLIEST_DATA_YEAR = 1990  # Must be <= first_allocation_year in examples
 MODEL_HORIZON_YEAR = 2100  # Last year in optimisation framework
 
 # Load region list via pyam (handles case-insensitive columns)
-regions = [r for r in pyam.IamDataFrame(DATA_FILE).region if r != "World"]
+regions = [
+    r
+    for r in pyam.IamDataFrame(DATA_FILE).region
+    if r.lower() not in ("world", "global")
+]
 
 print(f"Data file: {DATA_FILE}")
 print(f"Regions: {', '.join(sorted(regions))}")
