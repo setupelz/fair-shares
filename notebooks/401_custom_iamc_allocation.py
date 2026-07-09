@@ -113,7 +113,7 @@ print(f"  Regions:   {len(_preview.region)} regions")
 print(f"  Variables: {_preview.variable}")
 print(f"  Years:     {min(_preview.year)}–{max(_preview.year)}")
 
-regions = [r for r in _preview.region if r != "World"]
+regions = [r for r in _preview.region if r.lower() not in ("world", "global")]
 print(f"\nUsing {len(regions)} regions: {', '.join(sorted(regions))}")
 
 # %%

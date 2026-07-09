@@ -75,7 +75,11 @@ EARLIEST_DATA_YEAR = 1990  # Data must be available from this year
 MODEL_HORIZON_YEAR = 2100  # Last year in model time horizon
 
 # Load region list via pyam (handles case-insensitive columns)
-regions = [r for r in pyam.IamDataFrame(DATA_FILE).region if r != "World"]
+regions = [
+    r
+    for r in pyam.IamDataFrame(DATA_FILE).region
+    if r.lower() not in ("world", "global")
+]
 
 print(f"Data file: {DATA_FILE}")
 print(f"Regions: {', '.join(sorted(regions))}")
