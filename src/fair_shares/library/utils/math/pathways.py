@@ -235,6 +235,7 @@ def distribute_remaining_budgets_pathways(
     remaining_budgets: pd.Series,
     convergence_year: int = 2050,
     deviation_end_year: int = 2100,
+    shape: str = "half-sine",
 ) -> pd.DataFrame:
     """
     Distribute net remaining budgets (negative allowed) into regional pathways.
@@ -248,18 +249,31 @@ def distribute_remaining_budgets_pathways(
 
     Construction: a per-capita-convergence baseline (each region blends linearly
     from its base-year emission share to its population share of the global
-    pathway by ``convergence_year``) plus a half-sine deviation over
-    [start year, ``deviation_end_year``] whose per-region amplitude is solved in
-    closed form so each pathway's cumulative sum equals its remaining budget:
+    pathway by ``convergence_year``) plus a shared deviation envelope whose
+    per-region amplitude is solved in closed form so each pathway's cumulative
+    sum equals its remaining budget:
 
-        E(t, c) = E_base(t, c) + A_c * sin(pi * (t - t0) / (t_end - t0))
-        A_c = (B_c - sum_t E_base(t, c)) / sum_t sin(pi * (t - t0) / (t_end - t0))
+        E(t, c) = E_base(t, c) + A_c * g(t)
+        A_c = (B_c - sum_t E_base(t, c)) / sum_t g(t)
 
     The cumulative sum is linear in the amplitude, so the budget match is exact
-    for any sign and magnitude. The sine is zero in the first year, so each
+    for any sign and magnitude. Every envelope is zero in the first year, so each
     pathway starts at actual base-year emissions. When the remaining budgets sum
     to the global pathway total, the amplitudes sum to zero and the regional
     pathways sum to the global pathway in every year.
+
+    Two envelope shapes are available via ``shape``:
+
+    - ``"half-sine"`` (default): ``g(t) = sin(pi * (t - t0) / (t_end - t0))`` over
+      [start year, ``deviation_end_year``], zero afterward. A symmetric hump, so
+      a debtor region dips net-negative mid-horizon and then recovers back to its
+      per-capita baseline by ``deviation_end_year``.
+    - ``"exponential"``: ``g(t) = 1 - exp(-k * (t - t0))``, a saturating rise
+      defined over the whole horizon that never returns to zero, so a debtor
+      region stays net-negative through the horizon end instead of recovering.
+      ``k`` is set so the rise reaches ~95% at ``deviation_end_year``; that knob
+      thus slides the shape between "keeps deepening to the horizon end"
+      (``deviation_end_year`` at the horizon) and "plateaus early" (earlier).
 
     The allocation principle lives in ``remaining_budgets`` (ECPC-derived,
     capability-weighted, or any other cumulative allocation); this function only
@@ -283,8 +297,15 @@ def distribute_remaining_budgets_pathways(
     convergence_year : int, optional
         Year by which baseline shares reach equal per capita. Default 2050.
     deviation_end_year : int, optional
-        Last year of the sine deviation. Later values spread a debt over more
-        years, giving a shallower net-negative dip. Default 2100.
+        Transition timescale. For ``shape="half-sine"``, the year the deviation
+        returns to zero (later values spread a debt over more years, giving a
+        shallower dip). For ``shape="exponential"``, the year the saturating rise
+        reaches ~95%. Default 2100.
+    shape : str, optional
+        Deviation envelope: ``"half-sine"`` (default) or ``"exponential"``. See
+        the summary above for the shape each produces. The half-sine recovers to
+        baseline; the exponential keeps a debtor net-negative. Default
+        ``"half-sine"``.
 
     Returns
     -------
@@ -338,12 +359,27 @@ def distribute_remaining_budgets_pathways(
         columns=global_pathway.index,
     ).mul(global_pathway.to_numpy(dtype=float), axis=1)
 
-    # Half-sine deviation, amplitude solved so cumulative sums equal budgets.
-    envelope = np.where(
-        years <= deviation_end_year,
-        np.sin(np.pi * (years - t0) / (deviation_end_year - t0)),
-        0.0,
-    )
+    # Shared deviation envelope; amplitude solved so cumulative sums equal
+    # budgets. Both shapes are zero in the first year (preserving base-year
+    # emissions), so when the budgets sum to the global total the per-region
+    # deviations cancel in every year.
+    if shape == "half-sine":
+        # Symmetric hump: dips then recovers to baseline by deviation_end_year.
+        envelope = np.where(
+            years <= deviation_end_year,
+            np.sin(np.pi * (years - t0) / (deviation_end_year - t0)),
+            0.0,
+        )
+    elif shape == "exponential":
+        # Saturating rise reaching ~95% at deviation_end_year; never returns to
+        # zero, so debtor regions stay net-negative through the horizon.
+        saturation = 0.95
+        k = -np.log(1.0 - saturation) / (deviation_end_year - t0)
+        envelope = 1.0 - np.exp(-k * (years - t0))
+    else:
+        raise AllocationError(
+            f"shape must be 'half-sine' or 'exponential', got {shape!r}"
+        )
     gap = remaining_budgets.reindex(regions) - baseline.sum(axis=1)
     return baseline + np.outer(gap / envelope.sum(), envelope)
 

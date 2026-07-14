@@ -132,3 +132,134 @@ def test_invalid_deviation_end_year_raises(
                 remaining_budgets=remaining_budgets,
                 deviation_end_year=bad_year,
             )
+
+
+# --- Exponential shape ---------------------------------------------------
+# Opt-in shape="exponential": a saturating rise instead of the half-sine hump,
+# so debtor regions stay net-negative through the horizon rather than
+# recovering to their per-capita baseline.
+
+
+def test_exponential_budgets_match_exactly_including_negative(
+    global_pathway, regions, remaining_budgets
+):
+    result = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="exponential",
+    )
+    pd.testing.assert_series_equal(
+        result.sum(axis=1), remaining_budgets, check_names=False, atol=1e-9, rtol=0
+    )
+
+
+def test_exponential_pathways_sum_to_global_every_year(
+    global_pathway, regions, remaining_budgets
+):
+    result = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="exponential",
+    )
+    np.testing.assert_allclose(
+        result.sum(axis=0).to_numpy(), global_pathway.to_numpy(), atol=1e-9
+    )
+
+
+def test_exponential_first_year_equals_base_year_emissions(
+    global_pathway, regions, remaining_budgets
+):
+    result = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="exponential",
+    )
+    np.testing.assert_allclose(
+        result["2026"].to_numpy(),
+        regions["base_year_emissions"].to_numpy(),
+        rtol=1e-12,
+    )
+
+
+def test_exponential_debtor_stays_net_negative(
+    global_pathway, regions, remaining_budgets
+):
+    result = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="exponential",
+    )
+    debtor = result.loc["DEBTOR"]
+    # Persists: the most net-negative point is the final year, not a mid-horizon
+    # trough that recovers.
+    assert debtor.iloc[-1] < 0
+    assert debtor.iloc[-1] == pytest.approx(debtor.min())
+
+
+def test_exponential_does_not_recover_but_half_sine_does(
+    global_pathway, regions, remaining_budgets
+):
+    """The distinguishing property: half-sine debtor recovers, exponential stays down."""
+    exp = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="exponential",
+    ).loc["DEBTOR"]
+    sine = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="half-sine",
+    ).loc["DEBTOR"]
+    # Half-sine: trough is interior, recovers to ~baseline by the end.
+    assert sine.iloc[-1] > sine.min() + 1e-6
+    # Exponential: no recovery — final year is the trough.
+    assert exp.iloc[-1] == pytest.approx(exp.min())
+
+
+def test_invalid_shape_raises(global_pathway, regions, remaining_budgets):
+    with pytest.raises(AllocationError, match="shape"):
+        distribute_remaining_budgets_pathways(
+            **regions,
+            global_pathway=global_pathway,
+            remaining_budgets=remaining_budgets,
+            shape="triangle",
+        )
+
+
+def test_default_shape_matches_half_sine(global_pathway, regions, remaining_budgets):
+    default = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+    )
+    explicit = distribute_remaining_budgets_pathways(
+        **regions,
+        global_pathway=global_pathway,
+        remaining_budgets=remaining_budgets,
+        shape="half-sine",
+    )
+    pd.testing.assert_frame_equal(default, explicit)
+
+
+def test_exponential_deviation_end_year_controls_final_dip(
+    global_pathway, regions, remaining_budgets
+):
+    finals = {}
+    for end_year in (2050, 2100):
+        result = distribute_remaining_budgets_pathways(
+            **regions,
+            global_pathway=global_pathway,
+            remaining_budgets=remaining_budgets,
+            shape="exponential",
+            deviation_end_year=end_year,
+        )
+        np.testing.assert_allclose(result.loc["DEBTOR"].sum(), -500.0, atol=1e-9)
+        finals[end_year] = result.loc["DEBTOR"].iloc[-1]
+    # The transition-timescale knob changes the final-year depth (deepen vs plateau).
+    assert finals[2050] != pytest.approx(finals[2100])
