@@ -11,6 +11,7 @@ For theoretical foundations of the equity principles underlying these approaches
 
 from __future__ import annotations
 
+import inspect
 import itertools
 import logging
 from collections.abc import Callable
@@ -84,13 +85,14 @@ def get_allocation_functions() -> dict[str, Callable[..., Any]]:
         "per-capita-adjusted": per_capita_adjusted,
         "per-capita-adjusted-gini": per_capita_adjusted_gini,
         "per-capita-convergence": per_capita_convergence,
-        # NOTE (2026-04-08): Both keys route to the `_adjusted` function. The
-        # bare `cumulative_per_capita_convergence` wrapper does not accept
-        # responsibility/capability kwargs, so callers passing those kwargs
-        # via this key were silently degenerate (kwargs filtered out by
-        # `utils/dataframes.py:filter_function_parameters`). The `_adjusted`
-        # function defaults `pre_allocation_responsibility_weight=0.0` and
-        # `capability_weight=0.0`, so bare callers retain identical behavior.
+        # Both keys route to the `_adjusted` function. The bare
+        # `cumulative_per_capita_convergence` wrapper does not accept
+        # responsibility/capability kwargs; routing this key to `_adjusted`
+        # keeps those kwargs valid under run_allocation's strict parameter
+        # check (routing to the bare wrapper would reject them as unknown).
+        # The `_adjusted` defaults of pre_allocation_responsibility_weight=0.0
+        # and capability_weight=0.0 give a kwarg-free caller identical
+        # behaviour to the unadjusted approach.
         "cumulative-per-capita-convergence": cumulative_per_capita_convergence_adjusted,
         "cumulative-per-capita-convergence-adjusted": (
             cumulative_per_capita_convergence_adjusted
@@ -141,6 +143,33 @@ _PARAM_RENAMES: dict[str, str] = {
     "preserve_allocation_year_shares": "preserve_first_allocation_year_shares",
 }
 
+# Parameters with no pathway analogue: cumulative_end_year bounds the
+# cumulative population window of budget allocations, and pathway shares are
+# computed per year. Auto-derivation removes them so a derived config states
+# exactly what will run.
+_BUDGET_ONLY_PARAMS: frozenset[str] = frozenset({"cumulative_end_year"})
+
+# Arguments run_allocation supplies uniformly for every approach (data frames,
+# year keys, index/unit plumbing). Each approach takes the subset it needs;
+# these stay signature-filtered and are excluded from the accepted-parameter
+# list shown when a user config parameter is rejected.
+_DATA_PLUMBING_ARGS: frozenset[str] = frozenset(
+    {
+        "population_ts",
+        "emission_category",
+        "gdp_ts",
+        "gini_s",
+        "country_actual_emissions_ts",
+        "responsibility_emissions_ts",
+        "world_scenario_emissions_ts",
+        "allocation_year",
+        "first_allocation_year",
+        "group_level",
+        "unit_level",
+        "ur",
+    }
+)
+
 
 def get_pathway_analogue(budget_approach: str) -> str:
     """Return the pathway approach name corresponding to a budget approach."""
@@ -153,8 +182,17 @@ def get_pathway_analogue(budget_approach: str) -> str:
 
 
 def convert_budget_config_to_pathway(config: dict) -> dict:
-    """Convert a budget parameter config dict to its pathway equivalent."""
-    return {_PARAM_RENAMES.get(key, key): value for key, value in config.items()}
+    """Convert a budget parameter config dict to its pathway equivalent.
+
+    Renames the year and preserve keys and removes budget-only parameters
+    (``_BUDGET_ONLY_PARAMS``), so the derived config names only parameters
+    the pathway approach accepts.
+    """
+    return {
+        _PARAM_RENAMES.get(key, key): value
+        for key, value in config.items()
+        if key not in _BUDGET_ONLY_PARAMS
+    }
 
 
 def derive_pathway_allocations(
@@ -365,6 +403,28 @@ def run_allocation(
     """
     # Get the allocation function
     allocation_func = get_function(approach)
+
+    # User config parameters must exist on the target function. Data-plumbing
+    # arguments (the frames below, supplied uniformly for every approach) are
+    # still filtered by signature — each approach takes the frames it needs.
+    # None-valued parameters mean "unset" (the signature filter below drops
+    # them regardless), so only parameters carrying a value are checked.
+    unknown_params = sorted(
+        k
+        for k, v in kwargs.items()
+        if v is not None and k not in inspect.signature(allocation_func).parameters
+    )
+    if unknown_params:
+        accepted = sorted(
+            name
+            for name, param in inspect.signature(allocation_func).parameters.items()
+            if param.default is not inspect.Parameter.empty
+            and name not in _DATA_PLUMBING_ARGS
+        )
+        raise AllocationError(
+            f"Approach '{approach}' does not accept parameter(s) "
+            f"{unknown_params}. Accepted parameters: {accepted}."
+        )
 
     # Prepare all function arguments
     func_args = {

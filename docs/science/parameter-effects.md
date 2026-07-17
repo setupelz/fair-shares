@@ -109,14 +109,44 @@ _Arrows indicate direction of interpolation between the two extremes. The exact 
 
 ---
 
+## capability_reference_year
+
+**Effect:** Freezes the capability metric at a single year's GDP (per capita)
+snapshot instead of computing it across the allocation window. Available on
+budget and pathway approaches with identical semantics.
+
+- **Unset (default):** budget approaches compute capability year-by-year
+  across the cumulative window; pathway approaches use the cumulative
+  lifetime GDP-per-capita metric in dynamic mode and the first-allocation-year
+  value in preserved mode. Values past the last observed GDP year are
+  forward-filled.
+- **Set:** the snapshot year's metric is broadcast across the window. A year
+  before the allocation window is sourced from the unfiltered inputs (without
+  Gini adjustment); a year beyond the last observed GDP year falls back to
+  the last observed column with a warning; a year outside the data range
+  raises.
+
+**When to use:** replicating studies that fix capability at a reference year
+(e.g. a single-year GDP-per-capita indicator), or holding the capability
+ranking constant across the allocation horizon. Year-by-year capability
+responds to projected convergence in GDP; a snapshot does not.
+
+**Interaction with auto-derivation:** composite (all-GHG) runs derive the
+non-CO₂ pathway configs from the budget configs; `capability_reference_year`
+passes through, so both gas components apply the same snapshot.
+
+---
+
 ## income_floor
 
 **Effect:** Sets a development threshold for capability calculations, adapted from the Greenhouse Development Rights framework ([Baer 2009](https://doi.org/10.1080/13668790903195495); [Baer 2013](https://doi.org/10.1002/wcc.201)). Note that GDR was designed for burden-sharing; fair-shares uses its capability metric in an entitlement allocation context. For every person, only their income **above** this threshold counts towards "capability" or "ability to pay". Income up to the threshold is considered necessary for basic human development.
 
+**Default:** `0.0` on every Gini-adjusted approach (budget and pathway alike) — all income counts toward capability unless a threshold is chosen explicitly. Applying the GDR threshold is a normative decision, so it is passed rather than assumed.
+
 **Direction:**
 
 - `floor=0` → All income counts toward capability (no development protection)
-- `floor=7500` → $7,500/year (2010 PPP) — GDR framework default, the level at which basic development indicators (nutrition, infant mortality, education) are broadly met
+- `floor=7500` → $7,500/year (2010 PPP) — the GDR framework's threshold, the level at which basic development indicators (nutrition, infant mortality, education) are broadly met
 - `floor=15000` → $15,000/year (2010 PPP) subsistence threshold
 
 Higher floors increase the exempt portion, reducing measured capability for all countries and increasing their allocated share of emissions. The effect is largest for middle-income countries where a significant fraction of the population clusters around the threshold.

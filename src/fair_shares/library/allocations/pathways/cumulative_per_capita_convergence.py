@@ -1157,7 +1157,7 @@ def cumulative_per_capita_convergence_adjusted_gini(
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
-    income_floor: float = 7500.0,
+    income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
     max_deviation_sigma: float | None = None,
     max_convergence_speed: float = 0.9,
@@ -1343,8 +1343,8 @@ def cumulative_per_capita_convergence_adjusted_gini(
         or ``'linear'``.
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income
-        below this is excluded from capability calculations. Default:
-        7500.0.
+        below this is excluded from capability calculations. Default: 0.0
+        (all income counts); pass 7500.0 for the GDR threshold.
     max_gini_adjustment
         **Gini.** Maximum reduction factor from threshold deduction (0–1).
         Default: 0.8.

@@ -169,6 +169,15 @@ system automatically derives equivalent pathway approaches for non-CO₂:
 - `per-capita-adjusted-gini-budget` → `per-capita-adjusted-gini`
 - `allocation_year` → `first_allocation_year`
 - `preserve_allocation_year_shares` → `preserve_first_allocation_year_shares`
+- `cumulative_end_year` → removed (budget-only: it bounds the cumulative
+  population window of budget allocations, and pathway shares are computed
+  per year)
+
+All other parameters pass through unchanged, including
+`capability_reference_year`, which pathway approaches support with the same
+snapshot semantics as budgets. A derived config therefore names exactly the
+parameters that will run; `run_allocation` rejects any configuration
+parameter its approach lacks rather than dropping it silently.
 
 This ensures methodological consistency: the same equity principle governs
 both gases, adapted to the different allocation modes. This auto-derivation only works when scenario pathway data matching the requested climate assessments is available in the active source set — without it, the non-CO₂ leg has nothing to allocate.
