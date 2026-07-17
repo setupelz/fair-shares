@@ -368,7 +368,7 @@ class TestGiniDefaultParity:
     def test_income_floor_and_max_gini_defaults_match(self):
         import inspect
 
-        from fair_shares.library.allocations.pathways.cumulative_per_capita_convergence import (  # noqa: E501
+        from fair_shares.library.allocations.pathways.cumulative_per_capita_convergence import (
             cumulative_per_capita_convergence_adjusted_gini,
         )
 
