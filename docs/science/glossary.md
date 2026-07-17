@@ -114,7 +114,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 ### Inequality Parameters
 
 **`income_floor`** (type: `float`, default: `0.0`)
-: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. At `0.0`, all income counts. The GDR framework default is `7500` ($7,500/year 2010 PPP). Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
+: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. The library default is `0.0` (all income counts); the GDR framework's threshold is `7500` ($7,500/year 2010 PPP) and is passed explicitly. Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
 
 **`max_gini_adjustment`** (type: `float`, default: `0.8`)
 : Maximum proportional reduction from the Gini-based capability correction. Caps the influence of extreme inequality (Gini > 0.6) on measured capability, preventing outsized adjustments from dominating the allocation. At 0.8, the Gini adjustment can reduce a country's measured GDP by at most 80%. Available on `*-gini-*` approaches only.

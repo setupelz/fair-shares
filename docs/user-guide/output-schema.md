@@ -57,8 +57,10 @@ Individual parameter columns for each allocation approach:
 | `first-allocation-year`                 | int    | Pathway approaches        |
 | `preserve-allocation-year-shares`       | bool   | Budget approaches         |
 | `preserve-first-allocation-year-shares` | bool   | Pathway approaches        |
+| `cumulative-end-year`                   | int    | Budget approaches         |
 | `pre-allocation-responsibility-weight`                 | float  | Adjusted approaches       |
 | `capability-weight`                     | float  | Adjusted approaches       |
+| `capability-reference-year`             | int    | Adjusted approaches       |
 | `pre-allocation-responsibility-year`        | int    | Adjusted approaches       |
 | `pre-allocation-responsibility-per-capita` | bool   | Adjusted approaches       |
 | `capability-per-capita`                 | bool   | Adjusted approaches       |

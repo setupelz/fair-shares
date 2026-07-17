@@ -20,6 +20,7 @@ and capability over time.
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -55,6 +56,92 @@ if TYPE_CHECKING:
     from fair_shares.library.utils.dataframes import TimeseriesDataFrame
 
 
+def _capability_snapshot(
+    gdp_ts,
+    population_ts,
+    gdp_numeric,
+    population_numeric,
+    reference_year: int,
+    capability_per_capita: bool,
+    gini_s,
+    income_floor: float,
+    max_gini_adjustment: float,
+    group_level: str,
+    unit_level: str,
+    ur,
+) -> pd.Series:
+    """Single-year capability metric for ``capability_reference_year``.
+
+    Mirrors the budget-side snapshot (``budgets/per_capita.py``). Three
+    source cases: the reference year inside the window-filtered inputs;
+    beyond the last observed GDP year (warns and uses the last observed
+    column, consistent with the year-by-year forward fill); before the
+    allocation window (sourced from the unfiltered ``gdp_ts`` and
+    ``population_ts``, raising when the year is outside the data range).
+    Gini adjustment applies to in-window and beyond-last snapshots; a
+    pre-window snapshot is taken without Gini adjustment, matching the
+    budget-side behaviour.
+    """
+    ref_year = int(reference_year)
+    gdp_years = {int(c): c for c in gdp_numeric.columns}
+    pop_years = {int(c): c for c in population_numeric.columns}
+
+    if ref_year in gdp_years and ref_year in pop_years:
+        gdp_at_ref = gdp_numeric[gdp_years[ref_year]]
+        pop_at_ref = population_numeric[pop_years[ref_year]]
+    elif ref_year > max(gdp_years):
+        last_year = max(gdp_years)
+        warnings.warn(
+            f"capability_reference_year={ref_year} is beyond the last "
+            f"observed GDP year ({last_year}). Using {last_year} as the "
+            "snapshot year (forward-fill consistent with year-by-year "
+            "default mode).",
+            UserWarning,
+            stacklevel=2,
+        )
+        gdp_at_ref = gdp_numeric[gdp_years[last_year]]
+        pop_at_ref = population_numeric[pop_years[last_year]]
+    else:
+        # Reference year before the allocation window: the filtered inputs
+        # no longer carry it, so the snapshot comes from the raw inputs with
+        # the same unit processing as the main capability path.
+        gdp_full = set_single_unit(gdp_ts, unit_level, ur=ur)
+        gdp_full = convert_unit_robust(gdp_full, "million", unit_level=unit_level, ur=ur)
+        gdp_full = gdp_full.droplevel(unit_level)
+        pop_full = set_single_unit(population_ts, unit_level, ur=ur)
+        pop_full = convert_unit_robust(pop_full, "million", unit_level=unit_level, ur=ur)
+        pop_full = pop_full.droplevel(unit_level)
+
+        gdp_all = {int(c): c for c in gdp_full.columns}
+        pop_all = {int(c): c for c in pop_full.columns}
+        if ref_year not in gdp_all:
+            raise AllocationError(
+                f"capability_reference_year={ref_year} is outside the GDP "
+                f"data range [{min(gdp_all)}, {max(gdp_all)}]. Extend gdp_ts "
+                "or choose a year inside the observed range."
+            )
+        if ref_year not in pop_all:
+            raise AllocationError(
+                f"capability_reference_year={ref_year} is outside the "
+                f"population data range [{min(pop_all)}, {max(pop_all)}]."
+            )
+        gdp_at_ref = gdp_full[gdp_all[ref_year]]
+        pop_at_ref = pop_full[pop_all[ref_year]].reindex(gdp_at_ref.index)
+        if capability_per_capita:
+            return gdp_at_ref.divide(pop_at_ref)
+        return gdp_at_ref
+
+    if gini_s is not None:
+        gini_lookup = create_gini_lookup_dict(gini_s)
+        gdp_at_ref = apply_gini_adjustment(
+            gdp_at_ref, pop_at_ref, gini_lookup,
+            income_floor, max_gini_adjustment, group_level,
+        )
+    if capability_per_capita:
+        return gdp_at_ref.divide(pop_at_ref)
+    return gdp_at_ref
+
+
 def _per_capita_core(
     population_ts: TimeseriesDataFrame,
     first_allocation_year: int,
@@ -76,6 +163,7 @@ def _per_capita_core(
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
+    capability_reference_year: int | None = None,
     # Gini parameters (only used if gini_s provided)
     income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
@@ -132,6 +220,9 @@ def _per_capita_core(
         Exponent for the capability adjustment function.
     capability_functional_form
         Functional form for capability: "asinh" or "power".
+    capability_reference_year
+        When set, capability is frozen at this single year's GDP metric and
+        broadcast across the window; mirrors the budget-side snapshot.
     income_floor
         Income floor for Gini adjustment (in USD PPP per capita). Default: 0.0.
     max_gini_adjustment
@@ -295,9 +386,26 @@ def _per_capita_core(
     if not preserve_first_allocation_year_shares:
         base_population = population_numeric.copy()
 
-        # Compute raw capability metric (DataFrame, year-by-year)
+        # Compute raw capability metric (DataFrame, year-by-year), or a
+        # broadcast single-year snapshot when capability_reference_year is
+        # set (Decision-level semantics mirror the budget approaches).
         capability_metric_dynamic = None
-        if use_capability:
+        if use_capability and capability_reference_year is not None:
+            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+            gdp_single_unit = convert_unit_robust(
+                gdp_single_unit, "million", unit_level=unit_level, ur=ur
+            )
+            gdp_numeric = gdp_single_unit.droplevel(unit_level)
+            snapshot = _capability_snapshot(
+                gdp_ts, population_ts, gdp_numeric, population_numeric,
+                capability_reference_year, capability_per_capita, gini_s,
+                income_floor, max_gini_adjustment, group_level, unit_level, ur,
+            ).reindex(base_population.index)
+            capability_metric_dynamic = pd.DataFrame(
+                {c: snapshot for c in population_numeric.columns}
+            )
+        elif use_capability:
             gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
             gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
             gdp_single_unit = convert_unit_robust(
@@ -396,7 +504,19 @@ def _per_capita_core(
         base_population_at_ta = population_at_ta.copy()
 
         capability_metric_at_ta = None
-        if use_capability:
+        if use_capability and capability_reference_year is not None:
+            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+            gdp_single_unit = convert_unit_robust(
+                gdp_single_unit, "million", unit_level=unit_level, ur=ur
+            )
+            gdp_numeric = gdp_single_unit.droplevel(unit_level)
+            capability_metric_at_ta = _capability_snapshot(
+                gdp_ts, population_ts, gdp_numeric, population_numeric,
+                capability_reference_year, capability_per_capita, gini_s,
+                income_floor, max_gini_adjustment, group_level, unit_level, ur,
+            ).reindex(base_population_at_ta.index)
+        elif use_capability:
             gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
             gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
             gdp_single_unit = convert_unit_robust(
@@ -507,6 +627,8 @@ def _per_capita_core(
                 "capability_functional_form": capability_functional_form,
             }
         )
+        if capability_reference_year is not None:
+            parameters["capability_reference_year"] = capability_reference_year
 
     # Add Gini parameters if used
     if gini_s is not None:
@@ -659,6 +781,7 @@ def per_capita_adjusted(
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
+    capability_reference_year: int | None = None,
     max_deviation_sigma: float | None = None,
     preserve_first_allocation_year_shares: bool = False,
     historical_discount_rate: float = 0.0,
@@ -819,6 +942,14 @@ def per_capita_adjusted(
     capability_functional_form
         **Capability.** Transformation applied to the raw GDP metric:
         ``'asinh'`` (default), ``'power'``, or ``'linear'``.
+    capability_reference_year
+        **Capability.** When ``None`` (default), capability is computed
+        year-by-year. When set, the GDP (per capita) metric from that single
+        year is broadcast across the pathway window — the same snapshot
+        semantics as the budget approaches. A year before the first
+        allocation year is sourced from the unfiltered inputs (without Gini
+        adjustment); a year beyond the last observed GDP year falls back to
+        the last observed column with a warning.
     max_deviation_sigma
         **Constraint.** Maximum allowed deviation from equal per capita
         baseline, in population-weighted standard deviations. Prevents
@@ -905,6 +1036,7 @@ def per_capita_adjusted(
         capability_per_capita=capability_per_capita,
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
+        capability_reference_year=capability_reference_year,
         max_deviation_sigma=max_deviation_sigma,
         preserve_first_allocation_year_shares=preserve_first_allocation_year_shares,
         historical_discount_rate=historical_discount_rate,
@@ -931,7 +1063,8 @@ def per_capita_adjusted_gini(
     capability_per_capita: bool = True,
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
-    income_floor: float = 7500.0,
+    capability_reference_year: int | None = None,
+    income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
     max_deviation_sigma: float | None = None,
     preserve_first_allocation_year_shares: bool = False,
@@ -1053,11 +1186,19 @@ def per_capita_adjusted_gini(
     capability_functional_form
         **Capability.** Transformation: ``'asinh'`` (default), ``'power'``,
         or ``'linear'``.
+    capability_reference_year
+        **Capability.** When ``None`` (default), capability is computed
+        year-by-year. When set, the GDP (per capita) metric from that single
+        year is broadcast across the pathway window — the same snapshot
+        semantics as the budget approaches. A year before the first
+        allocation year is sourced from the unfiltered inputs (without Gini
+        adjustment); a year beyond the last observed GDP year falls back to
+        the last observed column with a warning.
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income
         below this is excluded from capability calculations, adapted from
-        GDR. Default: 7500.0. See
-        ``docs/science/parameter-effects.md`` §income_floor.
+        GDR. Default: 0.0 (all income counts); pass 7500.0 for the GDR
+        threshold. See ``docs/science/parameter-effects.md`` §income_floor.
     max_gini_adjustment
         **Gini.** Maximum reduction factor from threshold deduction (0–1).
         Limits how much the deduction can reduce effective GDP.
@@ -1135,6 +1276,7 @@ def per_capita_adjusted_gini(
         capability_per_capita=capability_per_capita,
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
+        capability_reference_year=capability_reference_year,
         income_floor=income_floor,
         max_gini_adjustment=max_gini_adjustment,
         max_deviation_sigma=max_deviation_sigma,

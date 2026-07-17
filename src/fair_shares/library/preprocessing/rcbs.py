@@ -239,8 +239,8 @@ def _resolve_adjustment_scalars(
 
         # Adjust for baseline year > 2020: subtract the 2020-to-base
         # prefix using the median timeseries.  Historical BM LULUCF has
-        # negligible inter-scenario spread, so median(cum_i - prefix_i)
-        # ≈ median(cum_i) - median_prefix.
+        # negligible inter-scenario spread, so median(cmltv_i - prefix_i)
+        # ≈ median(cmltv_i) - median_prefix.
         if baseline_year > 2020:
             prefix_cols = [
                 str(y)
