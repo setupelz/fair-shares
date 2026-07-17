@@ -20,7 +20,7 @@
 # **Papers:**
 # - European Scientific Advisory Board on Climate Change (ESABCC), 2023.
 #   *Scientific advice for the determination of an EU-wide 2040 climate target
-#   and a greenhouse gas budget for 2030–2050.* DOI: 10.2800/609405
+#   and a greenhouse gas budget for 2030-2050.* DOI: 10.2800/609405
 # - Pelz, S., Rogelj, J., Riahi, K., 2023. *Evaluating equity in European
 #   climate change mitigation pathways for the EU Scientific Advisory Board
 #   on Climate Change.* IIASA, Laxenburg. https://pure.iiasa.ac.at/18830
@@ -54,7 +54,7 @@
 # ## 0. Decisions taken in this reproduction.
 #
 # 1. **Two of the report's indicators are not reproduced** because fair-shares
-#    has no data source for them: consumption-based CO2 (1990–2014) and capital
+#    has no data source for them: consumption-based CO2 (1990-2014) and capital
 #    stock per capita.
 # 2. **The Responsibility-Capability-Need composite is not quantified.** The
 #    report itself declines to quantify it ("given the large solution space when
@@ -78,8 +78,8 @@
 #    extend back before 2015. For `all-ghg` the historical-responsibility
 #    window also starts in 2000 (data start) instead of 1850 or 1990.
 # 6. For every country and approach: remaining = allocated total minus actual
-#    emissions from the allocation year through the last year with observed 
-#    data (2023 in PRIMAP-hist v2.6.1 / Melo NGHGI), so budgets are reported 
+#    emissions from the allocation year through the last year with observed
+#    data (2023 in PRIMAP-hist v2.6.1 / Melo NGHGI), so budgets are reported
 #    as remaining from 2024.
 # 7. **One budget across the whole notebook.** The RCB registry holds three
 #    sources at three climate targets; this notebook filters the pipeline to
@@ -115,12 +115,12 @@
 #     all-GHG categories the combined annual pathway = distributed CO2 + the
 #     AR6 non-CO2 pathway (Decision 4).
 # 11. **Past non-CO2 over-use: two settlement options, both computed.** The
-#     hist–2023 gap between actual and allocated non-CO2 is reported per
+#     hist-2023 gap between actual and allocated non-CO2 is reported per
 #     country in a `historical-deviation` column, and § 6 runs every
 #     configuration under two modes, selected by the `nonco2-debt-mode`
 #     column:
 #     - **`free-rider`** — no penalty. Past non-CO2 over- and under-use
-#       nearly cancel globally (§ 6.2 quantifies this at +0.6% of 2015–2023
+#       nearly cancel globally (§ 6.2 quantifies this at +0.6% of 2015-2023
 #       non-CO2), so the historical debts are simply named and left at that.
 #     - **`co2-debit`** — each country's non-CO2 over-use is subtracted from
 #       its remaining CO2 budget (AR6 GWP100 equivalence): missing a methane
@@ -129,8 +129,8 @@
 #       the global remaining CO2 budget by the gross debt sum (quantified in
 #       § 6.2); the retired space benefits the climate, and the global
 #       envelope pathway is rebuilt to the reduced total so country pathways
-#       stay mutually consistent. CO2 budgets can go negative so debts of any 
-#       size are payable; methane pathways stop at zero, which is why large 
+#       stay mutually consistent. CO2 budgets can go negative so debts of any
+#       size are payable; methane pathways stop at zero, which is why large
 #       debts are settled here in CO2 space rather than inside non-CO2 space.
 #     In both modes past under-use earns nothing. The `co2-debit` results
 #     depend on the GWP100 metric — equating old methane excess with future
@@ -208,10 +208,10 @@
 #
 # | Indicator | Allocation year | Reproduced? |
 # |---|---|---|
-# | Cumulative CO2-FFI 1850–1989 (total and per capita) | 1990 | yes |
-# | Cumulative CO2-FFI 1850–2014 (total and per capita) | 2015 | yes |
-# | Cumulative CO2-FFI 1990–2014 (total and per capita) | 2015 | yes |
-# | Consumption CO2 1990–2014 (total and per capita) | 2015 | no — no consumption-emissions source |
+# | Cumulative CO2-FFI 1850-1989 (total and per capita) | 1990 | yes |
+# | Cumulative CO2-FFI 1850-2014 (total and per capita) | 2015 | yes |
+# | Cumulative CO2-FFI 1990-2014 (total and per capita) | 2015 | yes |
+# | Consumption CO2 1990-2014 (total and per capita) | 2015 | no — no consumption-emissions source |
 #
 # **fair-shares equivalent:** `per-capita-adjusted-budget` with
 # `pre_allocation_responsibility_weight=1.0`,
@@ -251,7 +251,7 @@
 #
 # - **Emission category (report):** CO2-FFI only (excluding LULUCF and non-CO2).
 #   This notebook additionally runs `all-ghg-ex-co2-lulucf` and `all-ghg`
-#   (NGHGI convention) — see Decisions 3–5.
+#   (NGHGI convention) — see Decisions 3-5.
 # - **Global RCB (report):** 500 GtCO2 from 2020 for 1.5C at 50% likelihood
 #   (IPCC AR6 WG1); the report derives ~1530 GtCO2 from 1990 and ~704 GtCO2
 #   from 2015 by adding back historical emissions. fair-shares performs the
@@ -268,7 +268,7 @@
 # |---|---|---|---|
 # | EPC budget (single-year pop) | `equal-per-capita-budget` | `allocation_year=1990\|2015`, `preserve_allocation_year_shares=True` | PRR2023 allocates at R11 region level; fair-shares at country level. For linear operations the two are algebraically identical when summed back to the same grouping. |
 # | ECPC budget (cumul. pop) | `equal-per-capita-budget` | `allocation_year=1990\|2015`, `preserve_allocation_year_shares=False`, `cumulative_end_year=2050` | `cumulative_end_year=2050` matches PRR2023's explicit 2050 upper bound. |
-# | Responsibility 1/x, 1/sqrt(x) | `per-capita-adjusted-budget` | `pre_allocation_responsibility_weight=1.0`, `pre_allocation_responsibility_year=1850\|1990`, `..._functional_form="power"`, `..._exponent=1.0\|0.5`, `..._per_capita=True\|False`, both bases | Penalty F(x)=1/x maps to `power` with exponent 1.0; F(x)=1/sqrt(x) to exponent 0.5. Windows: 1850–1989 (ay=1990), 1850–2014 and 1990–2014 (ay=2015). |
+# | Responsibility 1/x, 1/sqrt(x) | `per-capita-adjusted-budget` | `pre_allocation_responsibility_weight=1.0`, `pre_allocation_responsibility_year=1850\|1990`, `..._functional_form="power"`, `..._exponent=1.0\|0.5`, `..._per_capita=True\|False`, both bases | Penalty F(x)=1/x maps to `power` with exponent 1.0; F(x)=1/sqrt(x) to exponent 0.5. Windows: 1850-1989 (ay=1990), 1850-2014 and 1990-2014 (ay=2015). |
 # | Capability 1/x, 1/sqrt(x) | `per-capita-adjusted-budget` | `capability_weight=1.0`, `capability_functional_form="power"`, `capability_exponent=1.0\|0.5`, `capability_reference_year=1990\|2014`, both bases | GDP-per-capita snapshot; capital stock not available. |
 # | R-C-N combined | `per-capita-adjusted-budget` | weights summing to <= 1.0 | Not quantified — follows PRR2023's own exclusion. |
 # | (extension) non-CO2 part of all-GHG categories | `equal-per-capita`, `per-capita-adjusted` (pathway) | auto-derived from the budget configs | `capability_reference_year` passes through (pathway approaches support the snapshot); `cumulative_end_year` is budget-only and removed on derivation (Decision 8). |
@@ -680,8 +680,8 @@ pd.DataFrame(
 #   a stock budget: past over-use is a real debt (remaining goes negative)
 #   and § 6 redresses it in the forward pathways.
 # - **Non-CO2 pathway part** — remaining = the **forward-window allocation**
-#   (2024–2100). The `historical-deviation` column reports actual minus
-#   allocated non-CO2 over 2015–2023: positive means the country emitted
+#   (2024-2100). The `historical-deviation` column reports actual minus
+#   allocated non-CO2 over 2015-2023: positive means the country emitted
 #   more non-CO2 than its allocation, a debt that § 6 can charge against its
 #   CO2 budget (`co2-debit` mode, Decision 11); negative means under-use,
 #   which earns nothing (space in short-lived gases cannot be banked).
@@ -825,7 +825,7 @@ def _remaining_for_category(category: str, reg: dict) -> pd.DataFrame:
         "remaining-budget",
         "historical-deviation",
     ]
-    tidy = out[keep + ["family", "year", "preserve"]].copy()
+    tidy = out[[*keep, "family", "year", "preserve"]].copy()
 
     # Combined rows for composite categories: CO2 budget part + non-CO2 pathway
     # part, matched on the shared equity parameters. Combining requires both
@@ -955,7 +955,7 @@ with pd.option_context("display.max_rows", 200, "display.width", 250):
 #
 # **CO2 parts** are distributed under two non-CO2 debt modes (Decision 11):
 # `free-rider` leaves the CO2 budgets as they are; `co2-debit` subtracts
-# each country's 2015–2023 non-CO2 over-use from its remaining CO2 budget
+# each country's 2015-2023 non-CO2 over-use from its remaining CO2 budget
 # (AR6 GWP100) and retires the collected debt, shrinking the global envelope
 # by the gross debt sum. Negative CO2 pathways are allowed (CO2 removal is
 # real), so debts of any size are payable. **Non-CO2 parts** are the
@@ -968,7 +968,7 @@ with pd.option_context("display.max_rows", 200, "display.width", 250):
 
 
 # %% tags=[]
-from fair_shares.library.utils.math import (  # noqa: E402
+from fair_shares.library.utils.math import (
     calculate_exponential_decay_pathway,
     distribute_remaining_budgets_pathways,
 )
@@ -1036,7 +1036,7 @@ def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> p
         dev_lookup = remaining[
             (remaining["category"] == category)
             & (remaining["emission-category"] == "combined")
-        ][config_cols + ["iso3c", "historical-deviation"]]
+        ][[*config_cols, "iso3c", "historical-deviation"]]
 
     out_frames = []
     for key, cfg in rem.groupby(config_cols, dropna=False):
@@ -1053,8 +1053,8 @@ def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> p
         modes = NONCO2_DEBT_MODES if is_composite else [None]
         for mode in modes:
             if mode == "co2-debit":
-                matched = cfg[config_cols + ["iso3c"]].merge(
-                    dev_lookup, on=config_cols + ["iso3c"], how="left"
+                matched = cfg[[*config_cols, "iso3c"]].merge(
+                    dev_lookup, on=[*config_cols, "iso3c"], how="left"
                 )
                 deviation = pd.Series(
                     matched["historical-deviation"].values,
@@ -1173,7 +1173,7 @@ def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> p
             c for c in nonco2_rows.columns
             if c.isdigit() and int(c) < start_year
         ]
-        nonco2_rows = nonco2_rows.drop(columns=["nonco2-forward"] + past_cols)
+        nonco2_rows = nonco2_rows.drop(columns=["nonco2-forward", *past_cols])
 
         out = pd.concat([out, nonco2_rows, combined], ignore_index=True)
 
@@ -1244,7 +1244,7 @@ plt.show()
 # (the stock budget is where debt lives — Decision 6), across every
 # shape/deviation variant and both non-CO2 debt modes:
 #
-# 1. **CO2-FFI part** — the cumulative distributed pathway (2024–2100) must
+# 1. **CO2-FFI part** — the cumulative distributed pathway (2024-2100) must
 #    equal its `adjusted-target` exactly (closed-form guarantee of the
 #    distribution function). Under `free-rider` that target is the § 5
 #    remaining CO2 budget; under `co2-debit` it is that budget minus the
@@ -1511,7 +1511,7 @@ plt.show()
 # - **Emissions**: `primap-202503` — PRIMAP-hist v2.6.1 (Gütschow et al.),
 #   territorial; observed country data through 2023
 # - **NGHGI LULUCF**: `melo-2026` — Melo et al. LULUCF Data Hub v3.1.1,
-#   2000–2023, used for the `all-ghg` category only
+#   2000-2023, used for the `all-ghg` category only
 # - **RCB anchors**: `ar6_2020` (IPCC AR6 WG1, Canadell et al. 2021),
 #   `lamboll_2023`, `forster_2024` — all computed; the report anchor is
 #   `ar6_2020` at 1.5C / 50%
@@ -1536,7 +1536,7 @@ plt.show()
 #
 # **Approach coverage.** All four approaches PRR2023 quantifies are configured,
 # on both the EPC and ECPC bases, for every Table 18 indicator with a data
-# source: responsibility windows 1850–1989 (ay=1990), 1850–2014 and 1990–2014
+# source: responsibility windows 1850-1989 (ay=1990), 1850-2014 and 1990-2014
 # (ay=2015), in total and per-capita form; capability snapshots 1990 and 2014.
 # Consumption CO2 and capital stock are omitted (no source; Decision 1). The
 # responsibility-capability-need composite is not quantified (Decision 2).
