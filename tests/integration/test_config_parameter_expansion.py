@@ -172,7 +172,6 @@ class TestConfigParameterExpansion:
         # This should work without errors - no lists should be passed to the function
         result = run_allocation(
             approach=test_params["approach"],
-            config=sample_config_with_lists,
             population_ts=test_data["population"],
             gdp_ts=test_data["gdp"],
             first_allocation_year=test_params["first_allocation_year"],
@@ -263,7 +262,6 @@ class TestConfigParameterExpansion:
         # This should now work - scalar capability_exponent should override the list in config
         result = run_allocation(
             approach="per-capita-adjusted",
-            config=sample_config_with_lists,  # Contains capability-exponent: [1.0, 0.5, 2.0]
             population_ts=test_data["population"],
             gdp_ts=test_data["gdp"],
             first_allocation_year=2015,
@@ -292,7 +290,6 @@ class TestConfigParameterExpansion:
         # This simulates what the notebook does - passing a scalar capability_exponent but config contains lists
         result = run_allocation(
             approach="per-capita-adjusted",
-            config=sample_config_with_lists,
             population_ts=test_data["population"],
             gdp_ts=test_data["gdp"],
             first_allocation_year=2015,
