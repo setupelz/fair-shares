@@ -136,7 +136,6 @@ class TestRCBPathwayEquivalence:
             population_ts=sample_population_ts,
             allocation_year=2020,
             emission_category="co2-ffi",
-            rcbs=sample_rcbs,
         )
 
         # Extract budget shares (single year column from TimeseriesDataFrame)
@@ -193,7 +192,6 @@ class TestRCBPathwayEquivalence:
             country_actual_emissions_ts=sample_country_emissions,
             allocation_year=2020,
             emission_category="co2-ffi",
-            rcbs=sample_rcbs,
             pre_allocation_responsibility_weight=0.5,
             capability_weight=0.5,
             pre_allocation_responsibility_year=2015,
@@ -292,7 +290,6 @@ class TestRCBPathwayEquivalence:
             country_actual_emissions_ts=sample_country_emissions,
             allocation_year=2020,
             emission_category="co2-ffi",
-            rcbs=sample_rcbs,
             pre_allocation_responsibility_weight=pre_allocation_responsibility_weight,
             capability_weight=capability_weight,
             pre_allocation_responsibility_year=2015,

@@ -545,6 +545,8 @@ def _per_capita_budget_core(
         "group_level": group_level,
         "unit_level": unit_level,
     }
+    if cumulative_end_year is not None:
+        parameters["cumulative_end_year"] = cumulative_end_year
 
     # Add pre-allocation responsibility parameters if used
     if use_responsibility:

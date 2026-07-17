@@ -409,10 +409,10 @@ class TestAllocationMathProperties:
         # Group population by iso3c (sum across units if multiple)
         pop_by_country = cumulative_population.groupby(level="iso3c").sum()
         # Map each share row to its population value by iso3c only
-        cum_pop_aligned = [pop_by_country.loc[iso3c] for iso3c in shares_iso3c]
+        cmltv_pop_aligned = [pop_by_country.loc[iso3c] for iso3c in shares_iso3c]
 
         # Calculate per-capita allocation for each country
-        per_capita = cumulative_allocation.values / pd.Series(cum_pop_aligned).values
+        per_capita = cumulative_allocation.values / pd.Series(cmltv_pop_aligned).values
 
         # Check for NaN values (indicates alignment issue)
         assert not pd.isna(per_capita).any(), (

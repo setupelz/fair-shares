@@ -70,12 +70,14 @@ def build_approach_short_column(
         "capability-per-capita": "cpc",
         "pre-allocation-responsibility-exponent": "re",
         "capability-exponent": "ce",
+        "capability-reference-year": "cref",
         "pre-allocation-responsibility-functional-form": "rff",
         "capability-functional-form": "cff",
         "max-deviation-sigma": "s",
         "income-floor": "if",
         "max-gini-adjustment": "ga",
         "max-convergence-speed": "mcs",
+        "cumulative-end-year": "cend",
         "strict": "strict",
     }
 
@@ -103,6 +105,8 @@ def build_approach_short_column(
             "convergence-year",
             "income-floor",
             "pre-allocation-responsibility-year",
+            "capability-reference-year",
+            "cumulative-end-year",
         }:
             values = values.astype("Int64").astype("string")
         else:
@@ -391,10 +395,12 @@ def convert_parquet_to_wide_csv(
         "capability-exponent",
         "pre-allocation-responsibility-functional-form",
         "capability-functional-form",
+        "capability-reference-year",
         "max-deviation-sigma",
         "income-floor",
         "max-gini-adjustment",
         "max-convergence-speed",
+        "cumulative-end-year",
         "strict",
         # Columns already encoded in variable (emission_category kept as
         # standalone column for easy filtering in all-GHG runs)

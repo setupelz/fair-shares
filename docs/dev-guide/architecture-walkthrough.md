@@ -164,10 +164,18 @@ For each row in the RCB table (e.g., "1.5C|0.5 from IPCC AR6"):
 
 1. Looks up the function: `get_function("equal-per-capita-budget")` from the
    approach registry in `manager.py`, which returns `equal_per_capita_budget`.
-2. Builds `func_args` dict with all data + parameters.
-3. Validates (`validate_function_parameters()`) and filters to only the
-   parameters the function accepts (`filter_function_parameters()`).
-4. Calls the math function.
+2. Checks the user-supplied config parameters (not the data-plumbing
+   arguments) against the function's signature. Any config parameter the
+   function doesn't accept raises `AllocationError` naming the approach, the
+   rejected parameter(s), and the accepted parameter names — a config can no
+   longer name a parameter the approach silently ignores.
+3. Builds `func_args` dict with all data + parameters.
+4. Validates (`validate_function_parameters()`) and filters the
+   data-plumbing arguments to only what the function accepts
+   (`filter_function_parameters()`) — user config parameters have already
+   been checked in step 2, so this pass only trims the uniformly-supplied
+   data frames.
+5. Calls the math function.
 
 ### Step 7: The Math (budgets/per_capita.py)
 
