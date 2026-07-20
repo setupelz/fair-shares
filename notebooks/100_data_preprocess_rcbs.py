@@ -439,9 +439,8 @@ coverage_summary.to_csv(
     index=False,
 )
 print(
-    f"\nData coverage summary saved to: {
-        root_intermediate_dir / 'processed' / 'country_data_coverage_summary.csv'
-    }"
+    "\nData coverage summary saved to: "
+    f"{root_intermediate_dir / 'processed' / 'country_data_coverage_summary.csv'}"
 )
 
 # %% [markdown]
