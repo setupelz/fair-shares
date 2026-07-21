@@ -27,6 +27,7 @@ from fair_shares.library.allocations.results import (
     BudgetAllocationResult,
     PathwayAllocationResult,
 )
+from fair_shares.library.allocations.results.serializers import _prepare_dataframe
 from fair_shares.library.exceptions import DataProcessingError
 from fair_shares.library.utils.data.completeness import (
     get_cumulative_budget_from_timeseries,
@@ -201,16 +202,27 @@ def load_allocation_data(
 def run_all_allocations(
     allocations: dict[str, Any],
     loaded_data: dict[str, Any],
-    output_dir: Path,
+    output_dir: Path | None,
     data_context: dict[str, str],
     target: str,
     final_categories: list[str],
     harmonisation_year: int | None,
-) -> list[dict[str, Any]]:
+    *,
+    write: bool = True,
+    return_allocations: bool = False,
+) -> list[dict[str, Any]] | tuple[list[dict[str, Any]], pd.DataFrame]:
     """Execute all allocation approaches and save results.
 
     Handles budget/pathway splitting, category iteration, manifest and
     README generation.  Replaces ~70 lines of identical execution code.
+
+    ``write`` (default ``True``) controls whether anything is persisted to
+    ``output_dir``: pass ``False`` to run purely in memory (``output_dir`` may
+    then be ``None``). ``return_allocations`` (default ``False``) additionally
+    returns the concatenated absolute-allocations DataFrame -- the same rows
+    that would be written to ``allocations_absolute.parquet`` -- so callers can
+    keep working without a round-trip through disk. The default call signature
+    (manifest list, writing enabled) is unchanged for existing notebooks.
 
     Parameters
     ----------
@@ -240,8 +252,16 @@ def run_all_allocations(
     list[dict]
         Parameter-manifest rows for all allocations.
     """
-    output_dir.mkdir(parents=True, exist_ok=True)
-    delete_existing_parquet_files(output_dir)
+    if return_allocations and write:
+        # The absolute frames are collected only on the in-memory path, to avoid
+        # doubling _prepare_dataframe work for the many notebooks that write and
+        # only want the manifest.
+        raise ValueError("return_allocations=True requires write=False")
+    if write:
+        if output_dir is None:
+            raise ValueError("output_dir is required when write=True")
+        output_dir.mkdir(parents=True, exist_ok=True)
+        delete_existing_parquet_files(output_dir)
 
     # Split approaches by type
     budget_allocs = {k: v for k, v in allocations.items() if is_budget_approach(k)}
@@ -263,6 +283,7 @@ def run_all_allocations(
         )
 
     param_manifest_rows: list[dict[str, Any]] = []
+    absolute_frames: list[pd.DataFrame] = []
 
     for category in final_categories:
         is_budget = is_budget_target(target, category)
@@ -283,7 +304,7 @@ def run_all_allocations(
         mode = "budget" if is_budget else "pathway"
         print(f"\n  {category} ({mode}) — {len(allocs)} approaches")
 
-        rows = run_and_save_category_allocations(
+        rows, frames = run_and_save_category_allocations(
             allocations=allocs,
             category=category,
             target_source=target_src,
@@ -302,14 +323,24 @@ def run_all_allocations(
             data_context=data_context,
             is_budget=is_budget,
             world_emissions=loaded_data["world_emissions_data"].get(category),
+            write=write,
         )
         param_manifest_rows.extend(rows)
+        absolute_frames.extend(frames)
         print(f"    {len(rows)} parameter combinations processed")
 
     # Save manifest and README
-    create_param_manifest(param_manifest_rows, output_dir)
-    generate_readme(output_dir=output_dir, data_context=data_context)
+    if write:
+        create_param_manifest(param_manifest_rows, output_dir)
+        generate_readme(output_dir=output_dir, data_context=data_context)
 
+    if return_allocations:
+        allocations_df = (
+            pd.concat(absolute_frames, ignore_index=True)
+            if absolute_frames
+            else pd.DataFrame()
+        )
+        return param_manifest_rows, allocations_df
     return param_manifest_rows
 
 
@@ -358,15 +389,20 @@ def run_and_save_category_allocations(
     gdp: pd.DataFrame,
     population: pd.DataFrame,
     gini: pd.DataFrame,
-    output_dir: Path,
+    output_dir: Path | None,
     *,
     harmonisation_year: int,
     net_negative_metadata: dict,
     data_context: dict,
     is_budget: bool,
     world_emissions: pd.DataFrame | None = None,
-) -> list[dict[str, Any]]:
+    write: bool = True,
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Run allocations for one emission *category* and save results.
+
+    Returns ``(manifest_rows, absolute_frames)``: the manifest rows and the
+    per-result absolute-allocation DataFrames (the rows that would be written to
+    ``allocations_absolute.parquet``). With ``write=False`` nothing is persisted.
 
     Parameters
     ----------
@@ -421,6 +457,7 @@ def run_and_save_category_allocations(
             harmonisation_year=harmonisation_year,
             data_context=data_context,
             world_emissions=world_emissions,
+            write=write,
         )
     else:
         return _run_pathway_allocations(
@@ -437,6 +474,7 @@ def run_and_save_category_allocations(
             harmonisation_year=harmonisation_year,
             net_negative_metadata=net_negative_metadata,
             data_context=data_context,
+            write=write,
         )
 
 
@@ -478,13 +516,15 @@ def _run_budget_allocations(
     gdp: pd.DataFrame,
     population: pd.DataFrame,
     gini: pd.DataFrame,
-    output_dir: Path,
+    output_dir: Path | None,
     harmonisation_year: int,
     data_context: dict,
     world_emissions: pd.DataFrame,
-) -> list[dict[str, Any]]:
+    write: bool = True,
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Iterate over RCB rows and run budget allocations for each."""
     manifest_rows: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
 
     # Compute share allocations once — they depend only on socio-economic data
     # and config, not on individual RCB values.
@@ -527,15 +567,32 @@ def _run_budget_allocations(
             cat_context["source"] = rcb_source
             cat_context["missing-net-negative-mtco2e"] = None
 
-            save_allocation_result(
-                result=result,
-                output_dir=output_dir,
-                absolute_emissions=absolute_emissions,
-                climate_assessment=climate_assessment,
-                quantile=quantile,
-                data_context=cat_context,
-                **{"total-budget": total_budget_allocated},
-            )
+            if write:
+                save_allocation_result(
+                    result=result,
+                    output_dir=output_dir,
+                    absolute_emissions=absolute_emissions,
+                    climate_assessment=climate_assessment,
+                    quantile=quantile,
+                    data_context=cat_context,
+                    **{"total-budget": total_budget_allocated},
+                )
+            else:
+                # Not writing: collect the same absolute rows that
+                # save_allocation_result would write, so the caller can skip the
+                # parquet round-trip. (When writing, existing callers only want
+                # the manifest, so this work is skipped.)
+                frames.append(
+                    _prepare_dataframe(
+                        data=absolute_emissions,
+                        result=result,
+                        climate_assessment=climate_assessment,
+                        quantile=quantile,
+                        data_context=cat_context,
+                        is_budget=True,
+                        **{"total-budget": total_budget_allocated},
+                    )
+                )
 
             manifest_row = _build_manifest_row(
                 result,
@@ -547,7 +604,7 @@ def _run_budget_allocations(
             )
             manifest_rows.append(manifest_row)
 
-    return manifest_rows
+    return manifest_rows, frames
 
 
 def _run_pathway_allocations(
@@ -561,13 +618,15 @@ def _run_pathway_allocations(
     gdp: pd.DataFrame,
     population: pd.DataFrame,
     gini: pd.DataFrame,
-    output_dir: Path,
+    output_dir: Path | None,
     harmonisation_year: int,
     net_negative_metadata: dict,
     data_context: dict,
-) -> list[dict[str, Any]]:
+    write: bool = True,
+) -> tuple[list[dict[str, Any]], list[pd.DataFrame]]:
     """Group scenarios and run pathway allocations for each group."""
     manifest_rows: list[dict[str, Any]] = []
+    frames: list[pd.DataFrame] = []
 
     has_source = "source" in world_data.index.names
     groupby_cols = ["climate-assessment", "quantile"]
@@ -623,14 +682,26 @@ def _run_pathway_allocations(
             if source is not None:
                 cat_context["source"] = source
 
-            save_allocation_result(
-                result=result,
-                output_dir=output_dir,
-                absolute_emissions=absolute_emissions,
-                climate_assessment=climate_assessment,
-                quantile=quantile,
-                data_context=cat_context,
-            )
+            if write:
+                save_allocation_result(
+                    result=result,
+                    output_dir=output_dir,
+                    absolute_emissions=absolute_emissions,
+                    climate_assessment=climate_assessment,
+                    quantile=quantile,
+                    data_context=cat_context,
+                )
+            else:
+                frames.append(
+                    _prepare_dataframe(
+                        data=absolute_emissions,
+                        result=result,
+                        climate_assessment=climate_assessment,
+                        quantile=quantile,
+                        data_context=cat_context,
+                        is_budget=isinstance(result, BudgetAllocationResult),
+                    )
+                )
 
             manifest_row = _build_manifest_row(
                 result,
@@ -642,4 +713,4 @@ def _run_pathway_allocations(
             )
             manifest_rows.append(manifest_row)
 
-    return manifest_rows
+    return manifest_rows, frames
