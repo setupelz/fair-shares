@@ -1,0 +1,22 @@
+{
+  "anchor": {
+    "source": "ar6_2020",
+    "climate-assessment": "1.5C",
+    "quantile": 0.5
+  },
+  "example_countries": [
+    "DEU",
+    "FRA",
+    "USA",
+    "CHN",
+    "IND",
+    "BRA",
+    "POL"
+  ],
+  "categories": [
+    "all-ghg",
+    "all-ghg-ex-co2-lulucf",
+    "co2-ffi"
+  ],
+  "regenerate_with": "uv run python tests/fixtures/python_api/save_python_api_fixture.py"
+}
