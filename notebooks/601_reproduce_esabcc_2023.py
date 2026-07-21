@@ -282,34 +282,6 @@
 # CONFIGURATION
 # =============================================================================
 
-# --- Optional external overrides (front-end / reproducible runs) -------------
-# By default this notebook runs standalone: the report's own RCB anchor and the
-# in-repo output/ tree. Point the FAIR_SHARES_601_CONFIG env var at a YAML file
-# to override either, without editing the notebook. Recognised keys (all
-# optional; anything omitted keeps the default below):
-#
-#     rcb_anchor:                     # any subset of source / assessment / quantile
-#       source: ar6_2020
-#       climate-assessment: 1.5C
-#       quantile: 0.5
-#     output_root: /abs/path/output   # replaces <project_root>/output for §4-§6
-#
-import os
-from pathlib import Path
-
-import yaml
-
-_config_601: dict = {}
-_config_601_path = os.environ.get("FAIR_SHARES_601_CONFIG")
-if _config_601_path:
-    _config_601 = yaml.safe_load(Path(_config_601_path).read_text()) or {}
-    print(f"601 overrides from {_config_601_path}: {sorted(_config_601)}")
-
-# Output tree root for §4-§6. None -> resolved to <project_root>/output in §4,
-# once pyprojroot.here() is available.
-_output_root_override = _config_601.get("output_root")
-OUTPUT_ROOT = Path(_output_root_override).expanduser() if _output_root_override else None
-
 # Output subfolder name; results land in
 # output/<source-id>/allocations/<allocation_folder>/ (§ 4).
 allocation_folder = "601_esabcc_2023"
@@ -346,10 +318,8 @@ desired_harmonisation_year = 2020
 # pathways before any allocation runs. `source` picks the RCB generator
 # (`ar6_2020`, `lamboll_2023`, or `forster_2024`); `climate-assessment` and
 # `quantile` pick the temperature target and likelihood within that source.
-# Change any field to explore a different anchor and re-run (or inject via the
-# FAIR_SHARES_601_CONFIG YAML above, which updates the fields it names).
+# Change any field to explore a different anchor and re-run.
 RCB_ANCHOR = {"source": "ar6_2020", "climate-assessment": "1.5C", "quantile": 0.5}
-RCB_ANCHOR.update(_config_601.get("rcb_anchor", {}))
 
 # Time distribution of remaining budgets (§ 6, Decision 9). The grid
 # expands as a cross product; edit to explore other normative positions.
@@ -589,8 +559,6 @@ plt.rcParams["axes.grid"] = True
 plt.rcParams["grid.alpha"] = 0.3
 
 project_root = here()
-# Resolve the output root now that here() is available (§3 override or default).
-output_root = OUTPUT_ROOT if OUTPUT_ROOT is not None else project_root / "output"
 
 run_registry: dict[str, dict] = {}
 
@@ -651,7 +619,7 @@ for category, allocations in CATEGORY_ALLOCATIONS.items():
                 f"No scenario rows match {RCB_ANCHOR} for {cat_key}"
             )
 
-    output_dir = output_root / source_id / "allocations" / allocation_folder
+    output_dir = project_root / "output" / source_id / "allocations" / allocation_folder
 
     data_context = {
         "source-id": source_id,
@@ -912,7 +880,7 @@ for category, reg in run_registry.items():
 remaining_all = pd.concat(remaining_all, ignore_index=True)
 combined_from_year = int(remaining_all["remaining-from-year"].min())
 combined_path = (
-    output_root / f"601_remaining_budgets_from_{combined_from_year}.csv"
+    project_root / "output" / f"601_remaining_budgets_from_{combined_from_year}.csv"
 )
 remaining_all.to_csv(combined_path, index=False)
 print(f"\ncombined: {len(remaining_all)} rows -> {combined_path}")
