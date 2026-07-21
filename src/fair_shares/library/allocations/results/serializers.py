@@ -148,7 +148,7 @@ def _save_to_parquet(
 ) -> Path:
     """Save data to parquet file."""
     # Prepare DataFrame with metadata
-    df = _prepare_dataframe(
+    df = prepare_dataframe(
         data=data,
         result=result,
         climate_assessment=climate_assessment,
@@ -187,7 +187,7 @@ def delete_existing_parquet_files(output_dir: Path) -> None:
         print("No existing parquet files found to delete")
 
 
-def _prepare_dataframe(
+def prepare_dataframe(
     data: TimeseriesDataFrame,
     result: BudgetAllocationResult | PathwayAllocationResult,
     climate_assessment: str | None = None,
@@ -197,11 +197,14 @@ def _prepare_dataframe(
     **metadata,
 ) -> pd.DataFrame:
     """
-    Prepare DataFrame for parquet writing with all metadata.
+    Prepare DataFrame with all metadata, for parquet writing or in-memory use.
 
     Structures the allocation data with comprehensive metadata columns to
     enable transparent analysis. Records all parameter choices and data
     sources, and generates warnings for allocations that require attention.
+    The in-memory allocation path (``run_all_allocations(write=False)``)
+    builds its frames through this same function, so written and in-memory
+    results never diverge.
     """
     # Convert to DataFrame and reset index
     df = data.copy()

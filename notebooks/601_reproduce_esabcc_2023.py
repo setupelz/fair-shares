@@ -48,6 +48,14 @@
 # computes each country's fair-share budget left from 2024 onward, after
 # subtracting observed emissions through 2023, and § 6 spreads those
 # remaining budgets into annual pathways to 2100.
+#
+# **Keep in sync with the Python API:** §§ 5–6 are ported to
+# `fair_shares.library.python_api.calculate_allocation_timeseries` so
+# downstream consumers can run allocations without executing this notebook.
+# If you change §§ 4–6 here, regenerate the reproduction fixtures
+# (`uv run python tests/fixtures/save_python_api_fixture.py`) and check that
+# `tests/integration/test_python_api_reproduces_notebook.py` still passes —
+# that test is the guard against the two implementations drifting apart.
 
 # %% [markdown] tags=[]
 # ---
