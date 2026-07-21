@@ -80,7 +80,7 @@ def main() -> None:
                 "anchor": ANCHOR,
                 "example_countries": EXAMPLE_COUNTRIES,
                 "categories": saved,
-                "regenerate_with": f"uv run python {FIXTURE_DIR}/save_python_api_fixture.py",
+                "regenerate_with": "uv run python tests/fixtures/save_python_api_fixture.py",
             },
             indent=2,
         )

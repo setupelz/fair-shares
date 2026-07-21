@@ -122,12 +122,23 @@ class ResultContainer:
 
 # Columns identifying one allocation configuration (part pairing + de-dup).
 _ID_COLS = [
-    "iso3c", "source", "climate-assessment", "quantile", "approach",
-    "emission-category", "unit", "allocation-year", "first-allocation-year",
-    "preserve-allocation-year-shares", "preserve-first-allocation-year-shares",
-    "pre-allocation-responsibility-weight", "capability-weight",
-    "pre-allocation-responsibility-year", "pre-allocation-responsibility-per-capita",
-    "capability-per-capita", "pre-allocation-responsibility-exponent",
+    "iso3c",
+    "source",
+    "climate-assessment",
+    "quantile",
+    "approach",
+    "emission-category",
+    "unit",
+    "allocation-year",
+    "first-allocation-year",
+    "preserve-allocation-year-shares",
+    "preserve-first-allocation-year-shares",
+    "pre-allocation-responsibility-weight",
+    "capability-weight",
+    "pre-allocation-responsibility-year",
+    "pre-allocation-responsibility-per-capita",
+    "capability-per-capita",
+    "pre-allocation-responsibility-exponent",
     "capability-exponent",
 ]
 
@@ -135,18 +146,23 @@ _ID_COLS = [
 # "source" is excluded: budget parts carry the RCB source, the non-CO2 part the
 # scenario source; parts pair on climate assessment + quantile.
 _PAIR_KEYS = [
-    "iso3c", "climate-assessment", "quantile", "family", "year", "preserve",
-    "pre-allocation-responsibility-weight", "pre-allocation-responsibility-year",
+    "iso3c",
+    "climate-assessment",
+    "quantile",
+    "family",
+    "year",
+    "preserve",
+    "pre-allocation-responsibility-weight",
+    "pre-allocation-responsibility-year",
     "pre-allocation-responsibility-per-capita",
-    "pre-allocation-responsibility-exponent", "capability-weight",
+    "pre-allocation-responsibility-exponent",
+    "capability-weight",
     "capability-exponent",
 ]
 
 
 def _country_emissions(processed_dir: Path, part: str) -> pd.DataFrame:
-    return pd.read_csv(
-        processed_dir / f"country_emissions_{part}_timeseries.csv"
-    )
+    return pd.read_csv(processed_dir / f"country_emissions_{part}_timeseries.csv")
 
 
 def _cumulative_actuals(
@@ -229,8 +245,12 @@ def compute_remaining_budgets(
     keep = [
         "category",
         *[c for c in _ID_COLS if c in out.columns],
-        "netting-end-year", "remaining-from-year", "allocated-total",
-        "consumed-actuals", "remaining-budget", "historical-deviation",
+        "netting-end-year",
+        "remaining-from-year",
+        "allocated-total",
+        "consumed-actuals",
+        "remaining-budget",
+        "historical-deviation",
     ]
     tidy = out[[*keep, "family", "year", "preserve"]].copy()
 
@@ -249,7 +269,9 @@ def compute_remaining_budgets(
             pathway_part[
                 pair_keys + value_cols + ["historical-deviation"]
             ].drop_duplicates(pair_keys),
-            on=pair_keys, how="inner", suffixes=("", "-nonco2"),
+            on=pair_keys,
+            how="inner",
+            suffixes=("", "-nonco2"),
         )
         combined = merged.copy()
         for col in value_cols:
@@ -260,7 +282,9 @@ def compute_remaining_budgets(
         if len(combined) != len(budget_part):
             logger.info(
                 "%s: paired %d/%d budget rows with a non-CO2 analogue",
-                category, len(combined), len(budget_part),
+                category,
+                len(combined),
+                len(budget_part),
             )
         tidy = pd.concat([tidy, combined], ignore_index=True)
 
@@ -272,11 +296,17 @@ def compute_remaining_budgets(
 # ---------------------------------------------------------------------------
 
 _CONFIG_COLS = [
-    "approach", "allocation-year", "first-allocation-year",
-    "preserve-allocation-year-shares", "preserve-first-allocation-year-shares",
-    "pre-allocation-responsibility-weight", "capability-weight",
-    "pre-allocation-responsibility-year", "pre-allocation-responsibility-per-capita",
-    "capability-per-capita", "pre-allocation-responsibility-exponent",
+    "approach",
+    "allocation-year",
+    "first-allocation-year",
+    "preserve-allocation-year-shares",
+    "preserve-first-allocation-year-shares",
+    "pre-allocation-responsibility-weight",
+    "capability-weight",
+    "pre-allocation-responsibility-year",
+    "pre-allocation-responsibility-per-capita",
+    "capability-per-capita",
+    "pre-allocation-responsibility-exponent",
     "capability-exponent",
 ]
 
@@ -315,7 +345,9 @@ def distribute_remaining_pathways(
     if n_floored:
         logger.info(
             "%s: %d net-sink countries floored to %s Mt for base-year shares",
-            category, n_floored, base_share_floor_mt,
+            category,
+            n_floored,
+            base_share_floor_mt,
         )
     base = base.clip(lower=base_share_floor_mt)
 
@@ -409,12 +441,16 @@ def distribute_remaining_pathways(
             preserve=nonco2["preserve-first-allocation-year-shares"].astype(bool),
         )
         pair_cols = [
-            "iso3c", "family", "year", "preserve",
+            "iso3c",
+            "family",
+            "year",
+            "preserve",
             "pre-allocation-responsibility-weight",
             "pre-allocation-responsibility-year",
             "pre-allocation-responsibility-per-capita",
             "pre-allocation-responsibility-exponent",
-            "capability-weight", "capability-exponent",
+            "capability-weight",
+            "capability-exponent",
         ]
         co2_part = out.assign(
             family=out["approach"].str.replace("-budget", "", regex=False),
@@ -425,7 +461,9 @@ def distribute_remaining_pathways(
             nd[pair_cols + pathway_years + ["nonco2-forward"]].drop_duplicates(
                 pair_cols
             ),
-            on=pair_cols, how="inner", suffixes=("", "-nonco2"),
+            on=pair_cols,
+            how="inner",
+            suffixes=("", "-nonco2"),
         )
         for y in pathway_years:
             merged[y] = merged[y] + merged[f"{y}-nonco2"]
@@ -435,7 +473,9 @@ def distribute_remaining_pathways(
         if len(combined) != len(out):
             logger.info(
                 "%s: paired %d/%d distributed rows with a non-CO2 pathway",
-                category, len(combined), len(out),
+                category,
+                len(combined),
+                len(out),
             )
 
         nonco2_rows = nonco2.copy()
@@ -489,7 +529,10 @@ def build_history(category: str, processed_dir: Path) -> pd.DataFrame:
 
 
 def _filter_to_anchor(
-    loaded_data: dict[str, Any], rcb_source: str, climate_assessment: str, quantile: float
+    loaded_data: dict[str, Any],
+    rcb_source: str,
+    climate_assessment: str,
+    quantile: float,
 ) -> None:
     """Restrict the loaded RCB rows + scenario pathways to the single anchor.
 
@@ -576,7 +619,7 @@ def calculate_allocation_timeseries(
         raise ValueError(
             f"allocation must specify exactly one approach, got {list(allocation)}"
         )
-    (approach, params), = allocation.items()
+    ((approach, params),) = allocation.items()
     # Expand the single allocation / distribution to the grid forms the run and
     # distribution helpers expect; each expands to exactly one combination.
     allocations_grid = {approach: [{k: [v] for k, v in params.items()}]}

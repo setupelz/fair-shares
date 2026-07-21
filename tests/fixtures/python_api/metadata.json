@@ -18,5 +18,5 @@
     "all-ghg-ex-co2-lulucf",
     "co2-ffi"
   ],
-  "regenerate_with": "uv run python tests/fixtures/python_api/save_python_api_fixture.py"
+  "regenerate_with": "uv run python tests/fixtures/save_python_api_fixture.py"
 }

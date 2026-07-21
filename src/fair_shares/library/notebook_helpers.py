@@ -27,7 +27,7 @@ from fair_shares.library.allocations.results import (
     BudgetAllocationResult,
     PathwayAllocationResult,
 )
-from fair_shares.library.allocations.results.serializers import _prepare_dataframe
+from fair_shares.library.allocations.results.serializers import prepare_dataframe
 from fair_shares.library.exceptions import DataProcessingError
 from fair_shares.library.utils.data.completeness import (
     get_cumulative_budget_from_timeseries,
@@ -144,9 +144,7 @@ def load_allocation_data(
             ffi_df = pd.read_csv(ffi_path).set_index(
                 ["iso3c", "unit", "emission-category"]
             )
-            responsibility_emissions_data[category] = ensure_string_year_columns(
-                ffi_df
-            )
+            responsibility_emissions_data[category] = ensure_string_year_columns(ffi_df)
         else:
             responsibility_emissions_data[category] = emissions_data[category]
 
@@ -254,7 +252,7 @@ def run_all_allocations(
     """
     if return_allocations and write:
         # The absolute frames are collected only on the in-memory path, to avoid
-        # doubling _prepare_dataframe work for the many notebooks that write and
+        # doubling prepare_dataframe work for the many notebooks that write and
         # only want the manifest.
         raise ValueError("return_allocations=True requires write=False")
     if write:
@@ -583,7 +581,7 @@ def _run_budget_allocations(
                 # parquet round-trip. (When writing, existing callers only want
                 # the manifest, so this work is skipped.)
                 frames.append(
-                    _prepare_dataframe(
+                    prepare_dataframe(
                         data=absolute_emissions,
                         result=result,
                         climate_assessment=climate_assessment,
@@ -693,7 +691,7 @@ def _run_pathway_allocations(
                 )
             else:
                 frames.append(
-                    _prepare_dataframe(
+                    prepare_dataframe(
                         data=absolute_emissions,
                         result=result,
                         climate_assessment=climate_assessment,
