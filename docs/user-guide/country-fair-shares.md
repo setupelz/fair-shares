@@ -1,11 +1,27 @@
 ---
-title: Country-Level Fair Shares
+title: Fair shares for countries
 description: Guide to calculating fair share allocations for individual countries
 ---
 
-# country-fair-shares
+# Fair shares for countries
 
-The `301_custom_fair_share_allocation.ipynb` notebook calculates fair share allocations for individual countries.
+Divide a carbon budget or an emissions pathway between individual countries.
+
+## Which notebook
+
+`301_custom_fair_share_allocation.ipynb` is the blank workspace: you set every
+option yourself. This page documents it step by step.
+
+If you are new, start from a worked example instead and change it once it runs:
+
+| Notebook                                        | What it does                                                                |
+| ----------------------------------------------- | --------------------------------------------------------------------------- |
+| `302_example_templates_budget_allocations.ipynb`  | Budgets — one cumulative number per country. Runs unchanged.                |
+| `303_example_templates_pathway_allocations.ipynb` | Pathways — a value per country per year. Runs unchanged.                    |
+
+All three build whatever processed data they need on their first run, so there
+is no notebook you must run beforehand. The first run takes a few minutes; later
+runs reuse what was built.
 
 ---
 
@@ -56,7 +72,7 @@ graph LR
 | `gdp`        | Capability-based adjustments                         |
 | `gini`       | Within-country inequality adjustments                |
 
-Available sources are configured in `conf/data_sources/`.
+Available sources are configured in `src/fair_shares/conf/data_sources/`.
 
 ---
 

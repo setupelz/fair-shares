@@ -1,18 +1,41 @@
 ---
-title: iamc-regional-fair-shares
-description: Calculate fair share allocations for IAMC model regions
+title: Fair shares for IAM model regions
+description: Calculate fair share allocations for the model regions in an IAMC-format scenario file
 ---
 
-# iamc-regional-fair-shares
+# Fair shares for IAM model regions
 
-The `401_custom_iamc_allocation.ipynb` notebook calculates fair share allocations for IAMC model regions and prepares remaining budgets for IAM model input.
+Use this workflow when your data is an IAMC-format scenario file (columns for
+model, scenario, region, variable, and one column per year) and you want to
+divide a budget or a pathway between that model's regions. For allocations to
+individual countries, use
+[country-fair-shares](country-fair-shares.md) instead.
 
-**For allocation examples without model preparation, see:**
+## Run the notebooks in this order
 
-- `402_example_iamc_budget_allocations.ipynb` - Budget allocation examples
-- `403_example_iamc_pathway_allocations.ipynb` - Pathway allocation examples
+**Step 1 — always run `400_data_preprocess_scenario_for_allocation.ipynb` first.**
+It reads a raw IAMC scenario file, prepends the historical emissions, population
+and GDP that an allocation needs, and writes `output/iamc/iamc_covered.xlsx`.
+Everything below reads that file.
 
-Use this workflow with IAMC-format scenario data (model, scenario, region, variable, year columns). For country-level allocations, use [country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/).
+To run it on **your own** scenario, edit the `SCENARIO_FILE` line near the top of
+notebook 400 to point at your file. Out of the box it points at the bundled
+MESSAGEix-GLOBIOM example. If you leave it, notebook 400 processes that example
+instead of your scenario and raises no error. Change the path before you run it.
+
+**Step 2 — pick the notebook that matches what you want:**
+
+| Notebook                                     | What it does                                                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------- |
+| `402_example_iamc_budget_allocations.ipynb`  | Worked budget examples — one cumulative number per region. Runs unchanged.         |
+| `403_example_iamc_pathway_allocations.ipynb` | Worked pathway examples — a value per region per year. Runs unchanged.             |
+| `401_custom_iamc_allocation.ipynb`           | Blank workspace you configure yourself, plus export of a model-ready budget.       |
+
+!!! warning "401, 402 and 403 will not run on their own"
+
+    All three open `output/iamc/iamc_covered.xlsx`. That file does not exist in
+    a fresh clone — notebook 400 creates it. If you see a missing-file error
+    naming `iamc_covered.xlsx`, you have skipped step 1.
 
 !!! note "Entry Points Framework"
     Fair share quantification involves five structured decision stages [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
@@ -55,19 +78,41 @@ An emissions variable is needed only if you're subtracting historical emissions 
 
 ### Loading Data
 
+The notebooks load the file notebook 400 produced. Read the region names out of
+the file rather than typing them — they are whatever your model calls them, and
+often carry a model prefix such as
+`MESSAGEix-GLOBIOM 2.1-R12|Western Europe`:
+
 ```python
+import pyam
 from fair_shares.library.utils.data.iamc import load_iamc_data
 
+scenario = pyam.IamDataFrame("output/iamc/iamc_covered.xlsx")
+regions = [r for r in scenario.region if r.lower() not in ("world", "global")]
+
 data = load_iamc_data(
-    data_file="data/scenarios/iamc_example/iamc_reporting_example.xlsx",
+    data_file=scenario,
     population_variable="Population",
     gdp_variable="GDP|PPP",
-    regions=["AFR", "CHN", "EEU", "FSU", "LAM", "MEA", "NAM", "PAO", "PAS", "RCPA", "SAS", "WEU"],
-    allocation_start_year=2015,
+    emissions_variable="Emissions|Covered",
+    regions=regions,
+    allocation_start_year=1990,
     budget_end_year=2100,
     expand_to_annual=True,  # Interpolate non-annual data
 )
 ```
+
+`Emissions|Covered` is the combined emissions variable notebook 400 builds.
+
+!!! warning "Why not load the raw scenario file directly"
+
+    You can point `data_file` at a raw IAMC file instead — the bundled example
+    is `data/scenarios/iamc_example/iamc_reporting_example.xlsx`. But a raw file
+    only holds the scenario's own years. That example starts in 2015, while the
+    notebooks allocate from 1990 by default, so there would be no data for the
+    first 25 years and the result would be wrong without any error being raised.
+    Notebook 400 exists to prepend that history. Use its output unless you are
+    certain your allocation never reaches back before your scenario starts.
 
 <!-- REFERENCE: Allocation approaches documented in docs/science/allocations.md
      Budget allocation implementations:

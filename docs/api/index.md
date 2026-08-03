@@ -12,6 +12,7 @@ Documentation generated from docstrings.
 
 | Module                                                  | Description                            |
 | ------------------------------------------------------- | -------------------------------------- |
+| **[Python API](https://setupelz.github.io/fair-shares/api/python-api/)**                         | In-memory allocation timeseries, no notebook required |
 | **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**        | Cumulative budget allocation functions |
 | **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**      | Annual pathway allocation functions    |
 | **[Allocation Manager](https://setupelz.github.io/fair-shares/api/allocations/manager/)**        | High-level batch allocation interface  |

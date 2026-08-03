@@ -17,7 +17,7 @@ This guide explains the fair-shares architecture and how to extend the library.
 ```mermaid
 graph TB
     subgraph Input
-        DS[Data Sources<br/>conf/data_sources/]
+        DS[Data Sources<br/>src/fair_shares/conf/]
         RAW[Raw Data<br/>data/]
     end
 

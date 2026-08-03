@@ -69,7 +69,7 @@ The notebook calls `setup_data()` from `src/.../utils/data/setup.py`. This
 function:
 
 1. **Validates config** via `build_data_config()` (`utils/data/config.py`)
-   which loads `conf/data_sources/data_sources_unified.yaml`, filters to the
+   which loads `src/fair_shares/conf/data_sources/data_sources_unified.yaml`, filters to the
    selected target, and validates with Pydantic (`config/models.py`).
 2. **Builds paths** via `build_data_paths()` (`utils/data/setup.py`).
 3. **Generates a Snakemake command** via `generate_snakemake_command()`
@@ -343,7 +343,7 @@ CSVs. It runs via Snakemake, orchestrated by the Snakefile.
 ### Pipeline Architecture
 
 ```
-conf/data_sources/data_sources_unified.yaml   (source of truth for config)
+src/fair_shares/conf/data_sources/data_sources_unified.yaml   (source of truth for config)
         |
         v
    Snakefile                                   (DAG orchestration)
@@ -412,7 +412,7 @@ output/<source_id>/
 |---------------|-----------------|-------------------|
 | Add a new allocation approach | `allocations/budgets/*.py` or `allocations/pathways/*.py`, then `allocations/manager.py` | Write the math function, add to `get_allocation_functions()` dict in `manager.py` |
 | Change how parameters are expanded | `allocations/manager.py` | `_expand_parameters()`, `run_parameter_grid()` |
-| Add a new data source | `conf/data_sources/data_sources_unified.yaml`, new `notebooks/10x_*.py`, update `Snakefile` | Add YAML config, write preprocessing notebook, add Snakefile rule |
+| Add a new data source | `src/fair_shares/conf/data_sources/data_sources_unified.yaml`, new `notebooks/10x_*.py`, update `Snakefile` | Add YAML config, write preprocessing notebook, add Snakefile rule |
 | Change validation rules | `src/.../validation/` | `validate_allocation_parameters()`, `validate_target_source_compatibility()` |
 | Modify output parquet schema | `allocations/results/metadata.py` | `DATA_CONTEXT_COLUMNS`, `ALLOCATION_PARAMETER_COLUMNS` |
 | Add a new emission category | `utils/data/config.py` | `get_final_categories()`, `get_emission_preprocessing_categories()` |
