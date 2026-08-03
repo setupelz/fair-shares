@@ -12,22 +12,20 @@ fair-shares bundles several datasets to enable allocations without external depe
 
 ## Quick Reference
 
-All bundled data permits redistribution. The licenses are permissive:
+Bundled sources carry different terms. Check the per-source entry below before redistributing data or derived products:
 
 | Data Type      | Source                 | License            | Citation Required |
 | -------------- | ---------------------- | ------------------ | ----------------- |
 | Emissions      | PRIMAP-hist v2.6.1     | **CC-BY-4.0**      | Yes               |
 | LULUCF         | Melo et al. 2026 v3.1  | **CC-BY-4.0** (Zenodo) | Yes           |
-| Population     | UN/OWID 2025           | **CC-BY-4.0**      | Yes               |
+| Population     | UN/OWID 2025           | Mixed — see below  | Yes               |
 | GDP            | World Bank WDI 2025    | **CC-BY-4.0**      | Yes               |
-| GDP            | IMF WEO 2025           | Terms of Use       | Yes               |
-| Gini           | UNU-WIDER WIID 2025    | Academic use       | Yes               |
-| Gini           | WID.world 2025         | Academic use       | Yes               |
+| Gini           | UNU-WIDER WIID 2025    | **CC BY-NC-SA 3.0 IGO** | Yes          |
 | Regions        | regioniso3c (custom)   | **MIT**            | Optional          |
-| Scenarios      | IPCC AR6 (Gidden 2022) | **CC-BY-4.0**      | Yes               |
+| Scenarios      | IPCC AR6 (Gidden 2023) | **CC-BY-4.0**      | Yes               |
 | Carbon budgets | Lamboll et al. 2023    | Published values   | Yes               |
 | Carbon budgets | Forster et al. 2024    | Published values   | Yes               |
-| Bunker fuels   | Global Carbon Budget 2024 | **CC-BY-4.0**   | Yes               |
+| Bunker fuels   | Global Carbon Budget 2024 | paper **CC-BY-4.0**; data product under GCP terms | Yes |
 
 ---
 
@@ -69,7 +67,7 @@ All bundled data permits redistribution. The licenses are permissive:
 
 **Source:** United Nations World Population Prospects via Our World in Data (2025).
 
-**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+**License:** Mixed. The UN WPP bulk data files are governed by the [UN Terms of Use](https://www.un.org/en/about-us/terms-of-use), which are restrictive; the CC BY 3.0 IGO grant documented for WPP is stated for the report's figures and tables, not demonstrably for the projection files. OWID's own charts and processing are CC BY, but OWID [does not relicense upstream data](https://ourworldindata.org/faqs) — the historical series splices HYDE, Gapminder and UN WPP, each under its own terms. Check the upstream terms before redistributing.
 
 **Location:** `data/population/un-owid-2025/`
 
@@ -95,39 +93,19 @@ The choice between PPP and MER GDP measures is not purely technical — it is a 
 !!! note "Post-observation GDP window"
 `wdi-2025` is observed data only and ends at 2023, while population data extends to ~2100. When an allocation cumulative window runs past 2023, the per-capita budget and pathway primitives forward-fill GDP per capita from 2023 to cover the rest of the window — holding the cross-country capability ratios of 2023 constant. The cumulative-per-capita-convergence primitives instead compute their per-country capability scalar only over the observed-GDP years (no forward-fill). To use projected GDP for the post-observation window (SSP2, a custom growth assumption, or a future-extended WDI release), extend the input `gdp_ts` time series before calling the allocation function. See [Building Blocks](../science/allocations.md#building-blocks) in the science docs for the full description.
 
-### IMF World Economic Outlook
-
-**Source:** International Monetary Fund World Economic Outlook (2025).
-
-**License:** [IMF Terms of Use](https://www.imf.org/external/terms.htm) (permits academic use with citation)
-
-**Location:** `data/gdp/imf-2025/`
-
-**What it provides:** GDP projections and historical estimates.
-
 ---
 
 ## Inequality Data
 
 ### UNU-WIDER WIID
 
-**Source:** UNU-WIDER World Income Inequality Database (2025).
+**Source:** UNU-WIDER World Income Inequality Database (WIID), Version 29 April 2025. [doi:10.35188/UNU-WIDER/WIID-290425](https://doi.org/10.35188/UNU-WIDER/WIID-290425)
 
-**License:** Academic use permitted with citation.
+**License:** [CC BY-NC-SA 3.0 IGO](https://creativecommons.org/licenses/by-nc-sa/3.0/igo/), per UNU-WIDER's [copyright terms](https://www.wider.unu.edu/about/copyright). The NonCommercial and ShareAlike clauses travel with derived Gini values, so they are incompatible with a plain CC BY compilation.
 
 **Location:** `data/gini/unu-wider-2025/`
 
 **What it provides:** Gini coefficients for income inequality.
-
-### WID.world
-
-**Source:** World Inequality Database (2025).
-
-**License:** Academic use permitted with citation.
-
-**Location:** `data/gini/wid-2025/`
-
-**What it provides:** Alternative Gini coefficients from fiscal data. Available as a second inequality source alongside UNU-WIDER.
 
 ---
 
@@ -175,9 +153,9 @@ The choice of carbon budget (source, temperature target, probability level) corr
 
 ### IPCC AR6 Scenarios
 
-**Source:** Gidden, M. J., et al. (2022). AR6 Scenarios Database hosted by IIASA.
+**Source:** Gidden, M. J., et al. (2023). AR6 Scenarios Database hosted by IIASA.
 
-**DOI:** [10.5281/zenodo.8411053](https://doi.org/10.5281/zenodo.8411053)
+**DOI:** [10.5281/zenodo.10158920](https://doi.org/10.5281/zenodo.10158920) — the v2 version record bundled here (concept DOI: [10.5281/zenodo.8411053](https://doi.org/10.5281/zenodo.8411053), which always resolves to the latest version)
 
 **License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
@@ -191,9 +169,11 @@ The choice of carbon budget (source, temperature target, probability level) corr
 
 ### Global Carbon Budget 2024
 
-**Source:** Friedlingstein, P., et al. (2024). Global Carbon Budget 2024. *Earth System Science Data*.
+**Source (paper):** Friedlingstein, P., et al. (2025). Global Carbon Budget 2024. *Earth System Science Data*, 17, 965–1039. [doi:10.5194/essd-17-965-2025](https://doi.org/10.5194/essd-17-965-2025)
 
-**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+**Source (data product):** Global Carbon Project (2024). Supplemental data of Global Carbon Budget 2024 (Version 1.0). [doi:10.18160/GCP-2024](https://doi.org/10.18160/GCP-2024)
+
+**License:** The paper is [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). The data product is **not** CC-licensed — it carries the Global Carbon Project's own terms of use, which condition use on citing the original data sources. Cite both DOIs; the paper DOI is not the data DOI.
 
 **Location:** `data/bunkers/gcb-2024/`
 
