@@ -20,6 +20,19 @@ from fair_shares.library.utils.dataframes import ensure_string_year_columns
 # Standard test constants
 STANDARD_EMISSION_CATEGORY = "co2-ffi"
 
+
+@pytest.fixture(autouse=True)
+def _disable_auto_fetch(monkeypatch):
+    """Keep the test suite off the network.
+
+    ``resolve_source_path`` fetches a missing *registered* data file on demand,
+    which is right for a user and wrong for a test: a test that lost its fixture
+    would quietly download 72 MB and pass, and the suite would get slow and
+    flaky for reasons nobody would trace back to here. Tests that exercise the
+    auto-fetch path re-enable it explicitly.
+    """
+    monkeypatch.setenv("FAIR_SHARES_AUTO_FETCH", "0")
+
 # Common test parameters to avoid redundancy
 PATHWAY_TEST_PARAMS = {
     "first_allocation_year": 2020,

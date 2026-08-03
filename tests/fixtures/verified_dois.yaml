@@ -1,0 +1,145 @@
+# DOIs that have been looked up and confirmed to exist.
+#
+# The data registry (src/fair_shares/conf/data_registry.yaml) may only claim a
+# DOI that appears here. tests/unit/test_data_registry.py checks that, so a DOI
+# typed into the registry without being looked up first fails the test suite.
+#
+# This file and the registry are written separately. With a single source, one
+# edit would change both and the check would pass anyway.
+#
+# ---------------------------------------------------------------------------
+# ADDING AN ENTRY
+#
+# Look the DOI up first. Never copy one from a paper, a README or memory, and
+# never reconstruct one from a pattern.
+#
+# Check it at whichever registrar issued it:
+#
+#   DataCite (most dataset DOIs, including Zenodo)
+#     https://api.datacite.org/dois/<url-encoded-doi>
+#   Crossref (most journal articles, and some datasets)
+#     https://api.crossref.org/works/<doi>
+#   doi.org content negotiation (works for either, and for DOIs at neither)
+#     curl -LH "Accept: application/vnd.citationstyles.csl+json" https://doi.org/<doi>
+#
+# Then record what you saw in `evidence` — enough that someone can tell whether
+# the DOI points at the thing the registry says it does, not just that some
+# record exists. Put the date you checked in `verified`.
+#
+# `pytest -m network` re-resolves every DOI below against the live registrars.
+# That is a manual check, not part of the normal suite or CI, because it needs
+# the network and depends on services being up.
+
+verified:
+  - doi: "10.5281/zenodo.15016289"
+    used_by: primap-202503
+    verified: 2026-08-03
+    registrar: DataCite
+    evidence: >-
+      PRIMAP-hist national historical emissions time series v2.6.1, Gütschow,
+      Busch & Pflüger. DataCite rights list gives cc-by-4.0; the Zenodo API
+      reports access_right open and the same licence.
+
+  - doi: "10.5281/zenodo.18352395"
+    used_by: melo-2026
+    verified: 2026-08-03
+    registrar: DataCite
+    evidence: >-
+      The LULUCF Data Hub, Melo et al. DataCite reports version 3.1.1,
+      publicationYear 2026, rights cc-by-4.0, access_right open. Confirms the
+      record is the 3.1.1 release even though the file inside is named v3.1.
+
+  - doi: "10.5281/zenodo.17845154"
+    used_by: cmip7-historical-2025.12.07
+    verified: 2026-08-03
+    registrar: DataCite
+    evidence: >-
+      CMIP7 ScenarioMIP historical timeseries, version DOI for release
+      2025.12.07, Nicholls, Kikstra, Zecchetto & Hoegner. Resolves and is open.
+      Its rights list is empty, which is why the licence is recorded separately
+      in the registry rather than taken from the record.
+
+  - doi: "10.5281/zenodo.10158920"
+    used_by: ipcc_ar6_gidden
+    verified: 2026-08-03
+    registrar: DataCite
+    evidence: >-
+      Dataset for Gidden et al. 2023 updated AR6 mitigation benchmarks, v2.
+      DataCite rights list gives cc-by-4.0; the Zenodo API reports access_right
+      open. Holds exactly one workbook, which the fetcher splits.
+
+  - doi: "10.1038/s41586-023-06724-y"
+    used_by: ipcc_ar6_gidden
+    verified: 2026-08-03
+    registrar: Crossref
+    evidence: >-
+      Gidden et al., "Aligning climate scenarios to emissions inventories
+      shifts global benchmarks", Nature 624, 102-108. The paper behind the
+      dataset above. Crossref reports a CC BY 4.0 licence.
+
+  - doi: "10.35188/UNU-WIDER/WIID-290425"
+    used_by: unu-wider-2025
+    verified: 2026-08-03
+    registrar: Crossref
+    evidence: >-
+      World Income Inequality Database (WIID), version 29 April 2025, publisher
+      United Nations University UNU-WIDER. Present in Crossref and absent from
+      DataCite, so Crossref is the authority here. Crossref returns no licence
+      field, which is why the NonCommercial terms come from UNU-WIDER's own
+      copyright page instead.
+
+  - doi: "10.18160/GCP-2024"
+    used_by: gcb-2024
+    verified: 2026-08-03
+    registrar: doi.org content negotiation
+    evidence: >-
+      "Supplemental data of Global Carbon Budget 2024", Global Carbon Project,
+      v1.0, 2024-11-01. This is the data DOI, which is not the same as the
+      paper DOI below; the registry cites both because the terms differ.
+
+  - doi: "10.5194/essd-17-965-2025"
+    used_by: gcb-2024
+    verified: 2026-08-03
+    registrar: Crossref
+    evidence: >-
+      Friedlingstein et al., "Global Carbon Budget 2024", Earth System Science
+      Data 17, 965-1039, 2025, CC BY 4.0. This is the correct paper DOI; see
+      the known_bad entry below for the one it replaces.
+
+  - doi: "10.1038/s41558-023-01848-5"
+    used_by: rcbs
+    verified: 2026-08-03
+    registrar: Crossref
+    evidence: >-
+      Lamboll et al., "Assessing the size and uncertainty of remaining carbon
+      budgets", Nature Climate Change 13, 1360-1367, CC BY 4.0. One of the
+      published sources behind the hand-compiled budget table.
+
+  - doi: "10.5194/essd-16-2625-2024"
+    used_by: rcbs
+    verified: 2026-08-03
+    registrar: Crossref
+    evidence: >-
+      Forster et al., "Indicators of Global Climate Change 2023", Earth System
+      Science Data 16, 2625-2658, CC BY 4.0. The other published source behind
+      the budget table.
+
+# DOIs known to be wrong. The registry must never carry one of these.
+known_bad:
+  - doi: "10.5194/essd-16-5567-2024"
+    verified: 2026-08-03
+    evidence: >-
+      Returns 404 at both DataCite and Crossref and fails doi.org content
+      negotiation. It was the Global Carbon Budget DOI written in
+      data/bunkers/gcb-2024/CITATION.md, and its year, volume and page range
+      are all wrong too. The real one is 10.5194/essd-17-965-2025.
+
+  - doi: "10.5281/zenodo.5886911"
+    verified: 2026-08-03
+    evidence: >-
+      Resolves, but must not be cited as a source of anything shipped here.
+      This is the IPCC AR6 Scenarios Database, which is access-restricted and
+      limits redistribution of substantial parts. fair-shares reaches AR6 data
+      only through the open Gidden record above. Listed here so nobody adds it
+      as a citation and quietly implies the restricted database travels with
+      this package.
