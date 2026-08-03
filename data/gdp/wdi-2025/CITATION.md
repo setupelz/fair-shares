@@ -2,7 +2,7 @@
 
 ## World Bank GDP Data
 
-World Bank. (2024). GDP (constant 2015 US$) and GDP, PPP (constant 2017 international $). World Bank Open Data. https://data.worldbank.org/
+World Bank. (2025). GDP (constant 2015 US$) and GDP, PPP (constant 2017 international $). World Bank Open Data. https://data.worldbank.org/
 
 Files:
 - `API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv` — GDP (constant 2015 US$), WDI indicator `NY.GDP.MKTP.KD`
