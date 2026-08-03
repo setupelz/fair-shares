@@ -1,6 +1,7 @@
 # Run the test suite on every supported Python version.
-# Auto-fetch is disabled in tests (tests/conftest.py), so CI never
-# downloads data.
+# Raw data is not in git: a fetch step downloads it (cached across runs,
+# keyed on the registry). Auto-fetch inside tests stays disabled
+# (tests/conftest.py) so the suite itself never touches the network.
 name: tests
 
 on:
@@ -22,5 +23,20 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - name: Install
         run: uv sync --locked
+      - name: Cache input data
+        uses: actions/cache@v4
+        with:
+          path: |
+            data/emissions
+            data/gdp
+            data/gini
+            data/population
+            data/lulucf
+            data/scenarios/ipcc_ar6_gidden
+          key: data-${{ hashFiles('src/fair_shares/conf/data_registry.yaml') }}
+      - name: Fetch input data
+        # GCB is licence-gated and cannot be fetched here; tests that need
+        # it must skip when the file is absent.
+        run: uv run fair-shares fetch-data --all
       - name: Test
         run: uv run python -m pytest tests/ -q
