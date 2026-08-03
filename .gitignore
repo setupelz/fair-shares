@@ -204,3 +204,19 @@ notebooks/404_*
 # Data-release working papers (audit, deposit plan) — local only;
 # zenodo.json may be committed on its own once the deposit is final
 /data-release/
+
+# Third-party raw data — fetched by `fair-shares fetch-data`, never committed
+/data/emissions/primap-202503/Guetschow_et_al_2025-PRIMAP-hist_v2.6.1_final_no_rounding_13-Mar-2025.nc
+/data/emissions/cmip7-historical-2025.12.07/country-history.feather
+/data/emissions/cmip7-historical-2025.12.07/global-workflow-history.csv
+/data/gdp/wdi-2025/API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv
+/data/gdp/wdi-2025/API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_1004.csv
+/data/gini/unu-wider-2025/WIID-29APR2025.xlsx
+/data/gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv
+/data/population/un-owid-2025/population.csv
+/data/population/un-owid-2025/UN_PPP2024_Output_PopTot.xlsx
+/data/lulucf/melo-2026/timeseries_NGHGI_v3.1.csv
+/data/bunkers/gcb-2024/National_Fossil_Carbon_Emissions_2024v1.0.xlsx
+/data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx
+/data/scenarios/ipcc_ar6_gidden/ar6_gidden.zip
+/data/scenarios/ipcc_ar6_gidden/metadata_ar6_gidden.xlsx
