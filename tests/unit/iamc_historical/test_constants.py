@@ -44,7 +44,7 @@ def test_reload_picks_up_new_release_added_to_yaml(
             """
         ).strip()
     )
-    monkeypatch.setattr(constants, "_CONFIG_PATH", fake_yaml)
+    monkeypatch.setattr(constants, "packaged_config", lambda name: fake_yaml)
     constants.reload_releases()
     assert constants.LATEST_IAMC_HISTORICAL_RELEASE == "2099.01.01"
     assert "2099.01.01" in constants.IAMC_HISTORICAL_RELEASES

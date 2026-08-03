@@ -415,7 +415,7 @@ def generate_rcb_pathway_scenarios(
     emission_category : str
         Emission category to process. Available categories depend on the
         data source; see ``available_categories`` in
-        ``conf/data_sources/data_sources_unified.yaml``.
+        the packaged ``data_sources_unified.yaml`` (``src/fair_shares/conf/data_sources/``).
     generator : str, optional
         Name of the pathway generator to use. Default is "exponential-decay".
         Use ``list_pathway_generators()`` to see available options.

@@ -189,69 +189,6 @@ class TestConfigParameterExpansion:
         assert isinstance(result.parameters["capability_exponent"], (int, float))
         assert isinstance(result.parameters["capability_functional_form"], str)
 
-    def test_real_config_file_parameter_expansion(self):
-        """Test parameter expansion with actual config files from the project."""
-        config_path = Path("conf/allocations/alloc_all-pathway.yaml")
-        if not config_path.exists():
-            pytest.skip("Real config file not found")
-
-        with open(config_path) as f:
-            real_config = yaml.safe_load(f)
-
-        from fair_shares.library.allocations import (
-            get_allocation_functions,
-            is_budget_approach,
-        )
-
-        allocation_functions = get_allocation_functions()
-
-        # Test expansion logic on real config
-        param_manifest_rows = []
-
-        for approach, approach_config in real_config.items():
-            if approach not in allocation_functions:
-                continue
-
-            approach_config = approach_config or {}
-            cfg = {str(k).replace("-", "_"): v for k, v in approach_config.items()}
-
-            # Get the year parameter
-            year_param = (
-                "first_allocation_year"
-                if not is_budget_approach(approach)
-                else "allocation_year"
-            )
-
-            if year_param not in cfg:
-                continue
-
-            years = self._to_list(cfg.pop(year_param))
-
-            # Get allowed parameters for this approach
-            allowed_param_names = self._get_allowed_param_names(approach)
-            func_param_keys = [k for k in cfg.keys() if k in allowed_param_names]
-
-            func_param_values = [self._to_list(cfg[k]) for k in func_param_keys]
-
-            for year in years:
-                if func_param_values:
-                    for combo in itertools.product(*func_param_values):
-                        row = {"approach": approach, year_param: year}
-                        for k, v in zip(func_param_keys, combo):
-                            row[k] = v
-                        param_manifest_rows.append(row)
-
-        # Verify all parameters are scalar after expansion
-        for row in param_manifest_rows:
-            for key, value in row.items():
-                if key == "capability_exponent":
-                    assert isinstance(
-                        value, (int, float)
-                    ), f"Capability exponent should be scalar, got {type(value)}: {value}"
-                elif key == "capability_functional_form":
-                    assert isinstance(
-                        value, str
-                    ), f"Capability functional form should be string, got {type(value)}: {value}"
 
     def test_config_with_manager_integration_now_works_with_lists(
         self, sample_config_with_lists

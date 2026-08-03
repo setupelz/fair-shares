@@ -10,9 +10,11 @@ from pathlib import Path
 from typing import Any
 
 import pandas as pd
-from pyprojroot import here
 
 from ..exceptions import ConfigurationError, DataLoadingError
+from ..paths import data_dir as resolve_data_dir
+from ..paths import output_dir as resolve_output_dir
+from ..paths import resolve_source_path
 from ..preprocessing.loaders import (
     load_emissions_data as _load_emissions,
 )
@@ -50,9 +52,6 @@ from ..validation import (
 
 logger = logging.getLogger(__name__)
 
-# Cache project root at module level to avoid repeated filesystem traversal
-_PROJECT_ROOT: Path = here()
-
 
 class DataPreprocessor:
     """Orchestrates data preprocessing for RCB or pathway-based allocations.
@@ -67,6 +66,8 @@ class DataPreprocessor:
         source_id: str,
         active_sources: dict[str, str],
         emission_category: str,
+        output_dir: Path | str | None = None,
+        data_dir: Path | str | None = None,
     ):
         """Initialize the orchestrator.
 
@@ -75,12 +76,19 @@ class DataPreprocessor:
             source_id: Source identifier string
             active_sources: Dict mapping source types to source names
             emission_category: Emission category (e.g., 'co2-ffi')
+            output_dir: Directory holding pipeline products. Defaults to the
+                resolved output directory.
+            data_dir: Directory holding input data. Defaults to the resolved
+                data directory.
         """
         self.config = config
         self.source_id = source_id
         self.active_sources = active_sources
         self.emission_category = emission_category
-        self.project_root = _PROJECT_ROOT
+        # The resolver caches per process, so this stays a single filesystem
+        # traversal even though it is no longer a module-level constant.
+        self.output_dir = resolve_output_dir(output_dir)
+        self.data_dir = resolve_data_dir(data_dir)
 
         # Extract active source names
         self.active_emissions_source = active_sources["emissions"]
@@ -97,7 +105,7 @@ class DataPreprocessor:
 
     def _setup_paths(self) -> None:
         """Setup intermediate directory paths."""
-        base = self.project_root / f"output/{self.source_id}/intermediate"
+        base = self.output_dir / self.source_id / "intermediate"
 
         self.emiss_intermediate_dir = base / "emissions"
         self.gdp_intermediate_dir = base / "gdp"
@@ -476,7 +484,11 @@ def run_rcb_preprocessing(
         adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
         nghgi_ts, bunker_ts, _splice_year = _load_shared_timeseries(
-            adjustments_config, orch.project_root, source_id=source_id, verbose=True
+            adjustments_config,
+            orch.data_dir,
+            source_id=source_id,
+            verbose=True,
+            output_dir=orch.output_dir,
         )
 
         world_emiss["co2"] = build_nghgi_world_co2_timeseries(
@@ -569,7 +581,9 @@ def _process_and_save_rcbs(
 
     # Get RCB config
     rcb_config = config["targets"]["rcbs"]
-    rcb_yaml_path = orch.project_root / rcb_config.get("path")
+    rcb_yaml_path = resolve_source_path(
+        rcb_config.get("path"), data_dir=orch.data_dir, output_dir=orch.output_dir
+    )
 
     # Build AdjustmentsConfig from the YAML config dict
     rcb_data_params = rcb_config.get("data_parameters", {})
@@ -581,10 +595,11 @@ def _process_and_save_rcbs(
         world_fossil_emissions=world_fossil_emissions,
         emission_category=orch.emission_category,
         adjustments_config=adjustments_config,
-        project_root=orch.project_root,
+        data_dir=orch.data_dir,
         source_id=orch.source_id,
         actual_bm_lulucf_emissions=actual_bm_lulucf_emissions,
         verbose=False,
+        output_dir=orch.output_dir,
     )
 
     # Save to CSV
@@ -730,8 +745,7 @@ def run_non_co2_preprocessing(
     from ..utils.data.non_co2 import derive_non_co2_country_timeseries
     from ..utils.dataframes import get_year_columns
 
-    project_root = _PROJECT_ROOT
-    base_dir = project_root / f"output/{source_id}/intermediate"
+    base_dir = resolve_output_dir() / source_id / "intermediate"
     emiss_dir = base_dir / "emissions"
 
     # ------------------------------------------------------------------

@@ -20,10 +20,10 @@ from pathlib import Path
 
 import pandas as pd
 import pyam
-import pyprojroot
 
 from fair_shares.library.exceptions import ConfigurationError, DataProcessingError
 from fair_shares.library.iamc_historical.region_mapping import RegionMapping
+from fair_shares.library.paths import resolve_source_path
 
 logger = logging.getLogger(__name__)
 
@@ -75,8 +75,9 @@ def backfill_population_gdp(
     population_source, gdp_source
         Either a path to a CSV in the documented shape, or a pre-melted
         long DataFrame with ``region`` (lowercase ISO3), ``variable``,
-        ``unit``, and year columns. Defaults resolve off ``pyprojroot.here()``
-        to the packaged UN+OWID and WDI CSVs.
+        ``unit``, and year columns. Defaults resolve against the configured
+        data directory (see :mod:`fair_shares.library.paths`) to the packaged
+        UN+OWID and WDI CSVs.
     return_parts
         Return ``(history_idf, scenario_idf)`` instead of a concatenated
         single IamDataFrame. If the scenario already starts at or before
@@ -208,7 +209,7 @@ def _load_gdp(source: SourceLike, *, unit: str) -> pd.DataFrame:
 
 def _resolve_path(source: SourceLike, *, default: str) -> Path:
     if source is None:
-        return pyprojroot.here() / default
+        return resolve_source_path(default)
     if isinstance(source, (str, Path)):
         return Path(source)
     raise ConfigurationError(

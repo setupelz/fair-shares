@@ -4,8 +4,8 @@ from pathlib import Path
 from typing import Any
 
 import yaml
-from pyprojroot import here
 
+from fair_shares.library.paths import output_dir as resolve_output_dir
 from fair_shares.library.utils import build_source_id
 from fair_shares.library.utils.data.config import build_data_config
 
@@ -18,6 +18,7 @@ def load_preprocessing_config(
     active_population_source: str | None,
     active_gini_source: str | None,
     active_lulucf_source: str | None = None,
+    output_dir: Path | str | None = None,
 ) -> tuple[dict[str, Any], str, Path]:
     """Load preprocessing configuration from Papermill parameters or interactive defaults.
 
@@ -29,12 +30,14 @@ def load_preprocessing_config(
         active_population_source: Population source (e.g., "un-owid-2025")
         active_gini_source: Gini source (e.g., "unu-wider-2025")
         active_lulucf_source: LULUCF source (e.g., "melo-2026")
+        output_dir: Directory holding pipeline products. Defaults to the
+            resolved output directory (see :mod:`fair_shares.library.paths`).
 
     Returns
     -------
-        Tuple of (config dict, source_id string, project_root Path)
+        Tuple of (config dict, source_id string, output directory Path)
     """
-    project_root = here()
+    resolved_output = resolve_output_dir(output_dir)
 
     if emission_category is not None:
         # Running via Papermill - load composed config
@@ -50,7 +53,7 @@ def load_preprocessing_config(
             emission_category=emission_category,
         )
 
-        config_path = project_root / f"output/{source_id}/config.yaml"
+        config_path = resolved_output / source_id / "config.yaml"
         print(f"Loading config from: {config_path}")
 
         with open(config_path) as f:
@@ -74,4 +77,4 @@ def load_preprocessing_config(
         # Convert Pydantic model to dict for consistency with pipeline
         config = config.model_dump()
 
-    return config, source_id, project_root
+    return config, source_id, resolved_output

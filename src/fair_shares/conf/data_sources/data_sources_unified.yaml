@@ -42,12 +42,6 @@ gdp:
     data_parameters:
       gdp_variant: "PPP" # "PPP" or "MER"
       world_key: "WLD"
-  imf-2025:
-    path_ppp: "data/gdp/imf-2025/imf-dm-export-20251119_PPP.xls"
-    path_mer: "data/gdp/imf-2025/imf-dm-export-20251119_MER.xls"
-    data_parameters:
-      gdp_variant: "PPP" # "PPP" or "MER"
-      world_key: "World"
 
 # --- Population --------------------------------------------------------------
 population:
@@ -64,11 +58,6 @@ population:
 gini:
   unu-wider-2025:
     path: "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
-    data_parameters:
-      world_key: "WLD"
-      gini_year: 2020
-  wid-2025:
-    path: "data/gini/wid-2025/WID-20NOV2025.xlsx"
     data_parameters:
       world_key: "WLD"
       gini_year: 2020
