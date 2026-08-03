@@ -40,6 +40,17 @@ class ConfigurationError(FairSharesError):
     pass
 
 
+class MissingPipelineDependency(ConfigurationError):
+    """Raised when the Snakemake build pipeline is needed but not installed.
+
+    The build path (jupytext + Snakemake) is an opt-in extra, so a plain
+    ``pip install fair-shares`` can read a prebuilt data tree but cannot
+    regenerate one.
+    """
+
+    pass
+
+
 class DataError(FairSharesError):
     """Base exception for data-related errors."""
 
@@ -54,6 +65,27 @@ class DataLoadingError(DataError):
 
 class DataProcessingError(DataError):
     """Raised when data doesn't meet requirements."""
+
+    pass
+
+
+class DataIntegrityError(DataError):
+    """Raised when a data file's checksum does not match the registry pin.
+
+    Never downgraded to a warning: a silently drifted input changes results
+    without changing the code, which is the failure mode hardest to notice
+    and hardest to explain afterwards.
+    """
+
+    pass
+
+
+class ManualFetchRequired(DataError):
+    """Raised when a source can only be obtained through a click-through gate.
+
+    Carries the landing URL, the expected filename and the destination path,
+    so the message alone is enough to complete the download by hand.
+    """
 
     pass
 

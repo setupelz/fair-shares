@@ -7,40 +7,40 @@ authors = [
 ]
 license = { text = "BSD-3-Clause" }
 requires-python = ">=3.11"
+# Runtime dependencies are what src/ actually needs: modules it imports, plus
+# the file-format engines pandas dispatches to by name (feather/parquet via
+# pyarrow and fastparquet, xlsx via openpyxl and python-calamine, netCDF via
+# netcdf4 and xarray). The authoring and workflow toolchain lives in the
+# `pipeline`, `docs` and `dev` extras.
 dependencies = [
     "attrs>=24.3.0",
     "country-converter>=1.0.0",
     "fastparquet>=2024.11.0",
-    "ipykernel>=6.29.5",
-    "ipywidgets>=8.1.8",
-    "jupyterlab>=4.3.4",
-    "jupytext>=1.16.0",
     "matplotlib>=3.9.4",
-    "mkdocs>=1.6.1",
-    "mkdocs-awesome-pages-plugin>=2.10.1",
-    "mkdocs-jupyter>=0.25.1",
-    "mkdocs-material>=9.5.49",
-    "mkdocstrings[python]>=0.30.0",
     "netcdf4>=1.7.2",
-    "notebook>=7.5.2",
+    "numpy>=1.26.0",
     "openpyxl>=3.1.5",
     "openscm-units>=0.6.3",
     "pandas>=2.0.0",
     "pandas-openscm>=0.8.0",
-    "papermill>=2.6.0",
+    # pyam imports ixmp4.core.region.RegionModel, which ixmp4 dropped in 0.15;
+    # pyam's own metadata does not exclude it, so a clean install resolves a
+    # broken pair without this bound.
+    "ixmp4<0.15",
+    "pint>=0.24",
+    "platformdirs>=4.0.0",
     "plotly>=5.18.0",
+    # Runtime, not a dev extra: `fair-shares fetch-data` is how a bare
+    # `pip install fair-shares` obtains its inputs, so the fetcher cannot sit
+    # behind an optional dependency. pooch is small and pure-Python.
+    "pooch>=1.8.0",
     "pyam-iamc>=3.0.0",
     "pyarrow>=21.0.0",
     "pydantic>=2.0.0",
-    "pyprojroot>=0.3.0",
-    "pytest>=8.4.1",
-    "pytest-cov>=6.2.1",
-    "pytest-mock>=3.14.1",
     "python-calamine>=0.5.4",
-    "ruff>=0.8.6",
+    "pyyaml>=6.0",
     "scipy>=1.13.1",
     "seaborn>=0.13.2",
-    "snakemake>=7.32.4",
     "tqdm>=4.66.0",
     "xarray>=2024.7.0",
 ]
@@ -68,6 +68,7 @@ Issues = "https://github.com/setupelz/fair-shares/issues"
 
 [project.scripts]
 run-notebook = "fair_shares.run_notebook:main"
+fair-shares = "fair_shares.cli:main"
 
 [project.optional-dependencies]
 dev = [
@@ -80,14 +81,30 @@ dev = [
     "hypothesis>=6.0.0",
 ]
 docs = [
-    "mkdocs>=1.6.0",
+    "mkdocs>=1.6.1",
+    "mkdocs-awesome-pages-plugin>=2.10.1",
     "mkdocs-material>=9.5.0",
-    "mkdocstrings>=0.24.0",
+    "mkdocstrings[python]>=0.30.0",
     "mkdocstrings-python>=1.7.0",
     "mkdocs-jupyter>=0.24.0",
     "jupyterlab>=4.3.0",
 ]
+# Everything needed to *build* the data tree from source: Snakemake, the
+# notebook toolchain it drives, and pyprojroot which the notebooks still use.
+pipeline = [
+    "ipykernel>=6.29.5",
+    "ipywidgets>=8.1.8",
+    "jupyterlab>=4.3.4",
+    "jupytext>=1.16.0",
+    "notebook>=7.5.2",
+    "papermill>=2.6.0",
+    "pyprojroot>=0.3.0",
+    "snakemake>=7.32.4",
+]
 units = ["openscm-units>=0.6.0"]
+all = [
+    "fair-shares[dev,docs,pipeline,units]",
+]
 
 [build-system]
 requires = ["hatchling"]
@@ -95,6 +112,13 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/fair_shares"]
+artifacts = ["src/fair_shares/conf/**/*.yaml"]
+
+# Ship the repo-root CITATION.cff inside the package so an installed copy can
+# tell users how to cite the software. Mapped rather than duplicated, so there
+# is only ever one CITATION.cff to keep up to date.
+[tool.hatch.build.targets.wheel.force-include]
+"CITATION.cff" = "fair_shares/conf/CITATION.cff"
 
 [tool.mypy]
 strict = true
@@ -146,25 +170,36 @@ testpaths = ["tests"]
 python_files = ["test_*.py"]
 python_classes = ["Test*"]
 python_functions = ["test_*"]
+# `-m "not network"` keeps the network tests out of the normal run and out of
+# CI. A `-m` given on the command line replaces this one, so `pytest -m network`
+# runs exactly those tests.
 addopts = [
     "--strict-markers",
     "--strict-config",
     "--verbose",
+    "-m",
+    "not network",
 ]
 markers = [
     "unit: Unit tests",
-    "integration: Integration tests", 
+    "integration: Integration tests",
     "e2e: End-to-end tests",
     "slow: Slow running tests",
     "data_validation: Data validation tests",
     "pipeline: Pipeline tests",
+    "network: Needs the internet; excluded by default. Run with `pytest -m network`.",
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",  # treat whitespace sanely
 ]
 
+# uv installs the `dev` group on a bare `uv sync`, so pulling the three extras
+# in here is what keeps the clone workflow zero-config: contributors get
+# Snakemake, the notebook toolchain and the test runner with no extra flags,
+# while `pip install fair-shares` gets none of them.
 [dependency-groups]
 dev = [
     "snakefmt>=0.10.3",
+    "fair-shares[dev,docs,pipeline]",
 ]
 

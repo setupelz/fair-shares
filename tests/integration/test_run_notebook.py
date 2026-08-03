@@ -17,7 +17,7 @@ from fair_shares.run_notebook import run_notebook
 class TestRunNotebook:
     """Test the run_notebook function."""
 
-    @patch("fair_shares.run_notebook.pm.execute_notebook")
+    @patch("papermill.execute_notebook")
     def test_run_notebook_basic(self, mock_execute):
         """Test basic notebook execution."""
         mock_execute.return_value = MagicMock()
@@ -33,7 +33,7 @@ class TestRunNotebook:
             "test.ipynb", "output.ipynb", parameters={"key": "value"}
         )
 
-    @patch("fair_shares.run_notebook.pm.execute_notebook")
+    @patch("papermill.execute_notebook")
     def test_run_notebook_with_kwargs(self, mock_execute):
         """Test notebook execution with additional kwargs."""
         mock_execute.return_value = MagicMock()
@@ -53,7 +53,7 @@ class TestRunNotebook:
             kernel_name="python3",
         )
 
-    @patch("fair_shares.run_notebook.pm.execute_notebook")
+    @patch("papermill.execute_notebook")
     def test_run_notebook_execution_error(self, mock_execute):
         """Test handling of notebook execution errors."""
         mock_execute.side_effect = Exception("Execution failed")

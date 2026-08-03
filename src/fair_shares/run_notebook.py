@@ -9,9 +9,10 @@ import sys
 from pathlib import Path
 from typing import Any
 
-import papermill as pm
-
-from fair_shares.library.exceptions import DataProcessingError
+from fair_shares.library.exceptions import (
+    DataProcessingError,
+    MissingPipelineDependency,
+)
 
 
 def run_notebook(
@@ -41,7 +42,17 @@ def run_notebook(
     ------
     DataProcessingError
         If notebook execution fails
+    MissingPipelineDependency
+        If papermill is not installed
     """
+    try:
+        import papermill as pm
+    except ImportError as e:
+        raise MissingPipelineDependency(
+            "Executing notebooks needs papermill, which ships with the "
+            'pipeline extra: pip install "fair-shares[pipeline]".'
+        ) from e
+
     try:
         # Convert to string paths for papermill
         notebook_path_str = str(notebook_path)
@@ -146,6 +157,9 @@ def main() -> None:
         )
         print(f"Successfully executed notebook: {args.notebook}")
         print(f"Output saved to: {args.output}")
+    except MissingPipelineDependency as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
     except DataProcessingError as e:
         sep_line = "=" * 80
         print(f"\n{sep_line}", file=sys.stderr)

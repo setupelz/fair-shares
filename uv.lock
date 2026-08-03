@@ -925,41 +925,54 @@ dependencies = [
     { name = "attrs" },
     { name = "country-converter" },
     { name = "fastparquet" },
-    { name = "ipykernel" },
-    { name = "ipywidgets" },
-    { name = "jupyterlab" },
-    { name = "jupytext" },
+    { name = "ixmp4" },
     { name = "matplotlib" },
-    { name = "mkdocs" },
-    { name = "mkdocs-awesome-pages-plugin" },
-    { name = "mkdocs-jupyter" },
-    { name = "mkdocs-material" },
-    { name = "mkdocstrings", extra = ["python"] },
     { name = "netcdf4" },
-    { name = "notebook" },
+    { name = "numpy" },
     { name = "openpyxl" },
     { name = "openscm-units" },
     { name = "pandas" },
     { name = "pandas-openscm" },
-    { name = "papermill" },
+    { name = "pint" },
+    { name = "platformdirs" },
     { name = "plotly" },
+    { name = "pooch" },
     { name = "pyam-iamc" },
     { name = "pyarrow" },
     { name = "pydantic" },
-    { name = "pyprojroot" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "pytest-mock" },
     { name = "python-calamine" },
-    { name = "ruff" },
+    { name = "pyyaml" },
     { name = "scipy" },
     { name = "seaborn" },
-    { name = "snakemake" },
     { name = "tqdm" },
     { name = "xarray" },
 ]
 
 [package.optional-dependencies]
+all = [
+    { name = "hypothesis" },
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "jupyterlab" },
+    { name = "jupytext" },
+    { name = "mkdocs" },
+    { name = "mkdocs-awesome-pages-plugin" },
+    { name = "mkdocs-jupyter" },
+    { name = "mkdocs-material" },
+    { name = "mkdocstrings", extra = ["python"] },
+    { name = "mkdocstrings-python" },
+    { name = "mypy" },
+    { name = "notebook" },
+    { name = "openscm-units" },
+    { name = "papermill" },
+    { name = "pre-commit" },
+    { name = "pyprojroot" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "pytest-mock" },
+    { name = "ruff" },
+    { name = "snakemake" },
+]
 dev = [
     { name = "hypothesis" },
     { name = "mypy" },
@@ -972,10 +985,21 @@ dev = [
 docs = [
     { name = "jupyterlab" },
     { name = "mkdocs" },
+    { name = "mkdocs-awesome-pages-plugin" },
     { name = "mkdocs-jupyter" },
     { name = "mkdocs-material" },
-    { name = "mkdocstrings" },
+    { name = "mkdocstrings", extra = ["python"] },
     { name = "mkdocstrings-python" },
+]
+pipeline = [
+    { name = "ipykernel" },
+    { name = "ipywidgets" },
+    { name = "jupyterlab" },
+    { name = "jupytext" },
+    { name = "notebook" },
+    { name = "papermill" },
+    { name = "pyprojroot" },
+    { name = "snakemake" },
 ]
 units = [
     { name = "openscm-units" },
@@ -983,6 +1007,7 @@ units = [
 
 [package.dev-dependencies]
 dev = [
+    { name = "fair-shares", extra = ["dev", "docs", "pipeline"] },
     { name = "snakefmt" },
 ]
 
@@ -990,58 +1015,60 @@ dev = [
 requires-dist = [
     { name = "attrs", specifier = ">=24.3.0" },
     { name = "country-converter", specifier = ">=1.0.0" },
+    { name = "fair-shares", extras = ["dev", "docs", "pipeline", "units"], marker = "extra == 'all'" },
     { name = "fastparquet", specifier = ">=2024.11.0" },
     { name = "hypothesis", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "ipykernel", specifier = ">=6.29.5" },
-    { name = "ipywidgets", specifier = ">=8.1.8" },
-    { name = "jupyterlab", specifier = ">=4.3.4" },
+    { name = "ipykernel", marker = "extra == 'pipeline'", specifier = ">=6.29.5" },
+    { name = "ipywidgets", marker = "extra == 'pipeline'", specifier = ">=8.1.8" },
+    { name = "ixmp4", specifier = "<0.15" },
     { name = "jupyterlab", marker = "extra == 'docs'", specifier = ">=4.3.0" },
-    { name = "jupytext", specifier = ">=1.16.0" },
+    { name = "jupyterlab", marker = "extra == 'pipeline'", specifier = ">=4.3.4" },
+    { name = "jupytext", marker = "extra == 'pipeline'", specifier = ">=1.16.0" },
     { name = "matplotlib", specifier = ">=3.9.4" },
-    { name = "mkdocs", specifier = ">=1.6.1" },
-    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.0" },
-    { name = "mkdocs-awesome-pages-plugin", specifier = ">=2.10.1" },
-    { name = "mkdocs-jupyter", specifier = ">=0.25.1" },
+    { name = "mkdocs", marker = "extra == 'docs'", specifier = ">=1.6.1" },
+    { name = "mkdocs-awesome-pages-plugin", marker = "extra == 'docs'", specifier = ">=2.10.1" },
     { name = "mkdocs-jupyter", marker = "extra == 'docs'", specifier = ">=0.24.0" },
-    { name = "mkdocs-material", specifier = ">=9.5.49" },
     { name = "mkdocs-material", marker = "extra == 'docs'", specifier = ">=9.5.0" },
-    { name = "mkdocstrings", marker = "extra == 'docs'", specifier = ">=0.24.0" },
-    { name = "mkdocstrings", extras = ["python"], specifier = ">=0.30.0" },
+    { name = "mkdocstrings", extras = ["python"], marker = "extra == 'docs'", specifier = ">=0.30.0" },
     { name = "mkdocstrings-python", marker = "extra == 'docs'", specifier = ">=1.7.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.14.0" },
     { name = "netcdf4", specifier = ">=1.7.2" },
-    { name = "notebook", specifier = ">=7.5.2" },
+    { name = "notebook", marker = "extra == 'pipeline'", specifier = ">=7.5.2" },
+    { name = "numpy", specifier = ">=1.26.0" },
     { name = "openpyxl", specifier = ">=3.1.5" },
     { name = "openscm-units", specifier = ">=0.6.3" },
     { name = "openscm-units", marker = "extra == 'units'", specifier = ">=0.6.0" },
     { name = "pandas", specifier = ">=2.0.0" },
     { name = "pandas-openscm", specifier = ">=0.8.0" },
-    { name = "papermill", specifier = ">=2.6.0" },
+    { name = "papermill", marker = "extra == 'pipeline'", specifier = ">=2.6.0" },
+    { name = "pint", specifier = ">=0.24" },
+    { name = "platformdirs", specifier = ">=4.0.0" },
     { name = "plotly", specifier = ">=5.18.0" },
+    { name = "pooch", specifier = ">=1.8.0" },
     { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=4.0.0" },
     { name = "pyam-iamc", specifier = ">=3.0.0" },
     { name = "pyarrow", specifier = ">=21.0.0" },
     { name = "pydantic", specifier = ">=2.0.0" },
-    { name = "pyprojroot", specifier = ">=0.3.0" },
-    { name = "pytest", specifier = ">=8.4.1" },
+    { name = "pyprojroot", marker = "extra == 'pipeline'", specifier = ">=0.3.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },
-    { name = "pytest-cov", specifier = ">=6.2.1" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "pytest-mock", specifier = ">=3.14.1" },
     { name = "pytest-mock", marker = "extra == 'dev'", specifier = ">=3.12.0" },
     { name = "python-calamine", specifier = ">=0.5.4" },
-    { name = "ruff", specifier = ">=0.8.6" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.8.0" },
     { name = "scipy", specifier = ">=1.13.1" },
     { name = "seaborn", specifier = ">=0.13.2" },
-    { name = "snakemake", specifier = ">=7.32.4" },
+    { name = "snakemake", marker = "extra == 'pipeline'", specifier = ">=7.32.4" },
     { name = "tqdm", specifier = ">=4.66.0" },
     { name = "xarray", specifier = ">=2024.7.0" },
 ]
-provides-extras = ["dev", "docs", "units"]
+provides-extras = ["dev", "docs", "pipeline", "units", "all"]
 
 [package.metadata.requires-dev]
-dev = [{ name = "snakefmt", specifier = ">=0.10.3" }]
+dev = [
+    { name = "fair-shares", extras = ["dev", "docs", "pipeline"] },
+    { name = "snakefmt", specifier = ">=0.10.3" },
+]
 
 [[package]]
 name = "fastapi"
@@ -2916,6 +2943,20 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
+name = "pooch"
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "packaging" },
+    { name = "platformdirs" },
+    { name = "requests" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/83/43/85ef45e8b36c6a48546af7b266592dc32d7f67837a6514d111bced6d7d75/pooch-1.9.0.tar.gz", hash = "sha256:de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed", size = 61788, upload-time = "2026-01-30T19:15:09.649Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/2a/2d/d4bf65e47cea8ff2c794a600c4fd1273a7902f268757c531e0ee9f18aa58/pooch-1.9.0-py3-none-any.whl", hash = "sha256:f265597baa9f760d25ceb29d0beb8186c243d6607b0f60b83ecf14078dbc703b", size = 67175, upload-time = "2026-01-30T19:15:08.36Z" },
 ]
 
 [[package]]
