@@ -299,7 +299,7 @@ active_sources = {
     "emissions": "primap-202503",  # Historical emissions (PRIMAP-hist v2.6.1) — allocation shares and § 5 netting actuals
     "gdp": "wdi-2025",             # GDP per capita — capability-adjusted approaches
     "population": "un-owid-2025",  # Population — per-capita and cumulative-per-capita shares, § 6 base-year weighting
-    "gini": "unu-wider-2025",      # Gini — required by the data-source schema; no approach run here uses it
+    "gini": "wdi-2025",      # Gini — required by the data-source schema; no approach run here uses it
     "lulucf": "melo-2026",         # NGHGI LULUCF — used only for the all-ghg category
 }
 

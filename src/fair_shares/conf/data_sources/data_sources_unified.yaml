@@ -55,12 +55,25 @@ population:
       projected_world_key: "World"
 
 # --- Gini coefficients -------------------------------------------------------
+# `selection` says how one observation per country is picked; `year_window`
+# bounds the years considered. Survey Gini is sparse in any single year, so a
+# single-year rule would cut coverage by more than half.
+#
+# wdi-2025 is the default. unu-wider-2025 (WIID) is opt-in: it is licensed
+# CC BY-NC-SA, so outputs built on it cannot be redistributed under this
+# project's CC BY 4.0 terms. It is not shipped with the repository — fetch it
+# with `fair-shares fetch-data --source unu-wider-2025`.
 gini:
+  wdi-2025:
+    path: "data/gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv"
+    data_parameters:
+      selection: "latest-available"
+      year_window: [2015, 2023]
+
   unu-wider-2025:
     path: "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
     data_parameters:
-      world_key: "WLD"
-      gini_year: 2020
+      selection: "latest-high-quality"
 
 # --- Scenario source ---------------------------------------------------------
 # Where pathway data comes from. Currently AR6; add SCI here when available.
@@ -129,3 +142,9 @@ harmonisation_year: 2020
 general:
   region_mapping:
     path: "data/regions/iso3c_region_mapping_20240319.csv"
+
+  # What happens to an analysis country with no Gini value.
+  #   fallback-mean  give it the analysis-country mean, and record it as
+  #                  imputed in country_data_coverage_summary.csv
+  #   strict         stop the run instead
+  gini_missing_policy: "fallback-mean"

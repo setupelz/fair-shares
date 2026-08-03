@@ -130,7 +130,7 @@ active_sources = {
     "emissions": "primap-202503",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     "lulucf": "melo-2026",
 }
 
@@ -296,7 +296,7 @@ print("  - 1960–2013 (Matthews 2016 primary for fossil carbon debt)")
 # | Emissions | PRIMAP-hist v2.6.1 (`primap-202503`) |
 # | Population | UN WPP via Our World in Data (`un-owid-2025`) |
 # | GDP | World Development Indicators (`wdi-2025`) |
-# | Gini | UNU-WIDER (`unu-wider-2025`) |
+# | Gini | World Bank WDI (`wdi-2025`) |
 # | LULUCF | Melo et al. 2026 (`melo-2026`) |
 # | RCB anchor | Remaining Carbon Budgets (`rcbs`) |
 #

@@ -414,18 +414,27 @@ def _per_capita_budget_core(
                 pop_ref_label = [c for c in pop_full_numeric.columns
                                  if int(c) == ref_year][0]
 
-                if capability_per_capita:
-                    snapshot = gdp_full_numeric[gdp_ref_label].divide(
-                        pop_full_numeric[pop_ref_label]
-                    )
-                else:
-                    snapshot = gdp_full_numeric[gdp_ref_label]
+                gdp_at_ref = gdp_full_numeric[gdp_ref_label]
+                pop_at_ref = pop_full_numeric[pop_ref_label].reindex(gdp_at_ref.index)
 
-                # Note: Gini adjustment is NOT applied in the pre-allocation-window
-                # branch. When ref_year < allocation_year, the snapshot is sourced
-                # from the raw (non-Gini-adjusted) inputs. If Gini correction at
-                # the reference year is needed, choose a ref_year within the
-                # allocation window (ref_year >= allocation_year).
+                # Which input the snapshot is read from is a plumbing detail,
+                # so the Gini adjustment applies here as it does in the other
+                # two cases above.
+                if gini_s is not None:
+                    gini_lookup = create_gini_lookup_dict(gini_s)
+                    gdp_at_ref = apply_gini_adjustment(
+                        gdp_data=gdp_at_ref,
+                        population_data=pop_at_ref,
+                        gini_lookup=gini_lookup,
+                        income_floor=income_floor,
+                        max_gini_adjustment=max_gini_adjustment,
+                        group_level=group_level,
+                    )
+
+                if capability_per_capita:
+                    snapshot = gdp_at_ref.divide(pop_at_ref)
+                else:
+                    snapshot = gdp_at_ref
 
             # Broadcast the scalar-per-region series across every column in the
             # population window. The downstream adjustment and cumulative sum then

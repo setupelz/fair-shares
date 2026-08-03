@@ -77,14 +77,14 @@ Gradual transition from current emissions to fair share target.
 
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
 
-!!! note "The `-gini` approaches need an extra dataset"
+!!! note "Which inequality dataset the `-gini` approaches use"
 
-    Inequality adjustment uses the WIID data, which `fair-shares fetch-data`
-    leaves out by default because of its size. It is downloaded automatically
-    the first time a `-gini` approach asks for it, so nothing breaks — you just
-    get an unexpected ~10 MB download mid-run. Fetch it up front with
-    `uv run fair-shares fetch-data --all` if you would rather not wait. Note
-    also that WIID is licensed CC BY-NC-SA, unlike the other sources — see
+    The default Gini source is the World Bank's Gini index (`SI.POV.GINI`),
+    which `fair-shares fetch-data` brings down with everything else. WIID is
+    still available with `active_gini_source=unu-wider-2025`, but it is
+    licensed CC BY-NC-SA: outputs built on it cannot be redistributed under
+    this project's CC BY 4.0 terms. The two sources give materially different
+    capability-based allocations — see
     [Data Sources & Licensing](data-sources.md).
 
 !!! tip "Entry Points Framework"

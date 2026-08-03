@@ -187,6 +187,23 @@ class TestRegistryIntegrity:
         }
         assert with_headers == {"unu-wider-2025"}
 
+    def test_the_default_gini_file_is_fetched_by_default(self, registry):
+        """A standard run must not need an opt-in source for its Gini values."""
+        wdi = registry["wdi-2025"]
+        assert wdi.tier == "default"
+        assert wdi.redistributable
+        gini_targets = [
+            t for t in wdi.targets if normalise_target(t).startswith("gini/")
+        ]
+        assert gini_targets == ["gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv"]
+
+    def test_wiid_stays_opt_in_and_unredistributable(self, registry):
+        """It still works, but it is not what a plain fetch brings down."""
+        wiid = registry["unu-wider-2025"]
+        assert wiid.tier == "optional"
+        assert not wiid.redistributable
+        assert "NC" in wiid.license
+
     def test_manual_sources_name_a_destination(self, registry):
         for name, source in registry.sources.items():
             if source.tier != "manual":

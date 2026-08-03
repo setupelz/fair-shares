@@ -15,10 +15,18 @@
 # ---
 
 # %% [markdown]
-# # Gini Data Preprocessing Script (UNU-WIDER 2025 Source)
+# # Gini Data Preprocessing Script (World Bank WDI 2025 Source)
 #
-# This script processes Gini coefficient data from UNU-WIDER WIID Excel files.
-# This is the UNU-WIDER 2025 source-specific version.
+# Processes Gini coefficients from the World Bank WDI bulk CSV export of
+# indicator SI.POV.GINI. The indicator republishes the World Bank's Poverty and
+# Inequality Platform (PIP) estimates, which are consumption-based for most low-
+# and middle-income countries and income-based elsewhere. WIID pools
+# income-based series, so values are not directly comparable between the two
+# sources — see docs/user-guide/data-sources.md.
+#
+# One observation per country: the latest available within the configured year
+# window. Survey Gini is sparse in any single year, so a single-year rule would
+# cover roughly 70 countries instead of 150.
 
 # %% [markdown]
 # ## Set paths and library imports
@@ -63,7 +71,7 @@ else:
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
-        "gini": "unu-wider-2025",
+        "gini": "wdi-2025",
         "target": "pathway",
     }
 
@@ -97,11 +105,17 @@ gini_parameters = gini_config["data_parameters"]
 selection = gini_parameters["selection"]
 year_window = gini_parameters.get("year_window")
 
-if selection != "latest-high-quality":
+if selection != "latest-available":
     raise ConfigurationError(
-        f"The WIID notebook implements selection 'latest-high-quality', "
-        f"got '{selection}'."
+        f"The WDI Gini notebook implements selection 'latest-available', "
+        f"got '{selection}'. WDI publishes no quality flag, so a "
+        f"quality-preferring rule cannot be applied to it."
     )
+
+# Region mapping decides what counts as a country. The WDI bulk CSV mixes
+# countries with regional and income-group aggregates (AFE, WLD, ...) that
+# carry ISO3-shaped codes.
+region_mapping_path = config["general"]["region_mapping"]["path"]
 
 # Construct source-specific intermediate_dir
 intermediate_dir_str = f"output/{source_id}/intermediate/gini"
@@ -111,97 +125,70 @@ intermediate_dir.mkdir(parents=True, exist_ok=True)
 # Print out the parameters for debugging
 print(f"Active Gini source: {active_gini_source}")
 print(f"Gini path: {gini_path}")
+print(f"Selection rule: {selection}")
+print(f"Year window: {year_window}")
 print(f"Intermediate directory: {intermediate_dir_str}")
 
 # %% [markdown]
 # ## Load data
 
 # %%
-# Load Gini data
+# Read CSV, skip metadata rows (first 4 rows are headers/notes)
 print("Loading Gini data...")
-gini_data = pd.read_excel(project_root / gini_path)
+gini_data = pd.read_csv(project_root / gini_path, skiprows=4)
 print(f"Gini data shape: {gini_data.shape}")
-print(f"Gini data columns: {list(gini_data.columns)}")
+
+region_mapping = pd.read_csv(project_root / region_mapping_path)
+countries = set(region_mapping["iso3c"].unique())
+print(f"Countries in region mapping: {len(countries)}")
 
 # %% [markdown]
 # ## Analysis
 
 # %%
-# Extract and rename required columns
-print("Extracting required columns...")
-gini_analysis = gini_data[["c3", "year", "gini", "quality"]].copy()
-gini_analysis = gini_analysis.rename(columns={"c3": "iso3c"})
+# Melt the wide year columns to long format
+id_cols = ["Country Name", "Country Code"]
+year_cols = [col for col in gini_data.columns if col.isdigit()]
+gini_long = gini_data[id_cols + year_cols].melt(
+    id_vars=id_cols, value_vars=year_cols, var_name="year", value_name="gini"
+)
+gini_long = gini_long.rename(columns={"Country Code": "iso3c"})
+gini_long["year"] = gini_long["year"].astype(int)
+gini_long = gini_long.dropna(subset=["gini"])
 
-print(f"Initial data shape: {gini_analysis.shape}")
-print(f"Columns: {list(gini_analysis.columns)}")
+print(f"Observations with a value: {len(gini_long)}")
+print(f"Codes with any observation: {gini_long['iso3c'].nunique()}")
 
-# Display sample of data
-print("\nSample of extracted data:")
-print(gini_analysis.head())
+# Drop aggregates (regional and income-group rows)
+aggregates = sorted(set(gini_long["iso3c"]) - countries)
+gini_long = gini_long[gini_long["iso3c"].isin(countries)]
+print(f"Codes dropped as not countries: {aggregates}")
 
-# Check for missing values
-print("\nMissing values:")
-print(gini_analysis.isnull().sum())
-
-# Restrict to the configured year window, if one is set
+# Restrict to the configured year window
 if year_window:
     first_year, last_year = year_window
-    gini_analysis = gini_analysis[
-        (gini_analysis["year"] >= first_year) & (gini_analysis["year"] <= last_year)
+    gini_long = gini_long[
+        (gini_long["year"] >= first_year) & (gini_long["year"] <= last_year)
     ]
-    print(f"\nObservations within {first_year}-{last_year}: {len(gini_analysis)}")
+    print(f"Observations within {first_year}-{last_year}: {len(gini_long)}")
 
-# Filter for the best quality data per country
-print("\nFiltering for best quality data per country...")
+# One observation per country: the latest year available
+gini_filtered = gini_long.sort_values(["iso3c", "year"]).groupby("iso3c").tail(1)
 
-
-# For each iso3c, get latest year with High quality, or latest year if no High quality
-def get_best_quality_data(group):
-    high_quality = group[group["quality"] == "High"]
-
-    if len(high_quality) > 0:
-        return high_quality.loc[high_quality["year"].idxmax()]
-    else:
-        return group.loc[group["year"].idxmax()]
-
-
-# Group by iso3c and apply the filtering function
-gini_filtered = (
-    gini_analysis.groupby("iso3c").apply(get_best_quality_data).reset_index(drop=True)
-)
-
-print(f"Filtered data shape: {gini_filtered.shape}")
-print(f"Unique countries: {gini_filtered['iso3c'].nunique()}")
-
-# Display quality distribution
-print("\nQuality distribution after filtering:")
-print(gini_filtered["quality"].value_counts())
-
-# Drop the year column as requested
-gini_processed = gini_filtered.drop(["year", "quality"], axis=1)
+print(f"Countries with a selected observation: {gini_filtered['iso3c'].nunique()}")
+print("\nObservation years selected:")
+print(gini_filtered["year"].value_counts().sort_index())
 
 # Convert Gini coefficients from 0-100 range to 0-1 range
+gini_processed = gini_filtered[["iso3c", "gini"]].copy()
 gini_processed["gini"] = gini_processed["gini"] / 100.0
 
-print("\nGini coefficient conversion:")
-print(f"Sample values after conversion: {gini_processed['gini'].head().tolist()}")
+out_of_range = gini_processed[(gini_processed["gini"] < 0) | (gini_processed["gini"] > 1)]
+if not out_of_range.empty:
+    raise ValueError(f"Gini values outside 0-1 after conversion:\n{out_of_range}")
 
-# Drop all missing data before saving
-print("\nBefore dropping missing data:")
-print(f"Shape: {gini_processed.shape}")
-print(f"Missing values: {gini_processed.isnull().sum().sum()}")
-
-gini_processed = gini_processed.dropna()
-
-print("\nAfter dropping missing data:")
-print(f"Shape: {gini_processed.shape}")
-print(f"Missing values: {gini_processed.isnull().sum().sum()}")
-
-print("Final columns:", list(gini_processed.columns))
-
-# Display sample of final data
-print("\nSample of final processed data:")
-print(gini_processed.head())
+print("\nGini summary after conversion:")
+print(gini_processed["gini"].describe())
 
 # %% [markdown]
 # ## Output
@@ -210,12 +197,7 @@ print(gini_processed.head())
 # Convert to Stationary DataFrame format (for cross-sectional data)
 print("Converting to Stationary DataFrame format...")
 
-# Add source information for consistency
-gini_stationary = gini_processed.copy()
-
-# Create stationary DataFrame with MultiIndex ['iso3c', 'unit']
-# Since Gini is cross-sectional (no time dimension), we use a different format
-gini_stationary_df = gini_stationary.set_index(["iso3c"])[["gini"]]
+gini_stationary_df = gini_processed.set_index(["iso3c"])[["gini"]]
 
 # Convert to MultiIndex with unit information
 gini_stationary_df.index = pd.MultiIndex.from_tuples(

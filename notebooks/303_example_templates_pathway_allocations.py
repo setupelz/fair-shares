@@ -86,7 +86,7 @@ active_sources = {
     # Population projections from UN (2025)
     "population": "un-owid-2025",
     # Income inequality (Gini coefficients) from UNU-WIDER (2025)
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     # LULUCF data for NGHGI-consistent corrections
     "lulucf": "melo-2026",
     # Pathway generator for rcb-pathways (optional, defaults to "exponential-decay")

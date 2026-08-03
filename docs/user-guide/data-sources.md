@@ -20,7 +20,8 @@ Bundled sources carry different terms. Check the per-source entry below before r
 | LULUCF         | Melo et al. 2026 v3.1  | **CC-BY-4.0** (Zenodo) | Yes           |
 | Population     | UN/OWID 2025           | Mixed — see below  | Yes               |
 | GDP            | World Bank WDI 2025    | **CC-BY-4.0**      | Yes               |
-| Gini           | UNU-WIDER WIID 2025    | **CC BY-NC-SA 3.0 IGO** | Yes          |
+| Gini (default) | World Bank WDI 2025 (SI.POV.GINI) | **CC-BY-4.0** | Yes    |
+| Gini (opt-in)  | UNU-WIDER WIID 2025    | **CC BY-NC-SA 3.0 IGO** | Yes          |
 | Regions        | regioniso3c (custom)   | **MIT**            | Optional          |
 | Scenarios      | IPCC AR6 (Gidden 2023) | **CC-BY-4.0**      | Yes               |
 | Carbon budgets | Lamboll et al. 2023    | Published values   | Yes               |
@@ -97,15 +98,37 @@ The choice between PPP and MER GDP measures is not purely technical — it is a 
 
 ## Inequality Data
 
-### UNU-WIDER WIID
+Two Gini sources are configured. `wdi-2025` is the default; `unu-wider-2025`
+(WIID) still works and is selected with `active_gini_source=unu-wider-2025`.
+
+### World Bank WDI Gini index (default)
+
+**Source:** World Bank, World Development Indicators, Gini index (`SI.POV.GINI`), 2025 export. The World Bank sources this indicator from its own Poverty and Inequality Platform (PIP). No DOI is issued; cite by name.
+
+**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/), the World Bank's [default for its own open datasets](https://datacatalog.worldbank.org/public-licenses).
+
+**Location:** `data/gini/wdi-2025/`
+
+**What it provides:** Gini coefficients for 150 countries, taking each country's latest observation in 2015–2023 (`selection: latest-available`, `year_window: [2015, 2023]`). Survey-based Gini is sparse in any single year — a single-year rule would cover about 70 countries.
+
+!!! note "Income vs consumption Gini"
+PIP reports consumption-based Gini for most low- and middle-income countries and income-based Gini elsewhere; WIID pools income-based series. Consumption Gini is systematically lower for the same country-year, and the gap is large for some countries (India 0.255 vs 0.515, Côte d'Ivoire 0.353 vs 0.607, Bangladesh 0.309 vs 0.499, South Africa 0.541 vs 0.670). Because higher Gini raises measured capability, the two sources give materially different capability-based allocations. This is a choice about which welfare concept the capability measure rests on, not a data-plumbing detail.
+
+!!! note "Countries without a Gini value"
+Analysis-country membership depends on emissions, GDP and population — not on Gini. A country with no Gini value stays in the analysis and receives the analysis-country mean, the same value Rest-of-World gets, flagged as `gini_imputed` in `country_data_coverage_summary.csv`. Set `general.gini_missing_policy: strict` to stop the run instead. Under the default source, 35 of 176 analysis countries carry an imputed Gini, Saudi Arabia among them.
+
+### UNU-WIDER WIID (opt-in)
 
 **Source:** UNU-WIDER World Income Inequality Database (WIID), Version 29 April 2025. [doi:10.35188/UNU-WIDER/WIID-290425](https://doi.org/10.35188/UNU-WIDER/WIID-290425)
 
 **License:** [CC BY-NC-SA 3.0 IGO](https://creativecommons.org/licenses/by-nc-sa/3.0/igo/), per UNU-WIDER's [copyright terms](https://www.wider.unu.edu/about/copyright). The NonCommercial and ShareAlike clauses travel with derived Gini values, so they are incompatible with a plain CC BY compilation.
 
-**Location:** `data/gini/unu-wider-2025/`
+**Location:** `data/gini/unu-wider-2025/`. Opt-in: a plain `fair-shares fetch-data` does not download it. Fetch it with `fair-shares fetch-data --source unu-wider-2025` if it is not already present.
 
-**What it provides:** Gini coefficients for income inequality.
+**What it provides:** Gini coefficients for 194 countries, taking each country's latest high-quality observation and falling back to the latest of any quality (`selection: latest-high-quality`, no year window). Coverage is broader than WDI but older: 34 of the 194 values predate 2010, and four are states that no longer exist.
+
+!!! warning "Outputs built on WIID cannot be redistributed under CC BY 4.0"
+The NonCommercial and ShareAlike terms travel with the derived Gini values, including a table of them. Selecting this source puts every Gini-derived file in the run outside this project's CC BY 4.0 data deposit.
 
 ---
 
