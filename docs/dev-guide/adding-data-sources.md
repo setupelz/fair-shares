@@ -12,16 +12,16 @@ This guide explains how to add new data sources to fair-shares.
 
 ## Overview
 
-Data sources are configured in `conf/data_sources/data_sources_unified.yaml` and processed through preprocessing notebooks in the `notebooks/1xx_*.py` series.
+Data sources are configured in `src/fair_shares/conf/data_sources/data_sources_unified.yaml` and processed through preprocessing notebooks in the `notebooks/1xx_*.py` series.
 
 ### Data Types
 
 | Type         | Purpose                              | Current Sources        |
 | ------------ | ------------------------------------ | ---------------------- |
 | `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist            |
-| `gdp`        | Economic capability                  | World Bank WDI, IMF    |
+| `gdp`        | Economic capability                  | World Bank WDI         |
 | `population` | Per capita calculations              | UN/OWID                |
-| `gini`       | Within-country inequality            | UNU-WIDER, WID         |
+| `gini`       | Within-country inequality            | UNU-WIDER              |
 | `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026)     |
 | `targets`    | Global constraints                   | AR6 scenarios, RCBs    |
 
@@ -52,7 +52,7 @@ Use the naming convention `{source}-{year}/` for versioning.
 
 ## Step 2: Configure the Source
 
-Add an entry to `conf/data_sources/data_sources_unified.yaml`:
+Add an entry to `src/fair_shares/conf/data_sources/data_sources_unified.yaml`:
 
 ```yaml
 # Example: Adding a new emissions source
@@ -218,8 +218,9 @@ Notebook 107 reads the raw LULUCF source and outputs:
 2. Add config entry under `lulucf:` in `data_sources_unified.yaml` with
    `data_parameters` including `format`, `iso3_column`, `year_column`,
    `value_column`, `category_filter`, `gas_filter`, and `exclude_regions`
-3. Create `107_data_preprocess_lulucf_{source-name}.py` following the pattern
-   of `107_data_preprocess_lulucf_melo-2026.py`
+3. Create `107_derive_nghgi_categories_{source-name}.py` following the pattern
+   of `107_derive_nghgi_categories_melo-2026.py` — the Snakefile resolves this
+   name from `active_lulucf_source`, so the prefix must match exactly
 4. The Snakefile will pick it up via `active_lulucf_source`
 
 ### Which categories use LULUCF?
@@ -319,12 +320,11 @@ New data sources should:
 | `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping               |
 | `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data            |
 | `105_data_preprocess_gini_unu-wider-2025.py`     | Gini       | Quality filtering, stationary output               |
-| `105_data_preprocess_gini_wid-2025.py`           | Gini       | WID.world processing, stationary output            |
-| `107_data_preprocess_lulucf_melo-2026.py`        | LULUCF     | NGHGI corrections, metadata export, world totals   |
+| `107_derive_nghgi_categories_melo-2026.py`       | LULUCF     | NGHGI corrections, metadata export, world totals   |
 
 ---
 
 ## See Also
 
-- **Data Sources Config**: `conf/data_sources/data_sources_unified.yaml` in the repository
+- **Data Sources Config**: `src/fair_shares/conf/data_sources/data_sources_unified.yaml` in the repository
 - **[Validation Utilities](https://setupelz.github.io/fair-shares/api/utils/validation/)** - Data validation functions

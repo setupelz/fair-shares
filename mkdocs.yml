@@ -145,12 +145,13 @@ nav:
   - User Guide:
       - user-guide/index.md
       - Approach Catalog: user-guide/approach-catalog.md
-      - country-fair-shares: user-guide/country-fair-shares.md
-      - iamc-regional-fair-shares: user-guide/iamc-regional-fair-shares.md
+      - Fair shares for countries: user-guide/country-fair-shares.md
+      - Fair shares for IAM model regions: user-guide/iamc-regional-fair-shares.md
       - Output Schema: user-guide/output-schema.md
       - Data Sources & Licensing: user-guide/data-sources.md
   - API Reference:
       - api/index.md
+      - Python API: api/python-api.md
       - Allocations:
           - Budget Functions: api/allocations/budgets.md
           - Pathway Functions: api/allocations/pathways.md

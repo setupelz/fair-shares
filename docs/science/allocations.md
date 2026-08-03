@@ -459,5 +459,5 @@ Arguments of the form "We only emit X% of global emissions." [Winkler 2020](http
 
 - **[API Reference: Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/):** Budget mathematical formulations
 - **[API Reference: Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/):** Pathway mathematical formulations
-- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** When to use each approach
+- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** When to use each approach
 - **[References](https://setupelz.github.io/fair-shares/science/references/):** Complete bibliography

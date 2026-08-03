@@ -11,12 +11,25 @@ icon: material/book-open-page-variant
      iamc-regional-fair-shares: Uses direct function calls from src/fair_shares/library/utils/data/iamc.py
 -->
 
-## Workflows
+## Which path am I on?
 
-| Workflow                                                                                                      | Notebook                                 | Description                             |
-| ------------------------------------------------------------------------------------------------------------- | ---------------------------------------- | --------------------------------------- |
-| **[country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**             | `301_custom_fair_share_allocation.ipynb` | Country-level allocations with pipeline |
-| **[iamc-regional-fair-shares](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/)** | `401_custom_iamc_allocation.ipynb`       | IAMC model region allocations           |
+Two questions. **What are you dividing up** — a *budget* (one cumulative number
+per country) or a *pathway* (a value for every year)? And **who between** —
+individual *countries*, or the *model regions* of an integrated assessment model?
+
+|                       | Countries                                     | IAM model regions                                          |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
+| **A budget**          | `302_example_templates_budget_allocations`    | run `400` once, then `402_example_iamc_budget_allocations`   |
+| **A pathway**         | `303_example_templates_pathway_allocations`   | run `400` once, then `403_example_iamc_pathway_allocations`  |
+| **Your own settings** | `301_custom_fair_share_allocation`            | run `400` once, then `401_custom_iamc_allocation`            |
+
+Then read the guide for your column:
+
+- **[Fair shares for countries](country-fair-shares.md)** — the country notebooks, step by step.
+- **[Fair shares for IAM model regions](iamc-regional-fair-shares.md)** — the IAMC notebooks, including the mandatory notebook 400 step.
+
+Calling the library from your own Python code instead? See
+**[Python API](../api/python-api.md)**.
 
 Both workflows produce relative shares (0-1) and absolute emissions (Mt CO2e).
 
@@ -45,7 +58,7 @@ This enables exact reproduction and comparison of results. See **[Output Schema]
 
 ## Configuration
 
-Data sources are configured in `conf/data_sources/`.
+Data sources are configured in `src/fair_shares/conf/data_sources/`.
 
 | Data Type  | Options                       |
 | ---------- | ----------------------------- |
@@ -55,7 +68,11 @@ Data sources are configured in `conf/data_sources/`.
 | GDP        | World Bank WDI                |
 | Gini       | UNU-WIDER                     |
 
-All bundled data is permissively licensed (CC-BY-4.0 or similar). See **[Data Sources & Licensing](data-sources.md)** for attribution requirements.
+Licences differ by source, and not all of them are permissive — the WIID
+inequality data is CC BY-NC-SA, which rules out commercial reuse and carries its
+ShareAlike terms into anything derived from it. Check
+**[Data Sources & Licensing](data-sources.md)** before you republish or
+redistribute any of it.
 
 ### Target Sources
 

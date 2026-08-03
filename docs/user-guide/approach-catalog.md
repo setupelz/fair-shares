@@ -77,6 +77,16 @@ Gradual transition from current emissions to fair share target.
 
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
 
+!!! note "The `-gini` approaches need an extra dataset"
+
+    Inequality adjustment uses the WIID data, which `fair-shares fetch-data`
+    leaves out by default because of its size. It is downloaded automatically
+    the first time a `-gini` approach asks for it, so nothing breaks — you just
+    get an unexpected ~10 MB download mid-run. Fetch it up front with
+    `uv run fair-shares fetch-data --all` if you would rather not wait. Note
+    also that WIID is licensed CC BY-NC-SA, unlike the other sources — see
+    [Data Sources & Licensing](data-sources.md).
+
 !!! tip "Entry Points Framework"
 Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 

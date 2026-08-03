@@ -63,5 +63,5 @@ These models ensure type safety and provide clear error messages when configurat
 
 ## See Also
 
-- **[country-fair-shares Guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Choose and configure allocations
+- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Choose and configure allocations
 - **[Developer Guide: Adding Data Sources](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)**: Available data sources
