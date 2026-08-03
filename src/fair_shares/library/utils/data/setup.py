@@ -15,7 +15,9 @@ from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
     DataProcessingError,
+    MissingPipelineDependency,
 )
+from fair_shares.library.paths import DATA_DIR_ENV, OUTPUT_DIR_ENV
 
 
 def _enumerate_required_files(
@@ -64,7 +66,7 @@ def _enumerate_required_files(
 
 
 def build_data_paths(
-    project_root: Path,
+    output_dir: Path,
     source_id: str,
     emission_category: str,
     target: str | None = None,
@@ -85,8 +87,8 @@ def build_data_paths(
 
     Parameters
     ----------
-    project_root : Path
-        Root directory of the project
+    output_dir : Path
+        Directory holding pipeline products (``output/`` in a checkout)
     source_id : str
         Source identifier combining all data sources
     emission_category : str
@@ -100,7 +102,7 @@ def build_data_paths(
     dict[str, Path]
         Dictionary containing all relevant paths
     """
-    base_dir = project_root / "output" / source_id
+    base_dir = Path(output_dir) / source_id
     processed_dir = base_dir / "intermediate" / "processed"
 
     paths: dict[str, Path] = {
@@ -319,31 +321,30 @@ def verify_data_setup(
     return all_files_exist, file_info
 
 
-def setup_data(
-    project_root: Path,
+def resolve_data_setup(
     emission_category: str,
     active_sources: dict[str, str],
-    timeout: int = 600,
     verbose: bool = True,
     harmonisation_year: int | None = None,
+    output_dir: Path | str | None = None,
+    data_dir: Path | str | None = None,
 ) -> dict[str, Any]:
     """
-    Set up the complete data pipeline for custom fair share allocations.
+    Resolve configuration, paths and file state for a fair share allocation.
 
-    This function handles the entire data setup process including:
-    1. Extracting target from active_sources and inferring data source type
-    2. Building validated configuration with Pydantic
-    3. Building necessary paths
-    4. Generating Snakemake commands
-    5. Executing data preprocessing
-    6. Verifying the setup
+    Validates the target, builds the Pydantic config, constructs the output
+    paths and reports which required files already exist. Runs no subprocess and
+    needs no Snakemake, so it works from an installed wheel pointed at a
+    prebuilt data tree.
 
-    Used in the custom fair share allocation notebook.
+    It is not, however, guaranteed to be cheap or offline. Building the config
+    validates the configured data paths, and a path that is missing but names a
+    registered source is downloaded at that point — which for PRIMAP is 72 MB.
+    Set ``FAIR_SHARES_AUTO_FETCH=0`` to turn that off and get a missing-file
+    error instead. See :mod:`fair_shares.library.data_fetch`.
 
     Parameters
     ----------
-    project_root : Path
-        Root directory of the project
     emission_category : str
         Emission category ("all-ghg", "all-ghg-ex-co2-lulucf", "co2-ffi")
     active_sources : dict[str, str]
@@ -354,42 +355,40 @@ def setup_data(
         - "gini": Gini source (e.g., "unu-wider-2025")
         - "lulucf": LULUCF source (e.g., "melo-2026") — required for NGHGI corrections
         - "target": target source (e.g., "pathway", "rcbs")
-    timeout : int, default 600
-        Timeout for Snakemake execution in seconds
     verbose : bool, default True
         Whether to print progress messages
     harmonisation_year : int | None, optional
         Year for global harmonisation. If None, will use value from config YAML
         if available, otherwise default to 2023 with a warning.
+    output_dir, data_dir : Path | str | None, optional
+        Product and input directories. Default to the resolved directories
+        (see :mod:`fair_shares.library.paths`). When given, they seed
+        process-wide resolution so the config's own relative ``path:`` values
+        resolve against them too.
 
     Returns
     -------
     dict[str, Any]
-        setup_info
-
-        setup_info contains:
-        - "paths": dict of all relevant paths
-        - "command": Snakemake command used
-        - "config": validated DataSourcesConfig from Pydantic
-        - "execution": execution results (if auto_run_snakemake=True)
-        - "verification": file verification results
-        - "source_id": constructed source identifier
-        - "alloc_tag": allocation tag
-        - "data_tag": data tag
+        setup_info containing "paths", "command", "config", "source_id",
+        "emission_category", "final_categories", "target" and "verification".
+        Unlike :func:`setup_data` it never contains "execution".
     """
     # Import here to avoid circular imports
-    from fair_shares.library.utils.data.config import build_data_config
+    from fair_shares.library.paths import configure
+    from fair_shares.library.paths import output_dir as resolve_output_dir
+    from fair_shares.library.utils.data.config import (
+        ALL_TARGETS,
+        build_data_config,
+        get_final_categories,
+    )
 
-    # Extract target from active_sources
+    # Seed the resolver before build_data_config, whose validation resolves the
+    # config's relative data paths through the same machinery.
+    configure(data_dir=data_dir, output_dir=output_dir)
+
     target = active_sources.get("target")
     if not target:
         raise ConfigurationError("active_sources must include 'target' key")
-
-    # Validate target
-    from fair_shares.library.utils.data.config import (
-        ALL_TARGETS,
-        get_final_categories,
-    )
 
     if target not in ALL_TARGETS:
         raise ConfigurationError(
@@ -401,8 +400,12 @@ def setup_data(
         emission_category, active_sources, harmonisation_year=harmonisation_year
     )
 
+    resolved_output = resolve_output_dir(output_dir)
+
     # Build paths (target-aware: per-category keys for allghg)
-    paths = build_data_paths(project_root, source_id, emission_category, target=target)
+    paths = build_data_paths(
+        resolved_output, source_id, emission_category, target=target
+    )
 
     # Generate Snakemake command
     command = generate_snakemake_command(
@@ -415,13 +418,23 @@ def setup_data(
 
     final_categories = get_final_categories(target, emission_category)
 
-    setup_info = {
+    all_files_exist, file_info = verify_data_setup(
+        paths["processed_dir"], emission_category, target
+    )
+
+    setup_info: dict[str, Any] = {
         "paths": paths,
         "command": command,
         "config": data_config,
         "source_id": source_id,
         "emission_category": emission_category,
         "final_categories": final_categories,
+        "target": target,
+        "output_dir": resolved_output,
+        "verification": {
+            "all_files_exist": all_files_exist,
+            "file_info": file_info,
+        },
     }
 
     if verbose:
@@ -432,27 +445,169 @@ def setup_data(
         print(f"Target file: {paths['target_file']}")
         print()
 
-    # Let Snakemake handle incremental builds — it tracks file timestamps
-    # and only re-runs targets whose dependencies have changed.
+    return setup_info
+
+
+def build_data_setup(
+    setup_info: dict[str, Any],
+    timeout: int = 600,
+    verbose: bool = True,
+    repo_root: Path | str | None = None,
+) -> dict[str, Any]:
+    """
+    Run the Snakemake build for a resolved setup, in place.
+
+    Clone-only. Snakemake reads the ``Snakefile`` and the ``notebooks/``
+    sources from a checkout, so this cannot run from an installed wheel no
+    matter how the data directories resolve.
+
+    Parameters
+    ----------
+    setup_info : dict[str, Any]
+        The dict returned by :func:`resolve_data_setup`. Mutated in place with
+        an "execution" key and a refreshed "verification".
+    timeout : int, default 600
+        Timeout for Snakemake execution in seconds
+    verbose : bool, default True
+        Whether to print progress messages
+    repo_root : Path | str | None, optional
+        The checkout to run Snakemake in. Autodetected when omitted.
+
+    Raises
+    ------
+    MissingPipelineDependency
+        If the pipeline extra is not installed, or no checkout can be found.
+    """
+    from fair_shares.library.paths import find_repo_root
+
+    _require_pipeline_dependencies()
+
+    resolved_root = Path(repo_root) if repo_root is not None else find_repo_root()
+    if resolved_root is None:
+        raise MissingPipelineDependency(
+            "Building the data tree requires a fair-shares checkout — Snakemake "
+            "reads the Snakefile and notebooks/ from the repository, which are "
+            "not shipped in the wheel. Either run from inside a checkout, or "
+            f"point {DATA_DIR_ENV} and {OUTPUT_DIR_ENV} at a prebuilt data tree."
+        )
+
+    command = setup_info["command"]
+
     if verbose:
         print("Running Snakemake...")
         print("Command:", " ".join(command))
         print()
 
-    stdout, stderr = execute_snakemake_setup(command, project_root, timeout)
+    stdout, stderr = execute_snakemake_setup(command, resolved_root, timeout)
     setup_info["execution"] = {"success": True, "stdout": stdout, "stderr": stderr}
 
     if verbose:
         print("Data setup completed successfully!")
 
-    # Verify setup
     all_files_exist, file_info = verify_data_setup(
-        paths["processed_dir"], emission_category, target
+        setup_info["paths"]["processed_dir"],
+        setup_info["emission_category"],
+        setup_info["target"],
     )
     setup_info["verification"] = {
         "all_files_exist": all_files_exist,
         "file_info": file_info,
     }
+    return setup_info
+
+
+def _require_pipeline_dependencies() -> None:
+    """Raise a MissingPipelineDependency naming the extra, if it is absent."""
+    import importlib.util
+
+    missing = [
+        name
+        for name in ("snakemake", "jupytext", "papermill")
+        if importlib.util.find_spec(name) is None
+    ]
+    if missing:
+        raise MissingPipelineDependency(
+            "Building the data tree needs the pipeline toolchain, but "
+            f"{', '.join(sorted(missing))} "
+            f"{'is' if len(missing) == 1 else 'are'} not installed. Either run "
+            'pip install "fair-shares[pipeline]", or point '
+            f"{DATA_DIR_ENV} and {OUTPUT_DIR_ENV} at a prebuilt data tree."
+        )
+
+
+def setup_data(
+    project_root: Path | None = None,
+    emission_category: str = "",
+    active_sources: dict[str, str] | None = None,
+    timeout: int = 600,
+    verbose: bool = True,
+    harmonisation_year: int | None = None,
+    data_dir: Path | str | None = None,
+    output_dir: Path | str | None = None,
+) -> dict[str, Any]:
+    """
+    Set up the complete data pipeline for custom fair share allocations.
+
+    Resolves configuration and paths, then builds the data tree with Snakemake
+    **only when required files are missing**. A prebuilt tree therefore costs
+    no Snakemake startup, and an installed wheel pointed at one never needs the
+    pipeline extra at all.
+
+    Used in the custom fair share allocation notebook.
+
+    Parameters
+    ----------
+    project_root : Path | None, optional
+        Deprecated. When given, ``project_root/"output"`` is used as the output
+        directory. Pass ``output_dir`` instead.
+    emission_category : str
+        Emission category ("all-ghg", "all-ghg-ex-co2-lulucf", "co2-ffi")
+    active_sources : dict[str, str]
+        Dictionary of active data sources — see :func:`resolve_data_setup`.
+    timeout : int, default 600
+        Timeout for Snakemake execution in seconds
+    verbose : bool, default True
+        Whether to print progress messages
+    harmonisation_year : int | None, optional
+        Year for global harmonisation. If None, will use value from config YAML
+        if available, otherwise default to 2023 with a warning.
+    data_dir, output_dir : Path | str | None, optional
+        Explicit input and product directories. Default to the resolved
+        directories (see :mod:`fair_shares.library.paths`).
+
+    Returns
+    -------
+    dict[str, Any]
+        setup_info. Contains "paths", "command", "config", "source_id",
+        "emission_category", "final_categories" and "verification"; "execution"
+        is present only when a Snakemake build actually ran.
+    """
+    if active_sources is None:
+        raise ConfigurationError("active_sources is required")
+
+    repo_root: Path | None = None
+    if project_root is not None:
+        data_dir, output_dir = _deprecate_project_root(
+            project_root, data_dir, output_dir, "setup_data"
+        )
+        repo_root = Path(project_root)
+
+    setup_info = resolve_data_setup(
+        emission_category=emission_category,
+        active_sources=active_sources,
+        verbose=verbose,
+        harmonisation_year=harmonisation_year,
+        output_dir=output_dir,
+        data_dir=data_dir,
+    )
+
+    if not setup_info["verification"]["all_files_exist"]:
+        build_data_setup(
+            setup_info, timeout=timeout, verbose=verbose, repo_root=repo_root
+        )
+
+    file_info = setup_info["verification"]["file_info"]
+    all_files_exist = setup_info["verification"]["all_files_exist"]
 
     if verbose:
         print("\nDATA VERIFICATION")
@@ -467,9 +622,40 @@ def setup_data(
             print("\nSome data files are missing.")
 
     if not all_files_exist:
-        raise DataLoadingError("Some required data files are missing after setup")
+        missing = sorted(k for k, v in file_info.items() if not v["exists"])
+        raise DataLoadingError(
+            f"Some required data files are missing after setup: {missing}"
+        )
 
     return setup_info
+
+
+def _deprecate_project_root(
+    project_root: Path | str,
+    data_dir: Path | str | None,
+    output_dir: Path | str | None,
+    caller: str,
+) -> tuple[Path | str, Path | str]:
+    """Map a deprecated ``project_root`` onto the data and output directories.
+
+    ``project_root/"data"`` and ``project_root/"output"`` reproduce the layout
+    the argument used to imply, so existing callers keep resolving to exactly
+    the same files. Explicit ``data_dir`` / ``output_dir`` win.
+    """
+    import warnings
+
+    warnings.warn(
+        f"{caller}(project_root=...) is deprecated; pass data_dir= and "
+        "output_dir= instead, or set FAIR_SHARES_DATA_DIR / "
+        "FAIR_SHARES_OUTPUT_DIR.",
+        DeprecationWarning,
+        stacklevel=3,
+    )
+    root = Path(project_root)
+    return (
+        data_dir if data_dir is not None else root / "data",
+        output_dir if output_dir is not None else root / "output",
+    )
 
 
 def lookup_net_negative_emissions(

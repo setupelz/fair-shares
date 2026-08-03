@@ -72,7 +72,7 @@ def backfill(
     https://doi.org/10.5281/zenodo.15357372) for anthropogenic non-LULUCF
     gases (``Emissions|CO2|Energy and Industrial Processes``,
     ``Emissions|CH4``, ``Emissions|N2O``, aerosols). New releases register
-    in ``conf/data_sources/iamc_data_sources.yaml``.
+    in the packaged ``iamc_data_sources.yaml`` (``src/fair_shares/conf/data_sources/``).
 
     See ``specs/active/2026-04-17-iamc-historical-backfill-design.md`` for the
     behaviour contract and testing strategy.

@@ -114,7 +114,11 @@ _needs_non_co2_derivation = (
 # Read allocation_mode from the target config to select master notebook.
 
 import yaml as _yaml
-with open("conf/data_sources/data_sources_unified.yaml") as _f:
+from fair_shares.library.paths import packaged_config
+
+# The source table ships inside the package, so this reads the same file the
+# library does rather than a repo-relative copy that could drift.
+with packaged_config("data_sources/data_sources_unified.yaml").open() as _f:
     _full_yaml = _yaml.safe_load(_f)
 
 _target_yaml = _full_yaml["targets"].get(active_target_source, {})

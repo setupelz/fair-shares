@@ -1,28 +1,24 @@
 """Constants and variable aggregation rules for IAMC historical back-fill.
 
-The :data:`IAMC_HISTORICAL_RELEASES` registry is loaded lazily from
-``conf/data_sources/iamc_data_sources.yaml`` on first access, not at import
-time. This keeps the module importable in environments without the YAML
-(e.g. non-repo installs) until the registry is actually needed. To drop in
-a new release, add an entry under ``iamc_historical`` in the YAML and set
-``active_iamc_historical`` to its tag. No Python changes required. The
-section is pipeline-agnostic, so CMIP7, CMIP8, or any future IAMC release
-plugs in under the same key.
+The :data:`IAMC_HISTORICAL_RELEASES` registry is loaded lazily from the
+packaged ``fair_shares/conf/data_sources/iamc_data_sources.yaml`` on first
+access, not at import time — nothing here touches the filesystem while the
+module is being imported. To drop in a new release, add an entry under
+``iamc_historical`` in the YAML and set ``active_iamc_historical`` to its
+tag. No Python changes required. The section is pipeline-agnostic, so CMIP7,
+CMIP8, or any future IAMC release plugs in under the same key.
 """
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Any
 
-import pyprojroot
 import yaml
 
 from fair_shares.library.exceptions import DataLoadingError
+from fair_shares.library.paths import packaged_config
 
-_CONFIG_PATH = (
-    pyprojroot.here() / "conf" / "data_sources" / "iamc_data_sources.yaml"
-)
+_CONFIG_RESOURCE = "data_sources/iamc_data_sources.yaml"
 
 _LAZY_NAMES = {
     "IAMC_HISTORICAL_RELEASES",
@@ -31,16 +27,18 @@ _LAZY_NAMES = {
 
 
 def _load_unified_config() -> dict[str, Any]:
+    resource = packaged_config(_CONFIG_RESOURCE)
     try:
-        with _CONFIG_PATH.open() as f:
+        with resource.open() as f:
             return yaml.safe_load(f) or {}
     except (FileNotFoundError, OSError) as e:
         raise DataLoadingError(
-            f"Could not open IAMC data-source config at {_CONFIG_PATH}: {e}"
+            f"Could not open packaged IAMC data-source config {_CONFIG_RESOURCE}: {e}"
         ) from e
     except yaml.YAMLError as e:
         raise DataLoadingError(
-            f"IAMC data-source config at {_CONFIG_PATH} is not valid YAML: {e}"
+            f"Packaged IAMC data-source config {_CONFIG_RESOURCE} "
+            f"is not valid YAML: {e}"
         ) from e
 
 

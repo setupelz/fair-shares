@@ -8,6 +8,7 @@ generating source identifiers.
 
 from __future__ import annotations
 
+import os
 from pathlib import Path
 from typing import Any, Literal
 
@@ -18,6 +19,11 @@ from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
 )
+from fair_shares.library.paths import packaged_config
+
+# Environment override letting a user supply their own source table without
+# editing the installed package.
+CONFIG_ENV = "FAIR_SHARES_CONFIG"
 
 # All valid target types.
 ALL_TARGETS: frozenset[str] = frozenset({"pathway", "rcbs", "rcb-pathways"})
@@ -167,7 +173,7 @@ def build_source_id(
         Target source type. One of: "rcbs", "pathway", "rcb-pathways".
     emission_category : str
         Emission category. Available categories are defined per target in
-        ``conf/data_sources/data_sources_unified.yaml``.
+        the packaged ``data_sources_unified.yaml`` (``src/fair_shares/conf/data_sources/``).
     lulucf : str | None, optional
         LULUCF source identifier (e.g., "melo-2026")
     rcb_generator : str | None, optional
@@ -235,7 +241,9 @@ def build_data_config(
         - "rcb_generator": (optional) pathway generator for rcb-pathways
           (e.g., "exponential-decay"). Only used when target="rcb-pathways".
     config_path : Path | None, optional
-        Path to unified config file. If None, uses default location.
+        Path to a unified config file. If None, falls back to the
+        ``FAIR_SHARES_CONFIG`` environment variable and then to the copy
+        packaged inside the wheel.
     harmonisation_year : int | None, optional
         Year for global scenario harmonisation. If None, will use value from config YAML
         if available, otherwise raise an error.
@@ -254,21 +262,22 @@ def build_data_config(
     ConfigurationError
         If rcb_generator specified for non-rcb-pathways target or invalid generator
     """
-    # Determine config path
+    # Determine config source: explicit argument, then FAIR_SHARES_CONFIG,
+    # then the copy packaged inside the wheel.
     if config_path is None:
-        # Default to unified config in conf/data_sources/
-        from pyprojroot import here
+        from_env = os.environ.get(CONFIG_ENV)
+        config_path = Path(from_env) if from_env else None
 
-        project_root = here()
-        config_path = (
-            project_root / "conf" / "data_sources" / "data_sources_unified.yaml"
-        )
+    if config_path is None:
+        config_source = packaged_config("data_sources/data_sources_unified.yaml")
+    else:
+        config_source = config_path
 
     # Load unified YAML
-    if not config_path.exists():
-        raise DataLoadingError(f"Config file not found: {config_path}")
+    if not config_source.exists():
+        raise DataLoadingError(f"Config file not found: {config_source}")
 
-    with open(config_path) as f:
+    with config_source.open() as f:
         full_config = yaml.safe_load(f)
 
     # Extract target name

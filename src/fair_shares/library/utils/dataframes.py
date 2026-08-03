@@ -19,13 +19,13 @@ import country_converter as coco
 import numpy as np
 import pandas as pd
 from pandas_openscm.grouping import groupby_except
-from pyprojroot import here
 
 from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
     DataProcessingError,
 )
+from fair_shares.library.paths import resolve_source_path
 
 if TYPE_CHECKING:
     pass
@@ -183,7 +183,13 @@ def last_year_column(df: TimeseriesDataFrame) -> int:
 
 
 def validate_path_exists(path_str: str, file_type: str = "data file") -> str:
-    """Validate that the path exists (relative to project root).
+    """Validate that a configured data-source path exists.
+
+    Relative paths resolve against the configured data or output directory —
+    see :func:`fair_shares.library.paths.resolve_source_path`. A resolution
+    failure propagates as a ``ConfigurationError`` naming the environment
+    variable to set, rather than being downgraded into a "file not found"
+    against a bare relative path.
 
     Args:
         path_str: The path string to validate
@@ -200,12 +206,8 @@ def validate_path_exists(path_str: str, file_type: str = "data file") -> str:
     """
     if path_str.startswith("/") or ":" in path_str:  # Absolute path
         path = Path(path_str)
-    else:  # Relative path - resolve from project root
-        try:
-            project_root = here()
-            path = project_root / path_str
-        except Exception:
-            path = Path(path_str)
+    else:
+        path = resolve_source_path(path_str)
 
     if not path.exists():
         raise ConfigurationError(f"{file_type} not found: {path_str}")

@@ -29,16 +29,22 @@ from typing import Any
 
 import pandas as pd
 
+from fair_shares.library.citations import (
+    active_sources_from_context,
+    write_citations_file,
+)
 from fair_shares.library.exceptions import ConfigurationError
 from fair_shares.library.notebook_helpers import (
     load_allocation_data,
     run_all_allocations,
 )
+from fair_shares.library.paths import configure
 from fair_shares.library.utils import setup_data
 from fair_shares.library.utils.data.config import (
     is_composite_category,
     validate_data_source_config,
 )
+from fair_shares.library.utils.data.setup import _deprecate_project_root
 from fair_shares.library.utils.math import (
     calculate_exponential_decay_pathway,
     distribute_remaining_budgets_pathways,
@@ -580,7 +586,9 @@ def calculate_allocation_timeseries(
     gini_source: str,
     lulucf_source: str,
     allocation_folder: str,
-    project_root: Path,
+    project_root: Path | None = None,
+    data_dir: Path | str | None = None,
+    output_dir: Path | str | None = None,
 ) -> ResultContainer:
     """Compute the distributed allocation timeseries for one (anchor, category).
 
@@ -604,7 +612,20 @@ def calculate_allocation_timeseries(
         The single non-CO2 debt-settlement mode (``"free-rider"`` /
         ``"co2-debit"``) for composite categories; must be ``None`` for
         ``co2-ffi`` (which has no non-CO2 part).
+    project_root
+        Deprecated. Superseded by ``data_dir`` and ``output_dir``, onto which
+        it maps as ``project_root/"data"`` and ``project_root/"output"``.
+    data_dir, output_dir
+        Input and product directories. Both default to the resolved
+        directories — see :mod:`fair_shares.library.paths`.
     """
+    if project_root is not None:
+        data_dir, output_dir = _deprecate_project_root(
+            project_root, data_dir, output_dir, "calculate_allocation_timeseries"
+        )
+    # Seed before the first validation call — config validation resolves the
+    # config's relative data paths, well below anywhere these can be threaded.
+    configure(data_dir=data_dir, output_dir=output_dir)
     is_composite = is_composite_category(emission_category)
     if is_composite and nonco2_debt_mode is None:
         raise ValueError(
@@ -649,11 +670,12 @@ def calculate_allocation_timeseries(
     harmonisation_year = desired_harmonisation_year if is_composite else None
 
     setup_info = setup_data(
-        project_root=project_root,
         emission_category=emission_category,
         active_sources=active_sources,
         harmonisation_year=harmonisation_year,
         verbose=False,
+        data_dir=data_dir,
+        output_dir=output_dir,
     )
     source_id = setup_info["source_id"]
     processed_dir = setup_info["paths"]["processed_dir"]
@@ -677,6 +699,7 @@ def calculate_allocation_timeseries(
         "gdp-source": gdp_source,
         "population-source": population_source,
         "gini-source": gini_source,
+        "lulucf-source": lulucf_source,
     }
 
     _manifest, allocations_absolute = run_all_allocations(
@@ -744,8 +767,9 @@ def calculate_allocation_timeseries(
 def save_results(results: ResultContainer, outpath: Path) -> Path:
     """Persist a :class:`ResultContainer` under ``outpath`` (created if needed).
 
-    Writes ``allocation_timeseries.parquet``, ``history.parquet`` and a
-    ``metadata.json`` of every scalar attribute. Returns ``outpath``.
+    Writes ``allocation_timeseries.parquet``, ``history.parquet``, a
+    ``metadata.json`` of every scalar attribute, and ``CITATIONS.md`` listing
+    the software and the data sources this run used. Returns ``outpath``.
     """
     outpath = Path(outpath)
     outpath.mkdir(parents=True, exist_ok=True)
@@ -776,4 +800,20 @@ def save_results(results: ResultContainer, outpath: Path) -> Path:
         **results.metadata,
     }
     (outpath / "metadata.json").write_text(json.dumps(scalar_meta, indent=2) + "\n")
+
+    # Written alongside the results so a saved run always says what to cite.
+    write_citations_file(
+        outpath,
+        active_sources_from_context(
+            {
+                "target-source": TARGET,
+                "emissions-source": results.emissions_source,
+                "gdp-source": results.gdp_source,
+                "population-source": results.population_source,
+                "gini-source": results.gini_source,
+                "lulucf-source": results.lulucf_source,
+            }
+        ),
+        emission_category=results.emission_category,
+    )
     return outpath

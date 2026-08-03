@@ -25,7 +25,8 @@ import subprocess
 import sys
 
 import pandas as pd
-from pyprojroot import here
+
+from fair_shares.library.paths import find_repo_root
 
 # The anchor the fixtures are saved for. The notebook's own default; kept
 # explicit so the test knows which (rcb_source, climate_assessment, quantile) to
@@ -43,7 +44,14 @@ FIXTURE_DIR = "tests/fixtures/python_api"
 
 
 def main() -> None:
-    project_root = here()
+    # This script drives jupytext over notebooks/, so it genuinely needs the
+    # checkout rather than just a resolved data directory.
+    project_root = find_repo_root()
+    if project_root is None:
+        raise SystemExit(
+            "save_python_api_fixture.py must be run from inside a fair-shares "
+            "checkout — it executes notebooks/ through jupytext."
+        )
     fixture_dir = project_root / FIXTURE_DIR
     fixture_dir.mkdir(parents=True, exist_ok=True)
 

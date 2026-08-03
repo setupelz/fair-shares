@@ -9,9 +9,9 @@ from __future__ import annotations
 
 import pytest
 import yaml
-from pyprojroot import here
 
 from fair_shares.library.config.models import DataSourcesConfig
+from fair_shares.library.paths import packaged_config
 
 
 class TestAR6Co2YAMLConfig:
@@ -20,8 +20,8 @@ class TestAR6Co2YAMLConfig:
     @pytest.fixture(scope="class")
     def data_sources_config(self):
         """Load the unified data sources YAML config."""
-        config_path = here() / "conf/data_sources/data_sources_unified.yaml"
-        with open(config_path) as f:
+        resource = packaged_config("data_sources/data_sources_unified.yaml")
+        with resource.open() as f:
             return yaml.safe_load(f)
 
     def test_co2_in_ar6_available_categories(self, data_sources_config):

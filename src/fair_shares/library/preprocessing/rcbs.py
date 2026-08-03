@@ -31,6 +31,7 @@ from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
 )
+from fair_shares.library.paths import resolve_source_path
 from fair_shares.library.utils import (
     ensure_string_year_columns,
     parse_rcb_scenario,
@@ -44,20 +45,28 @@ from fair_shares.library.utils.data.nghgi import (
 
 
 def _resolve_template_path(
-    path_str: str, source_id: str | None, project_root: Path
+    path_str: str,
+    source_id: str | None,
+    data_dir: Path | str | None = None,
+    output_dir: Path | str | None = None,
 ) -> Path:
-    """Resolve a config path that may contain a {source_id} template."""
+    """Resolve a config path that may contain a {source_id} template.
+
+    The leading ``data/`` or ``output/`` segment selects which configured
+    directory the remainder resolves against.
+    """
     if source_id and "{source_id}" in path_str:
         path_str = path_str.replace("{source_id}", source_id)
-    return project_root / path_str
+    return resolve_source_path(path_str, data_dir=data_dir, output_dir=output_dir)
 
 
 def _load_shared_timeseries(
     adjustments: AdjustmentsConfig,
-    project_root: Path,
+    data_dir: Path | str | None = None,
     source_id: str | None = None,
     verbose: bool = True,
     load_nghgi: bool = True,
+    output_dir: Path | str | None = None,
 ) -> tuple[pd.DataFrame | None, pd.DataFrame, int | None]:
     """Load scenario-invariant timeseries data (bunkers, and optionally NGHGI LULUCF).
 
@@ -70,8 +79,8 @@ def _load_shared_timeseries(
     ----------
     adjustments : AdjustmentsConfig
         Adjustment configuration with paths.
-    project_root : Path
-        Project root for resolving relative paths.
+    data_dir : Path or None
+        Directory holding input data. Defaults to the resolved data directory.
     source_id : str or None
         Source ID for resolving intermediate paths with {source_id} template.
     verbose : bool
@@ -79,6 +88,9 @@ def _load_shared_timeseries(
     load_nghgi : bool
         Whether to load NGHGI LULUCF world timeseries. Only needed for
         total CO2 emission categories. Default True for backwards compat.
+    output_dir : Path or None
+        Directory holding pipeline products. Defaults to the resolved output
+        directory.
 
     Returns
     -------
@@ -91,7 +103,7 @@ def _load_shared_timeseries(
 
     if load_nghgi:
         nghgi_path = _resolve_template_path(
-            adjustments.lulucf_nghgi.path, source_id, project_root
+            adjustments.lulucf_nghgi.path, source_id, data_dir, output_dir
         )
         if verbose:
             print(f"    Loading NGHGI LULUCF from: {nghgi_path}")
@@ -100,7 +112,7 @@ def _load_shared_timeseries(
             print(f"    NGHGI splice year (from data): {splice_year}")
 
     bunker_path = _resolve_template_path(
-        adjustments.bunkers.path, source_id, project_root
+        adjustments.bunkers.path, source_id, data_dir, output_dir
     )
     if verbose:
         print(f"    Loading bunker timeseries from: {bunker_path}")
@@ -280,10 +292,11 @@ def load_and_process_rcbs(
     world_fossil_emissions: pd.DataFrame,
     emission_category: str,
     adjustments_config: AdjustmentsConfig,
-    project_root: Path | None = None,
+    data_dir: Path | str | None = None,
     source_id: str | None = None,
     actual_bm_lulucf_emissions: pd.DataFrame | None = None,
     verbose: bool = True,
+    output_dir: Path | str | None = None,
 ) -> pd.DataFrame:
     """Load and process RCB data from YAML configuration.
 
@@ -301,8 +314,8 @@ def load_and_process_rcbs(
         Emission category (must be "co2-ffi" or "co2")
     adjustments_config : AdjustmentsConfig
         Structured adjustment configuration with timeseries source paths.
-    project_root : Path or None, optional
-        Root directory for resolving relative data paths.
+    data_dir : Path or None, optional
+        Directory holding input data. Defaults to the resolved data directory.
     source_id : str or None, optional
         Source ID for resolving intermediate paths with {source_id} template.
     actual_bm_lulucf_emissions : pd.DataFrame or None, optional
@@ -310,6 +323,9 @@ def load_and_process_rcbs(
         emission_category is "co2".
     verbose : bool, optional
         Print processing details
+    output_dir : Path or None, optional
+        Directory holding pipeline products. Defaults to the resolved output
+        directory.
 
     Returns
     -------
@@ -346,13 +362,13 @@ def load_and_process_rcbs(
     world_fossil_emissions = ensure_string_year_columns(world_fossil_emissions)
 
     # Pre-load scenario-invariant timeseries (bunkers always; NGHGI only for total CO2)
-    resolved_root = project_root or Path(".")
     _nghgi_ts, bunker_ts, _splice_year = _load_shared_timeseries(
         adjustments_config,
-        resolved_root,
+        data_dir,
         source_id=source_id,
         verbose=verbose,
         load_nghgi=(emission_category == "co2"),
+        output_dir=output_dir,
     )
 
     # Load pre-computed RCB adjustment scalars from notebook 104
@@ -362,7 +378,12 @@ def load_and_process_rcbs(
             "adjustment scalars are stored per source_id in "
             "output/{source_id}/intermediate/scenarios/rcb_scenario_adjustments.yaml"
         )
-    scenarios_dir = resolved_root / f"output/{source_id}/intermediate/scenarios"
+    scenarios_dir = _resolve_template_path(
+        "output/{source_id}/intermediate/scenarios",
+        source_id,
+        data_dir,
+        output_dir,
+    )
     adj_path = scenarios_dir / "rcb_scenario_adjustments.yaml"
     if not adj_path.exists():
         raise DataLoadingError(

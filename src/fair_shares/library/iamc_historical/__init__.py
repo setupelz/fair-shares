@@ -4,12 +4,12 @@ Back-fill IAM scenarios with IAMC-consistent historical emissions.
 Uses the packaged **IAMC historical composite** (CEDS + GFED + Velders + WMO
 + Adam 2024) to prepend regional history to a user-supplied scenario
 :class:`pyam.IamDataFrame` at the model's native region resolution. Releases
-register in ``conf/data_sources/iamc_data_sources.yaml`` under
+register in the packaged ``iamc_data_sources.yaml`` (``src/fair_shares/conf/data_sources/``) under
 ``iamc_historical:``; the currently packaged release is the CMIP7 ScenarioMIP
 2025.12.07 composite from ``iiasa/emissions_harmonization_historical``
 (Nicholls, Kikstra, Zecchetto, Hoegner 2025, concept DOI
 https://doi.org/10.5281/zenodo.15357372), shipped under
-``data/emissions/cmip7-historical-2025.12.07/`` (CC-BY-4.0). Produces
+``data/emissions/cmip7-historical-2025.12.07/`` (CC-BY-SA-4.0). Produces
 ``Emissions|CO2|Energy and Industrial Processes``, ``Emissions|CH4``,
 ``Emissions|N2O`` and aerosols (``BC``, ``OC``, ``CO``, ``NOx``, ``NH3``,
 ``Sulfur``, ``VOC``).

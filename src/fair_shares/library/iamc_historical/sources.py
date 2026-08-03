@@ -1,7 +1,8 @@
 """Load IAMC historical composite timeseries packaged with fair-shares.
 
-Releases are registered in ``conf/data_sources/iamc_data_sources.yaml`` under
-``iamc_historical:``. Files ship under ``data/emissions/<release-dir>/``.
+Releases are registered in the packaged
+``fair_shares/conf/data_sources/iamc_data_sources.yaml`` under
+``iamc_historical:``. Files live under ``<data dir>/emissions/<release-dir>/``.
 The current release is the CMIP7 ScenarioMIP 2025.12.07 composite (CC-BY-4.0,
 concept DOI https://doi.org/10.5281/zenodo.15357372). Future CMIP8 or other
 IAMC releases slot in under the same section. No runtime download is
@@ -15,10 +16,13 @@ from pathlib import Path
 from typing import Literal
 
 import pandas as pd
-import pyprojroot
 
 from fair_shares.library.exceptions import DataLoadingError
-from fair_shares.library.iamc_historical.constants import LATEST_IAMC_HISTORICAL_RELEASE, IAMC_HISTORICAL_RELEASES
+from fair_shares.library.iamc_historical.constants import (
+    IAMC_HISTORICAL_RELEASES,
+    LATEST_IAMC_HISTORICAL_RELEASE,
+)
+from fair_shares.library.paths import DATA_DIR_ENV, resolve_source_path
 
 logger = logging.getLogger(__name__)
 
@@ -50,12 +54,12 @@ def packaged_historical_path(
         )
     filename = str(files[kind])  # type: ignore[index]
     package_dir = str(record["package_dir"])
-    path = pyprojroot.here() / package_dir / filename
+    path = resolve_source_path(f"{package_dir}/{filename}")
     if not path.exists():
         raise DataLoadingError(
             f"Packaged IAMC historical release {resolved!r} not found at {path}. "
-            "Expected it to ship with the fair-shares repository. "
-            "If you are using a checkout without the data/ directory, pass "
+            "Expected it to ship with the fair-shares data directory. "
+            f"Point {DATA_DIR_ENV} at a directory containing it, or pass "
             "history_path=<your local file> to the adapter."
         )
     return path
