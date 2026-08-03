@@ -124,9 +124,11 @@ class TestTextOutput:
         return cit.citations(COUNTRY_RUN, emission_category="co2-ffi")
 
     def test_software_is_cited_with_version_and_repo(self, run):
+        import fair_shares
+
         text = run.text()
         assert "fair-shares" in text
-        assert "0.2.0" in text
+        assert fair_shares.__version__ in text
         assert "github.com/setupelz/fair-shares" in text
         assert "BSD-3-Clause" in text
 

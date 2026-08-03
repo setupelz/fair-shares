@@ -1,24 +1,36 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways"
-version: 0.2.0
-date-released: 2025-01-20
+version: 0.3.0
+date-released: "2026-08-03"
 url: "https://github.com/setupelz/fair-shares"
 repository-code: "https://github.com/setupelz/fair-shares"
 license: BSD-3-Clause
 authors:
   - family-names: "Pelz"
     given-names: "Setu"
+    orcid: "https://orcid.org/0000-0002-3528-8679"
+    affiliation: "International Institute for Applied Systems Analysis (IIASA), Laxenburg, Austria"
   - family-names: "Holz"
     given-names: "Ceecee"
+    orcid: "https://orcid.org/0000-0003-0722-1044"
+    affiliation: "Climate Equity Reference Project, Ottawa, ON, Canada"
   - family-names: "Lamboll"
     given-names: "Robin"
+    orcid: "https://orcid.org/0000-0002-8410-037X"
+    affiliation: "Centre for Environmental Policy, Imperial College London, London, UK"
   - family-names: "Weber"
     given-names: "Konstantin"
+    orcid: "https://orcid.org/0009-0003-5230-0283"
+    affiliation: "Institute for Atmospheric and Climate Science, ETH Zurich, Zurich, Switzerland"
   - family-names: "Lewis"
     given-names: "Jared"
+    orcid: "https://orcid.org/0000-0002-8155-8924"
+    affiliation: "Climate Resource, Melbourne, Victoria, Australia"
   - family-names: "Nicholls"
     given-names: "Zebedee"
+    orcid: "https://orcid.org/0000-0002-4767-2723"
+    affiliation: "Climate Resource, Melbourne, Victoria, Australia"
 keywords:
   - climate change
   - carbon budgets
