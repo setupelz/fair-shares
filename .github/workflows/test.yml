@@ -1,0 +1,26 @@
+# Run the test suite on every supported Python version.
+# Auto-fetch is disabled in tests (tests/conftest.py), so CI never
+# downloads data.
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: uv sync --locked
+      - name: Test
+        run: uv run python -m pytest tests/ -q
