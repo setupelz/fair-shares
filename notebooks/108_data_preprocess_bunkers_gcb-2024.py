@@ -62,7 +62,7 @@ if _running_via_papermill:
         )
 else:
     emission_category = "co2-ffi"
-    source_id = "primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_rcbs_co2-ffi"
+    source_id = "primap-202503_wdi-2025_un-owid-2025_wdi-2025_rcbs_co2-ffi"
 
 project_root = here()
 intermediate_dir = project_root / f"output/{source_id}/intermediate/emissions"

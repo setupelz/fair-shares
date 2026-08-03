@@ -78,8 +78,9 @@ active_sources = {
     # - "un-owid-2025": UN Population Prospects + Our World in Data (2025)
     "population": "un-owid-2025",
     # Gini coefficient - For within-country inequality adjustments
-    # - "unu-wider-2025": UNU-WIDER World Income Inequality Database (2025)
-    "gini": "unu-wider-2025",
+    # - "wdi-2025": World Bank WDI Gini index (SI.POV.GINI), the default
+# - "unu-wider-2025": UNU-WIDER WIID — opt-in, CC BY-NC-SA (see data-sources.md)
+    "gini": "wdi-2025",
     # LULUCF - Required for NGHGI-consistent RCB corrections
     # - "melo-2026": Melo et al. (2026) NGHGI v3.1 data
     "lulucf": "melo-2026",

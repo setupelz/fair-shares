@@ -2,7 +2,10 @@
 
 import pandas as pd
 
-from fair_shares.library.exceptions import DataProcessingError
+from fair_shares.library.preprocessing.gini import (
+    DEFAULT_GINI_MISSING_POLICY,
+    complete_gini,
+)
 from fair_shares.library.utils import add_row_timeseries, get_world_totals_timeseries
 
 
@@ -15,6 +18,7 @@ def add_row_to_datasets(
     emissions_world_key: str,
     gdp_world_key: str,
     population_world_key: str,
+    gini_missing_policy: str = DEFAULT_GINI_MISSING_POLICY,
 ) -> tuple[
     dict[str, pd.DataFrame],
     pd.DataFrame,
@@ -36,6 +40,8 @@ def add_row_to_datasets(
         emissions_world_key: Key for world totals in emissions data
         gdp_world_key: Key for world totals in GDP data
         population_world_key: Key for world totals in population data
+        gini_missing_policy: What to do with an analysis country that has no
+            Gini value — "fallback-mean" (default) or "strict"
 
     Returns
     -------
@@ -78,22 +84,10 @@ def add_row_to_datasets(
         expected_index_names=["iso3c", "unit"],
     )
 
-    # Handle Gini separately - use average of analysis countries for ROW
-    gini_analysis = gini[
-        gini.index.get_level_values("iso3c").isin(analysis_countries)
-    ].copy()
-
-    if gini_analysis.empty:
-        raise DataProcessingError(
-            "No Gini coefficient data found for analysis countries. "
-            "Cannot calculate ROW average without data."
-        )
-
-    gini_analysis_average = gini_analysis["gini"].mean()
-    gini_row = pd.DataFrame(
-        {"gini": [gini_analysis_average]},
-        index=pd.MultiIndex.from_tuples([("ROW", "unitless")], names=["iso3c", "unit"]),
+    # Gini is handled separately: ROW and any analysis country without a value
+    # of its own get the analysis-country mean.
+    gini_complete, _imputed = complete_gini(
+        gini, analysis_countries, policy=gini_missing_policy
     )
-    gini_complete = pd.concat([gini_analysis, gini_row])
 
     return emiss_complete, gdp_complete, population_complete, gini_complete, world_emiss

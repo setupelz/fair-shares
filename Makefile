@@ -45,13 +45,13 @@ dev-pipeline-scenarios:  ## [DEV] Create preprocessed data for AR6 scenarios (ma
 		active_emissions_source=primap-202503 \
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
-		active_gini_source=unu-wider-2025 \
+		active_gini_source=wdi-2025 \
 		active_lulucf_source=melo-2026 \
 		active_target_source=ar6 \
 		--cores 1
 	@echo ""
 	@echo "  AR6 scenarios pipeline created!"
-	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_ar6/"
+	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_wdi-2025_ar6/"
 
 .PHONY: dev-pipeline-rcbs
 dev-pipeline-rcbs:  ## [DEV] Create preprocessed data for RCBs (matches interactive defaults)
@@ -64,13 +64,13 @@ dev-pipeline-rcbs:  ## [DEV] Create preprocessed data for RCBs (matches interact
 		active_emissions_source=primap-202503 \
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
-		active_gini_source=unu-wider-2025 \
+		active_gini_source=wdi-2025 \
 		active_lulucf_source=melo-2026 \
 		active_target_source=rcbs \
 		--cores 1
 	@echo ""
 	@echo "  RCBs pipeline created!"
-	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_rcbs/"
+	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_wdi-2025_rcbs/"
 
 .PHONY: dev-pipeline-rcb-pathways
 dev-pipeline-rcb-pathways:  ## [DEV] Create preprocessed data for RCB-pathways (matches interactive defaults)
@@ -83,13 +83,13 @@ dev-pipeline-rcb-pathways:  ## [DEV] Create preprocessed data for RCB-pathways (
 		active_emissions_source=primap-202503 \
 		active_gdp_source=wdi-2025 \
 		active_population_source=un-owid-2025 \
-		active_gini_source=unu-wider-2025 \
+		active_gini_source=wdi-2025 \
 		active_lulucf_source=melo-2026 \
 		active_target_source=rcb-pathways \
 		--cores 1
 	@echo ""
 	@echo "  RCB-pathways pipeline created!"
-	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_unu-wider-2025_rcb-pathways_co2-ffi/"
+	@echo "  Output: output/primap-202503_wdi-2025_un-owid-2025_wdi-2025_rcb-pathways_co2-ffi/"
 
 .PHONY: virtual-environment
 virtual-environment:  ## update virtual environment with core dependencies only

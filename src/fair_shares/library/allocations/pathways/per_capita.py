@@ -78,9 +78,9 @@ def _capability_snapshot(
     column, consistent with the year-by-year forward fill); before the
     allocation window (sourced from the unfiltered ``gdp_ts`` and
     ``population_ts``, raising when the year is outside the data range).
-    Gini adjustment applies to in-window and beyond-last snapshots; a
-    pre-window snapshot is taken without Gini adjustment, matching the
-    budget-side behaviour.
+    Gini adjustment applies in all three cases: which input the snapshot is
+    read from is a plumbing detail, not a reason for the capability measure to
+    ignore inequality.
     """
     ref_year = int(reference_year)
     gdp_years = {int(c): c for c in gdp_numeric.columns}
@@ -127,9 +127,6 @@ def _capability_snapshot(
             )
         gdp_at_ref = gdp_full[gdp_all[ref_year]]
         pop_at_ref = pop_full[pop_all[ref_year]].reindex(gdp_at_ref.index)
-        if capability_per_capita:
-            return gdp_at_ref.divide(pop_at_ref)
-        return gdp_at_ref
 
     if gini_s is not None:
         gini_lookup = create_gini_lookup_dict(gini_s)

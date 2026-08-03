@@ -10,7 +10,7 @@
 #       active_emissions_source=primap-202503 \
 #       active_gdp_source=wdi-2025 \
 #       active_population_source=un-owid-2025 \
-#       active_gini_source=unu-wider-2025 \
+#       active_gini_source=wdi-2025 \
 #       active_target_source=rcbs \
 #       --cores 1
 #
@@ -55,7 +55,7 @@ if emission_category is None:
         "Required parameter: emission_category\n"
         "Example: snakemake --config emission_category=co2-ffi "
         "active_emissions_source=primap-202503 active_gdp_source=wdi-2025 "
-        "active_population_source=un-owid-2025 active_gini_source=unu-wider-2025 "
+        "active_population_source=un-owid-2025 active_gini_source=wdi-2025 "
         "active_target_source=pathway active_lulucf_source=melo-2026\n\n"
         "For custom allocations, use: notebooks/301_custom_fair_share_allocation.py"
     )

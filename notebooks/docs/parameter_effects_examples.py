@@ -59,7 +59,7 @@ active_sources = {
     "emissions": "primap-202503",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     "lulucf": "melo-2026",
 }
 

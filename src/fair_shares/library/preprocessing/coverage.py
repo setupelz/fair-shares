@@ -14,15 +14,20 @@ def compute_analysis_countries(
     emissions_data: dict[str, pd.DataFrame],
     gdp: pd.DataFrame,
     population: pd.DataFrame,
-    gini: pd.DataFrame,
+    gini: pd.DataFrame | None = None,
 ) -> set[str]:
-    """Compute the set of countries with complete data across all datasets.
+    """Compute the set of countries with complete emissions, GDP and population.
+
+    Gini is deliberately not part of this. A country without a Gini value used
+    to be dropped from every allocation, including approaches that never look
+    at inequality; it now stays in the analysis and its missing Gini is handled
+    where Gini is actually used (see ``preprocessing.gini.complete_gini``).
 
     Args:
         emissions_data: Dictionary of emission category DataFrames
         gdp: GDP DataFrame
         population: Population DataFrame
-        gini: Gini coefficient DataFrame
+        gini: Accepted for backwards compatibility and ignored.
 
     Returns
     -------
@@ -51,12 +56,7 @@ def compute_analysis_countries(
         start=1990,
         end=last_year_column(population),
     )
-    gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
-
-    # Find intersection of all datasets
-    analysis_countries = (
-        gdp_analysis_countries & population_analysis_countries & gini_analysis_countries
-    )
+    analysis_countries = gdp_analysis_countries & population_analysis_countries
 
     for category_countries in emiss_analysis_countries.values():
         analysis_countries = analysis_countries & category_countries
@@ -137,6 +137,12 @@ def create_coverage_summary(
     # Add final analysis indicator
     coverage_summary["in_analysis"] = coverage_summary["iso3c"].isin(analysis_countries)
 
+    # An analysis country with no Gini value keeps its place and is given the
+    # analysis-country mean. This column is the record of where that happened.
+    coverage_summary["gini_imputed"] = (
+        coverage_summary["in_analysis"] & ~coverage_summary["has_gini"]
+    )
+
     # Add ROW indicator
     coverage_summary["in_row"] = coverage_summary["iso3c"].isin(
         all_region_countries
@@ -180,6 +186,14 @@ def create_coverage_summary(
     print(
         f"Countries clubbed in ROW in final dataset: {countries_in_row} "
         f"({countries_in_row / total_countries * 100:.1f}%)"
+    )
+
+    imputed_countries = coverage_summary[coverage_summary["gini_imputed"]][
+        "iso3c"
+    ].tolist()
+    print(
+        f"Countries in analysis with an imputed Gini: {len(imputed_countries)} "
+        f"{sorted(imputed_countries)}"
     )
 
     # Show countries in ROW

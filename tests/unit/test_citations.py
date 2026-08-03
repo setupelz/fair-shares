@@ -80,6 +80,29 @@ class TestSourceResolution:
         )
         assert "unu-wider-2025" not in swapped
 
+    def test_the_default_gini_source_is_credited_by_name_under_cc_by(self, tmp_path):
+        """The World Bank issues no DOI for SI.POV.GINI, so name-only is correct."""
+        written = cit.write_citations_file(
+            tmp_path, {**COUNTRY_RUN, "gini": "wdi-2025"}, emission_category="co2-ffi"
+        )
+        text = written.read_text(encoding="utf-8")
+
+        assert "unu-wider-2025" not in text
+        assert "SI.POV.GINI" in text, "the Gini indicator must be named"
+        assert "World Bank" in text
+        assert "CC-BY-4.0" in text
+        assert "DOI: none issued; cite by name as written above" in text
+        assert not _dois_in(
+            text.split("### wdi-2025")[1].split("###")[0]
+        ), "no DOI may be invented for the World Bank entry"
+
+    def test_a_run_on_the_default_gini_source_has_no_special_terms_to_flag(self):
+        """WIID's non-commercial terms are the reason for the swap."""
+        run = cit.citations(
+            {**COUNTRY_RUN, "gini": "wdi-2025"}, emission_category="co2-ffi"
+        )
+        assert "unu-wider-2025" not in dict(run.special_terms)
+
     def test_an_unknown_source_is_an_error_not_a_silent_omission(self):
         with pytest.raises(ConfigurationError, match="not a known data source"):
             cit.resolve_source_names(

@@ -223,7 +223,7 @@ active_sources = {
     "emissions": "primap-202503",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     # "lulucf": "melo-2026",  # Only needed for "co2" (incl. LULUCF) categories
     "rcb_generator": "exponential-decay",
 }
@@ -488,7 +488,7 @@ print("  4. Distribute the remaining budget over time via a convergence pathway"
 # - **Emissions:** `primap-202503` — historical country-level CO2-FFI emissions
 # - **GDP:** `wdi-2025` — World Bank GDP data (PPP)
 # - **Population:** `un-owid-2025` — UN population projections via Our World in Data
-# - **Gini:** `unu-wider-2025` — income inequality data
+# - **Gini:** `wdi-2025` — income inequality data
 # - **Target / global pathway:** `rcb-pathways` — global pathways derived from
 #   remaining carbon budgets, with `exponential-decay` shape
 #
