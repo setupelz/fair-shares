@@ -21,7 +21,7 @@ Data sources are configured in `src/fair_shares/conf/data_sources/data_sources_u
 | `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist            |
 | `gdp`        | Economic capability                  | World Bank WDI         |
 | `population` | Per capita calculations              | UN/OWID                |
-| `gini`       | Within-country inequality            | UNU-WIDER              |
+| `gini`       | Within-country inequality            | World Bank WDI (default), UNU-WIDER WIID |
 | `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026)     |
 | `targets`    | Global constraints                   | AR6 scenarios, RCBs    |
 
@@ -187,7 +187,7 @@ active_sources = {
     "emissions": "my-source-2026",  # Use new source
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     "lulucf": "melo-2026",
 }
 ```
@@ -319,6 +319,7 @@ New data sources should:
 | `101_data_preprocess_emiss_primap-202503.py`     | Emissions  | NetCDF processing, category mapping                |
 | `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping               |
 | `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data            |
+| `105_data_preprocess_gini_wdi-2025.py`           | Gini       | Latest-available-in-window selection, aggregate filtering |
 | `105_data_preprocess_gini_unu-wider-2025.py`     | Gini       | Quality filtering, stationary output               |
 | `107_derive_nghgi_categories_melo-2026.py`       | LULUCF     | NGHGI corrections, metadata export, world totals   |
 

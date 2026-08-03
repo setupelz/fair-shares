@@ -9,6 +9,12 @@ from fair_shares.library.preprocessing.coverage import (
     compute_analysis_countries,
     create_coverage_summary,
 )
+from fair_shares.library.preprocessing.gini import (
+    DEFAULT_GINI_MISSING_POLICY,
+    GINI_MISSING_POLICIES,
+    complete_gini,
+    gini_missing_policy,
+)
 from fair_shares.library.preprocessing.loaders import (
     load_emissions_data,
     load_gdp_data,
@@ -26,12 +32,16 @@ from fair_shares.library.preprocessing.row import add_row_to_datasets
 from fair_shares.library.preprocessing.scenarios import process_complete_scenarios
 
 __all__ = [
+    "DEFAULT_GINI_MISSING_POLICY",
+    "GINI_MISSING_POLICIES",
     "NGHGI_CORRECTED_CATEGORIES",
     "add_row_to_datasets",
+    "complete_gini",
     "compute_analysis_countries",
     "create_coverage_summary",
     "emissions_filename",
     "emissions_path",
+    "gini_missing_policy",
     "load_and_process_rcbs",
     "load_emissions_data",
     "load_gdp_data",

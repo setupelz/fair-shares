@@ -44,8 +44,8 @@ uv run fair-shares fetch-data
 That fetches roughly 70 MB — everything a standard country-level run needs.
 Add `--all` for the large optional sources (the AR6 scenario ensemble, CMIP7
 historical, and the WIID inequality data), another ~90 MB. You can skip `--all`
-and let those arrive on demand: the WIID data, for instance, is downloaded the
-first time you run a `-gini` approach that needs it.
+and let those arrive on demand: the AR6 ensemble, for instance, is downloaded
+the first time a run needs it.
 
 ```bash
 uv run fair-shares fetch-data --all     # include the optional sources

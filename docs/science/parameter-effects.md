@@ -121,10 +121,11 @@ budget and pathway approaches with identical semantics.
   value in preserved mode. Values past the last observed GDP year are
   forward-filled.
 - **Set:** the snapshot year's metric is broadcast across the window. A year
-  before the allocation window is sourced from the unfiltered inputs (without
-  Gini adjustment); a year beyond the last observed GDP year falls back to
-  the last observed column with a warning; a year outside the data range
-  raises.
+  before the allocation window is sourced from the unfiltered inputs; a year
+  beyond the last observed GDP year falls back to the last observed column
+  with a warning; a year outside the data range raises. On the Gini-adjusted
+  approaches the Gini adjustment applies in all three cases — which input the
+  snapshot is read from does not change the capability definition.
 
 **When to use:** replicating studies that fix capability at a reference year
 (e.g. a single-year GDP-per-capita indicator), or holding the capability

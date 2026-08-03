@@ -144,25 +144,43 @@ sources:
     redistributable: true
     citation: >-
       World Bank. World Development Indicators: GDP (constant 2015 US$,
-      NY.GDP.MKTP.KD) and GDP PPP (constant 2017 international $,
-      NY.GDP.MKTP.PP.KD), 2025 export. https://data.worldbank.org/
+      NY.GDP.MKTP.KD), GDP PPP (constant 2017 international $,
+      NY.GDP.MKTP.PP.KD) and Gini index (SI.POV.GINI, sourced by the World Bank
+      from its Poverty and Inequality Platform), 2025 export.
+      https://data.worldbank.org/
     # The bulk endpoint serves a zip whose CSV member carries a World Bank
     # export-job number (`..._v2_1004.csv`) that changes on every regeneration.
     # The member is extracted under the filename the configs expect; the job
     # number is upstream bookkeeping and carries no meaning for the data.
+    #
+    # All three references re-fetched and re-pinned 2026-08-03. The two GDP
+    # files had drifted from their previous pins — the World Bank regenerates
+    # these exports in place (this vintage says "Last Updated 2026-07-13"),
+    # which is what `unversioned` describes. The local copies are this vintage.
     downloads:
       - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.PP.KD?downloadformat=csv"
         transform: unzip-member
         member_pattern: "API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_*.csv"
         target: "gdp/wdi-2025/API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_1004.csv"
         unversioned: true
-        reference_sha256: "5f25005d2d3748bfebf0d9f676800a8cd0e9a65cc7517f9219d5d2984a1a02d7"
+        reference_sha256: "00d482e29f4911826f6e91153606fd72539f311bbef1b0928e155dce11b512b5"
       - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.KD?downloadformat=csv"
         transform: unzip-member
         member_pattern: "API_NY.GDP.MKTP.KD_DS2_en_csv_v2_*.csv"
         target: "gdp/wdi-2025/API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv"
         unversioned: true
-        reference_sha256: "85c1fbdabaf67b8935ed409bc0599beaa97e0332868adeb9d02316e5e8c6b32b"
+        reference_sha256: "956908eafd226680383eb830f14392a722a2e7478e489da928bb143c35d4e846"
+      # Gini index, the default Gini source. Same provider, same licence and
+      # same bulk-export mechanics as the two GDP files above, so it sits in
+      # this entry rather than a separate one. The export-job number is dropped
+      # from the target filename: it changes on every regeneration and means
+      # nothing. Fetched live and pinned 2026-08-03.
+      - url: "https://api.worldbank.org/v2/en/indicator/SI.POV.GINI?downloadformat=csv"
+        transform: unzip-member
+        member_pattern: "API_SI.POV.GINI_DS2_en_csv_v2_*.csv"
+        target: "gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv"
+        unversioned: true
+        reference_sha256: "ef26b11f4b4a46d08409c304606dfc274fc7a94ee7e808576e8ed924cd896d11"
 
   # --- Population ------------------------------------------------------------
 
@@ -196,6 +214,9 @@ sources:
         size_bytes: 990684
 
   # --- Gini ------------------------------------------------------------------
+  #
+  # The default Gini source is the World Bank's SI.POV.GINI, which is part of
+  # the `wdi-2025` entry above. WIID below is opt-in.
 
   unu-wider-2025:
     tier: optional

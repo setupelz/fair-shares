@@ -85,20 +85,47 @@ class PopulationSourceConfig(BaseModel):
 
 
 class GiniDataParameters(BaseModel):
-    """Parameters for Gini data source."""
+    """Parameters for Gini data source.
 
-    world_key: str = Field(..., description="Key identifier for world/global data")
-    gini_year: int = Field(..., description="Reference year for Gini coefficients")
+    Survey-based Gini is sparse in any single year, so a source is described by
+    how one observation per country is picked, not by a reference year.
+    """
 
-    @field_validator("gini_year")
+    selection: Literal["latest-high-quality", "latest-available"] = Field(
+        ...,
+        description=(
+            "How to pick one observation per country: 'latest-high-quality' "
+            "prefers the latest observation flagged high quality and falls back "
+            "to the latest of any quality; 'latest-available' takes the latest "
+            "observation"
+        ),
+    )
+    year_window: list[int] | None = Field(
+        None,
+        description=(
+            "Optional [first, last] year bounds on the observations considered. "
+            "Omit to consider every year in the source."
+        ),
+    )
+
+    @field_validator("year_window")
     @classmethod
-    def validate_gini_year_bounds(cls, v: int) -> int:
-        """Validate that gini_year is within reasonable historical bounds."""
-        if not 1900 <= v <= 2100:
+    def validate_year_window(cls, v: list[int] | None) -> list[int] | None:
+        """Validate the year window is a plausible, ordered pair."""
+        if v is None:
+            return v
+        if len(v) != 2:
             raise ConfigurationError(
-                f"gini_year must be between 1900 and 2100, got {v}. "
+                f"year_window must be [first_year, last_year], got {v}."
+            )
+        first, last = v
+        if not 1900 <= first <= 2100 or not 1900 <= last <= 2100:
+            raise ConfigurationError(
+                f"year_window years must be between 1900 and 2100, got {v}. "
                 "Historical inequality data is only meaningful within this range."
             )
+        if first > last:
+            raise ConfigurationError(f"year_window is out of order: {v}.")
         return v
 
 
@@ -281,6 +308,13 @@ class GeneralConfig(BaseModel):
     """General configuration data."""
 
     region_mapping: RegionMappingConfig
+    gini_missing_policy: Literal["fallback-mean", "strict"] = Field(
+        "fallback-mean",
+        description=(
+            "What happens to an analysis country with no Gini value: "
+            "'fallback-mean' gives it the analysis-country mean, 'strict' raises"
+        ),
+    )
 
 
 class NonCO2Overrides(BaseModel):
