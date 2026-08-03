@@ -28,6 +28,10 @@ from fair_shares.library.allocations.results import (
     PathwayAllocationResult,
 )
 from fair_shares.library.allocations.results.serializers import prepare_dataframe
+from fair_shares.library.citations import (
+    active_sources_from_context,
+    write_citations_file,
+)
 from fair_shares.library.exceptions import DataProcessingError
 from fair_shares.library.utils.data.completeness import (
     get_cumulative_budget_from_timeseries,
@@ -327,10 +331,17 @@ def run_all_allocations(
         absolute_frames.extend(frames)
         print(f"    {len(rows)} parameter combinations processed")
 
-    # Save manifest and README
+    # Save manifest, README and citations
     if write:
         create_param_manifest(param_manifest_rows, output_dir)
         generate_readme(output_dir=output_dir, data_context=data_context)
+        # Written here rather than left to the caller so a saved run always says
+        # what it should cite.
+        write_citations_file(
+            output_dir,
+            active_sources_from_context(data_context),
+            emission_category=data_context.get("emission-category"),
+        )
 
     if return_allocations:
         allocations_df = (

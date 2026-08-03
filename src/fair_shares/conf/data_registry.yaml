@@ -1,0 +1,350 @@
+# Where every input file comes from, and how to tell you got the right one.
+#
+# Read by data_registry.py (which checks it) and data_fetch.py (which acts on
+# it). Shown by `fair-shares fetch-data --list`, and copied into PROVENANCE.md
+# next to the data after a download, so each file's licence and citation stay
+# with the file rather than only in a README.
+#
+# Every DOI and licence here was verified against the upstream source
+# (registrar lookup for DOIs, the provider's own licence page for terms).
+# Where no DOI exists (WDI, OWID, UN WPP) there is no DOI field and the
+# citation just names the publisher. No DOI is made up.
+#
+# The three hash fields
+#
+#   sha256           Fixed hash of the downloaded file. A mismatch stops the
+#                    run; it is never downgraded to a warning.
+#   upstream_hash    The hash the publisher themselves quote. Zenodo only
+#                    publishes MD5, so these say `md5:`. For reference only.
+#   reference_sha256 The hash of the version this analysis was built on, for
+#                    files the publisher keeps rewriting. Reported, not
+#                    enforced — see `unversioned` below.
+#
+# Hashes are taken from the publisher's file, NOT from the copy committed under
+# data/. They are not always the same file. `.gitattributes` sets `* text=auto`,
+# so git rewrites the line endings of text files when they are committed. Any
+# source that ships Windows line endings (Melo, currently) therefore has a
+# committed copy whose hash can never match the download. A hash has to describe
+# what actually arrives.
+#
+# Worth knowing before these files are removed from the repository: once they
+# arrive by download instead, text files will have the publisher's original line
+# endings rather than git's rewritten ones. pandas does not care; anything
+# comparing files byte by byte will.
+#
+# `unversioned: true` marks a source the publisher rewrites in place with no
+# version number (World Bank and OWID bulk exports). A fixed hash there would
+# flag a newer file rather than a broken one, and would break every fresh clone
+# within months. Those entries use `reference_sha256` instead; the difference is
+# reported clearly and the hash actually obtained goes into PROVENANCE.md.
+#
+# Tiers
+#
+#   default   Downloaded by plain `fair-shares fetch-data`. What a normal run needs.
+#   optional  Only via `--all` or `--source <name>`. Large or specialised.
+#   manual    Behind a licence-acceptance page. Never downloaded automatically;
+#             printed instructions instead.
+#   bundled   Ships with the repository and is not third-party data. Listed only
+#             so every path in the config matches an entry here. Never downloaded.
+
+version: 1
+
+sources:
+  # --- Emissions -------------------------------------------------------------
+
+  primap-202503:
+    tier: default
+    version: "v2.6.1 final, no rounding, 13-Mar-2025"
+    doi: "10.5281/zenodo.15016289"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Gütschow, J., Busch, D., & Pflüger, M. (2025). The PRIMAP-hist national
+      historical emissions time series (1750-2023) v2.6.1. Zenodo.
+      https://doi.org/10.5281/zenodo.15016289
+    downloads:
+      - url: "https://zenodo.org/api/records/15016289/files/Guetschow_et_al_2025-PRIMAP-hist_v2.6.1_final_no_rounding_13-Mar-2025.nc/content"
+        target: "emissions/primap-202503/Guetschow_et_al_2025-PRIMAP-hist_v2.6.1_final_no_rounding_13-Mar-2025.nc"
+        sha256: "df2cf5d546d5b3707e723e0e5f15a64c102e77d83738fc593a885141889a2a3d"
+        upstream_hash: "md5:9ff44bbb4d415cc2e9f69a1c43ab5058"
+        size_bytes: 71842406
+
+  cmip7-historical-2025.12.07:
+    tier: optional
+    version: "2025.12.07"
+    doi: "10.5281/zenodo.17845154"
+    # Confirmed CC-BY-SA-4.0 by the dataset's authors on 2026-08-03, settling an
+    # earlier disagreement (the repo said CC-BY-SA-4.0, DataCite said CC0-1.0,
+    # the Zenodo API said nothing; see iiasa/emissions_harmonization_historical#150). The
+    # ShareAlike term is deliberate on their part. It does not spread to the
+    # fair-shares data deposit, because these files are fetched from their own
+    # Zenodo record rather than being republished.
+    license: "CC-BY-SA-4.0 (Zenodo record metadata says CC0; ShareAlike is deliberate, confirmed by the dataset authors — see iiasa/emissions_harmonization_historical#150)"
+    redistributable: false
+    citation: >-
+      Nicholls, Z., Kikstra, J., Zecchetto, M., & Hoegner, A. (2025). CMIP7
+      ScenarioMIP historical timeseries for harmonisation and simple climate
+      model workflow (2025.12.07). Zenodo.
+      https://doi.org/10.5281/zenodo.17845154
+    # Upstream embeds a provenance hash chain in each filename; the repo stores
+    # them under stable short names. Rename only — verified byte-identical.
+    downloads:
+      - url: "https://zenodo.org/api/records/17845154/files/country-history_202511261223_202511040855_202512032146_202512021030_7e32405ade790677a6022ff498395bff00d9792d.feather/content"
+        target: "emissions/cmip7-historical-2025.12.07/country-history.feather"
+        sha256: "9e5f28399595c11afdcef36b8acfa1a19931ac1e9215aa99decb600a80fef5ea"
+        upstream_hash: "md5:f943d77c765e6cd4dd25cddfeb6e508d"
+        size_bytes: 31138122
+      - url: "https://zenodo.org/api/records/17845154/files/global-workflow-history_202511261223_202511040855_202512032146_202512021030_7e32405ade790677a6022ff498395bff00d9792d_202511040855_202512071232_202511040855_202511040855_0002_0002.csv/content"
+        target: "emissions/cmip7-historical-2025.12.07/global-workflow-history.csv"
+        sha256: "ca7bab9989a3ab949c6301d00927e56f04b8a85391c8b89221bd87e944262401"
+        upstream_hash: "md5:19482df604f1dc746fb354ef66ef9047"
+        size_bytes: 161831
+
+  # --- LULUCF ----------------------------------------------------------------
+
+  melo-2026:
+    tier: default
+    version: "3.1.1 (2025 NGHGI release)"
+    doi: "10.5281/zenodo.18352395"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Melo, J., Rossi, S., Achard, F., Alkama, R., Canadell, J. G., Federici, S.,
+      Friedlingstein, P., Gibbs, D., Harris, N., Heinrich, V., O'Sullivan, M.,
+      Peters, G., Pongratz, J., Rose, M., Roman-Cuesta, R., Sanz Sanchez, M. J.,
+      Schwingshackl, C., Sitch, S., & Grassi, G. (2026). The LULUCF Data Hub:
+      translating global land use emissions estimates into the national GHG
+      inventory framework (Version 3.1.1, 2025 NGHGI release). Zenodo.
+      https://doi.org/10.5281/zenodo.18352395
+    # The record is version 3.1.1 while the file it contains is named v3.1.
+    # Upstream's naming convention, not a wrong file — a live fetch from the
+    # 3.1.1 record returned content identical to this file.
+    #
+    # The pin below is the hash of upstream's bytes, which is NOT the hash of
+    # the copy committed under data/. Upstream ships CRLF line endings and this
+    # repo's .gitattributes (`* text=auto`) LF-normalises every text file on
+    # commit, so the committed copy is 1,161,289 bytes to upstream's 1,180,037 —
+    # identical content, 18,748 fewer bytes. Verified: stripping CR from both
+    # makes them byte-identical, and the pin below reproduces Zenodo's own
+    # published md5. Pins must describe what the fetcher receives, not what git
+    # stored, or every fetch fails on the line-ending difference alone.
+    downloads:
+      - url: "https://zenodo.org/api/records/18352395/files/timeseries_NGHGI_v3.1.csv/content"
+        target: "lulucf/melo-2026/timeseries_NGHGI_v3.1.csv"
+        sha256: "f37680bcae260d7bb04fe44df9b0f8c21c52ca94d6c0d617bcdef34d4b2174a8"
+        upstream_hash: "md5:702b46bfe67cca47264fdf272d312005"
+        size_bytes: 1180037
+
+  # --- GDP -------------------------------------------------------------------
+
+  wdi-2025:
+    tier: default
+    version: "2025 bulk export"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      World Bank. World Development Indicators: GDP (constant 2015 US$,
+      NY.GDP.MKTP.KD) and GDP PPP (constant 2017 international $,
+      NY.GDP.MKTP.PP.KD), 2025 export. https://data.worldbank.org/
+    # The bulk endpoint serves a zip whose CSV member carries a World Bank
+    # export-job number (`..._v2_1004.csv`) that changes on every regeneration.
+    # The member is extracted under the filename the configs expect; the job
+    # number is upstream bookkeeping and carries no meaning for the data.
+    downloads:
+      - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.PP.KD?downloadformat=csv"
+        transform: unzip-member
+        member_pattern: "API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_*.csv"
+        target: "gdp/wdi-2025/API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_1004.csv"
+        unversioned: true
+        reference_sha256: "5f25005d2d3748bfebf0d9f676800a8cd0e9a65cc7517f9219d5d2984a1a02d7"
+      - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.KD?downloadformat=csv"
+        transform: unzip-member
+        member_pattern: "API_NY.GDP.MKTP.KD_DS2_en_csv_v2_*.csv"
+        target: "gdp/wdi-2025/API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv"
+        unversioned: true
+        reference_sha256: "85c1fbdabaf67b8935ed409bc0599beaa97e0332868adeb9d02316e5e8c6b32b"
+
+  # --- Population ------------------------------------------------------------
+
+  un-owid-2025:
+    tier: default
+    version: "OWID long-run series (2025 export) + UN WPP 2024 probabilistic projections"
+    license: "Mixed — UN WPP data under UN terms of use; OWID processing is open but OWID does not relicense the UN data"
+    redistributable: false
+    citation: >-
+      Our World in Data. Population (historical estimates), long-run series
+      splicing HYDE, Gapminder and UN World Population Prospects.
+      https://ourworldindata.org/population-growth — and United Nations,
+      Department of Economic and Social Affairs, Population Division (2024).
+      World Population Prospects 2024: Probabilistic Projections.
+      https://population.un.org/wpp/
+    downloads:
+      # OWID regenerates its grapher exports continuously and publishes no
+      # version identifier, so this file cannot be pinned. See the spec's open
+      # question: depositing our vintage to Zenodo is the durable fix.
+      - url: "https://ourworldindata.org/grapher/population.csv"
+        target: "population/un-owid-2025/population.csv"
+        unversioned: true
+        reference_sha256: "e46703de26aa68b562732fa6c0a4589e5aba179aa019976dd2866b4c38f16b8e"
+      # Verified 2026-08-03: this URL returns the repo's copy byte for byte.
+      # Resolves the "UN WPP direct URL unverified" item in the spec. The path
+      # comes from the WPP site's own downloads manifest
+      # (population.un.org/wpp/assets/downloads.json).
+      - url: "https://population.un.org/wpp/assets/Excel%20Files/2_Indicators%20(Probabilistic)/EXCEL_FILES/2_Population/UN_PPP2024_Output_PopTot.xlsx"
+        target: "population/un-owid-2025/UN_PPP2024_Output_PopTot.xlsx"
+        sha256: "a10a0e620d325baa40d800e37b8ef41c2fbc36f56237d7570d91220cdf37d3cb"
+        size_bytes: 990684
+
+  # --- Gini ------------------------------------------------------------------
+
+  unu-wider-2025:
+    tier: optional
+    version: "29 April 2025"
+    doi: "10.35188/UNU-WIDER/WIID-290425"
+    license: "CC-BY-NC-SA-3.0-IGO"
+    redistributable: false
+    citation: >-
+      UNU-WIDER (2025). World Income Inequality Database (WIID) — Version
+      29 April 2025. United Nations University UNU-WIDER.
+      https://doi.org/10.35188/UNU-WIDER/WIID-290425
+    # The NonCommercial + ShareAlike terms are why this file cannot ship in the
+    # repository. It is freely downloadable, and the
+    # landing page is not a consent gate — but a WAF rejects default client
+    # user-agents with HTTP 403. The browser User-Agent below is that
+    # workaround, kept per-source so it is visible exactly where it applies.
+    downloads:
+      - url: "https://www.wider.unu.edu/sites/default/files/WIID/WIID-29APR2025.xlsx"
+        target: "gini/unu-wider-2025/WIID-29APR2025.xlsx"
+        sha256: "fd56af5d862fd88ddd3c4a4b94d34d7e3c4abcd4af78268efcdda666877c3168"
+        size_bytes: 10868605
+        headers:
+          User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+
+  # --- Bunkers ---------------------------------------------------------------
+
+  gcb-2024:
+    tier: manual
+    version: "v1.0"
+    doi: "10.18160/GCP-2024"
+    license: "Custom Global Carbon Project terms — not a Creative Commons licence"
+    redistributable: false
+    citation: >-
+      Friedlingstein, P., et al. (2025). Global Carbon Budget 2024. Earth System
+      Science Data, 17, 965-1039. https://doi.org/10.5194/essd-17-965-2025 —
+      data product: Global Carbon Project (2024). Supplemental data of Global
+      Carbon Budget 2024 (v1.0). https://doi.org/10.18160/GCP-2024
+    # The stable identifier is the ICOS Carbon Portal object, but there is no
+    # unauthenticated direct file URL: data.icos-cp.eu/objects/<id> returns 404
+    # and the licence_accept endpoint redirects to a licence-acceptance page.
+    # Guided-manual is the only option.
+    #
+    # The paper DOI and the separate GCP data-product DOI are both required
+    # when citing; data/bunkers/gcb-2024/CITATION.md carries the same pair.
+    manual_instructions: >-
+      The Global Carbon Budget 2024 national fossil emissions workbook sits
+      behind a licence-acceptance page and cannot be downloaded automatically.
+
+      1. Open https://meta.icos-cp.eu/objects/mNRkixV0ZZViLvv5ADVGQCtx
+      2. Accept the data licence when prompted.
+      3. Download the file named National_Fossil_Carbon_Emissions_2024v1.0.xlsx
+      4. Place it at:
+           <data_dir>/bunkers/gcb-2024/National_Fossil_Carbon_Emissions_2024v1.0.xlsx
+
+      Run `fair-shares fetch-data --verify` afterwards to confirm the file you
+      dropped in matches the expected checksum.
+    downloads:
+      - url: "https://meta.icos-cp.eu/objects/mNRkixV0ZZViLvv5ADVGQCtx"
+        target: "bunkers/gcb-2024/National_Fossil_Carbon_Emissions_2024v1.0.xlsx"
+        sha256: "98d4648b15746595622efbf9003546402b71e735e90454d81fb79a7de9c7ab2a"
+        size_bytes: 804032
+
+  # --- Scenarios -------------------------------------------------------------
+
+  ipcc_ar6_gidden:
+    tier: optional
+    version: "v2"
+    doi: "10.5281/zenodo.10158920"
+    license: "CC-BY-4.0"
+    redistributable: false
+    citation: >-
+      Gidden, M., Gasser, T., Grassi, G., Forsell, N., Janssens, I., Lamb, W. F.,
+      Minx, J., Nicholls, Z., Steinhauser, J., & Riahi, K. (2023). Dataset for
+      Gidden et al. 2023 Updated AR6 Mitigation Benchmarks using National
+      Emissions Inventories (v2). Zenodo.
+      https://doi.org/10.5281/zenodo.10158920 — paper: Gidden, M. J., et al.
+      (2023). Aligning climate scenarios to emissions inventories shifts global
+      benchmarks. Nature, 624, 102-108. https://doi.org/10.1038/s41586-023-06724-y
+    # Where these files came from was an open question; settled 2026-08-03.
+    # The Zenodo record holds one workbook with two sheets: `data` (50,003 rows
+    # x 116 columns) and `meta` (914 x 97). The repository's ar6_gidden.xlsx and
+    # metadata_ar6_gidden.xlsx are exactly those two sheets saved as separate
+    # files — same size, same column names, same missing values, same text. 137
+    # numbers out of 5.8 million differ in their last decimal place, which is
+    # what happens when a spreadsheet is saved again, not different data.
+    #
+    # metadata_ar6_gidden.xlsx does NOT come from the restricted AR6 Scenarios
+    # Database (10.5281/zenodo.5886911).
+    # It is the `meta` sheet of this openly licensed record, so no restricted
+    # AR6-database content is redistributed here.
+    #
+    # The pipeline reads the zip, so the download step writes both spreadsheets
+    # and zips them. Only the downloaded workbook has a fixed hash: spreadsheets
+    # and zips written again are never byte-for-byte identical, so the files we
+    # build are checked by their structure as they are written.
+    downloads:
+      - url: "https://zenodo.org/api/records/10158920/files/10.5281_zenodo.10158920_gidden_et_al_2023_ar6_reanalysis_data.xlsx/content"
+        transform: ar6-split
+        sha256: "04a1d432d00374e6757b7e1d79b3caff565d5c4f9a8cbab809bd73e1b7237aa2"
+        upstream_hash: "md5:cf117bd4905889f46839211265adac9d"
+        size_bytes: 50439664
+        outputs:
+          - "scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx"
+          - "scenarios/ipcc_ar6_gidden/metadata_ar6_gidden.xlsx"
+          - "scenarios/ipcc_ar6_gidden/ar6_gidden.zip"
+
+  # --- Bundled: ships in the repository, never fetched ------------------------
+
+  regions:
+    tier: bundled
+    version: "2024-03-19"
+    license: "MIT"
+    redistributable: true
+    citation: >-
+      Pelz, S. (2024). regioniso3c: unofficial regional-ISO3C mapping. GitHub.
+      https://github.com/setupelz/regioniso3c
+    downloads:
+      - target: "regions/iso3c_region_mapping_20240319.csv"
+        sha256: "6123f6d1cbc72c4c34d7bd7557211c8e39ddce9961225609f2b44f24b4c9a60f"
+
+  rcbs:
+    tier: bundled
+    version: "fair-shares compilation"
+    license: "BSD-3-Clause (fair-shares' own compilation)"
+    redistributable: true
+    citation: >-
+      fair-shares compilation of published remaining carbon budgets, drawing on
+      Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of
+      remaining carbon budgets. Nature Climate Change, 13, 1360-1367.
+      https://doi.org/10.1038/s41558-023-01848-5; Forster, P. M., et al. (2024).
+      Indicators of Global Climate Change 2023. Earth System Science Data, 16,
+      2625-2658. https://doi.org/10.5194/essd-16-2625-2024; and IPCC AR6 WGI
+      (https://www.ipcc.ch/report/ar6/wg1/). Net-zero years per AR6 scenario are
+      derived from the IPCC AR6 Scenarios Database.
+    downloads:
+      - target: "rcbs/rcbs.yaml"
+        sha256: "22f719d8cd18e89639cf7f244caec43b502dd504b33105b33c648f30ad1777b4"
+      - target: "rcbs/ar6_scenario_nz_years.parquet"
+        sha256: "3df82c7ecfcf7b80782d666093d117e204f75e5e74f0c5ae1f22de80336a8ffc"
+
+  iamc_example:
+    tier: bundled
+    version: "MESSAGEix-GLOBIOM 2.1-R12 800fm SSP2"
+    license: "IIASA model output — no external licence applies"
+    redistributable: false
+    citation: >-
+      MESSAGEix-GLOBIOM 2.1-R12 example scenario export
+      (800fm_ecpc_1990_tce_el_limited), International Institute for Applied
+      Systems Analysis. Documentation and test input only.
+    downloads:
+      - target: "scenarios/iamc_example/iamc_reporting_example.xlsx"
+        sha256: "d8ea75c963c87379905492bf33129fd4dbf139402ae21e09a931d072155725c6"
