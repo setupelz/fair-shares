@@ -7,6 +7,7 @@ Tests validation of year parameters, DataFrame structure, and data quality check
 from __future__ import annotations
 
 import pytest
+from pydantic import ValidationError
 
 from fair_shares.library.config.models import GiniDataParameters
 from fair_shares.library.exceptions import AllocationError, ConfigurationError
@@ -43,47 +44,31 @@ class TestYearParameterValidation:
             validate_year_parameter("2020", "first_allocation_year")
 
 
-class TestGiniYearBoundsValidation:
-    """Test gini_year bounds validation in config models."""
+class TestGiniSelectionValidation:
+    """Test Gini source parameter validation in config models."""
 
-    def test_valid_gini_year(self):
-        """Valid gini_year within bounds should not raise."""
-        # Boundary values
-        GiniDataParameters(world_key="WORLD", gini_year=1900)
-        GiniDataParameters(world_key="WORLD", gini_year=2100)
+    def test_valid_parameters(self):
+        """A selection rule with or without a year window is accepted."""
+        GiniDataParameters(selection="latest-high-quality")
+        GiniDataParameters(selection="latest-available", year_window=[2015, 2023])
+        GiniDataParameters(selection="latest-available", year_window=[1900, 2100])
 
-        # Middle values
-        GiniDataParameters(world_key="WORLD", gini_year=2000)
-        GiniDataParameters(world_key="WORLD", gini_year=2015)
+    def test_unknown_selection_rejected(self):
+        """A selection rule no notebook implements must not validate."""
+        with pytest.raises(ValidationError):
+            GiniDataParameters(selection="single-year")
 
-    def test_gini_year_below_1900_raises(self):
-        """gini_year below 1900 should raise ConfigurationError."""
-        with pytest.raises(
-            ConfigurationError, match="gini_year must be between 1900 and 2100"
-        ):
-            GiniDataParameters(world_key="WORLD", gini_year=1899)
+    def test_year_window_needs_two_years(self):
+        with pytest.raises(ConfigurationError, match="\\[first_year, last_year\\]"):
+            GiniDataParameters(selection="latest-available", year_window=[2015])
 
-        with pytest.raises(
-            ConfigurationError, match="gini_year must be between 1900 and 2100"
-        ):
-            GiniDataParameters(world_key="WORLD", gini_year=1800)
+    def test_year_window_bounds(self):
+        with pytest.raises(ConfigurationError, match="between 1900 and 2100"):
+            GiniDataParameters(selection="latest-available", year_window=[1850, 2023])
 
-    def test_gini_year_above_2100_raises(self):
-        """gini_year above 2100 should raise ConfigurationError."""
-        with pytest.raises(
-            ConfigurationError, match="gini_year must be between 1900 and 2100"
-        ):
-            GiniDataParameters(world_key="WORLD", gini_year=2101)
+        with pytest.raises(ConfigurationError, match="between 1900 and 2100"):
+            GiniDataParameters(selection="latest-available", year_window=[2015, 2150])
 
-        with pytest.raises(
-            ConfigurationError, match="gini_year must be between 1900 and 2100"
-        ):
-            GiniDataParameters(world_key="WORLD", gini_year=2200)
-
-    def test_error_message_includes_value(self):
-        """Error message should include the invalid year value."""
-        with pytest.raises(ConfigurationError, match="got 1850"):
-            GiniDataParameters(world_key="WORLD", gini_year=1850)
-
-        with pytest.raises(ConfigurationError, match="got 2150"):
-            GiniDataParameters(world_key="WORLD", gini_year=2150)
+    def test_year_window_order(self):
+        with pytest.raises(ConfigurationError, match="out of order"):
+            GiniDataParameters(selection="latest-available", year_window=[2023, 2015])

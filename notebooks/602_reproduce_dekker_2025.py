@@ -230,7 +230,7 @@ active_sources = {
     "emissions": "primap-202503",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
-    "gini": "unu-wider-2025",
+    "gini": "wdi-2025",
     "lulucf": "melo-2026",
     "rcb_generator": "exponential-decay",
 }
@@ -467,7 +467,7 @@ print("  4. Distribute the remaining budget over time via sine-deviation converg
 # | Historical emissions | `primap-202503` |
 # | GDP | `wdi-2025` |
 # | Population | `un-owid-2025` |
-# | Gini | `unu-wider-2025` |
+# | Gini | `wdi-2025` |
 # | LULUCF | `melo-2026` |
 # | RCB pathway shape | `exponential-decay` |
 #

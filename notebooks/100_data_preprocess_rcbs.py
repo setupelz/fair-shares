@@ -43,6 +43,11 @@ from fair_shares.library.exceptions import (
     DataLoadingError,
     DataProcessingError,
 )
+from fair_shares.library.preprocessing import (
+    complete_gini,
+    emissions_path,
+    gini_missing_policy,
+)
 from fair_shares.library.utils import (
     add_row_timeseries,
     build_source_id,
@@ -52,7 +57,6 @@ from fair_shares.library.utils import (
     get_world_totals_timeseries,
     last_year_column,
 )
-from fair_shares.library.preprocessing import emissions_path
 from fair_shares.library.validation import (
     validate_all_datasets_totals,
     validate_emissions_data,
@@ -107,7 +111,7 @@ else:
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
-        "gini": "unu-wider-2025",
+        "gini": "wdi-2025",
         "target": "rcbs",  # RCB mode
     }
 
@@ -334,10 +338,9 @@ population_analysis_countries = get_complete_iso3c_timeseries(
 )
 gini_analysis_countries = set(gini.index.get_level_values("iso3c").tolist())
 
-# Find intersection of all datasets
-analysis_countries = (
-    gdp_analysis_countries & population_analysis_countries & gini_analysis_countries
-)
+# Gini is not part of this intersection: a country without a Gini value stays
+# in the analysis and is handled where Gini is used (complete_gini below).
+analysis_countries = gdp_analysis_countries & population_analysis_countries
 
 for category in final_categories:
     if category in emiss_analysis_countries:
@@ -370,6 +373,11 @@ coverage_summary["has_gini"] = coverage_summary["iso3c"].isin(gini_analysis_coun
 
 # Add final analysis indicator
 coverage_summary["in_analysis"] = coverage_summary["iso3c"].isin(analysis_countries)
+
+# Record which analysis countries carry an imputed Gini rather than their own
+coverage_summary["gini_imputed"] = (
+    coverage_summary["in_analysis"] & ~coverage_summary["has_gini"]
+)
 
 # Add ROW indicator (countries that are in region mapping but not in final analysis)
 coverage_summary["in_row"] = coverage_summary["iso3c"].isin(
@@ -468,22 +476,16 @@ population_complete = add_row_timeseries(
     expected_index_names=["iso3c", "unit"],
 )
 
-gini_analysis = gini[
-    gini.index.get_level_values("iso3c").isin(analysis_countries)
-].copy()
-
-if gini_analysis.empty:
-    raise DataProcessingError(
-        "No Gini coefficient data found for analysis countries. "
-        "Cannot calculate ROW average without data."
-    )
-
-gini_analysis_average = gini_analysis["gini"].mean()
-gini_row = pd.DataFrame(
-    {"gini": [gini_analysis_average]},
-    index=pd.MultiIndex.from_tuples([("ROW", "unitless")], names=["iso3c", "unit"]),
+# ROW, and any analysis country without a Gini value, get the mean of the
+# analysis countries that have one.
+gini_complete, gini_imputed_countries = complete_gini(
+    gini, analysis_countries, policy=gini_missing_policy(config)
 )
-gini_complete = pd.concat([gini_analysis, gini_row])
+if gini_imputed_countries:
+    print(
+        f"Gini imputed (analysis-country mean) for "
+        f"{len(gini_imputed_countries)}: {sorted(gini_imputed_countries)}"
+    )
 
 # %% [markdown]
 # ## Validation of analysis datasets
@@ -627,7 +629,8 @@ rcb_df = load_and_process_rcbs(
     world_fossil_emissions=world_fossil_emissions,
     emission_category=emission_category,
     adjustments_config=adjustments_config,
-    project_root=project_root,
+    data_dir=project_root / "data",
+    output_dir=project_root / "output",
     source_id=source_id,
     actual_bm_lulucf_emissions=actual_bm_lulucf,
     verbose=True,

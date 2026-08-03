@@ -15,6 +15,7 @@ from ..exceptions import ConfigurationError, DataLoadingError
 from ..paths import data_dir as resolve_data_dir
 from ..paths import output_dir as resolve_output_dir
 from ..paths import resolve_source_path
+from ..preprocessing.gini import complete_gini, gini_missing_policy
 from ..preprocessing.loaders import (
     load_emissions_data as _load_emissions,
 )
@@ -188,15 +189,19 @@ class DataPreprocessor:
         emissions_data: dict[str, pd.DataFrame],
         gdp: pd.DataFrame,
         population: pd.DataFrame,
-        gini: pd.DataFrame,
+        gini: pd.DataFrame | None = None,
     ) -> set[str]:
         """Determine the set of analysis countries with complete data.
+
+        Membership depends on emissions, GDP and population only. Gini
+        availability is handled where Gini is used, not here — see
+        ``preprocessing.gini.complete_gini``.
 
         Args:
             emissions_data: Dict of emission DataFrames by category
             gdp: GDP DataFrame
             population: Population DataFrame
-            gini: Gini DataFrame
+            gini: Accepted for backwards compatibility and ignored.
 
         Returns
         -------
@@ -232,12 +237,6 @@ class DataPreprocessor:
                 start=1990,
                 end=last_year_column(population),
             )
-        )
-
-        # Gini is stationary (no year columns), so completeness is a presence
-        # check on iso3c.
-        complete_sets.append(
-            set(gini.index.get_level_values("iso3c").unique().tolist())
         )
 
         country_iso3c = complete_sets[0].intersection(*complete_sets[1:])
@@ -414,8 +413,11 @@ def _run_common_preprocessing(
         expected_index_names=["iso3c", "unit"],
     )
 
-    # Filter Gini
-    gini_complete = gini.loc[gini.index.get_level_values("iso3c").isin(country_iso3c)]
+    # Gini for every analysis country plus ROW, imputing where a country has
+    # none. Matches what the preprocessing notebooks write.
+    gini_complete, _gini_imputed = complete_gini(
+        gini, country_iso3c, policy=gini_missing_policy(config)
+    )
 
     # Validate totals
     validate_all_datasets_totals(
