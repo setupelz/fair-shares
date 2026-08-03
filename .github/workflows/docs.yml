@@ -1,0 +1,30 @@
+# Build the docs and publish them to GitHub Pages (gh-pages branch)
+# on every docs-relevant push to main. Manual runs: Actions tab or
+# `gh workflow run docs.yml`.
+name: docs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "docs/**"
+      - "mkdocs.yml"
+      - "src/**"
+      - "README.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: uv sync --locked
+      - name: Build and publish
+        run: uv run mkdocs gh-deploy --force
