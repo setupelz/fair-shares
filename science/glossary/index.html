@@ -1,0 +1,2523 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Definitions of key terms, parameters, and data structures in fair-shares">
+      
+      
+        <meta name="author" content="The fair-shares Contributors">
+      
+      
+        <link rel="canonical" href="https://setupelz.github.io/fair-shares/science/glossary/">
+      
+      
+        <link rel="prev" href="../parameter-effects/">
+      
+      
+        <link rel="next" href="../other-operations/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Glossary - fair-shares</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config",""),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#glossary" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="fair-shares" class="md-header__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            fair-shares
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Glossary
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../.." class="md-tabs__link">
+        
+  
+    
+  
+  Home
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    <li class="md-tabs__item">
+      <a href="../../quickstart/" class="md-tabs__link">
+        
+  
+    
+  
+  Quick Start
+
+      </a>
+    </li>
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/" class="md-tabs__link">
+          
+  
+    
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19 2-5 4.5v11l5-4.5zM6.5 5C4.55 5 2.45 5.4 1 6.5v14.66c0 .25.25.5.5.5.1 0 .15-.07.25-.07 1.35-.65 3.3-1.09 4.75-1.09 1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.31 4.75 1.06.1.05.15.03.25.03.25 0 .5-.25.5-.5V6.5c-.6-.45-1.25-.75-2-1V19c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V6.5C10.55 5.4 8.45 5 6.5 5"/></svg>
+    
+  
+  User Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../api/" class="md-tabs__link">
+          
+  
+    
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3m6 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3z"/></svg>
+    
+  
+  API Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 22a3 3 0 0 1-3-3c0-.6.18-1.16.5-1.63L9 7.81V6a1 1 0 0 1-1-1V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1v1.81l5.5 9.56c.32.47.5 1.03.5 1.63a3 3 0 0 1-3 3zm-1-3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1c0-.21-.07-.41-.18-.57l-2.29-3.96L14 17l-5.07-5.07-3.75 6.5c-.11.16-.18.36-.18.57m8-9a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+    
+  
+  Scientific Documentation
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev-guide/" class="md-tabs__link">
+          
+  
+    
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3m6 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3z"/></svg>
+    
+  
+  Developer Guide
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="fair-shares" class="md-nav__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    fair-shares
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Home
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Quick Start
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user-guide/" class="md-nav__link ">
+              
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m19 2-5 4.5v11l5-4.5zM6.5 5C4.55 5 2.45 5.4 1 6.5v14.66c0 .25.25.5.5.5.1 0 .15-.07.25-.07 1.35-.65 3.3-1.09 4.75-1.09 1.95 0 4.05.4 5.5 1.5 1.35-.85 3.8-1.5 5.5-1.5 1.65 0 3.35.31 4.75 1.06.1.05.15.03.25.03.25 0 .5-.25.5-.5V6.5c-.6-.45-1.25-.75-2-1V19c-1.1-.35-2.3-.5-3.5-.5-1.7 0-4.15.65-5.5 1.5V6.5C10.55 5.4 8.45 5 6.5 5"/></svg>
+  
+  <span class="md-ellipsis">
+    User Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3" id="__nav_3_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            User Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/approach-catalog/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9 5v4h12V5M9 19h12v-4H9m0-1h12v-4H9M4 9h4V5H4m0 14h4v-4H4m0-1h4v-4H4z"/></svg>
+  
+  <span class="md-ellipsis">
+    Approach Catalog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/country-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fair shares for countries
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/iamc-regional-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Fair shares for IAM model regions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output Schema
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/data-sources/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3.08L19 12c-2.59 0-4.8 1.64-5.64 3.94L12 16c-4.42 0-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4h1c0 1.05.27 2.04.75 2.9L12 21c-4.42 0-8-1.79-8-4zm14 7.08-2.75-3 1.16-1.16L18 18.5l3.59-3.58 1.16 1.41z"/></svg>
+  
+  <span class="md-ellipsis">
+    Data Sources & Licensing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/" class="md-nav__link ">
+              
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3m6 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3z"/></svg>
+  
+  <span class="md-ellipsis">
+    API Reference
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            API Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Python API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_3" id="__nav_4_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Allocations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_3">
+            <span class="md-nav__icon md-icon"></span>
+            Allocations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Budget Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/pathways/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pathway Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation Manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_4" id="__nav_4_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Utilities
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_4">
+            <span class="md-nav__icon md-icon"></span>
+            Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/core/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Processing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/math/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Math
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/adjustments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adjustments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/validation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_4_5" id="__nav_4_5_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_4_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4_5">
+            <span class="md-nav__icon md-icon"></span>
+            Validation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/validation/convergence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Convergence
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M6 22a3 3 0 0 1-3-3c0-.6.18-1.16.5-1.63L9 7.81V6a1 1 0 0 1-1-1V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v1a1 1 0 0 1-1 1v1.81l5.5 9.56c.32.47.5 1.03.5 1.63a3 3 0 0 1-3 3zm-1-3a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1c0-.21-.07-.41-.18-.57l-2.29-3.96L14 17l-5.07-5.07-3.75 6.5c-.11.16-.18.36-.18.57m8-9a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1"/></svg>
+  
+  <span class="md-ellipsis">
+    Scientific Documentation
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Scientific Documentation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../allocations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation Approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../principle-to-code/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    From Principle to Code
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parameter-effects/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 13c-1.86 0-3.41 1.28-3.86 3H2v2h2.14c.45 1.72 2 3 3.86 3s3.41-1.28 3.86-3H22v-2H11.86c-.45-1.72-2-3-3.86-3m0 6c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2M19.86 6c-.45-1.72-2-3-3.86-3s-3.41 1.28-3.86 3H2v2h10.14c.45 1.72 2 3 3.86 3s3.41-1.28 3.86-3H22V6zM16 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2"/></svg>
+  
+  <span class="md-ellipsis">
+    Parameter Effects Reference
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.81 2C4.83 2.09 4 3 4 4v16c0 1.05.95 2 2 2h12c1.05 0 2-.95 2-2V4a2 2 0 0 0-2-2h-6v7L9.5 7.5 7 9V2H5.81M12 13h1a1 1 0 0 1 1 1v4h-1v-2h-1v2h-1v-4a1 1 0 0 1 1-1m0 1v1h1v-1zm3 1h3v1l-2 3h2v1h-3v-1l2-3h-2z"/></svg>
+  
+  <span class="md-ellipsis">
+    Glossary
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M5.81 2C4.83 2.09 4 3 4 4v16c0 1.05.95 2 2 2h12c1.05 0 2-.95 2-2V4a2 2 0 0 0-2-2h-6v7L9.5 7.5 7 9V2H5.81M12 13h1a1 1 0 0 1 1 1v4h-1v-2h-1v2h-1v-4a1 1 0 0 1 1-1m0 1v1h1v-1zm3 1h3v1l-2 3h2v1h-3v-1l2-3h-2z"/></svg>
+  
+  <span class="md-ellipsis">
+    Glossary
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#allocation-approaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Allocation Approaches
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Allocation Approaches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budget-approaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Budget Approaches
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathway-approaches-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pathway Approaches (Standard)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathway-approaches-convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pathway Approaches (Convergence)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjustment-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adjustment Weights
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-allocation-responsibility-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-allocation Responsibility Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inequality-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inequality Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discounting-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discounting Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convergence Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraint-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constraint Parameters
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Result Types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Result Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budgetallocationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      BudgetAllocationResult
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathwayallocationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      PathwayAllocationResult
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Structures
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Structures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timeseriesdataframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      TimeseriesDataFrame
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiindex" class="md-nav__link">
+    <span class="md-ellipsis">
+      MultiIndex
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Concepts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#abbreviations-and-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Abbreviations and Terms
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../other-operations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Other Operations
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_6" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../dev-guide/" class="md-nav__link ">
+              
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M8 3a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2H3v2h1a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h2v-2H8v-5a2 2 0 0 0-2-2 2 2 0 0 0 2-2V5h2V3m6 0a2 2 0 0 1 2 2v4a2 2 0 0 0 2 2h1v2h-1a2 2 0 0 0-2 2v4a2 2 0 0 1-2 2h-2v-2h2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5h-2V3z"/></svg>
+  
+  <span class="md-ellipsis">
+    Developer Guide
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_6" id="__nav_6_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_6_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_6">
+            <span class="md-nav__icon md-icon"></span>
+            Developer Guide
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../CONTRIBUTING/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Contributing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/architecture-walkthrough/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 15a3 3 0 0 1 3 3 3 3 0 0 1-3 3 2.99 2.99 0 0 1-2.83-2H14v-2h1.17c.41-1.17 1.52-2 2.83-2m0 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m0-9a1.43 1.43 0 0 0 1.43-1.43 1.43 1.43 0 1 0-2.86 0A1.43 1.43 0 0 0 18 8m0-5.43a4 4 0 0 1 4 4C22 9.56 18 14 18 14s-4-4.44-4-7.43a4 4 0 0 1 4-4M8.83 17H10v2H8.83A2.99 2.99 0 0 1 6 21a3 3 0 0 1-3-3c0-1.31.83-2.42 2-2.83V14h2v1.17c.85.3 1.53.98 1.83 1.83M6 17a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1M6 3a3 3 0 0 1 3 3c0 1.31-.83 2.42-2 2.83V10H5V8.83A2.99 2.99 0 0 1 3 6a3 3 0 0 1 3-3m0 2a1 1 0 0 0-1 1 1 1 0 0 0 1 1 1 1 0 0 0 1-1 1 1 0 0 0-1-1m5 14v-2h2v2zm-4-6H5v-2h2z"/></svg>
+  
+  <span class="md-ellipsis">
+    Architecture Walkthrough
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-approaches/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2m-8 5H9v2c0 1.1-.9 2-2 2 1.1 0 2 .9 2 2v2h2v2H9c-1.1 0-2-.9-2-2v-1c0-1.1-.9-2-2-2v-2c1.1 0 2-.9 2-2V8c0-1.1.9-2 2-2h2zm8 5c-1.1 0-2 .9-2 2v1c0 1.1-.9 2-2 2h-2v-2h2v-2c0-1.1.9-2 2-2-1.1 0-2-.9-2-2V8h-2V6h2c1.1 0 2 .9 2 2v1c0 1.1.9 2 2 2z"/></svg>
+  
+  <span class="md-ellipsis">
+    Adding Allocation Approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-data-sources/" class="md-nav__link">
+        
+  
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 14h2v3h3v2h-3v3h-2v-3h-3v-2h3zM12 3c4.42 0 8 1.79 8 4s-3.58 4-8 4-8-1.79-8-4 3.58-4 8-4M4 9c0 2.21 3.58 4 8 4s8-1.79 8-4v3.08L19 12c-2.59 0-4.8 1.64-5.64 3.94L12 16c-4.42 0-8-1.79-8-4zm0 5c0 2.21 3.58 4 8 4h1c0 1.05.27 2.04.75 2.9L12 21c-4.42 0-8-1.79-8-4z"/></svg>
+  
+  <span class="md-ellipsis">
+    Adding Data Sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/docs-links/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Documentation Links
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/docstring-template/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docstring Template
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#allocation-approaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Allocation Approaches
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Allocation Approaches">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budget-approaches" class="md-nav__link">
+    <span class="md-ellipsis">
+      Budget Approaches
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathway-approaches-standard" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pathway Approaches (Standard)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathway-approaches-convergence" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pathway Approaches (Convergence)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Parameters
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Parameters">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#core-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Core Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#adjustment-weights" class="md-nav__link">
+    <span class="md-ellipsis">
+      Adjustment Weights
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pre-allocation-responsibility-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Pre-allocation Responsibility Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#capability-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Capability Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inequality-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inequality Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#discounting-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Discounting Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#convergence-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Convergence Parameters
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#constraint-parameters" class="md-nav__link">
+    <span class="md-ellipsis">
+      Constraint Parameters
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#result-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      Result Types
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Result Types">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budgetallocationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      BudgetAllocationResult
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#pathwayallocationresult" class="md-nav__link">
+    <span class="md-ellipsis">
+      PathwayAllocationResult
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#data-structures" class="md-nav__link">
+    <span class="md-ellipsis">
+      Data Structures
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Data Structures">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#timeseriesdataframe" class="md-nav__link">
+    <span class="md-ellipsis">
+      TimeseriesDataFrame
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#multiindex" class="md-nav__link">
+    <span class="md-ellipsis">
+      MultiIndex
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#key-concepts" class="md-nav__link">
+    <span class="md-ellipsis">
+      Key Concepts
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#abbreviations-and-terms" class="md-nav__link">
+    <span class="md-ellipsis">
+      Abbreviations and Terms
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+    <a href="https://github.com/setupelz/fair-shares/edit/main/docs/science/glossary.md" title="Edit this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M10 20H6V4h7v5h5v3.1l2-2V8l-6-6H6c-1.1 0-2 .9-2 2v16c0 1.1.9 2 2 2h4zm10.2-7c.1 0 .3.1.4.2l1.3 1.3c.2.2.2.6 0 .8l-1 1-2.1-2.1 1-1c.1-.1.2-.2.4-.2m0 3.9L14.1 23H12v-2.1l6.1-6.1z"/></svg>
+    </a>
+  
+  
+    
+      
+    
+    <a href="https://github.com/setupelz/fair-shares/raw/main/docs/science/glossary.md" title="View source of this page" class="md-content__button md-icon">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M17 18c.56 0 1 .44 1 1s-.44 1-1 1-1-.44-1-1 .44-1 1-1m0-3c-2.73 0-5.06 1.66-6 4 .94 2.34 3.27 4 6 4s5.06-1.66 6-4c-.94-2.34-3.27-4-6-4m0 6.5a2.5 2.5 0 0 1-2.5-2.5 2.5 2.5 0 0 1 2.5-2.5 2.5 2.5 0 0 1 2.5 2.5 2.5 2.5 0 0 1-2.5 2.5M9.27 20H6V4h7v5h5v4.07c.7.08 1.36.25 2 .49V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h4.5a8.2 8.2 0 0 1-1.23-2"/></svg>
+    </a>
+  
+
+
+<h1 id="glossary">Glossary<a class="headerlink" href="#glossary" title="Permanent link">&para;</a></h1>
+<p>This page provides definitions for key terms used throughout the fair-shares documentation and codebase.</p>
+<hr />
+<h2 id="allocation-approaches">Allocation Approaches<a class="headerlink" href="#allocation-approaches" title="Permanent link">&para;</a></h2>
+<p>All approach names use <code>kebab-case</code> notation. For complete details, see the <a href="../../user-guide/approach-catalog/">Approach Catalog</a>.</p>
+<div class="admonition info">
+<p class="admonition-title">Key concept: allocation_year</p>
+<p>All approaches incorporate historical differentiation via <code>allocation_year</code> (budget) or <code>first_allocation_year</code> (pathway). When set in the past, cumulative population from that year determines each country's share of the total budget — leaving different <strong>remaining allocations</strong> for each country. The <code>*-adjusted</code> approaches additionally apply pre-allocation responsibility and capability rescaling on top of this mechanism.</p>
+</div>
+<h3 id="budget-approaches">Budget Approaches<a class="headerlink" href="#budget-approaches" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>equal-per-capita-budget</code></strong></dt>
+<dd>Population-proportional allocation. Historical accountability via <code>allocation_year</code> only.</dd>
+<dt><strong><code>per-capita-adjusted-budget</code></strong></dt>
+<dd>Adds <code>pre_allocation_responsibility_weight</code> (covers the window prior to allocation year) and <code>capability_weight</code> (from allocation year onwards) adjustments. CBDR-RC.</dd>
+<dt><strong><code>per-capita-adjusted-gini-budget</code></strong></dt>
+<dd>Adds Gini adjustment for within-country inequality. Subsistence protection.</dd>
+</dl>
+<h3 id="pathway-approaches-standard">Pathway Approaches (Standard)<a class="headerlink" href="#pathway-approaches-standard" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>equal-per-capita</code></strong></dt>
+<dd>Annual population-proportional shares. Historical accountability via <code>first_allocation_year</code>.</dd>
+<dt><strong><code>per-capita-adjusted</code></strong></dt>
+<dd>Annual shares with pre-allocation responsibility (backward-looking) and capability (from allocation year onwards) adjustments. CBDR-RC.</dd>
+<dt><strong><code>per-capita-adjusted-gini</code></strong></dt>
+<dd>Annual shares with Gini adjustment. Subsistence protection.</dd>
+</dl>
+<h3 id="pathway-approaches-convergence">Pathway Approaches (Convergence)<a class="headerlink" href="#pathway-approaches-convergence" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>per-capita-convergence</code></strong></dt>
+<dd>Gradual transition to equal per capita. <strong>Not a fair share approach</strong>—includes grandfathering.</dd>
+<dt><strong><code>cumulative-per-capita-convergence</code></strong></dt>
+<dd>Budget-preserving convergence. Distributes cumulative per capita shares over time. <strong>Fair share approach.</strong></dd>
+<dt><strong><code>cumulative-per-capita-convergence-adjusted</code></strong> / <strong><code>-gini-adjusted</code></strong></dt>
+<dd>Convergence with pre-allocation responsibility/capability/Gini adjustments.</dd>
+</dl>
+<p>See: <a href="../../api/allocations/budgets/">API Reference</a> · <a href="../principle-to-code/">From Principle to Code</a></p>
+<hr />
+<h2 id="parameters">Parameters<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h2>
+<p>For detailed parameter effects and examples, see <a href="../parameter-effects/">Parameter Effects</a>.</p>
+<h3 id="core-parameters">Core Parameters<a class="headerlink" href="#core-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>allocation_year</code></strong> / <strong><code>first_allocation_year</code></strong> (type: <code>int</code>)</dt>
+<dd>Start year for cumulative accounting. Cumulative population from this year determines each country's share of the total budget. No neutral default: the choice operationalises whether past emissions create present obligations.</dd>
+<dd>Budget approaches use <code>allocation_year</code>; pathway approaches use <code>first_allocation_year</code>.</dd>
+<dt><strong><code>convergence_year</code></strong> (type: <code>int</code>)</dt>
+<dd>Year by which allocations converge to equal per capita shares. Must be &gt; allocation year. Required when <code>convergence_method="sine-deviation"</code>. Earlier convergence years demand steeper near-term reductions; later years spread the transition. Convergence approaches only. See <a href="../parameter-effects/#convergence_method-convergence-only">Parameter Effects</a>.</dd>
+<dt><strong><code>emission_category</code></strong> (type: <code>str</code>)</dt>
+<dd>Emission species (e.g., <code>"co2-ffi"</code>, <code>"co2"</code>, <code>"all-ghg"</code>, <code>"all-ghg-ex-co2-lulucf"</code>, <code>"non-co2"</code>). Must match data sources. Both <code>all-ghg</code> and <code>all-ghg-ex-co2-lulucf</code> use GWP100 AR6 values to convert non-CO2 gases to CO2-equivalent. Composite categories (<code>all-ghg</code>, <code>all-ghg-ex-co2-lulucf</code>) trigger <a href="../other-operations/#all-ghg-allocations-with-rcbs">decomposition into CO2 + non-CO2</a> when used with RCB targets, because RCBs constrain CO2 only and non-CO2 requires scenario pathway data.</dd>
+<dt><strong><code>group_level</code></strong> (type: <code>str</code>, default: <code>"iso3c"</code>)</dt>
+<dd>Index level for countries/regions (ISO 3166-1 alpha-3 codes).</dd>
+</dl>
+<h3 id="adjustment-weights">Adjustment Weights<a class="headerlink" href="#adjustment-weights" title="Permanent link">&para;</a></h3>
+<p>Constraint: <code>pre_allocation_responsibility_weight + capability_weight ≤ 1.0</code></p>
+<p>Only the <strong>ratio</strong> between the two weights matters -- they are normalized by their sum before use. <code>(0.3, 0.7)</code> and <code>(0.15, 0.35)</code> produce identical results. When one weight is 0, the other is the sole adjustment regardless of its specific value -- <code>(0.0, 0.3)</code> is identical to <code>(0.0, 1.0)</code>.</p>
+<dl>
+<dt><strong><code>pre_allocation_responsibility_weight</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Weight for relative per-capita rescaling based on emissions in [<code>pre_allocation_responsibility_year</code>, <code>allocation_year</code>). Higher relative to <code>capability_weight</code> = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early <code>allocation_year</code>. Always produces positive allocations if <code>allocation_year</code> is the present.</dd>
+<dt><strong><code>capability_weight</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to <code>pre_allocation_responsibility_weight</code> = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility covers the window prior to the allocation year, while capability applies from it onwards.</dd>
+</dl>
+<h3 id="pre-allocation-responsibility-parameters">Pre-allocation Responsibility Parameters<a class="headerlink" href="#pre-allocation-responsibility-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>pre_allocation_responsibility_year</code></strong> (type: <code>int</code>, default: <code>1990</code>)</dt>
+<dd>Start year for cumulative emissions in the pre-allocation responsibility window. Must be strictly less than <code>allocation_year</code> for the adjustment to have effect — when equal, the window is empty.</dd>
+<dt><strong><code>pre_allocation_responsibility_per_capita</code></strong> (type: <code>bool</code>, default: <code>False</code>)</dt>
+<dd>Per capita (True) or absolute (False) emissions for pre-allocation responsibility calculation. Default is <code>False</code> (absolute) to match the polluter-pays framing used in most of the historical-responsibility literature, which treats responsibility as a country's total cumulative contribution to atmospheric CO2 — see <a href="https://doi.org/10.1038/NCLIMATE2774">Matthews 2016</a> (absolute cumulative emissions as the debt metric) and the <a href="https://doi.org/10.1080/13668790903195495">Greenhouse Development Rights framework (Baer 2009)</a>, which starts from country-level absolute cumulative emissions and applies a within-country subsistence filter (not a per-capita normalisation). Set to <code>True</code> if your research framing genuinely calls for per-capita historical responsibility.</dd>
+<dt><strong><code>pre_allocation_responsibility_exponent</code></strong> (type: <code>float</code>, default: <code>1.0</code>)</dt>
+<dd>Exponent for pre-allocation responsibility adjustment. &gt;1.0 increases non-linearity.</dd>
+<dt><strong><code>pre_allocation_responsibility_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
+<dd>Functional form: <code>"asinh"</code> or <code>"power"</code>.</dd>
+</dl>
+<h3 id="capability-parameters">Capability Parameters<a class="headerlink" href="#capability-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>capability_per_capita</code></strong> (type: <code>bool</code>, default: <code>True</code>)</dt>
+<dd>Per capita (True) or absolute (False) GDP for capability calculation.</dd>
+<dt><strong><code>capability_exponent</code></strong> (type: <code>float</code>, default: <code>1.0</code>)</dt>
+<dd>Exponent for capability adjustment (applies from allocation year onwards). &gt;1.0 increases non-linearity.</dd>
+<dt><strong><code>capability_functional_form</code></strong> (type: <code>str</code>, default: <code>"asinh"</code>)</dt>
+<dd>Functional form: <code>"asinh"</code> or <code>"power"</code>.</dd>
+</dl>
+<h3 id="inequality-parameters">Inequality Parameters<a class="headerlink" href="#inequality-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>income_floor</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. The library default is <code>0.0</code> (all income counts); the GDR framework's threshold is <code>7500</code> ($7,500/year 2010 PPP) and is passed explicitly. Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See <a href="../parameter-effects/#income_floor">Parameter Effects</a>.</dd>
+<dt><strong><code>max_gini_adjustment</code></strong> (type: <code>float</code>, default: <code>0.8</code>)</dt>
+<dd>Maximum proportional reduction from the Gini-based capability correction. Caps the influence of extreme inequality (Gini &gt; 0.6) on measured capability, preventing outsized adjustments from dominating the allocation. At 0.8, the Gini adjustment can reduce a country's measured GDP by at most 80%. Available on <code>*-gini-*</code> approaches only.</dd>
+</dl>
+<h3 id="discounting-parameters">Discounting Parameters<a class="headerlink" href="#discounting-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>historical_discount_rate</code></strong> (type: <code>float</code>, default: <code>0.0</code>)</dt>
+<dd>Weights earlier historical emissions less when computing pre-allocation responsibility adjustments. <code>0.0</code> treats all years equally. Available on <code>*-adjusted</code> functions only. See <a href="../parameter-effects/#historical_discount_rate">Parameter Effects</a>.</dd>
+</dl>
+<h3 id="convergence-parameters">Convergence Parameters<a class="headerlink" href="#convergence-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>convergence_method</code></strong> (type: <code>str</code>, default: <code>"minimum-speed"</code>)</dt>
+<dd>Solver for convergence pathway. <code>"minimum-speed"</code> finds the minimum exponential speed satisfying cumulative constraints. <code>"sine-deviation"</code> uses iterative sine-shaped deviation from a PCC baseline (requires <code>convergence_year</code>). Convergence approaches only.</dd>
+<dt><strong><code>max_convergence_speed</code></strong> (type: <code>float</code>, default: <code>0.9</code>)</dt>
+<dd>Upper bound on exponential convergence speed. Lower values force slower transitions but may cause infeasibility. Convergence approaches only.</dd>
+<dt><strong><code>strict</code></strong> (type: <code>bool</code>, default: <code>True</code>)</dt>
+<dd>Controls behavior on infeasible convergence targets. <code>True</code> raises an error; <code>False</code> clips infeasible long-run shares and reports per-country deviation ratios. Convergence approaches only. See <a href="../parameter-effects/#strict-convergence-only">Parameter Effects</a>.</dd>
+</dl>
+<h3 id="constraint-parameters">Constraint Parameters<a class="headerlink" href="#constraint-parameters" title="Permanent link">&para;</a></h3>
+<dl>
+<dt><strong><code>max_deviation_sigma</code></strong> (type: <code>float | None</code>, default: <code>None</code>)</dt>
+<dd>Optional outlier constraint (standard deviations from mean). Default <code>None</code> means no constraint — the raw, unconstrained adjustment is returned. Set to a positive float (e.g. <code>2.0</code>) to opt into a ±N-σ cap that compresses extreme values. Only relevant when applying scaling adjustments. See <a href="../parameter-effects/#max_deviation_sigma">Parameter Effects</a>.</dd>
+<dt><strong><code>preserve_allocation_year_shares</code></strong> / <strong><code>preserve_first_allocation_year_shares</code></strong> (type: <code>bool</code>, default: <code>False</code>)</dt>
+<dd>When <code>True</code>, freezes population (and adjustment) shares at the allocation year instead of recalculating as demographics evolve. The choice reflects whether future population growth should increase a country's atmospheric entitlement. See <a href="../parameter-effects/#preserve_allocation_year_shares-preserve_first_allocation_year_shares">Parameter Effects</a>.</dd>
+</dl>
+<hr />
+<h2 id="result-types">Result Types<a class="headerlink" href="#result-types" title="Permanent link">&para;</a></h2>
+<h3 id="budgetallocationresult">BudgetAllocationResult<a class="headerlink" href="#budgetallocationresult" title="Permanent link">&para;</a></h3>
+<p>Container for budget allocation results. Contains relative shares of a cumulative carbon budget.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>approach</code> (str): Name of allocation approach (e.g., <code>"equal-per-capita-budget"</code>)</li>
+<li><code>parameters</code> (dict): Parameter values used for allocation</li>
+<li><code>relative_shares_cumulative_emission</code> (<a href="#timeseriesdataframe">TimeseriesDataFrame</a>): Relative shares (fractions summing to 1.0) for each country. Has exactly one year column representing the allocation year.</li>
+<li><code>country_warnings</code> (dict[str, str] | None): Optional warnings about data quality issues</li>
+</ul>
+<p><strong>Methods:</strong></p>
+<ul>
+<li><code>get_absolute_budgets(remaining_budget)</code>: Multiply relative shares by a global budget to get absolute country-level budgets</li>
+</ul>
+<p>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Budget Approaches</a></p>
+<h3 id="pathwayallocationresult">PathwayAllocationResult<a class="headerlink" href="#pathwayallocationresult" title="Permanent link">&para;</a></h3>
+<p>Container for pathway allocation results. Contains relative shares of annual emissions across multiple years.</p>
+<p><strong>Attributes:</strong></p>
+<ul>
+<li><code>approach</code> (str): Name of allocation approach (e.g., <code>"per-capita-adjusted"</code>)</li>
+<li><code>parameters</code> (dict): Parameter values used for allocation</li>
+<li><code>relative_shares_pathway_emissions</code> (<a href="#timeseriesdataframe">TimeseriesDataFrame</a>): Relative shares (fractions summing to 1.0) for each country and year. Has multiple year columns.</li>
+<li><code>country_warnings</code> (dict[str, str] | None): Optional warnings about data quality issues</li>
+</ul>
+<p><strong>Methods:</strong></p>
+<ul>
+<li><code>get_absolute_emissions(annual_emissions_budget)</code>: Multiply relative shares by global annual budgets to get absolute country-level pathways</li>
+</ul>
+<p>See: <a href="https://setupelz.github.io/fair-shares/science/allocations/">Pathway Approaches</a></p>
+<hr />
+<h2 id="data-structures">Data Structures<a class="headerlink" href="#data-structures" title="Permanent link">&para;</a></h2>
+<h3 id="timeseriesdataframe">TimeseriesDataFrame<a class="headerlink" href="#timeseriesdataframe" title="Permanent link">&para;</a></h3>
+<p>A <code>pandas.DataFrame</code> with a <code>pandas.MultiIndex</code> and year columns. The standard structure for all timeseries data in fair-shares.</p>
+<p><strong>Index levels (in order):</strong></p>
+<ol>
+<li><code>iso3c</code> (str): ISO 3166-1 alpha-3 country code (e.g., <code>"USA"</code>, <code>"IND"</code>, <code>"DEU"</code>)</li>
+<li><code>unit</code> (str): Physical unit for the data (e.g., <code>"Mt CO2/yr"</code>, <code>"billion 2011 USD"</code>)</li>
+<li><code>emission-category</code> (str): Emission species (e.g., <code>"co2-ffi"</code>, <code>"all-ghg"</code>, <code>"non-co2"</code>)</li>
+</ol>
+<p><strong>Columns:</strong></p>
+<ul>
+<li>Year columns as strings (e.g., <code>"2020"</code>, <code>"2021"</code>, ...)</li>
+<li><strong>Important:</strong> Year columns must be strings, not integers. Use <code>ensure_string_year_columns(df)</code> after loading data.</li>
+</ul>
+<p><strong>Example:</strong></p>
+<div class="language-python highlight"><span class="filename">Python</span><pre><span></span><code><span id="__span-0-1"><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>                                            <span class="mi">2020</span>    <span class="mi">2021</span>    <span class="mi">2022</span>
+</span><span id="__span-0-2"><a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">iso3c</span>  <span class="n">unit</span>       <span class="n">emission</span><span class="o">-</span><span class="n">category</span>
+</span><span id="__span-0-3"><a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="n">USA</span>    <span class="n">Mt</span> <span class="n">CO2</span><span class="o">/</span><span class="n">yr</span>  <span class="n">co2</span><span class="o">-</span><span class="n">ffi</span>                  <span class="mi">5000</span>    <span class="mi">4900</span>    <span class="mi">4800</span>
+</span><span id="__span-0-4"><a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">IND</span>    <span class="n">Mt</span> <span class="n">CO2</span><span class="o">/</span><span class="n">yr</span>  <span class="n">co2</span><span class="o">-</span><span class="n">ffi</span>                  <span class="mi">2500</span>    <span class="mi">2600</span>    <span class="mi">2700</span>
+</span><span id="__span-0-5"><a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="n">World</span>  <span class="n">Mt</span> <span class="n">CO2</span><span class="o">/</span><span class="n">yr</span>  <span class="n">co2</span><span class="o">-</span><span class="n">ffi</span>                 <span class="mi">35000</span>   <span class="mi">34500</span>   <span class="mi">34000</span>
+</span></code></pre></div>
+<p>See: <a href="https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/#function-signature">Function Signature</a> for implementation details</p>
+<h3 id="multiindex">MultiIndex<a class="headerlink" href="#multiindex" title="Permanent link">&para;</a></h3>
+<p>A hierarchical index for pandas DataFrames. All fair-shares data uses a 3-level MultiIndex with levels <code>["iso3c", "unit", "emission-category"]</code>.</p>
+<p>Operations like <code>.loc[]</code>, <code>.xs()</code>, and <code>.groupby()</code> can select/aggregate along specific index levels.</p>
+<p>See: <a href="https://pandas.pydata.org/docs/user_guide/advanced.html">pandas MultiIndex documentation</a></p>
+<hr />
+<h2 id="key-concepts">Key Concepts<a class="headerlink" href="#key-concepts" title="Permanent link">&para;</a></h2>
+<p>Brief definitions. For detailed explanations and operationalization, see <a href="../allocations/">Allocation Approaches</a> and <a href="../principle-to-code/">From Principle to Code</a>.</p>
+<dl>
+<dt><strong>Carbon Debt</strong></dt>
+<dd>Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. <a href="https://doi.org/10.1038/NCLIMATE2774">Matthews 2016</a> calculates debts against an equal per capita benchmark; <a href="https://doi.org/10.1073/pnas.2409316122">Pelz 2025a</a> introduces a net-zero framing that makes post-peak obligations explicit. Moral grounding: <a href="https://doi.org/10.1080/13698230.2012.727311">Pickering 2012</a>.</dd>
+<dd>See: <a href="../references/">References</a></dd>
+<dt><strong>Cascading Biases</strong></dt>
+<dd>Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. <a href="https://doi.org/10.1038/s41558-018-0152-7">Kartha 2018</a> identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches).</dd>
+<dd>See: <a href="../allocations/#approaches-debated-in-the-literature">Allocation Approaches</a></dd>
+<dt><strong>CBDR-RC</strong></dt>
+<dd>Common But Differentiated Responsibilities and Respective Capabilities. UNFCCC foundational principle: all countries share responsibility, but obligations differ based on historical emissions and economic capacity. For the legal interpretation in its normative environment, see <a href="https://doi.org/10.1093/clp/cuae011">Rajamani 2024</a>; for operational interpretations under the Paris Agreement, see <a href="https://doi.org/10.1080/14693062.2021.1970504">Rajamani 2021</a>.</dd>
+<dd>See: <a href="../allocations/">Allocation Approaches</a></dd>
+<dt><strong>Egalitarianism</strong></dt>
+<dd>Ethical tradition grounding equal per capita entitlement to atmospheric space. <a href="https://cdn.cseindia.org/userfiles/GlobalWarming%20Book.pdf">Agarwal 1991</a> makes the foundational per-capita argument from an anti-colonial standpoint; <a href="https://doi.org/10.1080/17449620903110300">Caney 2009</a> develops the philosophical case for egalitarian allocation of greenhouse gas emission rights.</dd>
+<dd>See: <a href="../allocations/">Allocation Approaches</a></dd>
+<dt><strong>Equal per capita</strong></dt>
+<dd>Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is usually incorporated via <code>allocation_year</code> (cumulative accounting includes past emissions), not via weight adjustments.</dd>
+<dd>See: <a href="../allocations/">Allocation Approaches</a></dd>
+<dt><strong>Grandfathering</strong></dt>
+<dd>Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis — <a href="https://doi.org/10.1080/17449620903110300">Caney 2009</a> calls it "morally perverse" and <a href="https://doi.org/10.1038/s41558-021-01015-8">Dooley 2021</a> finds "virtually no support" for it among moral and political philosophers. <code>per-capita-convergence</code> includes grandfathering elements.</dd>
+<dd>See: <a href="../allocations/#approaches-debated-in-the-literature">Allocation Approaches</a></dd>
+<dt><strong>Historical responsibility</strong></dt>
+<dd>Past emissions reduce remaining fair share. Two distinct mechanisms: (1) early <code>allocation_year</code> — cumulative accounting where cumulative population from that year determines shares (can produce negative allocations as a mathematical consequence); (2) <code>pre_allocation_responsibility_weight</code> in <code>*-adjusted</code> approaches — multiplicative rescaling of shares by relative per-capita emissions in a historical window (always positive).</dd>
+<dd>See: <a href="../allocations/#historical-responsibility">Allocation Approaches</a></dd>
+<dt><strong>Negative Allocation</strong></dt>
+<dd>When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. <a href="https://doi.org/10.1088/1748-9326/ada45f">Pelz 2025b</a></dd>
+<dd>See: <a href="../allocations/">Allocation Approaches</a> · <a href="../principle-to-code/">From Principle to Code</a></dd>
+<dt><strong>Subsistence protection</strong></dt>
+<dd>Basic needs emissions protected from mitigation burdens. Grounded in <a href="../references/#shue-2014">Shue 2014</a>'s distinction between subsistence and luxury emissions; operationalised in the <a href="https://doi.org/10.1080/13668790903195495">Greenhouse Development Rights framework (Baer 2009)</a> via a development threshold that excludes both income and emissions of low-income individuals from a country's responsibility and capacity calculations. In fair-shares, implemented via <code>income_floor</code> and Gini adjustments.</dd>
+<dd>See: <a href="../allocations/#gini-adjustment">Allocation Approaches</a></dd>
+</dl>
+<hr />
+<h2 id="abbreviations-and-terms">Abbreviations and Terms<a class="headerlink" href="#abbreviations-and-terms" title="Permanent link">&para;</a></h2>
+<dl>
+<dt><strong>API</strong></dt>
+<dd>Application Programming Interface. In this documentation, refers to the function-level reference for allocation approaches.</dd>
+<dt><strong>AR6</strong></dt>
+<dd>IPCC Sixth Assessment Report (2021-2023). Source of global emissions scenarios used in fair-shares.</dd>
+<dt><strong>BAU</strong></dt>
+<dd>Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued as inconsistent with CBDR-RC — fair shares must be assessed relative to other parties, not against a country's own BAU (<a href="https://doi.org/10.1007/s10784-017-9381-x">Winkler 2018</a>; <a href="https://doi.org/10.1080/14693062.2021.1970504">Rajamani 2021</a>; <a href="https://doi.org/10.1088/1748-9326/ada45f">Pelz 2025b</a>).</dd>
+<dt><strong>Bookkeeping (BM)</strong></dt>
+<dd>LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: <a href="../other-operations/#why-two-lulucf-conventions-matter">NGHGI-Consistent RCB Corrections</a></dd>
+<dt><strong>Bunker fuels</strong></dt>
+<dd>CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets <a href="https://doi.org/10.1038/s41467-026-69078-9">Weber 2026</a>.</dd>
+<dt><strong>ECPC</strong></dt>
+<dd>Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis. Cumulative population from the allocation year determines each country's share.</dd>
+<dt><strong>GDP</strong></dt>
+<dd>Gross Domestic Product. Economic output measure used for capability adjustments (from the allocation year onwards).</dd>
+<dt><strong>GHG</strong></dt>
+<dd>Greenhouse Gas (e.g., CO2, CH4, N2O). "Kyoto GHG" refers to the basket of gases covered by the Kyoto Protocol.</dd>
+<dt><strong>IAMC</strong></dt>
+<dd>Integrated Assessment Modeling Consortium. Data format used for AR6 scenarios.</dd>
+<dt><strong>IPCC</strong></dt>
+<dd>Intergovernmental Panel on Climate Change.</dd>
+<dt><strong>ISO 3166-1 alpha-3</strong></dt>
+<dd>Three-letter country codes (e.g., <code>USA</code>, <code>IND</code>, <code>DEU</code>). Standard for the <code>iso3c</code> index level.</dd>
+<dt><strong>Mt CO2/yr</strong></dt>
+<dd>Megatonnes of CO2 per year. Common unit for annual emissions.</dd>
+<dt><strong>Melo et al. (2026)</strong></dt>
+<dd>Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: <a href="../other-operations/#weber-rcb-corrections">NGHGI-Consistent RCB Corrections</a></dd>
+<dt><strong>NGHGI</strong></dt>
+<dd>National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: <a href="../other-operations/#weber-rcb-corrections">NGHGI-Consistent RCB Corrections</a></dd>
+<dt><strong>NGHGI-BM convention gap</strong></dt>
+<dd>The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~90 GtCO₂ for 1.5°C scenarios <a href="https://doi.org/10.1038/s41467-026-69078-9">Weber 2026</a>. See: <a href="../other-operations/#correction-for-total-co2-budgets-co2">NGHGI-Consistent RCB Corrections</a></dd>
+<dt><strong>PRIMAP-hist</strong></dt>
+<dd>Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).</dd>
+<dt><strong>RCB</strong></dt>
+<dd>Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections <a href="https://doi.org/10.1038/s41467-026-69078-9">Weber 2026</a>. See: <a href="../other-operations/#weber-rcb-corrections">NGHGI-Consistent RCB Corrections</a></dd>
+<dt><strong>SSP</strong></dt>
+<dd>Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).</dd>
+<dt><strong>TCRE</strong></dt>
+<dd>Transient Climate Response to Cumulative Emissions. The near-linear relationship between cumulative CO2 emissions and global temperature increase.</dd>
+<dt><strong>UNFCCC</strong></dt>
+<dd>United Nations Framework Convention on Climate Change.</dd>
+</dl>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../parameter-effects/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Parameter Effects Reference">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Parameter Effects Reference
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../other-operations/" class="md-footer__link md-footer__link--next" aria-label="Next: Other Operations">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Other Operations
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+        <div class="md-social">
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://github.com/setupelz/fair-shares" target="_blank" rel="noopener" title="github.com" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M165.9 397.4c0 2-2.3 3.6-5.2 3.6-3.3.3-5.6-1.3-5.6-3.6 0-2 2.3-3.6 5.2-3.6 3-.3 5.6 1.3 5.6 3.6m-31.1-4.5c-.7 2 1.3 4.3 4.3 4.9 2.6 1 5.6 0 6.2-2s-1.3-4.3-4.3-5.2c-2.6-.7-5.5.3-6.2 2.3m44.2-1.7c-2.9.7-4.9 2.6-4.6 4.9.3 2 2.9 3.3 5.9 2.6 2.9-.7 4.9-2.6 4.6-4.6-.3-1.9-3-3.2-5.9-2.9M244.8 8C106.1 8 0 113.3 0 252c0 110.9 69.8 205.8 169.5 239.2 12.8 2.3 17.3-5.6 17.3-12.1 0-6.2-.3-40.4-.3-61.4 0 0-70 15-84.7-29.8 0 0-11.4-29.1-27.8-36.6 0 0-22.9-15.7 1.6-15.4 0 0 24.9 2 38.6 25.8 21.9 38.6 58.6 27.5 72.9 20.9 2.3-16 8.8-27.1 16-33.7-55.9-6.2-112.3-14.3-112.3-110.5 0-27.5 7.6-41.3 23.6-58.9-2.6-6.5-11.1-33.3 2.6-67.9 20.9-6.5 69 27 69 27 20-5.6 41.5-8.5 62.8-8.5s42.8 2.9 62.8 8.5c0 0 48.1-33.6 69-27 13.7 34.7 5.2 61.4 2.6 67.9 16 17.7 25.8 31.5 25.8 58.9 0 96.5-58.9 104.2-114.8 110.5 9.2 7.9 17 22.9 17 46.4 0 33.7-.3 75.4-.3 83.6 0 6.5 4.6 14.4 17.3 12.1C428.2 457.8 496 362.9 496 252 496 113.3 383.5 8 244.8 8M97.2 352.9c-1.3 1-1 3.3.7 5.2 1.6 1.6 3.9 2.3 5.2 1 1.3-1 1-3.3-.7-5.2-1.6-1.6-3.9-2.3-5.2-1m-10.8-8.1c-.7 1.3.3 2.9 2.3 3.9 1.6 1 3.6.7 4.3-.7.7-1.3-.3-2.9-2.3-3.9-2-.6-3.6-.3-4.3.7m32.4 35.6c-1.6 1.3-1 4.3 1.3 6.2 2.3 2.3 5.2 2.6 6.5 1 1.3-1.3.7-4.3-1.3-6.2-2.2-2.3-5.2-2.6-6.5-1m-11.4-14.7c-1.6 1-1.6 3.6 0 5.9s4.3 3.3 5.6 2.3c1.6-1.3 1.6-3.9 0-6.2-1.4-2.3-4-3.3-5.6-2"/></svg>
+    </a>
+  
+    
+    
+    
+    
+      
+      
+    
+    <a href="https://pypi.org/project/fair-shares/" target="_blank" rel="noopener" title="pypi.org" class="md-social__link">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.8 200.5c-7.7-30.9-22.3-54.2-53.4-54.2h-40.1v47.4c0 36.8-31.2 67.8-66.8 67.8H172.7c-29.2 0-53.4 25-53.4 54.3v101.8c0 29 25.2 46 53.4 54.3 33.8 9.9 66.3 11.7 106.8 0 26.9-7.8 53.4-23.5 53.4-54.3v-40.7H226.2v-13.6h160.2c31.1 0 42.6-21.7 53.4-54.2 11.2-33.5 10.7-65.7 0-108.6M286.2 404c11.1 0 20.1 9.1 20.1 20.3 0 11.3-9 20.4-20.1 20.4-11 0-20.1-9.2-20.1-20.4.1-11.3 9.1-20.3 20.1-20.3M167.8 248.1h106.8c29.7 0 53.4-24.5 53.4-54.3V91.9c0-29-24.4-50.7-53.4-55.6-35.8-5.9-74.7-5.6-106.8.1-45.2 8-53.4 24.7-53.4 55.6v40.7h106.9v13.6h-147c-31.1 0-58.3 18.7-66.8 54.2-9.8 40.7-10.2 66.1 0 108.6 7.6 31.6 25.7 54.2 56.8 54.2H101v-48.8c0-35.3 30.5-66.4 66.8-66.4m-6.7-142.6c-11.1 0-20.1-9.1-20.1-20.3.1-11.3 9-20.4 20.1-20.4 11 0 20.1 9.2 20.1 20.4s-9 20.3-20.1 20.3"/></svg>
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+  
+    
+  
+
+
+  
+    
+  
+
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they search for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="analytics" checked>
+          <span class="task-list-indicator"></span>
+          Google Analytics
+        </label>
+      </li>
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        </label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tooltips", "content.action.edit", "content.action.view"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+      
+    
+  </body>
+</html>
