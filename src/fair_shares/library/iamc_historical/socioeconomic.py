@@ -168,20 +168,40 @@ def _single_unit(scenario: pyam.IamDataFrame, variable: str) -> str:
     return units[0]
 
 
+
+# OWID rewrites its population export in place with no version identifier,
+# so the value column name is not stable -- it has already changed once
+# (from "Population (historical estimates)" to "Population"). Newest name
+# first; add to the front when it changes again.
+_OWID_POPULATION_COLUMNS = ("Population", "Population (historical estimates)")
+
+
+def owid_population_column(columns) -> str:
+    """Return whichever population column this OWID vintage actually ships."""
+    for name in _OWID_POPULATION_COLUMNS:
+        if name in columns:
+            return name
+    raise DataProcessingError(
+        "No recognised population column in the OWID export. Expected one of "
+        f"{list(_OWID_POPULATION_COLUMNS)}; found {list(columns)}. OWID rewrites "
+        "this file in place, so an upstream rename is the likely cause -- add "
+        "the new name to _OWID_POPULATION_COLUMNS."
+    )
+
+
 def _load_population(source: SourceLike, *, unit: str) -> pd.DataFrame:
     if isinstance(source, pd.DataFrame):
         return source.copy()
     path = _resolve_path(source, default=_DEFAULT_POPULATION_CSV)
     long = pd.read_csv(path)
     long = long[long["Code"].astype(str).str.match(_ISO3_RE, na=False)]
+    pop_col = owid_population_column(long.columns)
     wide = (
-        long.rename(columns={"Code": "region", "Year": "year"})[
-            ["region", "year", "Population (historical estimates)"]
-        ]
+        long.rename(columns={"Code": "region", "Year": "year"})[["region", "year", pop_col]]
         .pivot_table(
             index="region",
             columns="year",
-            values="Population (historical estimates)",
+            values=pop_col,
             aggfunc="first",
         )
         .reset_index()

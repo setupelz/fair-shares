@@ -139,18 +139,35 @@ print("Processing historical population data...")
 # Read the CSV file
 historical_df = pd.read_csv(project_root / population_historical_path)
 
-# Filter out rows where Code is NaN (these are typically regional aggregates without ISO codes)
-historical_df = historical_df[historical_df["Code"].notna()]
+# Keep ISO3 country rows plus the named world key ONLY. OWID ships synthetic
+# aggregate codes (OWID_*, income groups) in the same export; today only
+# OWID_WRL (wanted) and OWID_KOS are present, but the policy must not depend
+# on that staying true -- a future OWID_AFR/OWID_EUR row would otherwise
+# enter the intermediate artifact and rely on downstream source
+# intersections to be caught. Dropped codes are reported, never silent.
+_iso3_mask = historical_df["Code"].astype(str).str.match(r"^[A-Z]{3}$", na=False)
+_world_mask = historical_df["Code"] == population_historical_world_key
+_dropped_codes = sorted(
+    set(historical_df.loc[~(_iso3_mask | _world_mask), "Code"].dropna())
+)
+if _dropped_codes:
+    print(f"Dropping {len(_dropped_codes)} non-ISO3 aggregate code(s): {_dropped_codes}")
+historical_df = historical_df[_iso3_mask | _world_mask]
 
 # Filter the data to start from 1850
 historical_df = historical_df[historical_df["Year"] >= 1850]
 
-# Rename columns for consistency with our pipeline
+# Rename columns for consistency with our pipeline. The population column
+# name is not stable across OWID vintages (pandas rename would silently
+# no-op on an absent key, surfacing later as a bare KeyError two lines
+# down) -- resolve it through the library helper instead.
+from fair_shares.library.iamc_historical.socioeconomic import owid_population_column
+
 historical_df = historical_df.rename(
     columns={
         "Code": "iso3c",
         "Year": "year",
-        "Population (historical estimates)": "population",
+        owid_population_column(historical_df.columns): "population",
     }
 )
 
