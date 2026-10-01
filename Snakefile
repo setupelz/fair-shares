@@ -162,6 +162,13 @@ if _needs_lulucf and active_lulucf_source is None:
         f"Example: --config ... active_lulucf_source=melo-2026"
     )
 
+# Historical series that the scenario rule declares as input. Notebook 107
+# derives co2 when the emissions source declares only co2-ffi.
+if emission_category == "co2" and "co2" not in EMISSION_CATEGORIES:
+    _scenario_emissions_input = f"{OUTPUT_DIR}/intermediate/emissions/emiss_co2_nghgi_timeseries.csv"
+else:
+    _scenario_emissions_input = f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv"
+
 # Resolve scenario source: per-target override → global default
 _scenario_source_key = (
     _target_yaml.get("scenario_source")
@@ -414,6 +421,7 @@ if _needs_lulucf:
             notebook=f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb",
             nghgi_world=f"{OUTPUT_DIR}/intermediate/emissions/world_co2-lulucf_timeseries.csv",
             nghgi_metadata=f"{OUTPUT_DIR}/intermediate/emissions/lulucf_metadata.yaml",
+            nghgi_co2=f"{OUTPUT_DIR}/intermediate/emissions/emiss_co2_nghgi_timeseries.csv",
         shell:
             notebook_cmd("{input.notebook}", "{output.notebook}")
 
@@ -485,7 +493,9 @@ if uses_scenarios:
                 input:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
+                    # Notebook 107 runs first: it writes the NGHGI series that 104 reads.
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=scenario_nb_out,
                     scenarios=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{emission_category}_timeseries.csv",

@@ -508,11 +508,20 @@ class DataSourcesConfig(BaseModel):
         Note: by the time the Pydantic model is constructed, the emission_category
         has already been resolved to the effective value (e.g., "co2-ffi" for
         all-ghg runs), so this validator sees the resolved value.
+
+        ``co2`` is also valid when the emissions source declares ``co2-ffi`` and
+        a LULUCF source is active: the LULUCF notebook derives ``co2`` as
+        ``co2-ffi`` plus national-inventory LULUCF.
         """
         if self.active_emissions_source:
             emissions_config = self.emissions[self.active_emissions_source]
             available = emissions_config.data_parameters.available_categories
-            if self.emission_category not in available:
+            co2_from_lulucf = (
+                self.emission_category == "co2"
+                and "co2-ffi" in available
+                and bool(self.active_lulucf_source)
+            )
+            if self.emission_category not in available and not co2_from_lulucf:
                 suggestion = suggest_similar(self.emission_category, available)
                 msg = format_error(
                     "invalid_emission_category",
@@ -524,5 +533,10 @@ class DataSourcesConfig(BaseModel):
                     f"'{self.active_emissions_source}' "
                     f"only provides: {', '.join(available)}"
                 )
+                if self.emission_category == "co2" and "co2-ffi" in available:
+                    note += (
+                        "\n'co2' can be derived from 'co2-ffi' when a LULUCF "
+                        "source is active (for example lulucf='melo-2026-v4')."
+                    )
                 raise ConfigurationError(msg + note)
         return self

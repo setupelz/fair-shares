@@ -776,7 +776,15 @@ def process_rcb_to_2020_baseline(
         # For co2-ffi, LULUCF is omitted because it cancels with the LULUCF
         # decomposition
         rebase_lulucf_mt = 0.0
-        if emission_category == "co2" and world_nghgi_lulucf_emissions is not None:
+        if emission_category == "co2" and world_nghgi_lulucf_emissions is None:
+            raise DataProcessingError(
+                f"RCB source '{source_name}' has baseline year {rcb_baseline_year}. "
+                f"Rebasing a co2 budget to {target_baseline_year} needs the "
+                f"observed inventory (NGHGI) LULUCF emissions for "
+                f"{target_baseline_year}-{rcb_baseline_year - 1}: pass "
+                f"world_nghgi_lulucf_emissions."
+            )
+        if emission_category == "co2":
             missing_years = missing_rebase_years(
                 rcb_baseline_year, world_nghgi_lulucf_emissions, target_baseline_year
             )
