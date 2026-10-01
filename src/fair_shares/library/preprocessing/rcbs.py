@@ -52,6 +52,7 @@ from fair_shares.library.utils.data.rcb import (
     fill_rebase_years,
     missing_rebase_years,
     rcb_scenario_set_key,
+    validate_rebase_fill_max_years,
 )
 
 
@@ -419,8 +420,8 @@ def load_and_process_rcbs(
         print("  Adjustment mode: pre-computed (NGHGI-consistent, Weber et al. 2026)")
         print("  Bunker NZ years: category-level median (from scenario adjustments)")
 
-    rebase_fill_max_years = rcb_data.get(
-        "rebase_fill_max_years", DEFAULT_REBASE_FILL_MAX_YEARS
+    rebase_fill_max_years = validate_rebase_fill_max_years(
+        rcb_data.get("rebase_fill_max_years", DEFAULT_REBASE_FILL_MAX_YEARS)
     )
 
     # Pre-load baseline-shift LULUCF median timeseries from notebook 104 output.

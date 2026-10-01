@@ -181,6 +181,31 @@ class TestCalculateBudgetFromRCB:
 
         assert calculate_budget_from_rcb(500.0, 2000, from_2000, verbose=False) == 700
 
+    def test_allocation_year_after_the_world_series_raises(self):
+        """A start year beyond the world series would drop years from the sum."""
+        index = pd.MultiIndex.from_tuples(
+            [("World", "Mt * CO2e", "co2")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+        to_2023 = pd.DataFrame({str(y): [10.0] for y in range(2000, 2024)}, index=index)
+        with pytest.raises(DataProcessingError) as error:
+            calculate_budget_from_rcb(500.0, 2025, to_2023, verbose=False)
+        assert "lack 2024" in str(error.value)
+        assert "last available year is 2023" in str(error.value)
+
+        assert calculate_budget_from_rcb(500.0, 2024, to_2023, verbose=False) == 460
+
+    def test_a_nan_year_counts_as_missing_after_2020(self):
+        """A year column without a value is lacking, not skipped by the sum."""
+        index = pd.MultiIndex.from_tuples(
+            [("World", "Mt * CO2e", "co2")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+        padded = pd.DataFrame({str(y): [10.0] for y in range(2000, 2026)}, index=index)
+        padded[["2023", "2024"]] = float("nan")
+        with pytest.raises(DataProcessingError, match="lack 2023-2024"):
+            calculate_budget_from_rcb(500.0, 2025, padded, verbose=False)
+
     def test_with_variable_emissions(self):
         """Test with variable emissions to ensure correct summation."""
         # Create variable emissions data

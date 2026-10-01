@@ -205,7 +205,7 @@ The last two sources (`forster_2026`, `ar6_wg1_2021`) carry seven budgets each a
 
 > Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. _Nature Climate Change_, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
-> Forster, P. M., et al. (2024). Indicators of Global Climate Change 2023. _Earth System Science Data_, 16, 2625–2680. [doi:10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
+> Forster, P. M., et al. (2024). Indicators of Global Climate Change 2023. _Earth System Science Data_, 16, 2625–2658. [doi:10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
 
 > Forster, P. M., et al. (2026). Indicators of Global Climate Change 2025. _Earth System Science Data_, 18, 3889–3933. [doi:10.5194/essd-18-3889-2026](https://doi.org/10.5194/essd-18-3889-2026)
 

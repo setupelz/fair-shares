@@ -114,13 +114,13 @@ rcb_value = rcb_row["rcb_2020_nghgi_mt"]
 # Calculate carbon budget
 budget = calculate_budget_from_rcb(
     rcb_value=rcb_value,
-    allocation_year=2025,
+    allocation_year=2020,
     world_scenario_emissions_ts=world_emissions_df,
     verbose=False,
 )
 
-print(f"RCB value (2020): {rcb_value / 1e9:.1f} GtCO2")
-print(f"Global carbon budget (2025): {budget / 1e9:.1f} GtCO2")
+print(f"RCB value (2020): {rcb_value / 1e3:.1f} GtCO2")  # values are in Mt
+print(f"Global carbon budget (2020): {budget / 1e3:.1f} GtCO2")
 print("Data loaded successfully!")
 
 # %% [markdown]

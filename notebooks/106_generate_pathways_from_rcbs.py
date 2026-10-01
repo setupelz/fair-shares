@@ -341,7 +341,6 @@ rcbs_df = load_and_process_rcbs(
     world_fossil_emissions=_fossil_for_rcb,
     emission_category=emission_category,
     adjustments_config=adjustments_config,
-    project_root=project_root,
     source_id=source_id,
     actual_bm_lulucf_emissions=_bm_lulucf_for_rcb,
     verbose=True,

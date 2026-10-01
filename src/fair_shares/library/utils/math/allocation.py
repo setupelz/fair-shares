@@ -325,7 +325,8 @@ def calculate_gini_adjusted_gdp(
         Array of Gini coefficients (0-1) for each country.
     income_floor
         Development threshold in currency units per capita per year.
-        GDR default: $7,500/year (2010 PPP).
+        Must use the price base of ``total_gdps``. Baer (2013) gives $7,500
+        on a 2005 base and $8,500 on a 2010 base.
     total_populations
         Array of total population values for each country.
     max_adjustment

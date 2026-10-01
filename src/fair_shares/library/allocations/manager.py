@@ -606,7 +606,7 @@ def run_parameter_grid(
             allocations_config, harmonisation_year, target_source
         )
 
-    # Validate allocation year >= 1990 for total CO2 (NGHGI data limit)
+    # Validate allocation year >= 2000 for total CO2 (NGHGI data limit)
     if emission_category:
         # A separate responsibility frame (fossil CO2 for co2 and all-ghg) sets
         # the first year a pre-allocation responsibility window may start.

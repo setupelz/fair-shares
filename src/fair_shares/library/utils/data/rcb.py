@@ -201,8 +201,8 @@ def select_rcb_scenario_set(
     ------
     ConfigurationError
         If the rule is unknown, the label has no AR6 category under the
-        "ar6-category" rule, or the metadata lack "net_zero_year" under the
-        "peak-warming-band" rule
+        "ar6-category" rule, the label has no numeric temperature under the
+        "peak-warming-band" rule, or the metadata lack "net_zero_year" under it
     DataProcessingError
         If the rule selects no scenario
     """
@@ -212,7 +212,13 @@ def select_rcb_scenario_set(
         selected = metadata[metadata["Category"] == category]
         criterion = f"AR6 category {category}"
     elif selection == "peak-warming-band":
-        temperature = float(climate_assessment.removesuffix("C"))
+        try:
+            temperature = float(climate_assessment.removesuffix("C"))
+        except ValueError:
+            raise ConfigurationError(
+                f"RCB source '{source}', label '{label}': the peak-warming band "
+                f"rule needs a numeric temperature before 'p' (e.g. '1.5p50')."
+            ) from None
         # Rounding keeps the bounds exact decimals (1.7 - 0.05 gives 1.65).
         lower = round(temperature - band_half_width, 6)
         upper = round(temperature + band_half_width, 6)
@@ -280,6 +286,31 @@ def build_rcb_scenario_sets(
     return scenario_sets
 
 
+def validate_rebase_fill_max_years(value: object) -> int:
+    """Return ``rebase_fill_max_years`` from rcbs.yaml, or raise if it is not a count."""
+    if isinstance(value, bool) or not isinstance(value, int) or value < 0:
+        raise ConfigurationError(
+            f"rcbs.yaml: rebase_fill_max_years must be a non-negative integer, "
+            f"got {value!r}."
+        )
+    return value
+
+
+def _available_years(emissions: pd.DataFrame) -> list[int]:
+    """List the years whose column exists and holds a value in every row."""
+    return sorted(
+        int(c)
+        for c in emissions.columns
+        if str(c).isdigit() and emissions[c].notna().all()
+    )
+
+
+def _years_lacking(emissions: pd.DataFrame, years: range | list[int]) -> list[int]:
+    """List the years in ``years`` that ``emissions`` has no value for."""
+    available = set(_available_years(emissions))
+    return [year for year in years if year not in available]
+
+
 def missing_rebase_years(
     rcb_baseline_year: int,
     emissions: pd.DataFrame,
@@ -290,13 +321,9 @@ def missing_rebase_years(
 
     Rebasing a budget from ``rcb_baseline_year`` to ``target_baseline_year``
     adds the emissions of every year from the target baseline to the year
-    before the RCB baseline.
+    before the RCB baseline. A year with a missing value counts as lacking.
     """
-    return [
-        year
-        for year in range(target_baseline_year, rcb_baseline_year)
-        if str(year) not in emissions.columns
-    ]
+    return _years_lacking(emissions, range(target_baseline_year, rcb_baseline_year))
 
 
 def fill_rebase_years(
@@ -414,20 +441,20 @@ def calculate_budget_from_rcb(
     Raises
     ------
     DataProcessingError
-        If allocation_year is before 2020 and the world emissions lack any year
-        from allocation_year to 2019
+        If the world emissions lack any year from allocation_year to 2019
+        (allocation_year before 2020) or from 2020 to allocation_year - 1
+        (allocation_year after 2020)
     """
     if allocation_year < 2020:
         # Add historical emissions before RCB period
         year_cols = [str(y) for y in range(allocation_year, 2020)]
 
         # A partial sum understates the budget, so every year must hold a value.
-        world_row = world_scenario_emissions_ts.iloc[0]
-        years_with_data = sorted(
-            int(c) for c in world_row.dropna().index if str(c).isdigit()
+        missing_years = _years_lacking(
+            world_scenario_emissions_ts, range(allocation_year, 2020)
         )
-        missing_years = [y for y in map(int, year_cols) if y not in years_with_data]
         if missing_years:
+            years_with_data = _available_years(world_scenario_emissions_ts)
             first_year = years_with_data[0] if years_with_data else None
             raise DataProcessingError(
                 f"Allocation year {allocation_year} needs world emissions for "
@@ -460,16 +487,20 @@ def calculate_budget_from_rcb(
 
     else:  # allocation_year > 2020
         # Subtract emissions already used from RCB
-        year_cols = [
-            str(y)
-            for y in range(2020, allocation_year)
-            if str(y) in world_scenario_emissions_ts.columns
-        ]
+        year_cols = [str(y) for y in range(2020, allocation_year)]
 
-        if not year_cols:
+        # A partial sum overstates the budget, so every year must hold a value.
+        missing_years = _years_lacking(
+            world_scenario_emissions_ts, range(2020, allocation_year)
+        )
+        if missing_years:
+            years_with_data = _available_years(world_scenario_emissions_ts)
+            last_year = years_with_data[-1] if years_with_data else None
             raise DataProcessingError(
-                f"No emission data found for years 2020-{allocation_year - 1}. "
-                f"Cannot calculate emissions already used from RCB."
+                f"Allocation year {allocation_year} needs world emissions for "
+                f"2020-{allocation_year - 1}, but the world emissions data lack "
+                f"{_year_ranges(missing_years)}. The last available year is "
+                f"{last_year}."
             )
 
         emissions_used = world_scenario_emissions_ts[year_cols].sum(axis=1).iloc[0]

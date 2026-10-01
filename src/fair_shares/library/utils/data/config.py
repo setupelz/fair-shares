@@ -10,16 +10,18 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 import yaml
 
-from fair_shares.library.config.models import DataSourcesConfig
 from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
 )
 from fair_shares.library.paths import packaged_config
+
+if TYPE_CHECKING:
+    from fair_shares.library.config.models import DataSourcesConfig
 
 # Environment override letting a user supply their own source table without
 # editing the installed package.
@@ -441,6 +443,9 @@ def build_data_config(
         "active_scenario_source": scenario_source_key,
         "rcb_generator": rcb_generator,  # Will be None for non-rcb-pathways targets
     }
+
+    # Imported here because config.models loads utils, which loads this module.
+    from fair_shares.library.config.models import DataSourcesConfig
 
     # Validate with Pydantic (this will raise ValidationError if invalid)
     validated_config = DataSourcesConfig(**filtered_config)
