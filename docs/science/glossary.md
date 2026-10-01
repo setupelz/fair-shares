@@ -114,7 +114,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 ### Inequality Parameters
 
 **`income_floor`** (type: `float`, default: `0.0`)
-: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. The library default is `0.0` (all income counts); the GDR framework's threshold is `7500` ($7,500/year 2010 PPP) and is passed explicitly. Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
+: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. The library default is `0.0` (all income counts); the GDR framework's threshold is $7,500 on a 2005 price base ($8,500 on 2010) and must be converted to the GDP series' price base before it is passed. Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
 
 **`max_gini_adjustment`** (type: `float`, default: `0.8`)
 : Maximum proportional reduction from the Gini-based capability correction. Caps the influence of extreme inequality (Gini > 0.6) on measured capability, preventing outsized adjustments from dominating the allocation. At 0.8, the Gini adjustment can reduce a country's measured GDP by at most 80%. Available on `*-gini-*` approaches only.
@@ -303,13 +303,13 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 185 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI**
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. ~90 GtCO₂ for 1.5°C scenarios [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of 90.3 GtCO₂ from 2020 to net-zero CO₂ and 65.4 GtCO₂ from 2024 (median of the AR6 C1 scenarios, PRIMAP run with `melo-2026`). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
 
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).

@@ -55,7 +55,7 @@ _Example uses 1.5°C carbon budget (50% probability). Remaining budget = (cumula
 
 `pre_allocation_responsibility_weight` activates per-capita rescaling based on cumulative per-capita emissions in [`pre_allocation_responsibility_year`, `allocation_year`). This is a **separate mechanism** from setting an early `allocation_year` — rescaling is multiplicative and always produces positive allocations if `allocation_year` is the present, whereas cumulative accounting can produce negative allocations (see [comparison table](#if-you-want-x-set-y-guide) below).
 
-`capability_weight` activates capability (ability to pay) adjustments based on GDP per capita from the allocation year onwards. Capability data before the allocation year is not used. When the allocation window extends past the last observed GDP year (default `wdi-2025` ends at 2023), the per-capita budget and pathway primitives forward-fill GDP per capita from the last observed year to cover the rest of the window — holding the cross-country capability ratios of that last year constant for every subsequent year. To use different post-observation capability dynamics (SSP2 projections, custom growth assumptions, or a future-extended WDI release), extend the input `gdp_ts` time series before calling the allocation function.
+`capability_weight` activates capability (ability to pay) adjustments based on GDP per capita from the allocation year onwards. Without `capability_reference_year`, capability data before the allocation year is not used; with it, a single snapshot year is used, and that year may precede or follow the allocation year. When the allocation window extends past the last observed GDP year (default `wdi-2025` ends at 2023), the per-capita budget and pathway primitives forward-fill GDP per capita from the last observed year to cover the rest of the window — holding the cross-country capability ratios of that last year constant for every subsequent year. To use different post-observation capability dynamics (SSP2 projections, custom growth assumptions, or a future-extended WDI release), extend the input `gdp_ts` time series before calling the allocation function.
 
 **Direction:**
 
@@ -126,6 +126,10 @@ budget and pathway approaches with identical semantics.
   with a warning; a year outside the data range raises. On the Gini-adjusted
   approaches the Gini adjustment applies in all three cases — which input the
   snapshot is read from does not change the capability definition.
+- **Start years before the GDP series:** with a reference year set, the budget
+  approaches need GDP at that year only. `allocation_year` can then be earlier
+  than the first GDP year, down to 1850. With no reference year, an allocation
+  year before the GDP series raises an error.
 
 **When to use:** replicating studies that fix capability at a reference year
 (e.g. a single-year GDP-per-capita indicator), or holding the capability
@@ -147,8 +151,10 @@ passes through, so both gas components apply the same snapshot.
 **Direction:**
 
 - `floor=0` → All income counts toward capability (no development protection)
-- `floor=7500` → $7,500/year (2010 PPP) — the GDR framework's threshold, the level at which basic development indicators (nutrition, infant mortality, education) are broadly met
-- `floor=15000` → $15,000/year (2010 PPP) subsistence threshold
+- `floor=7500` → 7,500 per person per year, in the units of the GDP series. [Baer 2013](https://doi.org/10.1002/wcc.201) used this value as the GDR development threshold on a 2005 price base and raised it to 8,500 on a 2010 base.
+- `floor=15000` → 15,000 per person per year, in the units of the GDP series, a higher subsistence threshold
+
+The floor must be expressed in the price base of the GDP series passed in. The default GDP source is in constant 2021 international dollars, so a threshold from another price year needs converting first.
 
 Higher floors increase the exempt portion, reducing measured capability for all countries and increasing their allocated share of emissions. The effect is largest for middle-income countries where a significant fraction of the population clusters around the threshold.
 

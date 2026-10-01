@@ -1,0 +1,122 @@
+# Golden master for the adjusted budgets of lamboll_2023, forster_2024 and ar6_2020.
+# Inputs come from the pipeline outputs of primap-202503 with melo-2026 and cover
+# 2020 to 2023 in Mt CO2. The test pins these values; do not regenerate.
+# `expected` holds the budgets with the bunker rebase: the rebase adds the bunkers of
+# 2020 to the year before the baseline (rebase_bunkers_mt).
+# For co2 the rebase adds observed NGHGI LULUCF for the same years (rebase_lulucf_mt)
+# and the convention gap runs from the baseline year of the source to net zero
+# (`convention_gap_median_from`, keyed by baseline year).
+# `rcb_2020_without_bunker_rebase_mt` holds the budgets captured 2026-10-01 from
+# rcbs_co2-ffi.csv and rcbs_co2.csv, when the rebase added fossil emissions only.
+# `rcb_2020_with_gap_from_2020_mt` holds the co2 budgets captured 2026-10-01 from
+# rcbs_co2.csv, when every source took the convention gap from 2020
+# (`convention_gap_median_from_2020_captured_mt`).
+inputs:
+  world_fossil_co2_mt:
+    2020: 34343.1362
+    2021: 36068.3054
+    2022: 36228.508400000006
+    2023: 36737.4233
+  world_co2_lulucf_mt:
+    2020: -4121.601528
+    2021: -3756.03238
+    2022: -4209.201465
+    2023: -4274.392925
+  bunkers_mt:
+    2020: 870.9263603658384
+    2021: 911.739887821367
+    2022: 1039.5388075214562
+    2023: 1137.0650964616757
+  scenario_adjustments:
+    1.5p50:
+      bm_lulucf_cumulative_median: -53642.7
+      convention_gap_median_from: {2020: -90280.9, 2023: -71238.1, 2024: -65410.0}
+      nz_year_median: 2050
+      nz_year_min: 2034
+      nz_year_max: 2075
+      n_scenarios: 70
+      n_reaching_nz: 70
+    2p83:
+      bm_lulucf_cumulative_median: -58710.7
+      convention_gap_median_from: {2020: -119745.7, 2023: -100236.4, 2024: -94415.2}
+      nz_year_median: 2057
+      nz_year_min: 2040
+      nz_year_max: 2078
+      n_scenarios: 106
+      n_reaching_nz: 106
+    2p66:
+      bm_lulucf_cumulative_median: -87539.1
+      convention_gap_median_from: {2020: -145477.8, 2023: -125793.3, 2024: -119566.0}
+      nz_year_median: 2070
+      nz_year_min: 2044
+      nz_year_max: 2100
+      n_scenarios: 231
+      n_reaching_nz: 191
+  lulucf_shift_median_mt:
+    1.5p50:
+      2020: 2835.98316
+      2021: 2422.07858775
+      2022: 1649.3290775
+      2023: 1180.521057
+    2p83:
+      2020: 2853.994815
+      2021: 2522.731611
+      2022: 1829.732873
+      2023: 1462.5375215
+    2p66:
+      2020: 2901.91244
+      2021: 2524.902436
+      2022: 1961.33544
+      2023: 1621.06979
+expected:
+  co2-ffi:
+    - {source: lamboll_2023, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 324802, rebase_fossil_mt: 106640, rebase_bunkers_mt: 2822, rebase_lulucf_mt: 0, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: lamboll_2023, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 992061, rebase_fossil_mt: 106640, rebase_bunkers_mt: 2822, rebase_lulucf_mt: 0, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: forster_2024, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 312677, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: 0, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: forster_2024, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 989935, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: 0, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: forster_2024, scenario: 2p83, climate-assessment: 2C, quantile: 0.83, rcb_2020_nghgi_mt: 854717, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: 0, deduction_bunkers_mt: -42619, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: ar6_2020, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 465340, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: ar6_2020, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 1092599, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+    - {source: ar6_2020, scenario: 2p83, climate-assessment: 2C, quantile: 0.83, rcb_2020_nghgi_mt: 857381, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -42619, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: 0}
+  co2:
+    - {source: lamboll_2023, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 241477, rebase_fossil_mt: 106640, rebase_bunkers_mt: 2822, rebase_lulucf_mt: -12087, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -71238}
+    - {source: lamboll_2023, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 854181, rebase_fossil_mt: 106640, rebase_bunkers_mt: 2822, rebase_lulucf_mt: -12087, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -125793}
+    - {source: forster_2024, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 230905, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: -16361, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -65410}
+    - {source: forster_2024, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 854008, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: -16361, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -119566}
+    - {source: forster_2024, scenario: 2p83, climate-assessment: 2C, quantile: 0.83, rcb_2020_nghgi_mt: 743941, rebase_fossil_mt: 143377, rebase_bunkers_mt: 3959, rebase_lulucf_mt: -16361, deduction_bunkers_mt: -42619, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -94415}
+    - {source: ar6_2020, scenario: 1.5p50, climate-assessment: 1.5C, quantile: 0.5, rcb_2020_nghgi_mt: 375059, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -34660, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -90281}
+    - {source: ar6_2020, scenario: 2p66, climate-assessment: 2C, quantile: 0.66, rcb_2020_nghgi_mt: 947121, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -57401, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -145478}
+    - {source: ar6_2020, scenario: 2p83, climate-assessment: 2C, quantile: 0.83, rcb_2020_nghgi_mt: 737635, rebase_fossil_mt: 0, rebase_bunkers_mt: 0, rebase_lulucf_mt: 0, deduction_bunkers_mt: -42619, deduction_lulucf_future_mt: 0, correction_lulucf_nghgi_mt: -119746}
+rcb_2020_without_bunker_rebase_mt:
+  co2-ffi:
+    - {source: lamboll_2023, scenario: 1.5p50, rcb_2020_nghgi_mt: 321980}
+    - {source: lamboll_2023, scenario: 2p66, rcb_2020_nghgi_mt: 989239}
+    - {source: forster_2024, scenario: 1.5p50, rcb_2020_nghgi_mt: 308717}
+    - {source: forster_2024, scenario: 2p66, rcb_2020_nghgi_mt: 985976}
+    - {source: forster_2024, scenario: 2p83, rcb_2020_nghgi_mt: 850758}
+    - {source: ar6_2020, scenario: 1.5p50, rcb_2020_nghgi_mt: 465340}
+    - {source: ar6_2020, scenario: 2p66, rcb_2020_nghgi_mt: 1092599}
+    - {source: ar6_2020, scenario: 2p83, rcb_2020_nghgi_mt: 857381}
+  co2:
+    - {source: lamboll_2023, scenario: 1.5p50, rcb_2020_nghgi_mt: 219612}
+    - {source: lamboll_2023, scenario: 2p66, rcb_2020_nghgi_mt: 831674}
+    - {source: forster_2024, scenario: 1.5p50, rcb_2020_nghgi_mt: 202075}
+    - {source: forster_2024, scenario: 2p66, rcb_2020_nghgi_mt: 824137}
+    - {source: forster_2024, scenario: 2p83, rcb_2020_nghgi_mt: 714651}
+    - {source: ar6_2020, scenario: 1.5p50, rcb_2020_nghgi_mt: 375059}
+    - {source: ar6_2020, scenario: 2p66, rcb_2020_nghgi_mt: 947121}
+    - {source: ar6_2020, scenario: 2p83, rcb_2020_nghgi_mt: 737635}
+rcb_2020_with_gap_from_2020_mt:
+  co2:
+    - {source: lamboll_2023, scenario: 1.5p50, rcb_2020_nghgi_mt: 222434}
+    - {source: lamboll_2023, scenario: 2p66, rcb_2020_nghgi_mt: 834496}
+    - {source: forster_2024, scenario: 1.5p50, rcb_2020_nghgi_mt: 206034}
+    - {source: forster_2024, scenario: 2p66, rcb_2020_nghgi_mt: 828096}
+    - {source: forster_2024, scenario: 2p83, rcb_2020_nghgi_mt: 718610}
+    - {source: ar6_2020, scenario: 1.5p50, rcb_2020_nghgi_mt: 375059}
+    - {source: ar6_2020, scenario: 2p66, rcb_2020_nghgi_mt: 947121}
+    - {source: ar6_2020, scenario: 2p83, rcb_2020_nghgi_mt: 737635}
+convention_gap_median_from_2020_captured_mt:
+  1.5p50: -90280.9
+  2p83: -119745.7
+  2p66: -145477.8

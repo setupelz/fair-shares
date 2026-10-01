@@ -308,7 +308,7 @@ allocations = {
 - `allocation_year=1990` → Cumulative population from 1990 determines each country's share of the total budget
 - `pre_allocation_responsibility_weight=0.2` + `pre_allocation_responsibility_year=1950` → Per-capita emissions from 1950-1989 rescale allocations (relative mechanism)
 - `capability_weight=0.8` → GDP-based capability dominates the adjustment (applies from allocation year onwards)
-- `income_floor=10000` → Higher than GDR threshold ($7,500/year 2010 PPP) — broader subsistence definition (GDR was designed for burden-sharing; fair-shares adapts its capability metric for entitlement allocation)
+- `income_floor=10000` → Higher than the GDR threshold ($7,500/year on a 2005 price base) — broader subsistence definition (GDR was designed for burden-sharing; fair-shares adapts its capability metric for entitlement allocation)
 - Gini data configured → Within-country inequality affects effective capability
 
 **Distributional outcome:** Least developed countries retain most of their remaining allocation. High-income countries have reduced remaining allocations (from cumulative budget accounting since 1990), further reduced by capability_weight=0.8. The pre_allocation_responsibility_weight=0.2 additionally rescales shares based on 1950-1989 per-capita emissions (this rescaling always produces positive allocations if `allocation_year` is the present — it is a multiplicative adjustment, not cumulative accounting).

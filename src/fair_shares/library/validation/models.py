@@ -54,13 +54,13 @@ class AllocationInputs(BaseModel):
     )
     first_allocation_year: int = Field(
         ...,
-        ge=1900,
+        ge=1850,
         le=2100,
         description="First year to allocate (must exist in data)",
     )
     last_allocation_year: int = Field(
         ...,
-        ge=1900,
+        ge=1850,
         le=2100,
         description="Last year to allocate (must exist in data)",
     )
@@ -68,7 +68,10 @@ class AllocationInputs(BaseModel):
     # Optional inputs for adjustments
     gdp_ts: TimeseriesDataFrame | None = Field(
         None,
-        description="GDP time series data (required for capability adjustments, used from allocation year onwards)",
+        description=(
+            "GDP time series data (required for capability adjustments, used from "
+            "allocation year onwards, or at capability_reference_year when set)"
+        ),
     )
     gini_s: pd.DataFrame | None = Field(
         None,
@@ -89,6 +92,12 @@ class AllocationInputs(BaseModel):
         ge=1800,
         le=2100,
         description="Base year for pre-allocation responsibility calculation",
+    )
+
+    # Capability snapshot year (when applicable)
+    capability_reference_year: int | None = Field(
+        None,
+        description="Capability snapshot year (GDP is read at this year only)",
     )
 
     model_config = {"arbitrary_types_allowed": True}
@@ -182,8 +191,9 @@ class AllocationInputs(BaseModel):
             "Population",
         )
 
-        # Check GDP if provided - only validate first year to match decorator behavior
-        if self.gdp_ts is not None:
+        # Check GDP at the first year only. A capability snapshot reads GDP at its
+        # reference year instead, which the allocation function checks.
+        if self.gdp_ts is not None and self.capability_reference_year is None:
             validate_year_in_data(
                 self.first_allocation_year,
                 self.gdp_ts,

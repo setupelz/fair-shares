@@ -6,8 +6,11 @@ This package contains reusable preprocessing logic extracted from the
 
 from fair_shares.library.preprocessing.config import load_preprocessing_config
 from fair_shares.library.preprocessing.coverage import (
+    FIRST_RECORDED_YEAR_FILENAME,
     compute_analysis_countries,
+    coverage_exclusions,
     create_coverage_summary,
+    source_coverage_exclusions,
 )
 from fair_shares.library.preprocessing.gini import (
     DEFAULT_GINI_MISSING_POLICY,
@@ -33,11 +36,13 @@ from fair_shares.library.preprocessing.scenarios import process_complete_scenari
 
 __all__ = [
     "DEFAULT_GINI_MISSING_POLICY",
+    "FIRST_RECORDED_YEAR_FILENAME",
     "GINI_MISSING_POLICIES",
     "NGHGI_CORRECTED_CATEGORIES",
     "add_row_to_datasets",
     "complete_gini",
     "compute_analysis_countries",
+    "coverage_exclusions",
     "create_coverage_summary",
     "emissions_filename",
     "emissions_path",
@@ -50,4 +55,5 @@ __all__ = [
     "load_preprocessing_config",
     "load_scenarios_data",
     "process_complete_scenarios",
+    "source_coverage_exclusions",
 ]

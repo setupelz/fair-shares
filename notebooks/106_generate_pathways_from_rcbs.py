@@ -273,10 +273,13 @@ def _load_world_emissions(
 world_keys = ["EARTH", "World", "WLD", "OWID_WRL"]
 
 if emission_category == "co2":
-    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI)
-    # This mirrors run_rcb_preprocessing() lines 454-480 in orchestrator.py
-    from fair_shares.library.preprocessing.rcbs import _load_shared_timeseries
-    from fair_shares.library.utils.data.nghgi import build_nghgi_world_co2_timeseries
+    # NGHGI-consistent world CO2 = fossil (excluding bunkers) + LULUCF(NGHGI),
+    # as in run_rcb_preprocessing()
+    from fair_shares.library.preprocessing.rcbs import _resolve_template_path
+    from fair_shares.library.utils.data.nghgi import (
+        build_nghgi_world_co2_timeseries,
+        load_world_co2_lulucf,
+    )
 
     # Load component timeseries
     world_co2_ffi_df = _load_world_emissions(
@@ -286,23 +289,23 @@ if emission_category == "co2":
         emissions_intermediate_dir, "co2-lulucf", world_keys, active_lulucf_source
     )
 
-    # Load NGHGI LULUCF world timeseries and bunker timeseries
-    nghgi_ts, bunker_ts, splice_year = _load_shared_timeseries(
-        adjustments_config, project_root, source_id=source_id, verbose=True
+    # Load NGHGI LULUCF world timeseries
+    nghgi_ts, splice_year = load_world_co2_lulucf(
+        _resolve_template_path(
+            adjustments_config.lulucf_nghgi.path, source_id, project_root
+        )
     )
 
     # Build NGHGI-consistent world CO2 timeseries
     world_emissions_df = build_nghgi_world_co2_timeseries(
         fossil_ts=world_co2_ffi_df,
         nghgi_ts=nghgi_ts,
-        bunker_ts=bunker_ts,
     )
 
     print("\nNGHGI-consistent world CO2 timeseries constructed:")
-    print("  fossil = co2-ffi (PRIMAP)")
+    print("  fossil = co2-ffi (PRIMAP), excluding international bunkers")
     print(f"  LULUCF = NGHGI actual ({splice_year} end year, no BM splicing)")
-    print("  bunkers = international bunker fuel")
-    print("  Formula: total CO2 = fossil - bunkers + LULUCF")
+    print("  Formula: total CO2 = fossil + LULUCF")
 
 else:
     # co2-ffi: load directly
@@ -323,29 +326,28 @@ print(f"  Start year emissions ({start_year}): {start_emissions:,.0f} Mt CO2")
 # ## Process RCB data to 2020 baseline
 #
 # Uses `load_and_process_rcbs` — the same NGHGI-consistent pipeline as
-# notebook 100. This ensures per-category net-zero years, BM LULUCF
-# shift in the rebase, and the precautionary BM LULUCF cap are all applied.
+# notebook 100. This ensures per-category net-zero years, the NGHGI LULUCF
+# rebase, and the precautionary BM LULUCF cap are all applied.
 
 # %%
 from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 
-# Always pass PRIMAP fossil (co2-ffi) as world emissions;
-# for total CO2, also pass BM LULUCF for rebase
+# Always pass fossil (co2-ffi) as world emissions;
+# for total CO2, also pass observed NGHGI LULUCF for the rebase
 if emission_category == "co2":
     _fossil_for_rcb = world_co2_ffi_df
-    _bm_lulucf_for_rcb = world_co2_lulucf_df
+    _nghgi_lulucf_for_rcb = world_co2_lulucf_df
 else:
     _fossil_for_rcb = world_emissions_df  # already co2-ffi
-    _bm_lulucf_for_rcb = None
+    _nghgi_lulucf_for_rcb = None
 
 rcbs_df = load_and_process_rcbs(
     rcb_yaml_path=rcb_yaml_path,
     world_fossil_emissions=_fossil_for_rcb,
     emission_category=emission_category,
     adjustments_config=adjustments_config,
-    project_root=project_root,
     source_id=source_id,
-    actual_bm_lulucf_emissions=_bm_lulucf_for_rcb,
+    world_nghgi_lulucf_emissions=_nghgi_lulucf_for_rcb,
     verbose=True,
 )
 

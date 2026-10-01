@@ -100,6 +100,27 @@ sources:
         upstream_hash: "md5:19482df604f1dc746fb354ef66ef9047"
         size_bytes: 161831
 
+  gcb-2025:
+    tier: optional
+    version: "2025v15"
+    doi: "10.5281/zenodo.17417124"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Andrew, R. M., & Peters, G. P. (2025). The Global Carbon Project's fossil
+      CO2 emissions dataset (2025v15). Zenodo.
+      https://doi.org/10.5281/zenodo.17417124. Paper: Friedlingstein, P., et
+      al. (2026). Global Carbon Budget 2025. Earth System Science Data, 18,
+      3211-3288. https://doi.org/10.5194/essd-18-3211-2026
+    # Opt-in alternative to primap-202503, which stays the default. Fossil CO2
+    # only. The same file supplies the bunker series for gcb-2025 runs.
+    downloads:
+      - url: "https://zenodo.org/api/records/17417124/files/GCB2025v15_MtCO2_flat.csv/content"
+        target: "emissions/gcb-2025/GCB2025v15_MtCO2_flat.csv"
+        sha256: "20650c19b394d91b6b31cddff2fbc9508bcdbbed7c3f93660336f2f655f367ff"
+        upstream_hash: "md5:3008e30d913af5926a83d0d0775fb72e"
+        size_bytes: 3147221
+
   # --- LULUCF ----------------------------------------------------------------
 
   melo-2026:
@@ -135,6 +156,29 @@ sources:
         upstream_hash: "md5:702b46bfe67cca47264fdf272d312005"
         size_bytes: 1180037
 
+  melo-2026-v4:
+    tier: optional
+    version: "4.0.0 (2026 NGHGI release), gap-filled"
+    doi: "10.5281/zenodo.22828743"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Melo, J., Rossi, S., Achard, F., Alkama, R., Canadell, J. G., Federici, S.,
+      Friedlingstein, P., Gibbs, D., Harris, N., Heinrich, V., O'Sullivan, M.,
+      Peters, G., Pongratz, J., Rose, M., Roman-Cuesta, R., Sanz Sanchez, M. J.,
+      Schwingshackl, C., Sitch, S., & Grassi, G. (2026). The LULUCF Data Hub:
+      translating global land use emissions estimates into the national GHG
+      inventory framework (Version 4.0.0, 2026 NGHGI release). Zenodo.
+      https://doi.org/10.5281/zenodo.22828743
+    # Opt-in alternative to melo-2026 (v3.1.1), which stays the default.
+    # Upstream ships LF line endings, so the pin matches the committed bytes.
+    downloads:
+      - url: "https://zenodo.org/api/records/22828743/files/timeseries_NGHGI_gap-filled_4.0.0.csv/content"
+        target: "lulucf/melo-2026-v4/timeseries_NGHGI_gap-filled_4.0.0.csv"
+        sha256: "82bb42999e4ed1c60dce3f5e4fc5b194aee0703f79751956fbe89b9beccc1da5"
+        upstream_hash: "md5:4dc0776f52dfefe1df76538794ab2bef"
+        size_bytes: 1220236
+
   # --- GDP -------------------------------------------------------------------
 
   wdi-2025:
@@ -144,7 +188,7 @@ sources:
     redistributable: true
     citation: >-
       World Bank. World Development Indicators: GDP (constant 2015 US$,
-      NY.GDP.MKTP.KD), GDP PPP (constant 2017 international $,
+      NY.GDP.MKTP.KD), GDP PPP (constant 2021 international $,
       NY.GDP.MKTP.PP.KD) and Gini index (SI.POV.GINI, sourced by the World Bank
       from its Poverty and Inequality Platform), 2025 export.
       https://data.worldbank.org/
@@ -348,12 +392,16 @@ sources:
       remaining carbon budgets. Nature Climate Change, 13, 1360-1367.
       https://doi.org/10.1038/s41558-023-01848-5; Forster, P. M., et al. (2024).
       Indicators of Global Climate Change 2023. Earth System Science Data, 16,
-      2625-2658. https://doi.org/10.5194/essd-16-2625-2024; and IPCC AR6 WGI
+      2625-2658. https://doi.org/10.5194/essd-16-2625-2024; Forster, P. M., et
+      al. (2026). Indicators of Global Climate Change 2025. Earth System Science
+      Data, 18, 3889-3933. https://doi.org/10.5194/essd-18-3889-2026; IPCC
+      (2021). Summary for Policymakers. In Climate Change 2021: The Physical
+      Science Basis. https://doi.org/10.1017/9781009157896.001; and IPCC AR6 WGI
       (https://www.ipcc.ch/report/ar6/wg1/). Net-zero years per AR6 scenario are
       derived from the IPCC AR6 Scenarios Database.
     downloads:
       - target: "rcbs/rcbs.yaml"
-        sha256: "22f719d8cd18e89639cf7f244caec43b502dd504b33105b33c648f30ad1777b4"
+        sha256: "ba810a80fd83d18773bd5424e934765788d3462286db695d28e33f33169d9c06"
       - target: "rcbs/ar6_scenario_nz_years.parquet"
         sha256: "3df82c7ecfcf7b80782d666093d117e204f75e5e74f0c5ae1f22de80336a8ffc"
 

@@ -23,7 +23,9 @@
 # Import shared logic from Python modules (single source of truth)
 from fair_shares.library.utils.data.config import (
     build_source_id,
+    get_bunkers_source,
     get_emission_preprocessing_categories,
+    get_emissions_data_parameters,
     get_final_categories,
     get_co2_component,
     is_composite_category,
@@ -95,8 +97,13 @@ NOTEBOOK_DIR = "notebooks"
 # Two category lists drive the pipeline:
 #  EMISSION_CATEGORIES — what PRIMAP extraction (notebook 101) produces
 #  FINAL_CATEGORIES    — what the allocation loop iterates over
+# The emissions source is asked only for categories it declares.
 _target = active_target_source or ""
-EMISSION_CATEGORIES = get_emission_preprocessing_categories(_target, emission_category)
+EMISSION_CATEGORIES = get_emission_preprocessing_categories(
+    _target,
+    emission_category,
+    get_emissions_data_parameters(active_emissions_source).get("available_categories"),
+)
 FINAL_CATEGORIES = get_final_categories(_target, emission_category)
 is_multi_category = needs_decomposition(_target, emission_category)
 
@@ -143,6 +150,8 @@ _needs_lulucf = emission_category in ("co2", "co2-lulucf", "all-ghg")
 # Bunker data is needed for all non-pathway targets (RCBs must subtract
 # international bunker emissions before country allocation).
 _needs_bunkers = _allocation_mode != "pathway"
+# The emissions source names its bunker data; the default is gcb-2024.
+_bunkers_source = get_bunkers_source(active_emissions_source)
 
 
 if _needs_lulucf and active_lulucf_source is None:
@@ -152,6 +161,13 @@ if _needs_lulucf and active_lulucf_source is None:
         f"needs LULUCF preprocessing (NGHGI corrections and/or bunker data).\n"
         f"Example: --config ... active_lulucf_source=melo-2026"
     )
+
+# Historical series that the scenario rule declares as input. Notebook 107
+# derives co2 when the emissions source declares only co2-ffi.
+if emission_category == "co2" and "co2" not in EMISSION_CATEGORIES:
+    _scenario_emissions_input = f"{OUTPUT_DIR}/intermediate/emissions/emiss_co2_nghgi_timeseries.csv"
+else:
+    _scenario_emissions_input = f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv"
 
 # Resolve scenario source: per-target override → global default
 _scenario_source_key = (
@@ -274,6 +290,9 @@ rule compose_config:
     All validation logic is in config/models.py (Pydantic).
     The Snakefile only does minimal checks — Pydantic does comprehensive validation.
     """
+    input:
+        # build_data_config composes the output config from this packaged file
+        sources_yaml=str(packaged_config("data_sources/data_sources_unified.yaml")),
     output:
         config=f"{OUTPUT_DIR}/config.yaml",
     params:
@@ -405,6 +424,7 @@ if _needs_lulucf:
             notebook=f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb",
             nghgi_world=f"{OUTPUT_DIR}/intermediate/emissions/world_co2-lulucf_timeseries.csv",
             nghgi_metadata=f"{OUTPUT_DIR}/intermediate/emissions/lulucf_metadata.yaml",
+            nghgi_co2=f"{OUTPUT_DIR}/intermediate/emissions/emiss_co2_nghgi_timeseries.csv",
         shell:
             notebook_cmd("{input.notebook}", "{output.notebook}")
 
@@ -418,10 +438,10 @@ if _needs_bunkers:
         allocation.  Independent of LULUCF — uses GCB fossil emissions data.
         """
         input:
-            notebook=f"{NOTEBOOK_DIR}/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            notebook=f"{NOTEBOOK_DIR}/108_data_preprocess_bunkers_{_bunkers_source}.ipynb",
             config=f"{OUTPUT_DIR}/config.yaml",
         output:
-            notebook=f"{OUTPUT_DIR}/notebooks/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            notebook=f"{OUTPUT_DIR}/notebooks/108_data_preprocess_bunkers_{_bunkers_source}.ipynb",
             bunker_csv=f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv",
         shell:
             notebook_cmd("{input.notebook}", "{output.notebook}")
@@ -446,7 +466,7 @@ if uses_scenarios:
                 input:
                     notebook=f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb",
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
                     lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
@@ -459,7 +479,7 @@ if uses_scenarios:
                 input:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
                     lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                     bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                     scenario_adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",
@@ -476,7 +496,9 @@ if uses_scenarios:
                 input:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
+                    # Notebook 107 runs first: it writes the NGHGI series that 104 reads.
+                    lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=scenario_nb_out,
                     scenarios=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{emission_category}_timeseries.csv",

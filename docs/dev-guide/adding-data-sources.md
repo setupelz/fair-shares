@@ -18,7 +18,7 @@ Data sources are configured in `src/fair_shares/conf/data_sources/data_sources_u
 
 | Type         | Purpose                              | Current Sources        |
 | ------------ | ------------------------------------ | ---------------------- |
-| `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist            |
+| `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist (default), Global Carbon Budget 2025 |
 | `gdp`        | Economic capability                  | World Bank WDI         |
 | `population` | Per capita calculations              | UN/OWID                |
 | `gini`       | Within-country inequality            | World Bank WDI (default), UNU-WIDER WIID |
@@ -67,7 +67,10 @@ emissions:
         - co2-ffi
         - all-ghg
       world_key: "WORLD" # How the source identifies global totals
-      scenario: "HISTCR" # Historical scenario identifier
+      scenario: "HISTCR" # Optional: historical scenario identifier
+      bunkers_source: "gcb-2024" # Optional: registry name of the bunker data
+      # Optional: coverage rule for analysis countries
+      coverage: { emissions_recorded_before: 1990, population_from: 1850 }
 ```
 
 ### Common Configuration Parameters
@@ -77,6 +80,15 @@ emissions:
 | `path`                 | Relative path to data file                        |
 | `available_categories` | Which emission categories this source provides    |
 | `world_key`            | String used to identify global totals in the data |
+| `scenario`             | Optional. Historical scenario, for sources that have one |
+| `bunkers_source`       | Optional. Bunker data paired with an emissions source (default `gcb-2024`) |
+| `coverage`             | Optional. Coverage rule for analysis countries (default: none) |
+
+The pipeline asks an emissions source only for the categories in `available_categories`. A source that declares `co2-ffi` alone, such as `gcb-2025`, runs one pass of its notebook 101 and supports `co2-ffi` runs.
+
+By default, an analysis country has complete emissions, GDP and population from 1990 through the last year of each dataset. A `coverage` block adds two tests, and a country that fails either one joins rest-of-world. `emissions_recorded_before` requires a value in the raw emissions file in a year before the threshold. `population_from` requires population for every year from the threshold. A source that zero-fills blank years needs the first test, because a blank and a reported zero look the same after the fill. Its notebook 101 writes `emiss_<category>_first_recorded_year.csv` (columns `iso3c`, `first_recorded_year`) for each category it provides. The rule is `coverage_exclusions` in `src/fair_shares/library/preprocessing/coverage.py`. `country_data_coverage_summary.csv` names the failed test for each country in the column `coverage_rule_failed`. A source without the block keeps the default check alone, and its coverage summary has no such column. `gcb-2025` sets both tests.
+
+Add every new source to `src/fair_shares/conf/data_registry.yaml` with its URL, checksums, licence and citation, and record each DOI in `tests/fixtures/verified_dois.yaml`. The config validates the path of every configured source, so a registered source downloads on first use.
 
 ---
 
@@ -166,7 +178,7 @@ df.columns == ["gini"]
 
 ## Step 5: Integrate with Pipeline
 
-The Snakemake workflow automatically picks up sources from the configuration. Ensure your preprocessing notebook:
+The Snakemake workflow automatically picks up sources from the configuration. It builds the notebook name from the source key: `101_data_preprocess_emiss_{source}.py` for emissions and `108_data_preprocess_bunkers_{bunkers_source}.py` for bunkers. Ensure your preprocessing notebook:
 
 1. Reads from the path specified in the config
 2. Outputs to the standard processed data location
@@ -228,7 +240,7 @@ Notebook 107 reads the raw LULUCF source and outputs:
 | Emission category | Uses LULUCF? | Why |
 |-------------------|-------------|-----|
 | `co2-ffi` | No | Fossil fuels only |
-| `co2` | **Yes** | Total CO2 = fossil − bunkers + NGHGI LULUCF |
+| `co2` | **Yes** | Country `co2` = `co2-ffi` + NGHGI `co2-lulucf` on shared years. Bunkers enter only at world and budget level |
 | `all-ghg` | **Yes** | Decomposes into `co2` (NGHGI) + `non-co2` |
 | `all-ghg-ex-co2-lulucf` | No | CO2 component is `co2-ffi` |
 | `co2-lulucf` | Indirect | IS the LULUCF data |
@@ -317,6 +329,7 @@ New data sources should:
 | Notebook                                         | Data Type  | Good Example Of                                    |
 | ------------------------------------------------ | ---------- | -------------------------------------------------- |
 | `101_data_preprocess_emiss_primap-202503.py`     | Emissions  | NetCDF processing, category mapping                |
+| `101_data_preprocess_emiss_gcb-2025.py`          | Emissions  | Long CSV, single category, logic in one library function |
 | `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping               |
 | `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data            |
 | `105_data_preprocess_gini_wdi-2025.py`           | Gini       | Latest-available-in-window selection, aggregate filtering |

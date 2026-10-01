@@ -15,14 +15,14 @@
 # ---
 
 # %% [markdown]
-# # Derive NGHGI-Consistent Emission Categories (Melo v3.1)
+# # Derive NGHGI-Consistent Emission Categories (Melo v4.0.0)
 #
 # Derive a parallel set of NGHGI-consistent emission categories from the
 # active bookkeeping-model (BM) source's FFI and non-LULUCF Kyoto primitives
 # (typically PRIMAP, configurable via ``active_emissions_source``) plus the
 # Melo et al. (2026) country-reported LULUCF CO2 timeseries. Outputs live
 # alongside the BM originals under ``emiss_<category>_nghgi_timeseries.csv``.
-# 185 country coverage, NGHGI years 2000-2023.
+# 187 country coverage, NGHGI years 2000-2024.
 #
 # ## Accounting invariant
 #
@@ -38,7 +38,7 @@
 # - `emiss_co2-ffi_timeseries.csv` — BM-source fossil CO2 (LULUCF-independent)
 # - `emiss_all-ghg-ex-co2-lulucf_timeseries.csv` — BM-source all Kyoto
 #   excluding CO2-LULUCF
-# - `timeseries_NGHGI_v3.1.csv` — Melo v3.1 country-level NGHGI LULUCF
+# - `timeseries_NGHGI_gap-filled_4.0.0.csv` — Melo v4.0.0 country-level NGHGI LULUCF
 #
 # **Outputs** (NGHGI-consistent, ``_nghgi`` suffix):
 # - `emiss_co2-lulucf_nghgi_timeseries.csv` — Melo NGHGI (Melo years)
@@ -114,7 +114,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",
-        "lulucf": "melo-2026",
+        "lulucf": "melo-2026-v4",
         "target": "rcbs",
     }
 
@@ -175,13 +175,13 @@ if not has_non_co2_input:
     )
 
 # %% [markdown]
-# ## Step 1: Load Melo v3.1 NGHGI LULUCF data
+# ## Step 1: Load Melo v4.0.0 NGHGI LULUCF data
 #
 # The Melo dataset provides country-reported (NGHGI convention) LULUCF CO2 fluxes
-# for 185 countries from 2000-2023. Values are in MtCO2/yr where negative = net sink.
+# for 187 countries from 2000-2024. Values are in MtCO2/yr where negative = net sink.
 
 # %%
-print("Loading Melo v3.1 NGHGI LULUCF data...")
+print("Loading Melo v4.0.0 NGHGI LULUCF data...")
 
 if not melo_path.exists():
     raise DataLoadingError(f"Melo LULUCF file not found: {melo_path}")
@@ -299,7 +299,7 @@ nghgi_metadata = {
     "nghgi_start_year": nghgi_start_year,
     "nghgi_end_year": nghgi_end_year,
     "splice_year": nghgi_end_year,
-    "source": "Melo et al. 2026, v3.1",
+    "source": "Melo et al. 2026, v4.0.0",
     "n_countries": len(melo_countries_raw),
     "nghgi_emissions_files": nghgi_emissions_files,
 }
