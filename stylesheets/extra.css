@@ -1,0 +1,142 @@
+/* ============================================================================
+   List Spacing Adjustments
+   ============================================================================ */
+
+/* Slightly reduce spacing between list items */
+.md-content li {
+    margin-bottom: 0.3em;
+}
+
+/* Reduce padding for nested lists */
+.md-content ul ul,
+.md-content ol ol,
+.md-content ul ol,
+.md-content ol ul,
+.md-content dl ul,
+.md-content dl ol {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+/* Ensure proper spacing for list items with multiple paragraphs */
+.md-content li p {
+    margin-top: 0.2em;
+    margin-bottom: 0.2em;
+}
+
+/* Reduce spacing for definition lists */
+.md-content dt {
+    margin-top: 0.3em;
+    margin-bottom: 0.1em;
+}
+
+.md-content dd {
+    margin-bottom: 0.2em;
+    margin-left: 1.5em;
+}
+
+
+/* ============================================================================
+   API Documentation (mkdocstrings)
+   ============================================================================ */
+
+/* Hide the full-path heading (e.g. fair_shares.library...function_name)
+   — redundant since the short name is in the ToC heading and the
+   signature block shows the full callable. Keep the element for anchor links. */
+.doc.doc-heading {
+    height: 0;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    border: none;
+    visibility: hidden;
+}
+
+/* Clean up doc sections */
+.doc-section-title {
+    font-weight: 600;
+    font-size: 1.1em;
+    margin-top: 1.5em;
+    margin-bottom: 0.5em;
+    color: var(--md-primary-fg-color);
+}
+
+/* Parameter tables */
+.doc table {
+    margin: 1em 0;
+    font-size: 1em;
+}
+
+.doc table th {
+    background-color: var(--md-code-bg-color);
+    font-weight: 600;
+}
+
+.doc table td {
+    padding: 0.4em 0.6em;
+    vertical-align: top;
+}
+
+.doc table tr {
+    line-height: 1.4;
+}
+
+/* Source code collapsible */
+.doc details.quote {
+    margin-top: 2em;
+    border: 1px solid var(--md-default-fg-color--lightest);
+    border-radius: 0.2em;
+}
+
+.doc details.quote summary {
+    padding: 0.5em 1em;
+    background-color: var(--md-code-bg-color);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+/* Mathematical Foundation details */
+.mathematical-foundation {
+    margin: 1.5em 0;
+    border: 2px solid var(--md-primary-fg-color--light);
+    border-radius: 0.3em;
+    background-color: var(--md-code-bg-color);
+}
+
+.mathematical-foundation summary {
+    padding: 1em;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 1.05em;
+    color: var(--md-primary-fg-color);
+}
+
+.mathematical-foundation > *:not(summary) {
+    padding-left: 1em;
+    padding-right: 1em;
+}
+
+.mathematical-foundation > p:last-child,
+.mathematical-foundation > ul:last-child,
+.mathematical-foundation > div:last-child {
+    padding-bottom: 1em;
+}
+
+/* Ensure math equations have proper spacing */
+.arithmatex {
+    margin: 0.5em 0;
+}
+
+div.arithmatex {
+    margin: 1em 0;
+    overflow-x: auto;
+    text-align: center;
+}
+
+/* Horizontal rule between functions for visual separation */
+.doc.doc-object + .doc.doc-heading,
+.doc.doc-object + h3,
+.doc.doc-object + h4 {
+    border-top: 1px solid var(--md-default-fg-color--lightest);
+    padding-top: 1.5em;
+}
