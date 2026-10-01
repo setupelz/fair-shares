@@ -53,6 +53,7 @@ from fair_shares.library.exceptions import AllocationError
 from fair_shares.library.utils.dataframes import (
     TimeseriesDataFrame,
     filter_function_parameters,
+    get_year_columns,
 )
 from fair_shares.library.utils.io import create_param_manifest as _create_param_manifest
 from fair_shares.library.utils.io import generate_readme as _generate_readme
@@ -607,7 +608,18 @@ def run_parameter_grid(
 
     # Validate allocation year >= 1990 for total CO2 (NGHGI data limit)
     if emission_category:
-        validate_allocation_year_for_co2(allocations_config, emission_category)
+        # A separate responsibility frame (fossil CO2 for co2 and all-ghg) sets
+        # the first year a pre-allocation responsibility window may start.
+        responsibility_min_year = None
+        if responsibility_emissions_ts is not None:
+            responsibility_min_year = min(
+                get_year_columns(responsibility_emissions_ts, return_type="int")
+            )
+        validate_allocation_year_for_co2(
+            allocations_config,
+            emission_category,
+            responsibility_min_year=responsibility_min_year,
+        )
 
     for approach, params_list in allocations_config.items():
         print(f"\nProcessing approach: {approach}")

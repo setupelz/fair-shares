@@ -116,6 +116,7 @@ def validate_allocation_year_for_co2(
     allocations_config: dict[str, list[dict[str, Any]]],
     emission_category: str,
     nghgi_min_year: int | None = None,
+    responsibility_min_year: int | None = None,
 ) -> None:
     """
     Enforce year parameters >= nghgi_min_year for LULUCF-containing categories.
@@ -129,6 +130,11 @@ def validate_allocation_year_for_co2(
     approaches (``pre_allocation_responsibility_year``) to ensure
     methodological consistency.
 
+    The pre-allocation responsibility window reads its own emissions frame,
+    which for these categories can be the fossil CO2 series. When the caller
+    passes the first year of that frame as ``responsibility_min_year``,
+    ``pre_allocation_responsibility_year`` is checked against it instead.
+
     Parameters
     ----------
     allocations_config : dict[str, list[dict[str, Any]]]
@@ -138,12 +144,18 @@ def validate_allocation_year_for_co2(
     nghgi_min_year : int or None
         Minimum year for NGHGI-consistent allocations (derived from data).
         If None, uses the default (currently 2000).
+    responsibility_min_year : int or None
+        First year of the emissions frame used for pre-allocation
+        responsibility. If None, ``pre_allocation_responsibility_year`` is
+        checked against the NGHGI minimum year.
 
     Raises
     ------
     AllocationError
-        If allocation start year or pre_allocation_responsibility_year < nghgi_min_year
-        for LULUCF-containing emission categories ("co2", "all-ghg")
+        If allocation start year < nghgi_min_year, or
+        pre_allocation_responsibility_year is before the first year of its
+        emissions frame (nghgi_min_year when ``responsibility_min_year`` is
+        None), for LULUCF-containing emission categories ("co2", "all-ghg")
     """
     # Resolve NGHGI min year
     min_year = nghgi_min_year if nghgi_min_year is not None else _NGHGI_MIN_YEAR_DEFAULT
@@ -177,7 +189,16 @@ def validate_allocation_year_for_co2(
                     hist_year if isinstance(hist_year, (list, tuple)) else [hist_year]
                 )
                 for hy in hist_years:
-                    if hy < min_year:
+                    if responsibility_min_year is not None:
+                        if hy < responsibility_min_year:
+                            raise AllocationError(
+                                f"Configuration error for approach '{approach}':\n"
+                                f"  pre_allocation_responsibility_year = {hy} is "
+                                f"before {responsibility_min_year}, the first year "
+                                f"of the emissions data used for pre-allocation "
+                                f"responsibility."
+                            )
+                    elif hy < min_year:
                         _raise_nghgi_year_error(
                             approach,
                             "pre_allocation_responsibility_year",

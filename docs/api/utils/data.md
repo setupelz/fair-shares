@@ -106,6 +106,14 @@ Functions for parsing RCB scenarios and converting to allocation-ready budgets.
         heading_level: 4
         show_source: false
 
+### select_rcb_scenario_set
+
+::: fair_shares.library.utils.data.rcb.select_rcb_scenario_set
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
 ### calculate_budget_from_rcb
 
 ::: fair_shares.library.utils.data.rcb.calculate_budget_from_rcb
@@ -117,6 +125,14 @@ Functions for parsing RCB scenarios and converting to allocation-ready budgets.
 ### process_rcb_to_2020_baseline
 
 ::: fair_shares.library.utils.data.rcb.process_rcb_to_2020_baseline
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
+### fill_rebase_years
+
+::: fair_shares.library.utils.data.rcb.fill_rebase_years
     options:
         show_root_heading: true
         heading_level: 4

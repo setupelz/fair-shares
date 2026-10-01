@@ -126,6 +126,10 @@ budget and pathway approaches with identical semantics.
   with a warning; a year outside the data range raises. On the Gini-adjusted
   approaches the Gini adjustment applies in all three cases — which input the
   snapshot is read from does not change the capability definition.
+- **Start years before the GDP series:** with a reference year set, the budget
+  approaches need GDP at that year only. `allocation_year` can then be earlier
+  than the first GDP year, down to 1850. With no reference year, an allocation
+  year before the GDP series raises an error.
 
 **When to use:** replicating studies that fix capability at a reference year
 (e.g. a single-year GDP-per-capita indicator), or holding the capability

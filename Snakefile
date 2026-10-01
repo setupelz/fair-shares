@@ -23,7 +23,9 @@
 # Import shared logic from Python modules (single source of truth)
 from fair_shares.library.utils.data.config import (
     build_source_id,
+    get_bunkers_source,
     get_emission_preprocessing_categories,
+    get_emissions_data_parameters,
     get_final_categories,
     get_co2_component,
     is_composite_category,
@@ -95,8 +97,13 @@ NOTEBOOK_DIR = "notebooks"
 # Two category lists drive the pipeline:
 #  EMISSION_CATEGORIES — what PRIMAP extraction (notebook 101) produces
 #  FINAL_CATEGORIES    — what the allocation loop iterates over
+# The emissions source is asked only for categories it declares.
 _target = active_target_source or ""
-EMISSION_CATEGORIES = get_emission_preprocessing_categories(_target, emission_category)
+EMISSION_CATEGORIES = get_emission_preprocessing_categories(
+    _target,
+    emission_category,
+    get_emissions_data_parameters(active_emissions_source).get("available_categories"),
+)
 FINAL_CATEGORIES = get_final_categories(_target, emission_category)
 is_multi_category = needs_decomposition(_target, emission_category)
 
@@ -143,6 +150,8 @@ _needs_lulucf = emission_category in ("co2", "co2-lulucf", "all-ghg")
 # Bunker data is needed for all non-pathway targets (RCBs must subtract
 # international bunker emissions before country allocation).
 _needs_bunkers = _allocation_mode != "pathway"
+# The emissions source names its bunker data; the default is gcb-2024.
+_bunkers_source = get_bunkers_source(active_emissions_source)
 
 
 if _needs_lulucf and active_lulucf_source is None:
@@ -418,10 +427,10 @@ if _needs_bunkers:
         allocation.  Independent of LULUCF — uses GCB fossil emissions data.
         """
         input:
-            notebook=f"{NOTEBOOK_DIR}/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            notebook=f"{NOTEBOOK_DIR}/108_data_preprocess_bunkers_{_bunkers_source}.ipynb",
             config=f"{OUTPUT_DIR}/config.yaml",
         output:
-            notebook=f"{OUTPUT_DIR}/notebooks/108_data_preprocess_bunkers_gcb-2024.ipynb",
+            notebook=f"{OUTPUT_DIR}/notebooks/108_data_preprocess_bunkers_{_bunkers_source}.ipynb",
             bunker_csv=f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv",
         shell:
             notebook_cmd("{input.notebook}", "{output.notebook}")

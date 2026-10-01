@@ -21,7 +21,16 @@ class EmissionsDataParameters(BaseModel):
         ..., description="Available emission categories in this dataset"
     )
     world_key: str = Field(..., description="Key identifier for world/global data")
-    scenario: str = Field(..., description="Historical scenario identifier")
+    scenario: str | None = Field(
+        None, description="Historical scenario identifier, for sources that have one"
+    )
+    bunkers_source: str | None = Field(
+        None,
+        description=(
+            "Registry name of the international bunker data paired with this "
+            "source. Omit to use the default (gcb-2024)."
+        ),
+    )
 
 
 class EmissionsSourceConfig(BaseModel):

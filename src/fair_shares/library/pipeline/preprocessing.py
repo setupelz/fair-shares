@@ -485,7 +485,7 @@ def run_rcb_preprocessing(
         rcb_adjustments_raw = rcb_data_params.get("adjustments", {})
         adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
-        nghgi_ts, bunker_ts, _splice_year = _load_shared_timeseries(
+        nghgi_ts, _bunker_ts, _splice_year = _load_shared_timeseries(
             adjustments_config,
             orch.data_dir,
             source_id=source_id,
@@ -496,7 +496,6 @@ def run_rcb_preprocessing(
         world_emiss["co2"] = build_nghgi_world_co2_timeseries(
             fossil_ts=world_emiss["co2-ffi"],
             nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
         )
 
     # Save processed data

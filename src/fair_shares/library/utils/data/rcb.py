@@ -7,15 +7,32 @@ different baseline years with adjustments for bunkers and LULUCF.
 
 from __future__ import annotations
 
+import warnings
 from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from fair_shares.library.exceptions import DataProcessingError
+from fair_shares.library.exceptions import ConfigurationError, DataProcessingError
 from fair_shares.library.utils.units import get_default_unit_registry
 
 if TYPE_CHECKING:
     from fair_shares.library.utils.dataframes import TimeseriesDataFrame
+
+# AR6 category behind each budget label under the "ar6-category" rule.
+AR6_CATEGORY_BY_RCB_LABEL = {"1.5p50": "C1", "2p83": "C2", "2p66": "C3"}
+
+# AR6 metadata column that the "peak-warming-band" rule reads.
+PEAK_WARMING_COLUMN = "Median peak warming (MAGICCv7.5.3)"
+
+# Scenario metadata column that holds ``net_zero_year`` of each scenario.
+NET_ZERO_YEAR_COLUMN = "net_zero_year"
+
+# A source in rcbs.yaml without a ``scenario_selection`` field uses this rule.
+DEFAULT_SCENARIO_SELECTION = "ar6-category"
+DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH = 0.05
+
+# Largest number of trailing rebase years that take the last observed value.
+DEFAULT_REBASE_FILL_MAX_YEARS = 1
 
 
 def parse_rcb_scenario(scenario_string: str) -> tuple[str, str]:
@@ -63,6 +80,297 @@ def parse_rcb_scenario(scenario_string: str) -> tuple[str, str]:
     return climate_assessment, quantile
 
 
+def _ar6_category(source: str, label: str) -> str:
+    """Return the AR6 category mapped to a budget label, or raise."""
+    if label not in AR6_CATEGORY_BY_RCB_LABEL:
+        raise ConfigurationError(
+            f"RCB source '{source}', label '{label}': no AR6 category is mapped "
+            f"to this label (mapped labels: {list(AR6_CATEGORY_BY_RCB_LABEL)}) "
+            f"and the source does not use the peak-warming band rule. Set "
+            f"'scenario_selection: peak-warming-band' for this source in "
+            f"rcbs.yaml, or use a mapped label."
+        )
+    return AR6_CATEGORY_BY_RCB_LABEL[label]
+
+
+def net_zero_year(co2_emissions: pd.Series) -> int | None:
+    """
+    Return the first year in which total CO2 emissions are at or below zero.
+
+    The deductions of a budget end in this year, and the peak-warming band
+    keeps only scenarios that have one.
+
+    Parameters
+    ----------
+    co2_emissions : pd.Series
+        Total CO2 emissions of one scenario, indexed by year in ascending order
+
+    Returns
+    -------
+    int or None
+        The net-zero year, or None when emissions stay above zero
+    """
+    for year, value in co2_emissions.items():
+        if value <= 0:
+            return int(year)
+    return None
+
+
+def rcb_scenario_set_key(source: str, label: str, selection: str) -> str:
+    """
+    Name the scenario set behind the deductions of one budget.
+
+    The key identifies the entry in ``rcb_scenario_adjustments.yaml`` and the
+    ``lulucf_shift_median_{key}.csv`` file that notebook 104 writes.
+
+    Parameters
+    ----------
+    source : str
+        RCB source key in rcbs.yaml (e.g., "forster_2026")
+    label : str
+        Budget label (e.g., "1.7p50")
+    selection : str
+        Scenario selection rule of the source: "ar6-category" or
+        "peak-warming-band"
+
+    Returns
+    -------
+    str
+        - "ar6-category": the label itself (e.g., "1.5p50")
+        - "peak-warming-band": the temperature only (e.g., "peak-warming-1.7C"),
+          because one band serves every likelihood of its temperature
+
+    Raises
+    ------
+    ConfigurationError
+        If the rule is unknown, or the label has no AR6 category under the
+        "ar6-category" rule
+    """
+    climate_assessment, _ = parse_rcb_scenario(label)
+    if selection == "ar6-category":
+        _ar6_category(source, label)
+        return label
+    if selection == "peak-warming-band":
+        return f"peak-warming-{climate_assessment}"
+    raise ConfigurationError(
+        f"RCB source '{source}': unknown scenario_selection '{selection}'. "
+        f"Expected 'ar6-category' or 'peak-warming-band'."
+    )
+
+
+def select_rcb_scenario_set(
+    metadata: pd.DataFrame,
+    source: str,
+    label: str,
+    selection: str,
+    band_half_width: float = DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH,
+) -> pd.DataFrame:
+    """
+    Select the AR6 scenarios behind the deductions of one budget.
+
+    Parameters
+    ----------
+    metadata : pd.DataFrame
+        AR6 scenario metadata, one row per scenario, with the columns
+        "Category" and "Median peak warming (MAGICCv7.5.3)". The
+        "peak-warming-band" rule also needs "net_zero_year" (see
+        ``net_zero_year``), empty for a scenario that never reaches net zero.
+    source : str
+        RCB source key in rcbs.yaml (e.g., "forster_2026")
+    label : str
+        Budget label (e.g., "1.7p50")
+    selection : str
+        Scenario selection rule of the source:
+
+        - "ar6-category": every scenario in the AR6 category mapped to the
+          label (1.5p50 -> C1, 2p83 -> C2, 2p66 -> C3)
+        - "peak-warming-band": every scenario whose median peak warming lies
+          in [T - band_half_width, T + band_half_width), where T is the
+          budget temperature, and that reaches net-zero CO2. A remaining
+          carbon budget runs to net-zero CO2, so a scenario that never reaches
+          it is excluded. The likelihood in the label plays no role.
+    band_half_width : float, optional
+        Half-width of the peak-warming band in degrees C (default: 0.05)
+
+    Returns
+    -------
+    pd.DataFrame
+        The selected rows of ``metadata``
+
+    Raises
+    ------
+    ConfigurationError
+        If the rule is unknown, the label has no AR6 category under the
+        "ar6-category" rule, or the metadata lack "net_zero_year" under the
+        "peak-warming-band" rule
+    DataProcessingError
+        If the rule selects no scenario
+    """
+    climate_assessment, _ = parse_rcb_scenario(label)
+    if selection == "ar6-category":
+        category = _ar6_category(source, label)
+        selected = metadata[metadata["Category"] == category]
+        criterion = f"AR6 category {category}"
+    elif selection == "peak-warming-band":
+        temperature = float(climate_assessment.removesuffix("C"))
+        # Rounding keeps the bounds exact decimals (1.7 - 0.05 gives 1.65).
+        lower = round(temperature - band_half_width, 6)
+        upper = round(temperature + band_half_width, 6)
+        if NET_ZERO_YEAR_COLUMN not in metadata.columns:
+            raise ConfigurationError(
+                f"RCB source '{source}': the peak-warming band rule needs the "
+                f"scenario metadata column '{NET_ZERO_YEAR_COLUMN}'."
+            )
+        peak_warming = metadata[PEAK_WARMING_COLUMN]
+        # A budget runs to net-zero CO2, so the band keeps scenarios that reach it.
+        selected = metadata[
+            (peak_warming >= lower)
+            & (peak_warming < upper)
+            & metadata[NET_ZERO_YEAR_COLUMN].notna()
+        ]
+        criterion = (
+            f"median peak warming in the {climate_assessment} band "
+            f"[{lower}, {upper}) and a net-zero CO2 year"
+        )
+    else:
+        raise ConfigurationError(
+            f"RCB source '{source}': unknown scenario_selection '{selection}'. "
+            f"Expected 'ar6-category' or 'peak-warming-band'."
+        )
+
+    if selected.empty:
+        raise DataProcessingError(
+            f"RCB source '{source}', label '{label}': no scenario has {criterion}."
+        )
+    return selected
+
+
+def build_rcb_scenario_sets(
+    rcb_yaml: dict, metadata: pd.DataFrame
+) -> dict[str, pd.DataFrame]:
+    """
+    Select the scenario set for every budget in a loaded rcbs.yaml.
+
+    Parameters
+    ----------
+    rcb_yaml : dict
+        Content of rcbs.yaml. Each source under ``rcb_data`` may carry a
+        ``scenario_selection`` field (default: "ar6-category"). The top-level
+        ``peak_warming_band_half_width`` sets the band half-width (default: 0.05).
+    metadata : pd.DataFrame
+        AR6 scenario metadata (see ``select_rcb_scenario_set``)
+
+    Returns
+    -------
+    dict[str, pd.DataFrame]
+        Selected metadata rows, keyed by ``rcb_scenario_set_key``
+    """
+    band_half_width = rcb_yaml.get(
+        "peak_warming_band_half_width", DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH
+    )
+    scenario_sets = {}
+    for source, source_data in rcb_yaml["rcb_data"].items():
+        selection = source_data.get("scenario_selection", DEFAULT_SCENARIO_SELECTION)
+        for label in source_data["scenarios"]:
+            key = rcb_scenario_set_key(source, label, selection)
+            if key not in scenario_sets:
+                scenario_sets[key] = select_rcb_scenario_set(
+                    metadata, source, label, selection, band_half_width
+                )
+    return scenario_sets
+
+
+def missing_rebase_years(
+    rcb_baseline_year: int,
+    emissions: pd.DataFrame,
+    target_baseline_year: int = 2020,
+) -> list[int]:
+    """
+    List the rebase years that an emissions timeseries lacks.
+
+    Rebasing a budget from ``rcb_baseline_year`` to ``target_baseline_year``
+    adds the emissions of every year from the target baseline to the year
+    before the RCB baseline.
+    """
+    return [
+        year
+        for year in range(target_baseline_year, rcb_baseline_year)
+        if str(year) not in emissions.columns
+    ]
+
+
+def fill_rebase_years(
+    emissions: pd.DataFrame,
+    rcb_baseline_year: int,
+    max_fill_years: int = DEFAULT_REBASE_FILL_MAX_YEARS,
+    series_name: str = "emissions",
+    source_name: str = "",
+) -> pd.DataFrame:
+    """
+    Hold the last observed value of a world series over the rebase years after it.
+
+    The rebase of a budget to 2020 needs every year up to the year before the
+    RCB baseline. When the series ends earlier, each year after its last
+    observed year takes the last observed value. The fill is a placeholder
+    until observed data are published, and every use raises a warning.
+
+    Parameters
+    ----------
+    emissions : pd.DataFrame
+        Single-row world timeseries with string year columns
+    rcb_baseline_year : int
+        The year from which the RCB is calculated
+    max_fill_years : int, optional
+        Largest number of years to fill (default: 1). 0 turns the fill off.
+    series_name : str, optional
+        Name of the series for the warning (e.g., "world fossil CO2 emissions")
+    source_name : str, optional
+        Name of the RCB source for the warning
+
+    Returns
+    -------
+    pd.DataFrame
+        The series with the filled years, or the series unchanged when no
+        year is missing or more than ``max_fill_years`` years are missing.
+        Years before the last observed year are never filled.
+    """
+    observed = emissions.iloc[0].dropna()
+    observed_years = [int(c) for c in observed.index if str(c).isdigit()]
+    if not observed_years:
+        return emissions
+    last_observed_year = max(observed_years)
+
+    fill_years = list(range(last_observed_year + 1, rcb_baseline_year))
+    if not fill_years or len(fill_years) > max_fill_years:
+        return emissions
+
+    last_value = float(observed[str(last_observed_year)])
+    filled = emissions.copy()
+    for year in fill_years:
+        filled[str(year)] = last_value
+    warnings.warn(
+        f"RCB source '{source_name}' (baseline year {rcb_baseline_year}): "
+        f"{series_name} end in {last_observed_year}. The rebase to 2020 uses the "
+        f"{last_observed_year} value ({last_value:,.1f} Mt CO2) for {fill_years}. "
+        f"This is a placeholder until observed data are published.",
+        stacklevel=2,
+    )
+    return filled
+
+
+def _year_ranges(years: list[int]) -> str:
+    """Format sorted years as ranges, e.g. [1990, 1991, 1995] -> '1990-1991, 1995'."""
+    ranges: list[list[int]] = []
+    for year in years:
+        if ranges and year == ranges[-1][1] + 1:
+            ranges[-1][1] = year
+        else:
+            ranges.append([year, year])
+    return ", ".join(
+        str(first) if first == last else f"{first}-{last}" for first, last in ranges
+    )
+
+
 def calculate_budget_from_rcb(
     rcb_value: float,
     allocation_year: int,
@@ -102,19 +410,30 @@ def calculate_budget_from_rcb(
     -------
     float
         Total budget to allocate in Mt CO2
+
+    Raises
+    ------
+    DataProcessingError
+        If allocation_year is before 2020 and the world emissions lack any year
+        from allocation_year to 2019
     """
     if allocation_year < 2020:
         # Add historical emissions before RCB period
-        year_cols = [
-            str(y)
-            for y in range(allocation_year, 2020)
-            if str(y) in world_scenario_emissions_ts.columns
-        ]
+        year_cols = [str(y) for y in range(allocation_year, 2020)]
 
-        if not year_cols:
+        # A partial sum understates the budget, so every year must hold a value.
+        world_row = world_scenario_emissions_ts.iloc[0]
+        years_with_data = sorted(
+            int(c) for c in world_row.dropna().index if str(c).isdigit()
+        )
+        missing_years = [y for y in map(int, year_cols) if y not in years_with_data]
+        if missing_years:
+            first_year = years_with_data[0] if years_with_data else None
             raise DataProcessingError(
-                f"No emission data found for years {allocation_year}-2019. "
-                f"Cannot calculate historical component of budget."
+                f"Allocation year {allocation_year} needs world emissions for "
+                f"{allocation_year}-2019, but the world emissions data lack "
+                f"{_year_ranges(missing_years)}. The first available year is "
+                f"{first_year}."
             )
 
         historical_emissions = (
@@ -173,6 +492,7 @@ def process_rcb_to_2020_baseline(
     emission_category: str,
     world_co2_ffi_emissions: pd.DataFrame,
     actual_bm_lulucf_emissions: pd.DataFrame | None = None,
+    world_bunker_emissions: pd.DataFrame | None = None,
     bunkers_deduction_mt: float = 0.0,
     lulucf_future_deduction_mt: float = 0.0,
     lulucf_nghgi_correction_mt: float = 0.0,
@@ -187,6 +507,12 @@ def process_rcb_to_2020_baseline(
     This function converts RCB values from any baseline year (>= 2020) to a
     standardized 2020 baseline. It also applies adjustments for international
     bunkers and LULUCF following Weber et al. (2026).
+
+    The published RCB covers total anthropogenic CO2 from its baseline year and
+    includes international bunkers. The world CO2-FFI series excludes them, and
+    the bunker deduction covers 2020 to net zero. The rebase therefore adds
+    fossil emissions and bunker emissions for 2020 to (baseline_year - 1), so
+    each bunker year from 2020 is deducted exactly once.
 
     The rebase always uses actual observational data (e.g. PRIMAP), never scenario
     projections. What enters the rebase depends on the emission category:
@@ -205,9 +531,9 @@ def process_rcb_to_2020_baseline(
     The calculation follows these steps:
     1. Convert RCB from source unit to Mt * CO2e
     2. If baseline_year > 2020: Add actual emissions from 2020 to
-       (baseline_year - 1) — fossil only for co2-ffi, fossil + BM LULUCF
-       for co2
-    3. Subtract bunkers deduction (always reduces budget)
+       (baseline_year - 1) — fossil + bunkers for co2-ffi, fossil + bunkers
+       + BM LULUCF for co2
+    3. Subtract bunkers deduction from 2020 to net zero (always reduces budget)
     4. Apply LULUCF deduction (sign-ready from caller)
 
     Sign convention for deduction parameters:
@@ -232,13 +558,18 @@ def process_rcb_to_2020_baseline(
         Emission category: "co2-ffi" or "co2". Controls whether BM LULUCF
         is included in the rebase.
     world_co2_ffi_emissions : pd.DataFrame
-        World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e)
+        World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e).
+        Excludes international bunkers.
     actual_bm_lulucf_emissions : pd.DataFrame or None, optional
         Actual bookkeeping-model LULUCF CO2 emissions (e.g. PRIMAP), with year
         columns (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
+    world_bunker_emissions : pd.DataFrame or None, optional
+        International bunker CO2 emissions timeseries with year columns
+        (in Mt * CO2e). Required when baseline_year > 2020 and
+        bunkers_deduction_mt is non-zero (default: None).
     bunkers_deduction_mt : float, optional
-        Total bunker CO2 emissions from 2020-2100 in Mt * CO2e (default: 0.0).
-        Always positive; subtracted from budget.
+        Total bunker CO2 emissions from 2020 to net zero in Mt * CO2e
+        (default: 0.0). Always positive; subtracted from budget.
     lulucf_future_deduction_mt : float, optional
         Projected future (2020/base → NZ) BM LULUCF adjustment in Mt * CO2e,
         sign-ready (default: 0.0). Non-zero for co2-ffi only, where it
@@ -265,9 +596,11 @@ def process_rcb_to_2020_baseline(
         - 'rcb_original_unit': Original RCB unit
         - 'baseline_year': Original baseline year
         - 'rebase_total_mt': Emissions added to rebase from source year to 2020
-          (positive, Mt * CO2e); fossil only for co2-ffi, fossil + actual BM
-          LULUCF for co2
+          (positive, Mt * CO2e); fossil + bunkers for co2-ffi, fossil + bunkers
+          + actual BM LULUCF for co2
         - 'rebase_fossil_mt': Fossil-only component of rebase (Mt * CO2e)
+        - 'rebase_bunkers_mt': International bunker component of rebase
+          (Mt * CO2e)
         - 'rebase_lulucf_mt': Actual BM LULUCF component of rebase (Mt * CO2e);
           only non-zero for co2
         - 'deduction_bunkers_mt': Bunker fuel deduction (negative, Mt * CO2e)
@@ -277,6 +610,12 @@ def process_rcb_to_2020_baseline(
           Non-zero for co2, zero for co2-ffi.
         - 'net_adjustment_mt': Total change from original to 2020 baseline
           (rebase + deductions + correction, Mt * CO2e)
+
+    Raises
+    ------
+    DataProcessingError
+        If a timeseries lacks a year of the rebase, or if baseline_year > 2020
+        and bunkers are deducted without ``world_bunker_emissions``
     """
     # Get unit registry
     ureg = get_default_unit_registry()
@@ -293,41 +632,72 @@ def process_rcb_to_2020_baseline(
     # Initialize rebase (baseline year shift) values
     rebase_total_mt = 0.0
     rebase_fossil_mt = 0.0
+    rebase_bunkers_mt = 0.0
     rebase_lulucf_mt = 0.0
 
     # Calculate emissions adjustment based on baseline year
     if rcb_baseline_year > target_baseline_year:
         # Need to add emissions from 2020 to (baseline_year - 1)
-        year_cols = [
-            str(y)
-            for y in range(target_baseline_year, rcb_baseline_year)
-            if str(y) in world_co2_ffi_emissions.columns
-        ]
+        year_cols = [str(y) for y in range(target_baseline_year, rcb_baseline_year)]
 
-        if not year_cols:
+        # A partial rebase understates the budget, so every year must be present.
+        missing_years = missing_rebase_years(
+            rcb_baseline_year, world_co2_ffi_emissions, target_baseline_year
+        )
+        if missing_years:
             raise DataProcessingError(
-                f"No CO2-FFI emission data found for years "
-                f"{target_baseline_year}-{rcb_baseline_year - 1}. "
-                f"Cannot calculate emissions adjustment for RCB conversion."
+                f"RCB source '{source_name}' has baseline year {rcb_baseline_year}. "
+                f"Rebasing to {target_baseline_year} needs CO2-FFI emissions for "
+                f"{target_baseline_year}-{rcb_baseline_year - 1}, but the "
+                f"emissions data lack {missing_years}."
             )
 
         # Fossil rebase — always from actual PRIMAP data
         rebase_fossil_mt = world_co2_ffi_emissions[year_cols].sum(axis=1).iloc[0]
+
+        # Bunker rebase. The fossil series excludes bunkers and the deduction
+        # starts in 2020, so the rebase adds the bunkers of these years.
+        if world_bunker_emissions is not None:
+            missing_years = missing_rebase_years(
+                rcb_baseline_year, world_bunker_emissions, target_baseline_year
+            )
+            if missing_years:
+                raise DataProcessingError(
+                    f"RCB source '{source_name}' has baseline year "
+                    f"{rcb_baseline_year}. Rebasing to {target_baseline_year} "
+                    f"needs bunker emissions for "
+                    f"{target_baseline_year}-{rcb_baseline_year - 1}, but the "
+                    f"bunker data lack {missing_years}."
+                )
+            rebase_bunkers_mt = world_bunker_emissions[year_cols].sum(axis=1).iloc[0]
+        elif bunkers_deduction_mt != 0:
+            raise DataProcessingError(
+                f"RCB source '{source_name}' has baseline year {rcb_baseline_year} "
+                f"and a bunker deduction from {target_baseline_year}. Rebasing "
+                f"needs the bunker emissions for "
+                f"{target_baseline_year}-{rcb_baseline_year - 1}: pass "
+                f"world_bunker_emissions."
+            )
 
         # BM LULUCF rebase — only for co2 (total CO2 needs LULUCF in rebase)
         # For co2-ffi, LULUCF is omitted because it cancels with the LULUCF
         # decomposition
         rebase_lulucf_mt = 0.0
         if emission_category == "co2" and actual_bm_lulucf_emissions is not None:
-            lulucf_year_cols = [
-                y for y in year_cols if y in actual_bm_lulucf_emissions.columns
-            ]
-            if lulucf_year_cols:
-                rebase_lulucf_mt = (
-                    actual_bm_lulucf_emissions[lulucf_year_cols].sum(axis=1).iloc[0]
+            missing_years = missing_rebase_years(
+                rcb_baseline_year, actual_bm_lulucf_emissions, target_baseline_year
+            )
+            if missing_years:
+                raise DataProcessingError(
+                    f"RCB source '{source_name}' has baseline year "
+                    f"{rcb_baseline_year}. Rebasing to {target_baseline_year} "
+                    f"needs LULUCF emissions for "
+                    f"{target_baseline_year}-{rcb_baseline_year - 1}, but the "
+                    f"emissions data lack {missing_years}."
                 )
+            rebase_lulucf_mt = actual_bm_lulucf_emissions[year_cols].sum(axis=1).iloc[0]
 
-        rebase_total_mt = rebase_fossil_mt + rebase_lulucf_mt
+        rebase_total_mt = rebase_fossil_mt + rebase_bunkers_mt + rebase_lulucf_mt
 
         if verbose:
             print(
@@ -338,6 +708,11 @@ def process_rcb_to_2020_baseline(
                 f"      Adding CO2-FFI emissions "
                 f"({target_baseline_year}-{rcb_baseline_year - 1}): "
                 f"+{rebase_fossil_mt:.1f} Mt * CO2e"
+            )
+            print(
+                f"      Adding bunker emissions "
+                f"({target_baseline_year}-{rcb_baseline_year - 1}): "
+                f"+{rebase_bunkers_mt:.1f} Mt * CO2e"
             )
             if emission_category == "co2":
                 print(
@@ -386,7 +761,7 @@ def process_rcb_to_2020_baseline(
     if verbose:
         if bunkers_deduction_mt > 0:
             print(
-                f"      Bunkers deduction (2020-2100): "
+                f"      Bunkers deduction ({target_baseline_year}-NZ): "
                 f"{deduction_bunkers_mt:.1f} Mt * CO2e"
             )
         if deduction_lulucf_future_mt != 0:
@@ -411,6 +786,7 @@ def process_rcb_to_2020_baseline(
         "baseline_year": rcb_baseline_year,
         "rebase_total_mt": round(rebase_total_mt),
         "rebase_fossil_mt": round(rebase_fossil_mt),
+        "rebase_bunkers_mt": round(rebase_bunkers_mt),
         "rebase_lulucf_mt": round(rebase_lulucf_mt),
         "deduction_bunkers_mt": round(deduction_bunkers_mt),
         "deduction_lulucf_future_mt": round(deduction_lulucf_future_mt),

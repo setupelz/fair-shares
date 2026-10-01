@@ -15,14 +15,14 @@
 # ---
 
 # %% [markdown]
-# # Derive NGHGI-Consistent Emission Categories (Melo v3.1)
+# # Derive NGHGI-Consistent Emission Categories (Melo v4.0.0)
 #
 # Derive a parallel set of NGHGI-consistent emission categories from the
 # active bookkeeping-model (BM) source's FFI and non-LULUCF Kyoto primitives
 # (typically PRIMAP, configurable via ``active_emissions_source``) plus the
 # Melo et al. (2026) country-reported LULUCF CO2 timeseries. Outputs live
 # alongside the BM originals under ``emiss_<category>_nghgi_timeseries.csv``.
-# 185 country coverage, NGHGI years 2000-2023.
+# 187 country coverage, NGHGI years 2000-2024.
 #
 # ## Accounting invariant
 #
@@ -38,7 +38,7 @@
 # - `emiss_co2-ffi_timeseries.csv` — BM-source fossil CO2 (LULUCF-independent)
 # - `emiss_all-ghg-ex-co2-lulucf_timeseries.csv` — BM-source all Kyoto
 #   excluding CO2-LULUCF
-# - `timeseries_NGHGI_v3.1.csv` — Melo v3.1 country-level NGHGI LULUCF
+# - `timeseries_NGHGI_gap-filled_4.0.0.csv` — Melo v4.0.0 country-level NGHGI LULUCF
 #
 # **Outputs** (NGHGI-consistent, ``_nghgi`` suffix):
 # - `emiss_co2-lulucf_nghgi_timeseries.csv` — Melo NGHGI (Melo years)
@@ -47,6 +47,10 @@
 # - `emiss_all-ghg_nghgi_timeseries.csv` — co2 + non-co2
 # - `emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv` — co2-ffi + non-co2
 #   (recomputed; identical to the BM version by construction)
+#
+# The three non-CO2 outputs above are written only when the emissions source
+# declares `all-ghg-ex-co2-lulucf`. A `co2-ffi`-only source gets the two CO2 files.
+#
 # - `world_co2-lulucf_timeseries.csv` — WRD LULUCF for RCB corrections
 # - `lulucf_metadata.yaml` — NGHGI year bounds, affected files
 
@@ -110,7 +114,7 @@ else:
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",
-        "lulucf": "melo-2026",
+        "lulucf": "melo-2026-v4",
         "target": "rcbs",
     }
 
@@ -154,20 +158,30 @@ intermediate_dir.mkdir(parents=True, exist_ok=True)
 
 emissions_config = config["emissions"][active_emissions_source]
 emissions_world_key = emissions_config["data_parameters"].get("world_key")
+# The non-CO2 categories need all-ghg-ex-co2-lulucf from the emissions source.
+has_non_co2_input = "all-ghg-ex-co2-lulucf" in emissions_config[
+    "data_parameters"
+].get("available_categories", [])
 
 print(f"Active LULUCF source: {active_lulucf_source}")
 print(f"LULUCF data path: {melo_path}")
 print(f"Intermediate directory: {intermediate_dir_str}")
 print(f"Emissions world key: {emissions_world_key}")
+if not has_non_co2_input:
+    print(
+        f"Emissions source '{active_emissions_source}' declares no "
+        "all-ghg-ex-co2-lulucf: writing co2-lulucf and co2 only, skipping "
+        "non-co2, all-ghg and all-ghg-ex-co2-lulucf."
+    )
 
 # %% [markdown]
-# ## Step 1: Load Melo v3.1 NGHGI LULUCF data
+# ## Step 1: Load Melo v4.0.0 NGHGI LULUCF data
 #
 # The Melo dataset provides country-reported (NGHGI convention) LULUCF CO2 fluxes
-# for 185 countries from 2000-2023. Values are in MtCO2/yr where negative = net sink.
+# for 187 countries from 2000-2024. Values are in MtCO2/yr where negative = net sink.
 
 # %%
-print("Loading Melo v3.1 NGHGI LULUCF data...")
+print("Loading Melo v4.0.0 NGHGI LULUCF data...")
 
 if not melo_path.exists():
     raise DataLoadingError(f"Melo LULUCF file not found: {melo_path}")
@@ -271,19 +285,23 @@ print(f"  Year range: {nghgi_start_year}-{nghgi_end_year} (Melo NGHGI only)")
 print("  NO BM splicing — pure NGHGI convention data")
 
 # Save NGHGI metadata for downstream use
+nghgi_emissions_files = [
+    "emiss_co2-lulucf_nghgi_timeseries.csv",
+    "emiss_co2_nghgi_timeseries.csv",
+]
+if has_non_co2_input:
+    nghgi_emissions_files += [
+        "emiss_non-co2_nghgi_timeseries.csv",
+        "emiss_all-ghg_nghgi_timeseries.csv",
+        "emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv",
+    ]
 nghgi_metadata = {
     "nghgi_start_year": nghgi_start_year,
     "nghgi_end_year": nghgi_end_year,
     "splice_year": nghgi_end_year,
-    "source": "Melo et al. 2026, v3.1",
+    "source": "Melo et al. 2026, v4.0.0",
     "n_countries": len(melo_countries_raw),
-    "nghgi_emissions_files": [
-        "emiss_co2-lulucf_nghgi_timeseries.csv",
-        "emiss_co2_nghgi_timeseries.csv",
-        "emiss_non-co2_nghgi_timeseries.csv",
-        "emiss_all-ghg_nghgi_timeseries.csv",
-        "emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv",
-    ],
+    "nghgi_emissions_files": nghgi_emissions_files,
 }
 metadata_path = intermediate_dir / "lulucf_metadata.yaml"
 with open(metadata_path, "w") as f:
@@ -313,16 +331,18 @@ co2_ffi = ensure_string_year_columns(co2_ffi)
 print(f"Loaded co2-ffi: {co2_ffi.shape}")
 
 # Load all-ghg-ex-co2-lulucf from notebook 101 output (for non-co2 derivation)
-allghg_ex_path = intermediate_dir / "emiss_all-ghg-ex-co2-lulucf_timeseries.csv"
-if not allghg_ex_path.exists():
-    raise DataLoadingError(
-        f"all-ghg-ex-co2-lulucf not found: {allghg_ex_path}. Run notebook 101 first."
-    )
+if has_non_co2_input:
+    allghg_ex_path = intermediate_dir / "emiss_all-ghg-ex-co2-lulucf_timeseries.csv"
+    if not allghg_ex_path.exists():
+        raise DataLoadingError(
+            f"all-ghg-ex-co2-lulucf not found: {allghg_ex_path}. "
+            "Run notebook 101 first."
+        )
 
-allghg_ex = pd.read_csv(allghg_ex_path)
-allghg_ex = allghg_ex.set_index(["iso3c", "unit", "emission-category"])
-allghg_ex = ensure_string_year_columns(allghg_ex)
-print(f"Loaded all-ghg-ex-co2-lulucf: {allghg_ex.shape}")
+    allghg_ex = pd.read_csv(allghg_ex_path)
+    allghg_ex = allghg_ex.set_index(["iso3c", "unit", "emission-category"])
+    allghg_ex = ensure_string_year_columns(allghg_ex)
+    print(f"Loaded all-ghg-ex-co2-lulucf: {allghg_ex.shape}")
 
 
 # %%
@@ -401,36 +421,39 @@ _save_and_report(
     bounded_by="Melo",
 )
 
-print("Computing non-co2 = all-ghg-ex-co2-lulucf - co2-ffi...")
-non_co2 = ensure_string_year_columns(
-    _align_and_compute(allghg_ex, co2_ffi, "subtract", "non-co2")
-)
-_save_and_report(
-    non_co2,
-    intermediate_dir / "emiss_non-co2_nghgi_timeseries.csv",
-    "non-co2",
-)
+if has_non_co2_input:
+    print("Computing non-co2 = all-ghg-ex-co2-lulucf - co2-ffi...")
+    non_co2 = ensure_string_year_columns(
+        _align_and_compute(allghg_ex, co2_ffi, "subtract", "non-co2")
+    )
+    _save_and_report(
+        non_co2,
+        intermediate_dir / "emiss_non-co2_nghgi_timeseries.csv",
+        "non-co2",
+    )
 
-print("Computing all-ghg = co2 + non-co2...")
-all_ghg = ensure_string_year_columns(_align_and_compute(co2, non_co2, "add", "all-ghg"))
-_save_and_report(
-    all_ghg,
-    intermediate_dir / "emiss_all-ghg_nghgi_timeseries.csv",
-    "all-ghg",
-    bounded_by="Melo",
-)
+    print("Computing all-ghg = co2 + non-co2...")
+    all_ghg = ensure_string_year_columns(
+        _align_and_compute(co2, non_co2, "add", "all-ghg")
+    )
+    _save_and_report(
+        all_ghg,
+        intermediate_dir / "emiss_all-ghg_nghgi_timeseries.csv",
+        "all-ghg",
+        bounded_by="Melo",
+    )
 
-# all-ghg-ex-co2-lulucf has no LULUCF dependency; identical to the BM version
-# by construction. Written for pipeline symmetry with the other _nghgi files.
-print("Computing all-ghg-ex-co2-lulucf = co2-ffi + non-co2...")
-allghg_ex_computed = ensure_string_year_columns(
-    _align_and_compute(co2_ffi, non_co2, "add", "all-ghg-ex-co2-lulucf")
-)
-_save_and_report(
-    allghg_ex_computed,
-    intermediate_dir / "emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv",
-    "all-ghg-ex-co2-lulucf",
-)
+    # all-ghg-ex-co2-lulucf has no LULUCF dependency; identical to the BM version
+    # by construction. Written for pipeline symmetry with the other _nghgi files.
+    print("Computing all-ghg-ex-co2-lulucf = co2-ffi + non-co2...")
+    allghg_ex_computed = ensure_string_year_columns(
+        _align_and_compute(co2_ffi, non_co2, "add", "all-ghg-ex-co2-lulucf")
+    )
+    _save_and_report(
+        allghg_ex_computed,
+        intermediate_dir / "emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv",
+        "all-ghg-ex-co2-lulucf",
+    )
 
 # %% [markdown]
 # ## Diagnostics
@@ -490,7 +513,9 @@ def _plot_world(ax, df, world_key, *, title, ylabel, label):
     ax.axhline(y=0, color="black", linestyle="-", alpha=0.3)
 
 
-fig, axes = plt.subplots(2, 2, figsize=(16, 12))
+# The non-CO2 row is drawn only when those categories were derived.
+n_rows = 2 if has_non_co2_input else 1
+fig, axes = plt.subplots(n_rows, 2, figsize=(16, 6 * n_rows), squeeze=False)
 
 _plot_world(
     axes[0, 0], melo_all, emissions_world_key,
@@ -504,27 +529,31 @@ _plot_world(
     ylabel="MtCO2/yr",
     label="co2 (NGHGI)",
 )
-_plot_world(
-    axes[1, 0], non_co2, emissions_world_key,
-    title="non-co2: World (CH4 + N2O + F-gases)",
-    ylabel="MtCO2e/yr",
-    label="non-co2",
-)
-_plot_world(
-    axes[1, 1], all_ghg, emissions_world_key,
-    title="all-ghg: World (co2 + non-co2, NGHGI)",
-    ylabel="MtCO2e/yr",
-    label="all-ghg (NGHGI)",
-)
+if has_non_co2_input:
+    _plot_world(
+        axes[1, 0], non_co2, emissions_world_key,
+        title="non-co2: World (CH4 + N2O + F-gases)",
+        ylabel="MtCO2e/yr",
+        label="non-co2",
+    )
+    _plot_world(
+        axes[1, 1], all_ghg, emissions_world_key,
+        title="all-ghg: World (co2 + non-co2, NGHGI)",
+        ylabel="MtCO2e/yr",
+        label="all-ghg (NGHGI)",
+    )
 
 plt.tight_layout()
 plt.show()
 
 print("\nLULUCF preprocessing complete.")
 print(f"NGHGI year range: {nghgi_start_year}-{nghgi_end_year}")
-print(
-    "Categories produced: co2-ffi (unchanged), co2-lulucf (NGHGI), co2, "
-    "non-co2, all-ghg, all-ghg-ex-co2-lulucf"
-)
+if has_non_co2_input:
+    print(
+        "Categories produced: co2-ffi (unchanged), co2-lulucf (NGHGI), co2, "
+        "non-co2, all-ghg, all-ghg-ex-co2-lulucf"
+    )
+else:
+    print("Categories produced: co2-ffi (unchanged), co2-lulucf (NGHGI), co2")
 
 # %%

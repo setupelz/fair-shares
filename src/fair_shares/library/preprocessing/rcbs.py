@@ -16,11 +16,15 @@ Supports both co2-ffi and co2 emission categories:
 NZ years and convention gap scalars are pre-computed by notebook 104 from
 the scenario data (currently Gidden et al. AR6 reanalysis) and saved as
 ``rcb_scenario_adjustments.yaml``. Per-year BM LULUCF medians are stored
-as ``lulucf_shift_median_{scenario}.csv``.
+as ``lulucf_shift_median_{key}.csv``. Both are keyed by scenario set
+(see ``rcb_scenario_set_key``): the budget label for sources under the
+AR6 category rule, the temperature band for sources under the peak-warming
+band rule.
 """
 
 from __future__ import annotations
 
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -41,6 +45,13 @@ from fair_shares.library.utils.data.nghgi import (
     compute_bunker_deduction,
     load_bunker_timeseries,
     load_world_co2_lulucf,
+)
+from fair_shares.library.utils.data.rcb import (
+    DEFAULT_REBASE_FILL_MAX_YEARS,
+    DEFAULT_SCENARIO_SELECTION,
+    fill_rebase_years,
+    missing_rebase_years,
+    rcb_scenario_set_key,
 )
 
 
@@ -138,7 +149,7 @@ def _load_rcb_scenario_adjustments(
     Returns
     -------
     dict[str, dict]
-        Mapping of AR6 category (e.g., "C1") to adjustment dict with keys:
+        Mapping of scenario set key (e.g., "1.5p50") to adjustment dict with keys:
         ``bm_lulucf_cumulative_median``, ``convention_gap_median``,
         ``nz_year_median``, ``n_scenarios``
 
@@ -196,7 +207,7 @@ def _resolve_adjustment_scalars(
     Parameters
     ----------
     scenario : str
-        Fair-shares scenario string (e.g. "1.5p50")
+        Scenario set key (e.g. "1.5p50" or "peak-warming-1.7C")
     baseline_year : int
         RCB source baseline year — LULUCF integration starts here
     net_zero_year : int
@@ -208,7 +219,7 @@ def _resolve_adjustment_scalars(
         used for co2-ffi to integrate from baseline_year to NZ
     rcb_adjustments : dict[str, dict]
         Pre-computed RCB adjustment scalars from notebook 104,
-        keyed by scenario (e.g., "1.5p50")
+        keyed by scenario set (e.g., "1.5p50")
     emission_category : str
         Emission category (default: "co2-ffi")
     precautionary_lulucf : bool
@@ -223,7 +234,20 @@ def _resolve_adjustment_scalars(
         Bunkers is positive; the two LULUCF scalars are sign-ready.
         Exactly one of the LULUCF scalars is non-zero per category
         (future_mt for co2-ffi, nghgi_correction_mt for co2).
+
+    Raises
+    ------
+    DataLoadingError
+        If ``rcb_adjustments`` has no entry for ``scenario``
     """
+    if scenario not in rcb_adjustments:
+        raise DataLoadingError(
+            f"No RCB scenario adjustments for '{scenario}' "
+            f"(available: {list(rcb_adjustments)}). "
+            "Re-run notebook 104 (AR6 scenario preprocessing)."
+        )
+    adj = rcb_adjustments[scenario]
+
     lulucf_future_mt = 0.0
     lulucf_nghgi_correction_mt = 0.0
 
@@ -231,11 +255,8 @@ def _resolve_adjustment_scalars(
         # NGHGI-vs-BM convention correction from 2020 to NZ (Weber 2026).
         # The rebase uses BM LULUCF; this re-expresses the result against
         # national-inventory accounting. Budget still contains FFI + LULUCF.
-        adj = rcb_adjustments.get(scenario, {})
-        lulucf_nghgi_correction_mt = adj.get("convention_gap_median", 0.0)
+        lulucf_nghgi_correction_mt = adj["convention_gap_median"]
         if lulucf_nghgi_correction_mt == 0.0:
-            import warnings
-
             warnings.warn(
                 f"convention_gap_median is 0.0 for scenario '{scenario}' — "
                 f"this likely means notebook 104 ran before NGHGI data was "
@@ -246,8 +267,7 @@ def _resolve_adjustment_scalars(
     else:
         # co2-ffi: subtract projected future (base→NZ) BM LULUCF to convert
         # a published total-CO2 RCB into an FFI-only RCB.
-        adj = rcb_adjustments.get(scenario, {})
-        bm_lulucf_mt = adj.get("bm_lulucf_cumulative_median", 0.0)
+        bm_lulucf_mt = adj["bm_lulucf_cumulative_median"]
 
         # Adjust for baseline year > 2020: subtract the 2020-to-base
         # prefix using the median timeseries.  Historical BM LULUCF has
@@ -269,7 +289,8 @@ def _resolve_adjustment_scalars(
         else:
             lulucf_future_mt = -bm_lulucf_mt
 
-    # --- Bunkers deduction (always positive; caller negates) ---
+    # --- Bunkers deduction from 2020 to NZ (always positive; caller negates).
+    # The rebase adds the bunkers of 2020 to baseline_year - 1. ---
     bunkers_mt = compute_bunker_deduction(
         bunker_ts=bunker_ts,
         start_year=2020,
@@ -398,8 +419,12 @@ def load_and_process_rcbs(
         print("  Adjustment mode: pre-computed (NGHGI-consistent, Weber et al. 2026)")
         print("  Bunker NZ years: category-level median (from scenario adjustments)")
 
+    rebase_fill_max_years = rcb_data.get(
+        "rebase_fill_max_years", DEFAULT_REBASE_FILL_MAX_YEARS
+    )
+
     # Pre-load baseline-shift LULUCF median timeseries from notebook 104 output.
-    # These are year-by-year median AFOLU|Direct CSVs, one per AR6 category.
+    # These are year-by-year median AFOLU|Direct CSVs, one per scenario set.
     lulucf_shift_cache: dict[str, pd.DataFrame] = {}
 
     # Create a list to store all RCB records
@@ -413,6 +438,7 @@ def load_and_process_rcbs(
         baseline_year = source_data.get("baseline_year")
         unit = source_data.get("unit", "Gt CO2")
         scenarios = source_data.get("scenarios", {})
+        selection = source_data.get("scenario_selection", DEFAULT_SCENARIO_SELECTION)
 
         if baseline_year is None:
             raise ConfigurationError(
@@ -427,34 +453,86 @@ def load_and_process_rcbs(
             print(f"    Baseline year: {baseline_year}")
             print(f"    Unit: {unit}")
             print(f"    Scenarios: {len(scenarios)}")
+            print(f"    Scenario selection: {selection}")
+
+        # A series that ends up to rebase_fill_max_years before the last rebase
+        # year takes its last observed value for the remaining years.
+        rebase_fossil = fill_rebase_years(
+            world_fossil_emissions,
+            baseline_year,
+            rebase_fill_max_years,
+            "world fossil CO2 emissions",
+            source_key,
+        )
+        rebase_bunkers = fill_rebase_years(
+            bunker_ts,
+            baseline_year,
+            rebase_fill_max_years,
+            "international bunker emissions",
+            source_key,
+        )
+        rebase_lulucf = actual_bm_lulucf_emissions
+        if emission_category == "co2" and actual_bm_lulucf_emissions is not None:
+            rebase_lulucf = fill_rebase_years(
+                actual_bm_lulucf_emissions,
+                baseline_year,
+                rebase_fill_max_years,
+                "world LULUCF CO2 emissions",
+                source_key,
+            )
+
+        # The rebase to 2020 needs emissions for every year before the baseline.
+        # A source that the emissions data cannot rebase is left out.
+        missing_years = missing_rebase_years(baseline_year, rebase_fossil)
+        missing_years += missing_rebase_years(baseline_year, rebase_bunkers)
+        if emission_category == "co2" and rebase_lulucf is not None:
+            missing_years += missing_rebase_years(baseline_year, rebase_lulucf)
+        if missing_years:
+            warnings.warn(
+                f"Skipping RCB source '{source_key}' (baseline year "
+                f"{baseline_year}): the emissions data lack "
+                f"{sorted(set(missing_years))}, so the budget cannot be rebased "
+                f"to 2020. The rebase fills at most {rebase_fill_max_years} "
+                f"year(s) (rebase_fill_max_years). Use an emissions source that "
+                f"covers 2020-{baseline_year - 1}.",
+                stacklevel=2,
+            )
+            continue
 
         for scenario, rcb_value in scenarios.items():
             climate_assessment, quantile = parse_rcb_scenario(scenario)
+            set_key = rcb_scenario_set_key(source_key, scenario, selection)
+            if set_key not in rcb_adjustments:
+                raise DataLoadingError(
+                    f"RCB source '{source_key}', label '{scenario}': no scenario "
+                    f"adjustments for '{set_key}' in {adj_path}. "
+                    "Re-run notebook 104 (AR6 scenario preprocessing)."
+                )
 
             # Load pre-computed median LULUCF shift timeseries for baseline shift
-            if scenario not in lulucf_shift_cache:
-                shift_csv = scenarios_dir / f"lulucf_shift_median_{scenario}.csv"
+            if set_key not in lulucf_shift_cache:
+                shift_csv = scenarios_dir / f"lulucf_shift_median_{set_key}.csv"
                 if not shift_csv.exists():
                     raise DataLoadingError(
                         f"LULUCF shift median not found: {shift_csv}. "
                         "Run notebook 104 (AR6 scenario preprocessing) first."
                     )
                 shift_df = pd.read_csv(shift_csv).set_index("source")
-                lulucf_shift_cache[scenario] = shift_df
+                lulucf_shift_cache[set_key] = shift_df
                 if verbose:
                     print(
-                        f"    Loaded LULUCF shift median for {scenario} "
+                        f"    Loaded LULUCF shift median for {set_key} "
                         f"from {shift_csv}"
                     )
-            direct_median = lulucf_shift_cache[scenario]
+            direct_median = lulucf_shift_cache[set_key]
 
             # Scenario-level NZ year (for bunker integration)
-            nz_year = rcb_adjustments[scenario]["nz_year_median"]
+            nz_year = rcb_adjustments[set_key]["nz_year_median"]
 
             # Resolve adjustment scalars from pre-computed values
             bunkers_mt, lulucf_future_mt, lulucf_nghgi_mt = (
                 _resolve_adjustment_scalars(
-                    scenario=scenario,
+                    scenario=set_key,
                     baseline_year=baseline_year,
                     net_zero_year=nz_year,
                     bunker_ts=bunker_ts,
@@ -471,12 +549,13 @@ def load_and_process_rcbs(
                 rcb_value=rcb_value,
                 rcb_unit=unit,
                 rcb_baseline_year=baseline_year,
-                world_co2_ffi_emissions=world_fossil_emissions,
+                world_co2_ffi_emissions=rebase_fossil,
                 emission_category=emission_category,
+                world_bunker_emissions=rebase_bunkers,
                 bunkers_deduction_mt=bunkers_mt,
                 lulucf_future_deduction_mt=lulucf_future_mt,
                 lulucf_nghgi_correction_mt=lulucf_nghgi_mt,
-                actual_bm_lulucf_emissions=actual_bm_lulucf_emissions,
+                actual_bm_lulucf_emissions=rebase_lulucf,
                 target_baseline_year=2020,
                 source_name=source_key,
                 scenario=scenario,
@@ -496,6 +575,7 @@ def load_and_process_rcbs(
                 "net_adjustment_mt": result["net_adjustment_mt"],
                 "rebase_total_mt": result["rebase_total_mt"],
                 "rebase_fossil_mt": result["rebase_fossil_mt"],
+                "rebase_bunkers_mt": result["rebase_bunkers_mt"],
                 "rebase_lulucf_mt": result["rebase_lulucf_mt"],
                 "deduction_bunkers_mt": result["deduction_bunkers_mt"],
                 "deduction_lulucf_future_mt": result["deduction_lulucf_future_mt"],

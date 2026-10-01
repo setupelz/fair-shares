@@ -141,7 +141,9 @@ def _per_capita_budget_core(
         before OR after the allocation year. When
         ``capability_reference_year < allocation_year``, the snapshot is
         sourced from the full unfiltered ``gdp_ts`` and ``population_ts``
-        inputs; Gini adjustment is NOT applied in that case.
+        inputs; the Gini adjustment applies to it as in every other case.
+        With a reference year set, GDP is required at that year only, so
+        ``allocation_year`` may precede the first GDP year.
         Ignored if ``capability_weight == 0.0``. Emits a ``UserWarning``
         if ``capability_reference_year`` exceeds the last observed GDP year.
     income_floor
@@ -201,6 +203,7 @@ def _per_capita_budget_core(
         pre_allocation_responsibility_year=pre_allocation_responsibility_year
         if pre_allocation_responsibility_weight > 0
         else None,
+        capability_reference_year=capability_reference_year,
     )
 
     # Validate data requirements
@@ -366,7 +369,7 @@ def _per_capita_budget_core(
                 ref_label = [c for c in capability_metric_common.columns
                              if int(c) == ref_year][0]
                 snapshot = capability_metric_common[ref_label]
-            elif ref_year > max(gdp_filtered_years):
+            elif gdp_filtered_years and ref_year > max(gdp_filtered_years):
                 # User-requested ffill past end-of-series: take the last column.
                 warnings.warn(
                     f"capability_reference_year={ref_year} is beyond the last "
@@ -379,8 +382,8 @@ def _per_capita_budget_core(
                 ref_label = capability_metric_common.columns[-1]
                 snapshot = capability_metric_common[ref_label]
             else:
-                # ref_year < allocation_year: the reference year was stripped by
-                # filter_time_columns, so we must source the snapshot from the
+                # ref_year is outside the window (before allocation_year, or the
+                # window holds no GDP year), so we must source the snapshot from the
                 # UNFILTERED gdp_ts and population_ts inputs.
                 # Apply the same unit processing used in the main capability path.
                 gdp_full_single_unit = set_single_unit(gdp_ts, unit_level, ur=ur)
@@ -853,7 +856,8 @@ def per_capita_adjusted_budget(
         **Pre-allocation responsibility.** Historical emissions data.
         Required when ``pre_allocation_responsibility_weight > 0``.
     gdp_ts
-        **Capability.** GDP data used from ``allocation_year`` onwards.
+        **Capability.** GDP data used from ``allocation_year`` onwards,
+        or at ``capability_reference_year`` only when that is set.
         Required when ``capability_weight > 0``.
     pre_allocation_responsibility_weight
         **Pre-allocation responsibility.** Relative weight (0–1). Only the
@@ -892,8 +896,8 @@ def per_capita_adjusted_budget(
         **Capability.** When ``None`` (default), capability is computed
         year-by-year. When set to an integer, GDP from that single year
         is broadcast across the allocation window. May be before or
-        after ``allocation_year``.
-        When before, Gini adjustment is NOT applied to the snapshot.
+        after ``allocation_year``. GDP is then required at that year
+        only, so ``allocation_year`` may precede the first GDP year.
         Ignored when ``capability_weight == 0``.
     max_deviation_sigma
         **Constraint.** Maximum allowed deviation from equal per capita,
@@ -1098,11 +1102,9 @@ def per_capita_adjusted_gini_budget(
     By default (``capability_reference_year=None``), $C_{\text{Gini}}(g, t)$
     is computed year-by-year. Setting ``capability_reference_year`` to an
     integer freezes capability at that year: $C_{\text{Gini}}(g, t) \equiv
-    C_{\text{Gini}}(g, t_{\text{ref}})$ for all $t$ in the window. Note that
-    when ``capability_reference_year < allocation_year``, the Gini adjustment
-    is NOT applied to the snapshot (see ``capability_reference_year`` in the
-    Parameters section and ``_per_capita_budget_core`` for the implementation
-    detail).
+    C_{\text{Gini}}(g, t_{\text{ref}})$ for all $t$ in the window. The Gini
+    adjustment applies to the snapshot wherever the reference year lies,
+    including when ``capability_reference_year < allocation_year``.
 
     Two allocation modes are supported based on
     :code:`preserve_allocation_year_shares`:
@@ -1117,7 +1119,8 @@ def per_capita_adjusted_gini_budget(
         Population time series for each group of interest.
     gdp_ts
         **Capability.** GDP time series (required). Used from
-        ``allocation_year`` onwards for capability calculations.
+        ``allocation_year`` onwards for capability calculations, or at
+        ``capability_reference_year`` only when that is set.
     gini_s
         **Gini.** Gini coefficients for within-country income inequality
         (required). Used to adjust GDP before computing the capability
@@ -1164,9 +1167,10 @@ def per_capita_adjusted_gini_budget(
     capability_reference_year
         **Capability.** When ``None`` (default), capability is computed
         year-by-year. When set to an integer, GDP from that single year
-        is broadcast across the allocation window. When before
-        ``allocation_year``, Gini
-        adjustment is NOT applied to the snapshot.
+        is broadcast across the allocation window. May be before or
+        after ``allocation_year``; the Gini adjustment applies to the
+        snapshot in both cases. GDP is then required at that year only,
+        so ``allocation_year`` may precede the first GDP year.
         Ignored when ``capability_weight == 0``.
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income

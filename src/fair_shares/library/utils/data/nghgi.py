@@ -12,7 +12,7 @@ Sign conventions:
 
 Data structure notes:
 - NGHGI LULUCF file: CSV produced by notebook 107 (Melo v3.1)
-- Bunker file: CSV produced by notebook 107, sourced from GCB2024
+- Bunker file: CSV produced by notebook 108 from the active bunker source
 - AR6 category constants: YAML produced by notebook 104 (scenario preprocessing)
 """
 
@@ -173,12 +173,13 @@ def compute_bunker_deduction(
     bunker_ts: pd.DataFrame,
     start_year: int,
     net_zero_year: int,
-    historical_end_year: int = 2023,
+    historical_end_year: int | None = None,
 ) -> float:
     """Compute cumulative international bunker fuel CO2 deduction.
 
-    Combines historical year-by-year values from GCB2024 with extrapolation
-    from the last observed annual rate for years beyond the historical record.
+    Combines historical year-by-year values from the bunker timeseries with
+    extrapolation from the last observed annual rate for years beyond the
+    historical record.
 
     Parameters
     ----------
@@ -189,8 +190,8 @@ def compute_bunker_deduction(
     net_zero_year : int
         End of integration window (inclusive)
     historical_end_year : int, optional
-        Last year covered by the historical timeseries (default: 2023,
-        matching GCB2024 coverage)
+        Last year taken from the historical timeseries (default: the last
+        year with a value in ``bunker_ts``)
 
     Returns
     -------
@@ -202,6 +203,10 @@ def compute_bunker_deduction(
     DataProcessingError
         If historical data is insufficient for the start_year
     """
+    if historical_end_year is None:
+        observed = bunker_ts.iloc[0].dropna()
+        historical_end_year = max(int(c) for c in observed.index if _is_year(c))
+
     historical_end = min(historical_end_year, net_zero_year)
     historical_bunkers = compute_cumulative_emissions(
         bunker_ts, start_year, historical_end
@@ -210,13 +215,7 @@ def compute_bunker_deduction(
     # Future component: extrapolate last observed rate beyond historical record
     future_bunkers = 0.0
     if net_zero_year > historical_end_year:
-        last_year_str = str(historical_end_year)
-        if last_year_str in bunker_ts.columns:
-            last_rate = float(bunker_ts[last_year_str].iloc[0])
-        else:
-            # Fall back to last available year
-            avail_years = sorted(int(c) for c in bunker_ts.columns if _is_year(c))
-            last_rate = float(bunker_ts[str(avail_years[-1])].iloc[0])
+        last_rate = float(bunker_ts[str(historical_end_year)].iloc[0])
         future_years = net_zero_year - historical_end_year
         future_bunkers = last_rate * future_years
 
@@ -226,12 +225,13 @@ def compute_bunker_deduction(
 def build_nghgi_world_co2_timeseries(
     fossil_ts: pd.DataFrame,
     nghgi_ts: pd.DataFrame,
-    bunker_ts: pd.DataFrame,
 ) -> pd.DataFrame:
     """Construct NGHGI-consistent world total CO2 timeseries.
 
     For backward extension of allocation years < 2020, Weber Eq. 3 requires
-    per-year world CO2 = fossil - bunkers + LULUCF, where LULUCF uses:
+    per-year world CO2 = fossil - bunkers + LULUCF. The world CO2-FFI series
+    already excludes international bunkers, so the result is fossil + LULUCF,
+    where LULUCF uses:
     - 2000 onwards: NGHGI LULUCF (e.g. Melo v3.1)
     - Pre-2000: NaN (no fallback — NGHGI coverage only)
 
@@ -240,14 +240,11 @@ def build_nghgi_world_co2_timeseries(
     Parameters
     ----------
     fossil_ts : pd.DataFrame
-        World CO2-FFI emissions timeseries (e.g. PRIMAP) in Mt CO2/yr.
-        Must have string year columns and a MultiIndex with
-        (iso3c, unit, emission-category).
+        World CO2-FFI emissions timeseries (e.g. PRIMAP) in Mt CO2/yr,
+        excluding international bunkers. Must have string year columns and a
+        MultiIndex with (iso3c, unit, emission-category).
     nghgi_ts : pd.DataFrame
         NGHGI LULUCF historical timeseries (from load_world_co2_lulucf)
-        in MtCO2/yr. Single-row DataFrame with string year columns.
-    bunker_ts : pd.DataFrame
-        Bunker fuel CO2 timeseries (from load_bunker_timeseries)
         in MtCO2/yr. Single-row DataFrame with string year columns.
 
     Returns
@@ -255,7 +252,7 @@ def build_nghgi_world_co2_timeseries(
     pd.DataFrame
         Single-row DataFrame with same index structure as fossil_ts but
         emission-category label set to "co2", containing per-year
-        NGHGI-consistent total CO2 = fossil - bunkers + LULUCF.
+        NGHGI-consistent total CO2 = fossil + LULUCF.
         Years outside NGHGI LULUCF coverage will be NaN.
     """
     # Get all year columns from fossil_ts
@@ -270,14 +267,8 @@ def build_nghgi_world_co2_timeseries(
         if y in nghgi_ts.columns:
             lulucf_vals[y] = nghgi_ts[y].iloc[0]
 
-    # Build bunker timeseries (0 for years outside bunker data)
-    bunker_vals = pd.Series(0.0, index=year_cols, dtype=float)
-    for y in year_cols:
-        if y in bunker_ts.columns:
-            bunker_vals[y] = bunker_ts[y].iloc[0]
-
-    # NGHGI-consistent total CO2 = fossil - bunkers + LULUCF
-    total_co2 = fossil_vals + lulucf_vals - bunker_vals
+    # NGHGI-consistent total CO2 = fossil (excluding bunkers) + LULUCF
+    total_co2 = fossil_vals + lulucf_vals
 
     # Build result with same index structure as fossil_ts but co2 label
     old_idx = fossil_ts.index[0]

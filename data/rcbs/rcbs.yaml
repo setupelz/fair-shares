@@ -1,15 +1,32 @@
 # Remaining Carbon Budgets (RCBs) data
 # Each source includes:
-#   - baseline_year: The year from which the RCB is calculated
+#   - baseline_year: The year from which the RCB is calculated. A budget from
+#     the start of year X has baseline_year X.
 #   - unit: The unit of the RCB values (typically Gt CO2)
 #   - scenarios: Temperature and probability combinations with their RCB values
-#
-# Probability labels (e.g. 2p66) map to AR6 climate categories:
-#   1.5p50 -> C1, 2p83 -> C2, 2p66 -> C3
+#   - scenario_selection (optional): The rule that selects the AR6 scenarios
+#     behind the LULUCF, convention-gap and bunker deductions.
+#       ar6-category (default): the AR6 climate category mapped to the label,
+#         1.5p50 -> C1, 2p83 -> C2, 2p66 -> C3. Any other label is an error.
+#       peak-warming-band: every scenario whose median peak warming
+#         (MAGICCv7.5.3) lies in [T - half_width, T + half_width), where T is
+#         the temperature in the label. One band serves every likelihood of T.
+#         A remaining carbon budget runs to net-zero CO2, so the band keeps only
+#         scenarios whose CO2 emissions reach zero by 2100.
 #
 # Sources report at slightly different probability levels:
-#   - AR6/Forster: 67% and 83% (mapped to 2p66, 2p83)
+#   - AR6/Forster 2024: 67% and 83% (mapped to 2p66, 2p83)
 #   - Lamboll: 66% and 90% (mapped to 2p66; no 83% reported)
+
+# Half-width of the peak-warming band, in degrees C.
+peak_warming_band_half_width: 0.05
+
+# Largest number of years that the rebase to 2020 may fill. When a world series
+# (fossil CO2, bunkers, LULUCF) ends before the year before the baseline, each
+# later year takes the last observed value, with a warning. This is a
+# placeholder until observed data are published. 0 turns the fill off. A source
+# that needs more years is skipped.
+rebase_fill_max_years: 1
 
 rcb_data:
   lamboll_2023: # Lamboll et al (2023), "https://doi.org/10.1038/s41558-023-01848-5"
@@ -34,4 +51,34 @@ rcb_data:
     scenarios:
       "1.5p50": 500
       "2p66": 1150
+      "2p83": 900
+
+  # Forster et al (2026), IGCC 2025, ESSD 18, 3889-3933, Table 8,
+  # "https://doi.org/10.5194/essd-18-3889-2026". Budgets from the start of 2026.
+  forster_2026:
+    baseline_year: 2026
+    unit: "Gt * CO2"
+    scenario_selection: peak-warming-band
+    scenarios:
+      "1.5p50": 130
+      "1.5p67": 80
+      "1.7p50": 500
+      "1.7p67": 390
+      "2p50": 1050
+      "2p67": 860
+      "2p83": 690
+
+  # IPCC AR6 WGI (2021), Table SPM.2, "https://doi.org/10.1017/9781009157896.001".
+  # Budgets from the start of 2020.
+  ar6_wg1_2021:
+    baseline_year: 2020
+    unit: "Gt * CO2"
+    scenario_selection: peak-warming-band
+    scenarios:
+      "1.5p50": 500
+      "1.5p67": 400
+      "1.7p50": 850
+      "1.7p67": 700
+      "2p50": 1350
+      "2p67": 1150
       "2p83": 900

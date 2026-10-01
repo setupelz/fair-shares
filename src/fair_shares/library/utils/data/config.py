@@ -98,7 +98,9 @@ def get_final_categories(target: str, emission_category: str) -> tuple[str, ...]
 
 
 def get_emission_preprocessing_categories(
-    target: str, emission_category: str
+    target: str,
+    emission_category: str,
+    available_categories: list[str] | None = None,
 ) -> tuple[str, ...]:
     """Return emission categories needed for emissions preprocessing.
 
@@ -111,30 +113,45 @@ def get_emission_preprocessing_categories(
     subtraction (``all-ghg-ex-co2-lulucf − co2-ffi``) in the derive_non_co2
     pipeline rule.  When ``non-co2`` is the main category, we return its
     ingredients instead.
+
+    When ``available_categories`` is given, the result keeps only categories
+    the emissions source declares, so a ``co2-ffi``-only source is asked for
+    ``co2-ffi`` alone.
     """
     # Base primitives always needed by notebook 107 (LULUCF → derived categories)
     _LULUCF_PRIMITIVES = {"co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
 
-    if not is_composite_category(emission_category):
-        if emission_category == "co2":
-            needed = {"co2", "co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
-        elif emission_category == "non-co2":
-            # non-co2 is derived by subtraction, not extracted by 101
-            needed = _LULUCF_PRIMITIVES.copy()
-        else:
-            needed = {emission_category} | _LULUCF_PRIMITIVES
-        return tuple(sorted(needed))
-
-    if target == "pathway":
-        # pathway target has direct data, but notebook 107 still needs primitives
+    if emission_category == "co2":
+        needed = {"co2", "co2-ffi", "co2-lulucf", "all-ghg-ex-co2-lulucf"}
+    elif emission_category == "non-co2":
+        # non-co2 is derived by subtraction, not extracted by 101
+        needed = _LULUCF_PRIMITIVES.copy()
+    elif emission_category == "all-ghg" and target != "pathway":
+        # RCB targets take the CO2 part from budgets, so all-ghg itself is not extracted
+        needed = {"co2"} | _LULUCF_PRIMITIVES
+    else:
         needed = {emission_category} | _LULUCF_PRIMITIVES
-        return tuple(sorted(needed))
 
-    # RCB targets: need source categories for non-co2 derivation + LULUCF primitives
-    if emission_category == "all-ghg":
-        return ("all-ghg-ex-co2-lulucf", "co2", "co2-ffi", "co2-lulucf")
-    else:  # all-ghg-ex-co2-lulucf
-        return ("all-ghg-ex-co2-lulucf", "co2-ffi", "co2-lulucf")
+    if available_categories is not None:
+        needed &= set(available_categories)
+    return tuple(sorted(needed))
+
+
+# Bunker data used by every emissions source that does not name its own.
+DEFAULT_BUNKERS_SOURCE = "gcb-2024"
+
+
+def get_emissions_data_parameters(emissions_source: str | None) -> dict[str, Any]:
+    """Return ``data_parameters`` of an emissions source in the packaged config."""
+    with packaged_config("data_sources/data_sources_unified.yaml").open() as f:
+        emissions = yaml.safe_load(f).get("emissions", {})
+    return emissions.get(emissions_source, {}).get("data_parameters", {})
+
+
+def get_bunkers_source(emissions_source: str | None) -> str:
+    """Return the registry name of the bunker data paired with an emissions source."""
+    params = get_emissions_data_parameters(emissions_source)
+    return params.get("bunkers_source") or DEFAULT_BUNKERS_SOURCE
 
 
 def build_source_id(

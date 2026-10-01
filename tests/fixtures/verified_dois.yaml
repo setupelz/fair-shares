@@ -49,6 +49,14 @@ verified:
       publicationYear 2026, rights cc-by-4.0, access_right open. Confirms the
       record is the 3.1.1 release even though the file inside is named v3.1.
 
+  - doi: "10.5281/zenodo.22828743"
+    used_by: melo-2026-v4
+    verified: 2026-10-01
+    registrar: DataCite
+    evidence: >-
+      The LULUCF Data Hub, Melo et al. Zenodo record reports version 4.0.0,
+      published 2026-09-18, licence cc-by-4.0, access_right open.
+
   - doi: "10.5281/zenodo.17845154"
     used_by: cmip7-historical-2025.12.07
     verified: 2026-08-03
@@ -106,6 +114,25 @@ verified:
       Data 17, 965-1039, 2025, CC BY 4.0. This is the correct paper DOI; see
       the known_bad entry below for the one it replaces.
 
+  - doi: "10.5281/zenodo.17417124"
+    used_by: gcb-2025
+    verified: 2026-10-01
+    registrar: DataCite
+    evidence: >-
+      "The Global Carbon Project's fossil CO2 emissions dataset", Andrew and
+      Peters, Zenodo, version 2025v15, published 2025-10-22, rights cc-by-4.0,
+      access_right open. The record lists GCB2025v15_MtCO2_flat.csv at
+      3,147,221 bytes with the md5 pinned in the registry.
+
+  - doi: "10.5194/essd-18-3211-2026"
+    used_by: gcb-2025
+    verified: 2026-10-01
+    registrar: Crossref
+    evidence: >-
+      Friedlingstein et al., "Global Carbon Budget 2025", Earth System Science
+      Data 18, 3211-3288, issued 2026-05-13, CC BY 4.0. The paper behind the
+      dataset above.
+
   - doi: "10.1038/s41558-023-01848-5"
     used_by: rcbs
     verified: 2026-08-03
@@ -123,6 +150,25 @@ verified:
       Forster et al., "Indicators of Global Climate Change 2023", Earth System
       Science Data 16, 2625-2658, CC BY 4.0. The other published source behind
       the budget table.
+
+  - doi: "10.5194/essd-18-3889-2026"
+    used_by: rcbs
+    verified: 2026-10-01
+    registrar: Crossref
+    evidence: >-
+      Forster et al., "Indicators of Global Climate Change 2025: annual update
+      of key indicators of the state of the climate system and human
+      influence", Earth System Science Data 18, 3889-3933, published
+      2026-06-11. Source of the `forster_2026` budgets.
+
+  - doi: "10.1017/9781009157896.001"
+    used_by: rcbs
+    verified: 2026-10-01
+    registrar: Crossref
+    evidence: >-
+      "Summary for Policymakers", book chapter in "Climate Change 2021 – The
+      Physical Science Basis", Cambridge University Press, pages 3-32. Source
+      of the `ar6_wg1_2021` budgets (Table SPM.2).
 
 # DOIs known to be wrong. The registry must never carry one of these.
 known_bad:

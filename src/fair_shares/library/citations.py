@@ -139,7 +139,9 @@ def resolve_source_names(
 
     target = active_sources.get("target")
     if target in BUNKER_TARGETS:
-        names += ["rcbs", "gcb-2024"]
+        from fair_shares.library.utils.data.config import get_bunkers_source
+
+        names += ["rcbs", get_bunkers_source(active_sources.get("emissions"))]
 
     if _uses_scenarios(target, emission_category):
         scenario = active_sources.get("scenario", "ar6")

@@ -303,7 +303,7 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 187 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 185 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI**
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)

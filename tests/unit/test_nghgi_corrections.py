@@ -284,6 +284,19 @@ class TestComputeBunkerDeduction:
         )
         assert result == pytest.approx(1000.0)  # 2020 only
 
+    def test_end_year_comes_from_the_data(self):
+        """The last observed year is used as observed; later years take its rate."""
+        observed_to_2024 = _make_timeseries(
+            {2020: 800.0, 2021: 900.0, 2022: 1000.0, 2023: 1100.0, 2024: 1200.0},
+            row_label="bunkers",
+        )
+        result = compute_bunker_deduction(
+            bunker_ts=observed_to_2024, start_year=2020, net_zero_year=2030
+        )
+        observed = 800.0 + 900.0 + 1000.0 + 1100.0 + 1200.0
+        extrapolated = 1200.0 * (2030 - 2024)
+        assert result == pytest.approx(observed + extrapolated)
+
     def test_shorter_nz_year_smaller_deduction(self, bunker_ts):
         """Using a shorter net-zero year reduces the total deduction."""
         result_short = compute_bunker_deduction(
@@ -388,10 +401,15 @@ class TestProcessRcbTo2020BaselineRegression:
             rcb_baseline_year=2023,
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
+            world_bunker_emissions=_make_timeseries(
+                {2020: 800.0, 2021: 900.0, 2022: 1000.0}
+            ),
             bunkers_deduction_mt=47_000.0,
             lulucf_future_deduction_mt=20_000.0,
             verbose=False,
         )
+        assert result["rebase_bunkers_mt"] == 2_700
+        assert result["rebase_total_mt"] == 27_300 + 2_700
         expected_total = (
             result["rebase_total_mt"]
             + result["deduction_bunkers_mt"]
@@ -417,6 +435,7 @@ class TestProcessRcbTo2020BaselineRegression:
             "baseline_year",
             "rebase_total_mt",
             "rebase_fossil_mt",
+            "rebase_bunkers_mt",
             "rebase_lulucf_mt",
             "deduction_bunkers_mt",
             "deduction_lulucf_future_mt",
@@ -570,60 +589,41 @@ class TestBuildNghgiWorldCo2Timeseries:
             {1990: -400.0, 2000: -500.0, 2020: -600.0}, row_label="nghgi_lulucf"
         )
 
-    @pytest.fixture
-    def bunker_ts(self) -> pd.DataFrame:
-        return _make_timeseries(
-            {1980: 100.0, 1990: 200.0, 2000: 300.0, 2020: 400.0}, row_label="bunkers"
-        )
-
-    def test_pre_nghgi_years_are_nan(self, fossil_ts, nghgi_ts, bunker_ts):
+    def test_pre_nghgi_years_are_nan(self, fossil_ts, nghgi_ts):
         """Years outside NGHGI coverage should be NaN (no BM fallback)."""
         result = build_nghgi_world_co2_timeseries(
             fossil_ts=fossil_ts,
             nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
         )
         # 1980: no NGHGI data -> NaN
         assert pd.isna(result["1980"].iloc[0])
 
-    def test_nghgi_years_use_nghgi(self, fossil_ts, nghgi_ts, bunker_ts):
-        """Years with NGHGI data should use NGHGI LULUCF."""
+    def test_world_co2_is_fossil_plus_nghgi_lulucf(self, fossil_ts, nghgi_ts):
+        """World CO2 = fossil + NGHGI LULUCF. The fossil series excludes bunkers."""
         result = build_nghgi_world_co2_timeseries(
             fossil_ts=fossil_ts,
             nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
         )
-        # 1990: fossil(6000) + NGHGI(-400) - bunkers(200) = 5400
-        assert result["1990"].iloc[0] == pytest.approx(5400.0)
-        # 2000: fossil(7000) + NGHGI(-500) - bunkers(300) = 6200
-        assert result["2000"].iloc[0] == pytest.approx(6200.0)
+        # 1990: fossil(6000) + NGHGI(-400) = 5600
+        assert result["1990"].iloc[0] == pytest.approx(5600.0)
+        # 2000: fossil(7000) + NGHGI(-500) = 6500
+        assert result["2000"].iloc[0] == pytest.approx(6500.0)
+        # 2020: fossil(9000) + NGHGI(-600) = 8400
+        assert result["2020"].iloc[0] == pytest.approx(8400.0)
 
-    def test_bunkers_subtracted(self, fossil_ts, nghgi_ts, bunker_ts):
-        """Bunker emissions are subtracted in years with NGHGI data."""
-        result = build_nghgi_world_co2_timeseries(
-            fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
-        )
-        # Years with NGHGI data should have bunkers subtracted
-        for y in ["1990", "2000", "2020"]:
-            assert result[y].iloc[0] < fossil_ts[y].iloc[0]
-
-    def test_emission_category_label_is_co2(self, fossil_ts, nghgi_ts, bunker_ts):
+    def test_emission_category_label_is_co2(self, fossil_ts, nghgi_ts):
         """Output emission-category label should be 'co2'."""
         result = build_nghgi_world_co2_timeseries(
             fossil_ts=fossil_ts,
             nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
         )
         assert result.index.get_level_values("emission-category")[0] == "co2"
 
-    def test_index_structure_matches_fossil_ts(self, fossil_ts, nghgi_ts, bunker_ts):
+    def test_index_structure_matches_fossil_ts(self, fossil_ts, nghgi_ts):
         """Output index structure matches fossil_ts (same names, same iso3c/unit)."""
         result = build_nghgi_world_co2_timeseries(
             fossil_ts=fossil_ts,
             nghgi_ts=nghgi_ts,
-            bunker_ts=bunker_ts,
         )
         assert result.index.names == fossil_ts.index.names
         assert result.index.get_level_values("iso3c")[0] == "World"

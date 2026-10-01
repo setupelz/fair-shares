@@ -273,8 +273,8 @@ def _load_world_emissions(
 world_keys = ["EARTH", "World", "WLD", "OWID_WRL"]
 
 if emission_category == "co2":
-    # NGHGI-consistent world CO2 = fossil - bunkers + LULUCF(NGHGI)
-    # This mirrors run_rcb_preprocessing() lines 454-480 in orchestrator.py
+    # NGHGI-consistent world CO2 = fossil (excluding bunkers) + LULUCF(NGHGI),
+    # as in run_rcb_preprocessing()
     from fair_shares.library.preprocessing.rcbs import _load_shared_timeseries
     from fair_shares.library.utils.data.nghgi import build_nghgi_world_co2_timeseries
 
@@ -286,8 +286,8 @@ if emission_category == "co2":
         emissions_intermediate_dir, "co2-lulucf", world_keys, active_lulucf_source
     )
 
-    # Load NGHGI LULUCF world timeseries and bunker timeseries
-    nghgi_ts, bunker_ts, splice_year = _load_shared_timeseries(
+    # Load NGHGI LULUCF world timeseries
+    nghgi_ts, _bunker_ts, splice_year = _load_shared_timeseries(
         adjustments_config, project_root, source_id=source_id, verbose=True
     )
 
@@ -295,14 +295,12 @@ if emission_category == "co2":
     world_emissions_df = build_nghgi_world_co2_timeseries(
         fossil_ts=world_co2_ffi_df,
         nghgi_ts=nghgi_ts,
-        bunker_ts=bunker_ts,
     )
 
     print("\nNGHGI-consistent world CO2 timeseries constructed:")
-    print("  fossil = co2-ffi (PRIMAP)")
+    print("  fossil = co2-ffi (PRIMAP), excluding international bunkers")
     print(f"  LULUCF = NGHGI actual ({splice_year} end year, no BM splicing)")
-    print("  bunkers = international bunker fuel")
-    print("  Formula: total CO2 = fossil - bunkers + LULUCF")
+    print("  Formula: total CO2 = fossil + LULUCF")
 
 else:
     # co2-ffi: load directly

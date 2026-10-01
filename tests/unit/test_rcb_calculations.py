@@ -159,6 +159,28 @@ class TestCalculateBudgetFromRCB:
         assert "Allocation year 2025 > 2020" in captured.out
         assert "Used" in captured.out
 
+    def test_allocation_year_before_the_world_series_raises(self):
+        """A start year before the first year of the world series is an error."""
+        index = pd.MultiIndex.from_tuples(
+            [("World", "Mt * CO2e", "co2")],
+            names=["iso3c", "unit", "emission-category"],
+        )
+        from_2000 = pd.DataFrame(
+            {str(y): [10.0] for y in range(2000, 2024)}, index=index
+        )
+        with pytest.raises(DataProcessingError) as error:
+            calculate_budget_from_rcb(500.0, 1990, from_2000, verbose=False)
+        assert "lack 1990-1999" in str(error.value)
+        assert "first available year is 2000" in str(error.value)
+
+        # A column that holds no value counts as missing.
+        with_nan = from_2000.copy()
+        with_nan.insert(0, "1999", float("nan"))
+        with pytest.raises(DataProcessingError, match="lack 1999"):
+            calculate_budget_from_rcb(500.0, 1999, with_nan, verbose=False)
+
+        assert calculate_budget_from_rcb(500.0, 2000, from_2000, verbose=False) == 700
+
     def test_with_variable_emissions(self):
         """Test with variable emissions to ensure correct summation."""
         # Create variable emissions data

@@ -17,7 +17,9 @@ Bundled sources carry different terms. Check the per-source entry below before r
 | Data Type      | Source                 | License            | Citation Required |
 | -------------- | ---------------------- | ------------------ | ----------------- |
 | Emissions      | PRIMAP-hist v2.6.1     | **CC-BY-4.0**      | Yes               |
+| Emissions (opt-in) | Global Carbon Budget 2025 (2025v15) | **CC-BY-4.0** | Yes   |
 | LULUCF         | Melo et al. 2026 v3.1  | **CC-BY-4.0** (Zenodo) | Yes           |
+| LULUCF (opt-in) | Melo et al. 2026 v4.0.0 | **CC-BY-4.0** (Zenodo) | Yes         |
 | Population     | UN/OWID 2025           | Mixed — see below  | Yes               |
 | GDP            | World Bank WDI 2025    | **CC-BY-4.0**      | Yes               |
 | Gini (default) | World Bank WDI 2025 (SI.POV.GINI) | **CC-BY-4.0** | Yes    |
@@ -27,6 +29,7 @@ Bundled sources carry different terms. Check the per-source entry below before r
 | Carbon budgets | Lamboll et al. 2023    | Published values   | Yes               |
 | Carbon budgets | Forster et al. 2024    | Published values   | Yes               |
 | Bunker fuels   | Global Carbon Budget 2024 | paper **CC-BY-4.0**; data product under GCP terms | Yes |
+| Bunker fuels (with `gcb-2025` emissions) | Global Carbon Budget 2025 (2025v15) | **CC-BY-4.0** | Yes |
 
 ---
 
@@ -44,6 +47,27 @@ Bundled sources carry different terms. Check the per-source entry below before r
 
 **What it provides:** National greenhouse gas emissions by country (1750-2023), including CO2 from fossil fuels, land use, and other GHGs.
 
+### Global Carbon Budget 2025 (opt-in)
+
+**Source (data product):** Andrew, R. M., & Peters, G. P. (2025). The Global Carbon Project's fossil CO2 emissions dataset (2025v15). Zenodo. [doi:10.5281/zenodo.17417124](https://doi.org/10.5281/zenodo.17417124)
+
+**Source (paper):** Friedlingstein, P., et al. (2026). Global Carbon Budget 2025. *Earth System Science Data*, 18, 3211-3288. [doi:10.5194/essd-18-3211-2026](https://doi.org/10.5194/essd-18-3211-2026)
+
+**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Cite both DOIs.
+
+**Location:** `data/emissions/gcb-2025/`. Opt-in: a plain `fair-shares fetch-data` does not download it. Fetch it with `fair-shares fetch-data --source gcb-2025`.
+
+**What it provides:** Territorial fossil CO2 (`co2-ffi`) by country, 1850 to 2024, in MtCO2 per year. Select it with `active_emissions_source=gcb-2025`. The default stays `primap-202503`. The source declares `co2-ffi` only, and the pipeline asks it for no other category.
+
+**Processing rules** (`notebooks/101_data_preprocess_emiss_gcb-2025.py`):
+
+- **Blank years count as zero.** The file leaves a year blank where it reports those emissions under another entity or reports none. Most blanks precede a country's first record. The GCB global total treats every blank as zero.
+- **The world row excludes bunkers and the oil fires.** World row = GCB global total minus international shipping, international aviation and the 1991 Kuwaiti oil fires (478 MtCO2). These three belong to no country. The run saves them to `emiss_co2-ffi_excluded_timeseries.csv`, so that world row + excluded rows = GCB global total for every year.
+- **Rows outside the region mapping go to rest-of-world.** Kosovo and Antarctica have ISO codes that the region mapping lacks. "Pacific Islands (Palau)" (1955 to 1991, 4.43 MtCO2 in total) and "Ryukyu Islands" (1965 to 1972, 0.82 MtCO2 in total) have no ISO code. The official GCB workbook keeps both in its World column and in no country column, and this source does the same.
+- **Bunkers come from the same file.** Runs on `gcb-2025` deduct international shipping plus aviation from this file. Runs on `primap-202503` keep the Global Carbon Budget 2024 workbook.
+
+With the default GDP and population sources, the analysis holds the same 177 countries as a PRIMAP run. World `co2-ffi` in 2020 is 34,319 MtCO2 (PRIMAP: 34,343).
+
 ---
 
 ## LULUCF Data
@@ -58,7 +82,19 @@ Bundled sources carry different terms. Check the per-source entry below before r
 
 **Location:** `data/lulucf/melo-2026/`
 
-**What it provides:** NGHGI-reported CO2 LULUCF fluxes for 187 countries (2000–2023). Used for all emission categories that include land use (co2, all-ghg). See [Other Operations](../science/other-operations.md) for how NGHGI LULUCF data enters the pipeline.
+**What it provides:** NGHGI-reported CO2 LULUCF fluxes for 185 countries (2000–2023). Used for all emission categories that include land use (co2, all-ghg). See [Other Operations](../science/other-operations.md) for how NGHGI LULUCF data enters the pipeline.
+
+### Melo et al. (NGHGI LULUCF), v4.0.0 (opt-in)
+
+**Source:** Melo, J., et al. (2026). The LULUCF Data Hub: translating global land use emissions estimates into the national GHG inventory framework (Version 4.0.0, 2026 NGHGI release). Zenodo.
+
+**DOI:** [10.5281/zenodo.22828743](https://doi.org/10.5281/zenodo.22828743)
+
+**License:** [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/) (Zenodo)
+
+**Location:** `data/lulucf/melo-2026-v4/`
+
+**What it provides:** The gap-filled NGHGI CO2 LULUCF file for 187 countries (2000–2024). Select it with `active_lulucf_source=melo-2026-v4`. Fetch it with `fair-shares fetch-data --source melo-2026-v4`. The default stays `melo-2026` (v3.1.1).
 
 ---
 
@@ -160,12 +196,20 @@ The global remaining carbon budget (RCB) is a key input for budget-based allocat
 | Lamboll et al. 2023 | 250 GtCO2           | 1.5°C       | 50%         | 2023     | Methodology paper for updated RCB estimates        |
 | Forster et al. 2024 | 200 GtCO2           | 1.5°C       | 50%         | 2024     | IGCC 2023; latest usable with PRIMAP v2.6.1 (through 2023) |
 | IPCC AR6 WGI        | 500 GtCO2           | 1.5°C       | 50%         | 2020     | Original AR6 estimates from WG1 Chapter 5          |
+| Forster et al. 2026 | 130 GtCO2           | 1.5°C       | 50%         | 2026     | IGCC 2025, Table 8; also 1.7°C and 2°C. Needs emissions through 2025; one missing year takes the last observed value |
+| IPCC AR6 WGI (SPM)  | 500 GtCO2           | 1.5°C       | 50%         | 2020     | Table SPM.2; also 1.7°C and 2°C (`ar6_wg1_2021`)   |
+
+The last two sources (`forster_2026`, `ar6_wg1_2021`) carry seven budgets each and select their deduction scenarios by peak-warming band. See [RCB sources and scenario sets](../science/other-operations.md#rcb-sources-and-scenario-sets).
 
 **Citations:**
 
 > Lamboll, R. D., et al. (2023). Assessing the size and uncertainty of remaining carbon budgets. _Nature Climate Change_, 13, 1360–1367. [doi:10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
 > Forster, P. M., et al. (2024). Indicators of Global Climate Change 2023. _Earth System Science Data_, 16, 2625–2680. [doi:10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
+
+> Forster, P. M., et al. (2026). Indicators of Global Climate Change 2025. _Earth System Science Data_, 18, 3889–3933. [doi:10.5194/essd-18-3889-2026](https://doi.org/10.5194/essd-18-3889-2026)
+
+> IPCC (2021). Summary for Policymakers. In _Climate Change 2021: The Physical Science Basis_. Cambridge University Press. [doi:10.1017/9781009157896.001](https://doi.org/10.1017/9781009157896.001)
 
 !!! note "Budget choice is normatively significant"
 The choice of carbon budget (source, temperature target, probability level) corresponds to Entry Point 2 of the fair share quantification framework — the allocation quantity [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Results are sensitive to this choice. Always document the budget source, temperature target, and probability level when reporting allocation results.
@@ -201,6 +245,8 @@ The choice of carbon budget (source, temperature target, probability level) corr
 **Location:** `data/bunkers/gcb-2024/`
 
 **What it provides:** International aviation and shipping CO2 emissions, used to deduct bunker fuels from national remaining carbon budgets. See [Other Operations](../science/other-operations.md) for methodology.
+
+Each emissions source names its bunker data (`bunkers_source` in `data_sources_unified.yaml`). The default is this workbook. Runs on `gcb-2025` emissions take bunkers from the [Global Carbon Budget 2025](#global-carbon-budget-2025-opt-in) file.
 
 ---
 
