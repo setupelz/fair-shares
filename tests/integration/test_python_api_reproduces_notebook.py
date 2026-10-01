@@ -21,26 +21,28 @@ builds it as a side effect).
 
 from __future__ import annotations
 
+import importlib.util
+
 import numpy as np
 import pandas as pd
 import pytest
 from pyprojroot import here
 
 from fair_shares.library.python_api import calculate_allocation_timeseries
-from fair_shares.library.utils.data.config import build_data_config
 
 FIXTURE_DIR = here() / "tests/fixtures/python_api"
 EXAMPLE_COUNTRIES = ["DEU", "FRA", "USA", "CHN", "IND", "BRA", "POL"]
 
+_spec = importlib.util.spec_from_file_location(
+    "python_api_sources", FIXTURE_DIR.parent / "python_api_sources.py"
+)
+_sources = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_sources)
+SOURCES, source_id = _sources.SOURCES, _sources.source_id
+
 # The anchor + data sources the fixtures were saved for (notebook 601 defaults).
+# The sources and source-id derivation are shared with the fixture script.
 ANCHOR = {"rcb_source": "ar6_2020", "climate_assessment": "1.5C", "quantile": 0.5}
-SOURCES = {
-    "emissions_source": "primap-202503",
-    "gdp_source": "wdi-2025",
-    "population_source": "un-owid-2025",
-    "gini_source": "unu-wider-2025",
-    "lulucf_source": "melo-2026",
-}
 
 # Columns that identify one series (exclude provenance + per-country value
 # columns, which the year-value comparison covers or which vary in null repr).
@@ -165,16 +167,7 @@ CASES = [
 
 def _require_processed_data(category: str) -> None:
     """Skip unless the processed input tree for this category has been built."""
-    active_sources = {
-        "target": "rcbs",
-        "emissions": SOURCES["emissions_source"],
-        "gdp": SOURCES["gdp_source"],
-        "population": SOURCES["population_source"],
-        "gini": SOURCES["gini_source"],
-        "lulucf": SOURCES["lulucf_source"],
-    }
-    _, source_id = build_data_config(category, active_sources)
-    processed = here() / "output" / source_id / "intermediate" / "processed"
+    processed = here() / "output" / source_id(category) / "intermediate" / "processed"
     if not processed.is_dir():
         pytest.skip(
             f"processed input data not built ({processed.relative_to(here())}); "

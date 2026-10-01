@@ -25,6 +25,7 @@ import subprocess
 import sys
 
 import pandas as pd
+from python_api_sources import source_id
 
 from fair_shares.library.paths import find_repo_root
 
@@ -76,11 +77,16 @@ def main() -> None:
     for parquet in parquets:
         df = pd.read_parquet(parquet)
         category = str(df["category"].iloc[0])
+        # Only the folder notebook 601 wrote for this category; others are stale runs.
+        if parquet.parents[2].name != source_id(category):
+            continue
         sliced = df[df["iso3c"].isin(EXAMPLE_COUNTRIES)].reset_index(drop=True)
         out = fixture_dir / f"distributed_{category}.parquet"
         sliced.to_parquet(out, index=False)
         print(f"  {category}: {len(sliced)} rows -> {out.relative_to(project_root)}")
         saved.append(category)
+    if not saved:
+        raise SystemExit("no distributed parquet matched the notebook-601 source ids")
 
     (fixture_dir / "metadata.json").write_text(
         json.dumps(
