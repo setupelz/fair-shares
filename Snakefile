@@ -463,7 +463,7 @@ if uses_scenarios:
                 input:
                     notebook=f"{NOTEBOOK_DIR}/{_scenario_nb_stem}.ipynb",
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
                     lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                 output:
                     notebook=f"{OUTPUT_DIR}/notebooks/{_scenario_nb_stem}.ipynb",
@@ -476,7 +476,7 @@ if uses_scenarios:
                 input:
                     notebook=scenario_notebook,
                     config=f"{OUTPUT_DIR}/config.yaml",
-                    emissions_data=f"{OUTPUT_DIR}/intermediate/emissions/emiss_{emission_category}_timeseries.csv",
+                    emissions_data=_scenario_emissions_input,
                     lulucf_notebook=(f"{OUTPUT_DIR}/notebooks/107_derive_nghgi_categories_{active_lulucf_source}.ipynb" if _needs_lulucf else []),
                     bunker_csv=(f"{OUTPUT_DIR}/intermediate/emissions/bunker_timeseries.csv" if _needs_bunkers else []),
                     scenario_adjustments=f"{OUTPUT_DIR}/intermediate/scenarios/rcb_scenario_adjustments.yaml",

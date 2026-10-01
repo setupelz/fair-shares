@@ -432,8 +432,7 @@ ecpc_data = load_allocation_data(
 ecpc_allocations = {
     "equal-per-capita-budget": [
         {
-            # TODO: Paper uses 1850 as a historical start year. fair-shares accepts
-            # allocation_year from 1850; this notebook runs 1970 and 1990.
+            # The paper's historical start year is 1850; this notebook runs 1970 and 1990.
             "allocation_year": [1970, 1990],
             "cumulative_end_year": [2100],
             "preserve_allocation_year_shares": [False],
