@@ -114,6 +114,14 @@ Functions for parsing RCB scenarios and converting to allocation-ready budgets.
         heading_level: 4
         show_source: false
 
+### convention_gap_from_baseline
+
+::: fair_shares.library.utils.data.rcb.convention_gap_from_baseline
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
 ### calculate_budget_from_rcb
 
 ::: fair_shares.library.utils.data.rcb.calculate_budget_from_rcb

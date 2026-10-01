@@ -615,10 +615,10 @@ if rcb_data["rcb_data"]:
 # %%
 from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 
-# Always pass PRIMAP fossil (co2-ffi) as world emissions;
-# for total CO2, also pass BM LULUCF for rebase
+# Always pass fossil (co2-ffi) as world emissions;
+# for total CO2, also pass observed NGHGI LULUCF for the rebase
 world_fossil_emissions = ensure_string_year_columns(world_emiss["co2-ffi"])
-actual_bm_lulucf = (
+world_nghgi_lulucf = (
     ensure_string_year_columns(world_emiss["co2-lulucf"])
     if "co2-lulucf" in world_emiss
     else None
@@ -632,7 +632,7 @@ rcb_df = load_and_process_rcbs(
     data_dir=project_root / "data",
     output_dir=project_root / "output",
     source_id=source_id,
-    actual_bm_lulucf_emissions=actual_bm_lulucf,
+    world_nghgi_lulucf_emissions=world_nghgi_lulucf,
     verbose=True,
 )
 

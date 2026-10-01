@@ -11,7 +11,8 @@ Sign conventions:
 - Deductions returned as positive floats (calling code negates as needed)
 
 Data structure notes:
-- NGHGI LULUCF file: CSV produced by notebook 107 (Melo v3.1)
+- NGHGI LULUCF file: CSV produced by notebook 107 from the active LULUCF
+  source (Melo et al., v3.1.1 or v4.0.0)
 - Bunker file: CSV produced by notebook 108 from the active bunker source
 - AR6 category constants: YAML produced by notebook 104 (scenario preprocessing)
 """
@@ -29,7 +30,8 @@ def load_world_co2_lulucf(path: str | Path) -> tuple[pd.DataFrame, int]:
     """Load world-total NGHGI LULUCF CO2 timeseries from notebook-produced CSV.
 
     Reads the world-total NGHGI-reported LULUCF CO2 values produced by
-    notebook 107 (Melo v3.1). The CSV has a single row with a "source" index
+    notebook 107 from the active LULUCF source (Melo et al., v3.1.1 or
+    v4.0.0). The CSV has a single row with a "source" index
     and string year columns. Values are in MtCO2/yr (negative = net sink).
 
     The splice year (last year of NGHGI data) is derived dynamically from the
@@ -232,7 +234,7 @@ def build_nghgi_world_co2_timeseries(
     per-year world CO2 = fossil - bunkers + LULUCF. The world CO2-FFI series
     already excludes international bunkers, so the result is fossil + LULUCF,
     where LULUCF uses:
-    - 2000 onwards: NGHGI LULUCF (e.g. Melo v3.1)
+    - 2000 onwards: NGHGI LULUCF (e.g. Melo et al.)
     - Pre-2000: NaN (no fallback — NGHGI coverage only)
 
     No NGHGI/BM splicing is performed. Years outside NGHGI coverage are NaN.

@@ -401,7 +401,7 @@ sources:
       derived from the IPCC AR6 Scenarios Database.
     downloads:
       - target: "rcbs/rcbs.yaml"
-        sha256: "cc74c9003de9a6f6be19f08a1288e38ef410552fd7151c2211064162aef1c8d2"
+        sha256: "ba810a80fd83d18773bd5424e934765788d3462286db695d28e33f33169d9c06"
       - target: "rcbs/ar6_scenario_nz_years.parquet"
         sha256: "3df82c7ecfcf7b80782d666093d117e204f75e5e74f0c5ae1f22de80336a8ffc"
 

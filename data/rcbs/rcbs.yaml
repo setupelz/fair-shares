@@ -13,6 +13,9 @@
 #         the temperature in the label. One band serves every likelihood of T.
 #         A remaining carbon budget runs to net-zero CO2, so the band keeps only
 #         scenarios whose CO2 emissions reach zero by 2100.
+#     The two rules differ for scenarios that never reach net-zero CO2:
+#     peak-warming-band leaves them out, while ar6-category applies no such
+#     filter and integrates their deductions to 2100.
 #
 # Sources report at slightly different probability levels:
 #   - AR6/Forster 2024: 67% and 83% (mapped to 2p66, 2p83)

@@ -446,20 +446,20 @@ class TestProcessRcbTo2020BaselineRegression:
 
 
 # ---------------------------------------------------------------------------
-# process_rcb_to_2020_baseline — co2 category with actual BM LULUCF rebase
+# process_rcb_to_2020_baseline — co2 category with NGHGI LULUCF rebase
 # ---------------------------------------------------------------------------
 
 
 class TestProcessRcbTo2020BaselineWithCo2Rebase:
-    """Tests for co2 emission category including actual BM LULUCF in rebase."""
+    """Tests for co2 emission category including observed NGHGI LULUCF in rebase."""
 
     @pytest.fixture
     def ffi_emissions(self) -> pd.DataFrame:
         return _make_ffi_emissions({2020: 9000.0, 2021: 9100.0, 2022: 9200.0})
 
     @pytest.fixture
-    def actual_bm_lulucf(self) -> pd.DataFrame:
-        """Actual BM LULUCF emissions: 3000 MtCO2/yr for 2020-2022."""
+    def nghgi_lulucf(self) -> pd.DataFrame:
+        """Observed NGHGI LULUCF emissions: 3000 to 3200 MtCO2/yr for 2020-2022."""
         index = pd.MultiIndex.from_tuples(
             [("World", "Mt * CO2e", "co2-lulucf")],
             names=["iso3c", "unit", "emission-category"],
@@ -467,15 +467,15 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
         data = {"2020": [3000.0], "2021": [3100.0], "2022": [3200.0]}
         return pd.DataFrame(data, index=index)
 
-    def test_co2_rebase_includes_bm_lulucf(self, ffi_emissions, actual_bm_lulucf):
-        """co2 rebase includes fossil + actual BM LULUCF."""
+    def test_co2_rebase_includes_nghgi_lulucf(self, ffi_emissions, nghgi_lulucf):
+        """co2 rebase includes fossil + observed NGHGI LULUCF."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            world_nghgi_lulucf_emissions=nghgi_lulucf,
             bunkers_deduction_mt=0.0,
             lulucf_future_deduction_mt=0.0,
             verbose=False,
@@ -488,15 +488,15 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
         assert result["rebase_lulucf_mt"] == round(expected_lulucf)
         assert result["rebase_total_mt"] == round(expected_total_shift)
 
-    def test_co2ffi_rebase_excludes_bm_lulucf(self, ffi_emissions, actual_bm_lulucf):
-        """co2-ffi rebase uses fossil only, even when actual BM LULUCF is provided."""
+    def test_co2ffi_rebase_excludes_nghgi_lulucf(self, ffi_emissions, nghgi_lulucf):
+        """co2-ffi rebase uses fossil only, even when NGHGI LULUCF is provided."""
         result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
             rcb_baseline_year=2023,
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            world_nghgi_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert result_ffi["rebase_lulucf_mt"] == 0
@@ -504,7 +504,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
         assert result_ffi["rebase_fossil_mt"] == round(expected_fossil)
         assert result_ffi["rebase_total_mt"] == round(expected_fossil)
 
-    def test_co2_rebase_larger_than_ffi_only(self, ffi_emissions, actual_bm_lulucf):
+    def test_co2_rebase_larger_than_ffi_only(self, ffi_emissions, nghgi_lulucf):
         """co2 rebase (fossil + LULUCF) produces larger rcb_2020_nghgi_mt than co2-ffi."""
         result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
@@ -520,13 +520,13 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            world_nghgi_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert result_co2["rcb_2020_nghgi_mt"] > result_ffi["rcb_2020_nghgi_mt"]
 
     def test_baseline_2020_no_rebase_regardless_of_category(
-        self, ffi_emissions, actual_bm_lulucf
+        self, ffi_emissions, nghgi_lulucf
     ):
         """When baseline == 2020, no rebase needed regardless of emission category."""
         result = process_rcb_to_2020_baseline(
@@ -535,14 +535,14 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2020,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            world_nghgi_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert result["rebase_fossil_mt"] == 0
         assert result["rebase_lulucf_mt"] == 0
         assert result["rebase_total_mt"] == 0
 
-    def test_provenance_fields_present(self, ffi_emissions, actual_bm_lulucf):
+    def test_provenance_fields_present(self, ffi_emissions, nghgi_lulucf):
         """All provenance fields must be present in output."""
         result = process_rcb_to_2020_baseline(
             rcb_value=400.0,
@@ -550,7 +550,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            actual_bm_lulucf_emissions=actual_bm_lulucf,
+            world_nghgi_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert "rebase_fossil_mt" in result
@@ -672,7 +672,7 @@ class TestPrecautionaryLulucfCap:
         return {
             "1.5p50": {
                 "bm_lulucf_cumulative_median": -3100.0,
-                "convention_gap_median": -5000.0,
+                "convention_gap_median_from": {2020: -5000.0},
                 "nz_year_median": 2050,
                 "n_scenarios": 10,
             }
@@ -684,7 +684,7 @@ class TestPrecautionaryLulucfCap:
         return {
             "1.5p50": {
                 "bm_lulucf_cumulative_median": 3100.0,
-                "convention_gap_median": -5000.0,
+                "convention_gap_median_from": {2020: -5000.0},
                 "nz_year_median": 2050,
                 "n_scenarios": 10,
             }
@@ -842,7 +842,7 @@ class TestBaselineAwareLulucfIntegration:
         return {
             "1.5p50": {
                 "bm_lulucf_cumulative_median": 7750.0,
-                "convention_gap_median": -2000.0,
+                "convention_gap_median_from": {2020: -2000.0},
                 "nz_year_median": 2050,
                 "n_scenarios": 10,
             }

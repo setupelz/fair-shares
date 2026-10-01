@@ -116,6 +116,66 @@ def net_zero_year(co2_emissions: pd.Series) -> int | None:
     return None
 
 
+def _sum_years(series: pd.Series, first_year: int, last_year: int) -> float:
+    """Sum the years from ``first_year`` to ``last_year`` that ``series`` holds."""
+    years = [str(y) for y in range(first_year, last_year + 1) if str(y) in series.index]
+    return float(series[years].sum()) if years else 0.0
+
+
+def convention_gap_from_baseline(
+    nghgi_lulucf: pd.Series,
+    bm_direct: pd.Series,
+    indirect: pd.Series,
+    baseline_year: int,
+    nz_year: int,
+    splice_year: int,
+) -> float:
+    """
+    Return the NGHGI-minus-BM LULUCF gap of one scenario from the budget baseline.
+
+    The gap converts a budget in the bookkeeping-model (BM) convention to the
+    national-inventory (NGHGI) convention. It covers the years that the
+    published budget covers: the baseline year to the net-zero year of the
+    scenario (Weber et al. 2026, Eqs. 2-3). The years before the baseline are
+    not part of it; the rebase adds observed NGHGI LULUCF for those years.
+
+    - Years up to ``splice_year``: observed NGHGI LULUCF minus the scenario
+      BM LULUCF (AFOLU|Direct).
+    - Years after ``splice_year``: the scenario indirect flux (AFOLU|Indirect),
+      because the direct flux cancels in the difference.
+
+    Parameters
+    ----------
+    nghgi_lulucf : pd.Series
+        Observed world NGHGI LULUCF CO2, indexed by year as a string
+    bm_direct : pd.Series
+        AFOLU|Direct of the scenario, indexed by year as a string
+    indirect : pd.Series
+        AFOLU|Indirect of the scenario, indexed by year as a string
+    baseline_year : int
+        First year of the published budget
+    nz_year : int
+        Net-zero year of the scenario (last year of the gap)
+    splice_year : int
+        Last observed year of ``nghgi_lulucf``
+
+    Returns
+    -------
+    float
+        The cumulative gap from ``baseline_year`` to ``nz_year``. Zero when
+        the net-zero year is before the baseline year. A year that a series
+        does not hold adds nothing.
+    """
+    if nz_year < baseline_year:
+        return 0.0
+    observed_end = min(splice_year, nz_year)
+    observed_gap = _sum_years(nghgi_lulucf, baseline_year, observed_end) - _sum_years(
+        bm_direct, baseline_year, observed_end
+    )
+    scenario_gap = _sum_years(indirect, max(baseline_year, splice_year + 1), nz_year)
+    return observed_gap + scenario_gap
+
+
 def rcb_scenario_set_key(source: str, label: str, selection: str) -> str:
     """
     Name the scenario set behind the deductions of one budget.
@@ -522,7 +582,7 @@ def process_rcb_to_2020_baseline(
     rcb_baseline_year: int,
     emission_category: str,
     world_co2_ffi_emissions: pd.DataFrame,
-    actual_bm_lulucf_emissions: pd.DataFrame | None = None,
+    world_nghgi_lulucf_emissions: pd.DataFrame | None = None,
     world_bunker_emissions: pd.DataFrame | None = None,
     bunkers_deduction_mt: float = 0.0,
     lulucf_future_deduction_mt: float = 0.0,
@@ -553,17 +613,18 @@ def process_rcb_to_2020_baseline(
       ``lulucf_future_deduction_mt`` subtracts expected future (base→NZ) BM
       LULUCF, converting the published total-CO2 RCB to an FFI-only RCB.
       ``lulucf_nghgi_correction_mt`` is not used for this category.
-    - **co2**: Rebase uses fossil CO2 + actual bookkeeping-model LULUCF.
-      ``lulucf_nghgi_correction_mt`` applies the NGHGI-vs-BM convention gap
-      from Weber et al. (2026) to re-express the budget against national-
-      inventory accounting. ``lulucf_future_deduction_mt`` is not used for
-      this category; the budget retains both FFI and LULUCF.
+    - **co2**: Rebase uses fossil CO2 + observed LULUCF in the national-
+      inventory (NGHGI) convention. ``lulucf_nghgi_correction_mt`` applies
+      the NGHGI-vs-BM convention gap from the baseline year to net zero
+      (Weber et al. 2026), which re-expresses the published budget against
+      national-inventory accounting. ``lulucf_future_deduction_mt`` is not
+      used for this category; the budget retains both FFI and LULUCF.
 
     The calculation follows these steps:
     1. Convert RCB from source unit to Mt * CO2e
     2. If baseline_year > 2020: Add actual emissions from 2020 to
        (baseline_year - 1) — fossil + bunkers for co2-ffi, fossil + bunkers
-       + BM LULUCF for co2
+       + NGHGI LULUCF for co2
     3. Subtract bunkers deduction from 2020 to net zero (always reduces budget)
     4. Apply LULUCF deduction (sign-ready from caller)
 
@@ -574,8 +635,8 @@ def process_rcb_to_2020_baseline(
       (increases fossil budget), capped at 0 if caller applies a
       precautionary rule. Zero for co2.
     - lulucf_nghgi_correction_mt: sign-ready from caller (added directly).
-      For co2: the NGHGI-vs-BM convention gap from Weber et al. (2026),
-      typically negative. Zero for co2-ffi.
+      For co2: the NGHGI-vs-BM convention gap from the baseline year to
+      net zero (Weber et al. 2026), typically negative. Zero for co2-ffi.
 
     Parameters
     ----------
@@ -586,14 +647,15 @@ def process_rcb_to_2020_baseline(
     rcb_baseline_year : int
         The year from which the RCB is calculated (must be >= 2020)
     emission_category : str
-        Emission category: "co2-ffi" or "co2". Controls whether BM LULUCF
-        is included in the rebase.
+        Emission category: "co2-ffi" or "co2". Controls whether NGHGI
+        LULUCF is included in the rebase.
     world_co2_ffi_emissions : pd.DataFrame
         World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e).
         Excludes international bunkers.
-    actual_bm_lulucf_emissions : pd.DataFrame or None, optional
-        Actual bookkeeping-model LULUCF CO2 emissions (e.g. PRIMAP), with year
-        columns (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
+    world_nghgi_lulucf_emissions : pd.DataFrame or None, optional
+        Observed world LULUCF CO2 emissions in the national-inventory (NGHGI)
+        convention (e.g. the Melo et al. world row), with year columns
+        (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
     world_bunker_emissions : pd.DataFrame or None, optional
         International bunker CO2 emissions timeseries with year columns
         (in Mt * CO2e). Required when baseline_year > 2020 and
@@ -606,9 +668,9 @@ def process_rcb_to_2020_baseline(
         sign-ready (default: 0.0). Non-zero for co2-ffi only, where it
         subtracts LULUCF to convert a total-CO2 RCB to FFI-only.
     lulucf_nghgi_correction_mt : float, optional
-        NGHGI-vs-BM convention correction in Mt * CO2e, sign-ready
-        (default: 0.0). Non-zero for co2 only, where it re-expresses the
-        budget from bookkeeping-model to NGHGI accounting.
+        NGHGI-vs-BM convention gap from the baseline year to net zero in
+        Mt * CO2e, sign-ready (default: 0.0). Non-zero for co2 only, where it
+        re-expresses the budget from bookkeeping-model to NGHGI accounting.
     target_baseline_year : int, optional
         Target baseline year for standardization (default: 2020)
     source_name : str, optional
@@ -628,12 +690,12 @@ def process_rcb_to_2020_baseline(
         - 'baseline_year': Original baseline year
         - 'rebase_total_mt': Emissions added to rebase from source year to 2020
           (positive, Mt * CO2e); fossil + bunkers for co2-ffi, fossil + bunkers
-          + actual BM LULUCF for co2
+          + observed NGHGI LULUCF for co2
         - 'rebase_fossil_mt': Fossil-only component of rebase (Mt * CO2e)
         - 'rebase_bunkers_mt': International bunker component of rebase
           (Mt * CO2e)
-        - 'rebase_lulucf_mt': Actual BM LULUCF component of rebase (Mt * CO2e);
-          only non-zero for co2
+        - 'rebase_lulucf_mt': Observed NGHGI LULUCF component of rebase
+          (Mt * CO2e); only non-zero for co2
         - 'deduction_bunkers_mt': Bunker fuel deduction (negative, Mt * CO2e)
         - 'deduction_lulucf_future_mt': projected-LULUCF deduction applied
           to convert total-CO2 → FFI-only. Non-zero for co2-ffi, zero for co2.
@@ -710,13 +772,13 @@ def process_rcb_to_2020_baseline(
                 f"world_bunker_emissions."
             )
 
-        # BM LULUCF rebase — only for co2 (total CO2 needs LULUCF in rebase)
+        # NGHGI LULUCF rebase — only for co2 (total CO2 needs LULUCF in rebase)
         # For co2-ffi, LULUCF is omitted because it cancels with the LULUCF
         # decomposition
         rebase_lulucf_mt = 0.0
-        if emission_category == "co2" and actual_bm_lulucf_emissions is not None:
+        if emission_category == "co2" and world_nghgi_lulucf_emissions is not None:
             missing_years = missing_rebase_years(
-                rcb_baseline_year, actual_bm_lulucf_emissions, target_baseline_year
+                rcb_baseline_year, world_nghgi_lulucf_emissions, target_baseline_year
             )
             if missing_years:
                 raise DataProcessingError(
@@ -726,7 +788,9 @@ def process_rcb_to_2020_baseline(
                     f"{target_baseline_year}-{rcb_baseline_year - 1}, but the "
                     f"emissions data lack {missing_years}."
                 )
-            rebase_lulucf_mt = actual_bm_lulucf_emissions[year_cols].sum(axis=1).iloc[0]
+            rebase_lulucf_mt = (
+                world_nghgi_lulucf_emissions[year_cols].sum(axis=1).iloc[0]
+            )
 
         rebase_total_mt = rebase_fossil_mt + rebase_bunkers_mt + rebase_lulucf_mt
 
@@ -747,7 +811,7 @@ def process_rcb_to_2020_baseline(
             )
             if emission_category == "co2":
                 print(
-                    f"      Adding actual BM LULUCF emissions "
+                    f"      Adding observed NGHGI LULUCF emissions "
                     f"({target_baseline_year}-{rcb_baseline_year - 1}): "
                     f"+{rebase_lulucf_mt:.1f} Mt * CO2e"
                 )
@@ -802,7 +866,7 @@ def process_rcb_to_2020_baseline(
             )
         if correction_lulucf_nghgi_mt != 0:
             print(
-                f"      LULUCF NGHGI correction: "
+                f"      LULUCF NGHGI correction ({rcb_baseline_year}-NZ): "
                 f"{correction_lulucf_nghgi_mt:.1f} Mt * CO2e"
             )
         print(

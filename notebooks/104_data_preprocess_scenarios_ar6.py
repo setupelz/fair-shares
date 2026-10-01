@@ -65,6 +65,7 @@ from fair_shares.library.utils.data.rcb import (
     NET_ZERO_YEAR_COLUMN,
     PEAK_WARMING_COLUMN,
     build_rcb_scenario_sets,
+    convention_gap_from_baseline,
     net_zero_year,
 )
 from fair_shares.library.utils.dataframes import normalize_metadata_column
@@ -837,8 +838,10 @@ if "non-co2" in derived_to_process or "non-co2" in final_categories:
 # Scalars computed per scenario set:
 # - `bm_lulucf_cumulative_median`: median of per-scenario cumulative BM LULUCF
 #   (= AFOLU|Direct), each integrated to its own NZ year
-# - `convention_gap_median`: median of per-scenario cumulative convention gap
-#   (historical NGHGI-Direct + future Indirect), each integrated to its own NZ year
+# - `convention_gap_median_from`: one entry per RCB baseline year. Each is the
+#   median of the per-scenario convention gap (observed NGHGI minus Direct up to
+#   the splice year, Indirect after it) from that baseline year to the
+#   scenario's own NZ year
 # - `nz_year_median`, `nz_year_min`, `nz_year_max`: net-zero year statistics
 # - `n_scenarios`: number of scenarios in the set
 
@@ -876,11 +879,15 @@ _rcb_target = config.get("active_target_source", active_target_source)
 _rcb_path = config["targets"].get(_rcb_target, {}).get("path")
 if _rcb_path:
     with open(project_root / _rcb_path) as f:
-        rcb_scenario_sets = build_rcb_scenario_sets(
-            yaml.safe_load(f), scenario_metadata
-        )
+        _rcb_yaml = yaml.safe_load(f)
+    rcb_scenario_sets = build_rcb_scenario_sets(_rcb_yaml, scenario_metadata)
+    # The convention gap of a budget starts at the baseline year of its source.
+    rcb_baseline_years = sorted(
+        {source["baseline_year"] for source in _rcb_yaml["rcb_data"].values()}
+    )
 else:
     rcb_scenario_sets = {}
+    rcb_baseline_years = []
     print(f"  Target '{_rcb_target}' has no RCB file: no RCB adjustments computed.")
 
 
@@ -924,19 +931,12 @@ for set_key, scenario_set in rcb_scenario_sets.items():
     year_cols = [col for col in sample_df.columns if col.isdigit()]
     sorted_year_cols = sorted(year_cols, key=int)
 
-    # --- Per-scenario NZ years (from total CO2 BM crossing zero) ---
-    total_indexed = cat_total.set_index(["Model", "Scenario"])[sorted_year_cols]
+    # --- Per-scenario NZ years, from the metadata column that the band rule reads ---
+    reached_nz = scenario_set.set_index(["Model", "Scenario"])[
+        NET_ZERO_YEAR_COLUMN
+    ].loc[cat_total.set_index(["Model", "Scenario"]).index]
     # A scenario that never reaches net zero is integrated to 2100.
-    reached_nz = {
-        scenario_key: net_zero_year(total_indexed.loc[scenario_key])
-        for scenario_key in total_indexed.index
-    }
-    nz_years_dict = {
-        scenario_key: nz_year if nz_year is not None else 2100
-        for scenario_key, nz_year in reached_nz.items()
-    }
-
-    nz_series = pd.Series(nz_years_dict, dtype=int)
+    nz_series = reached_nz.fillna(2100).astype(int)
 
     # --- Per-scenario cumulative BM LULUCF (= Direct) ---
     direct_indexed = cat_direct.set_index(["Model", "Scenario"])[sorted_year_cols]
@@ -957,8 +957,8 @@ for set_key, scenario_set in rcb_scenario_sets.items():
         else 0.0
     )
 
-    # --- Per-scenario convention gap (historical NGHGI-Direct + future Indirect) ---
-    gap_median = 0.0
+    # --- Per-scenario convention gap from each baseline year, then the median ---
+    gap_median_from = {year: 0.0 for year in rcb_baseline_years}
     if nghgi_world_available:
         cat_indirect = rows_of_scenario_set(
             rcb_scenario_data["AFOLU_indirect"], scenario_set
@@ -967,57 +967,42 @@ for set_key, scenario_set in rcb_scenario_sets.items():
             sorted_year_cols
         ]
         common_all = common_scenarios.intersection(indirect_indexed.index)
+        nghgi_lulucf = nghgi_world_df.iloc[0]
 
-        per_scenario_gaps = []
-        for sk in common_all:
-            nz = nz_series[sk]
-            hist_end = min(nghgi_splice_year, nz)
-
-            # Historical: NGHGI - Direct
-            from fair_shares.library.utils.data.nghgi import (
-                compute_cumulative_emissions,
-            )
-
-            nghgi_hist = compute_cumulative_emissions(nghgi_world_df, 2020, hist_end)
-            hist_cols = [
-                str(y) for y in range(2020, hist_end + 1) if str(y) in sorted_year_cols
+        for baseline_year in rcb_baseline_years:
+            per_scenario_gaps = [
+                convention_gap_from_baseline(
+                    nghgi_lulucf=nghgi_lulucf,
+                    bm_direct=direct_indexed.loc[sk],
+                    indirect=indirect_indexed.loc[sk],
+                    baseline_year=baseline_year,
+                    nz_year=int(nz_series[sk]),
+                    splice_year=nghgi_splice_year,
+                )
+                for sk in common_all
             ]
-            direct_hist = (
-                float(direct_indexed.loc[sk, hist_cols].sum()) if hist_cols else 0.0
-            )
-            hist_gap = nghgi_hist - direct_hist
-
-            # Future: Indirect only (Direct cancels in the gap)
-            future_gap = 0.0
-            if nz > nghgi_splice_year:
-                future_cols = [
-                    str(y)
-                    for y in range(nghgi_splice_year + 1, nz + 1)
-                    if str(y) in sorted_year_cols
-                ]
-                if future_cols:
-                    future_gap = float(indirect_indexed.loc[sk, future_cols].sum())
-
-            per_scenario_gaps.append(hist_gap + future_gap)
-
-        gap_median = (
-            float(pd.Series(per_scenario_gaps).median()) if per_scenario_gaps else 0.0
-        )
+            if per_scenario_gaps:
+                gap_median_from[baseline_year] = float(
+                    pd.Series(per_scenario_gaps).median()
+                )
 
     # Store results
     rcb_adjustments[set_key] = {
         "bm_lulucf_cumulative_median": round(bm_median, 1),
-        "convention_gap_median": round(gap_median, 1),
+        "convention_gap_median_from": {
+            int(year): round(gap, 1) for year, gap in gap_median_from.items()
+        },
         "nz_year_median": int(nz_series.median()),
         "nz_year_min": int(nz_series.min()),
         "nz_year_max": int(nz_series.max()),
         "n_scenarios": len(nz_series),
-        "n_reaching_nz": sum(nz_year is not None for nz_year in reached_nz.values()),
+        "n_reaching_nz": int(reached_nz.notna().sum()),
     }
 
+    gaps_text = ", ".join(f"{y}: {g:.0f}" for y, g in gap_median_from.items())
     print(
         f"  {set_key}: n={len(nz_series)}, NZ_med={int(nz_series.median())}, "
-        f"BM_LULUCF={bm_median:.0f} Mt, gap={gap_median:.0f} Mt"
+        f"BM_LULUCF={bm_median:.0f} Mt, gap from baseline year (Mt): {gaps_text}"
     )
 
 # Save RCB adjustments as YAML
