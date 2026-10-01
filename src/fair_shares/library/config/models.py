@@ -14,6 +14,29 @@ from fair_shares.library.exceptions import ConfigurationError
 from fair_shares.library.utils.dataframes import validate_path_exists
 
 
+class EmissionsCoverage(BaseModel, extra="forbid"):
+    """Opt-in rule for which countries are analysis countries.
+
+    A country that fails a test joins rest-of-world. The rule is applied in
+    ``fair_shares.library.preprocessing.coverage.coverage_exclusions``.
+    """
+
+    emissions_recorded_before: int | None = Field(
+        None,
+        description=(
+            "The raw emissions file must hold a value for the country in a "
+            "year before this one. Zero-filled blanks do not count."
+        ),
+    )
+    population_from: int | None = Field(
+        None,
+        description=(
+            "The population series must hold a value for every year from this "
+            "one through its last year."
+        ),
+    )
+
+
 class EmissionsDataParameters(BaseModel):
     """Parameters for emissions data source."""
 
@@ -29,6 +52,13 @@ class EmissionsDataParameters(BaseModel):
         description=(
             "Registry name of the international bunker data paired with this "
             "source. Omit to use the default (gcb-2024)."
+        ),
+    )
+    coverage: EmissionsCoverage | None = Field(
+        None,
+        description=(
+            "Opt-in coverage rule for analysis countries. Omit to keep the "
+            "default completeness check alone."
         ),
     )
 

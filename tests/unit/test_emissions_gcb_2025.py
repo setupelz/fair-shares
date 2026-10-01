@@ -15,6 +15,8 @@ from fair_shares.library.config.models import (
 )
 from fair_shares.library.data_registry import load_registry, normalise_target
 from fair_shares.library.exceptions import ConfigurationError
+from fair_shares.library.preprocessing import coverage_exclusions
+from fair_shares.library.utils import add_row_timeseries
 from fair_shares.library.utils.data.config import (
     get_bunkers_source,
     get_emission_preprocessing_categories,
@@ -29,10 +31,13 @@ from fair_shares.library.utils.data.gcb import (
     VALUE,
     YEAR,
     gcb_bunkers,
+    gcb_first_recorded_year,
     gcb_fossil_co2,
 )
 
 KEY = "gcb-2025"
+# Analysis countries under the default rule with no GCB record before 1990.
+NO_RECORD_BEFORE_1990 = {"AND", "FSM", "LSO", "MHL", "NAM", "PLW", "TLS", "TUV"}
 ALL_CATEGORIES = [
     "co2-ffi",
     "co2",
@@ -194,3 +199,54 @@ def test_world_closure_on_the_real_file():
     bunkers = gcb_bunkers(raw).loc["bunkers"]
     assert (bunkers - excluded.loc[[SHIPPING, AVIATION]].sum()).abs().max() == 0
     assert excluded.loc[OIL_FIRES, "1991"] == pytest.approx(477.924832)
+
+
+def test_coverage_rule_on_the_real_file_moves_late_records_to_rest_of_world():
+    """Countries without a record before 1990 join rest-of-world; the world closes."""
+    config = _config()
+    assert config["data_parameters"]["coverage"] == {
+        "emissions_recorded_before": 1990,
+        "population_from": 1850,
+    }
+    paths.reset_path_cache()
+    path = paths.resolve_source_path(config["path"])
+    if not path.exists():
+        pytest.skip("GCB 2025 file not fetched")
+    raw = pd.read_csv(path)
+    world_key = config["data_parameters"]["world_key"]
+    every_code = set(raw[ISO].dropna()) - {GLOBAL, SHIPPING, AVIATION}
+    emissions, _ = gcb_fossil_co2(raw, every_code, world_key)
+
+    first = gcb_first_recorded_year(raw, every_code)
+    assert first[sorted(NO_RECORD_BEFORE_1990)].to_dict() == {
+        "AND": 1990,
+        "FSM": 1992,
+        "LSO": 1990,
+        "MHL": 1992,
+        "NAM": 1991,
+        "PLW": 1992,
+        "TLS": 1994,
+        "TUV": 1990,
+    }
+    # Their zero-filled 1850-1989 series is all zero, which the rule keeps out.
+    early = [str(y) for y in range(1850, 1990)]
+    values = emissions.droplevel(["unit", "emission-category"])
+    assert (values.loc[sorted(NO_RECORD_BEFORE_1990), early] == 0).all().all()
+
+    rule = {"emissions_recorded_before": 1990}
+    excluded = coverage_exclusions(every_code, pd.DataFrame(), rule, first)
+    assert NO_RECORD_BEFORE_1990 <= set(excluded)
+    analysis = every_code - set(excluded)
+    assert (values.loc[sorted(analysis), early].sum(axis=1) > 0).all()
+
+    # Rest-of-world absorbs the moved countries: countries + ROW = world row.
+    index = ["iso3c", "unit", "emission-category"]
+    world = emissions[emissions.index.get_level_values("iso3c") == world_key]
+    complete = add_row_timeseries(emissions, analysis, world, index, verbose=False)
+    codes = complete.index.get_level_values("iso3c")
+    assert set(codes) == analysis | {"ROW"}
+    assert (complete.sum() - world.iloc[0]).abs().max() < 1e-6
+    # Its increase equals the emissions of the excluded countries.
+    before = add_row_timeseries(emissions, every_code, world, index, verbose=False)
+    gain = complete[codes == "ROW"].iloc[0] - before.xs("ROW", level="iso3c").iloc[0]
+    assert (gain - values.loc[sorted(excluded)].sum()).abs().max() < 1e-9

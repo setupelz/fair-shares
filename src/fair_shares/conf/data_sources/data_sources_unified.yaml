@@ -54,6 +54,8 @@ emissions:
       available_categories: [co2-ffi]
       world_key: "WLD"
       bunkers_source: "gcb-2025"
+      # An analysis country needs an emissions record before 1990 and population from 1850; the others join rest-of-world.
+      coverage: { emissions_recorded_before: 1990, population_from: 1850 }
 
 # --- GDP ---------------------------------------------------------------------
 gdp:

@@ -290,6 +290,9 @@ rule compose_config:
     All validation logic is in config/models.py (Pydantic).
     The Snakefile only does minimal checks — Pydantic does comprehensive validation.
     """
+    input:
+        # build_data_config composes the output config from this packaged file
+        sources_yaml=str(packaged_config("data_sources/data_sources_unified.yaml")),
     output:
         config=f"{OUTPUT_DIR}/config.yaml",
     params:

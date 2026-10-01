@@ -43,6 +43,7 @@ from fair_shares.library.preprocessing import (
     complete_gini,
     emissions_path,
     gini_missing_policy,
+    source_coverage_exclusions,
 )
 from fair_shares.library.utils import (
     add_row_timeseries,
@@ -404,6 +405,14 @@ if alignment_categories:
 # Load region mapping to get the full list of countries
 all_region_countries = set(region_mapping["iso3c"].unique())
 
+# Opt-in coverage rule of the emissions source: failing countries join ROW.
+coverage_rule_failed = source_coverage_exclusions(
+    all_region_countries, population, emissions_data_parameters, emiss_intermediate_dir
+)
+moved_to_row = sorted(analysis_countries & set(coverage_rule_failed))
+analysis_countries = analysis_countries - set(coverage_rule_failed)
+print(f"Moved to ROW by the coverage rule: {len(moved_to_row)} {moved_to_row}")
+
 # Create summary dataframe
 coverage_summary = pd.DataFrame({"iso3c": sorted(all_region_countries)})
 
@@ -433,6 +442,12 @@ coverage_summary["gini_imputed"] = (
 coverage_summary["in_row"] = coverage_summary["iso3c"].isin(
     all_region_countries
 ) & ~coverage_summary["iso3c"].isin(analysis_countries)
+
+# Sources with a coverage rule get one more column: the failed tests.
+if emissions_data_parameters.get("coverage"):
+    coverage_summary["coverage_rule_failed"] = (
+        coverage_summary["iso3c"].map(coverage_rule_failed).fillna("")
+    )
 
 # Calculate summary statistics
 total_countries = len(coverage_summary)

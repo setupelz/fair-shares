@@ -15,6 +15,7 @@ from ..exceptions import ConfigurationError, DataLoadingError
 from ..paths import data_dir as resolve_data_dir
 from ..paths import output_dir as resolve_output_dir
 from ..paths import resolve_source_path
+from ..preprocessing.coverage import source_coverage_exclusions
 from ..preprocessing.gini import complete_gini, gini_missing_policy
 from ..preprocessing.loaders import (
     load_emissions_data as _load_emissions,
@@ -241,7 +242,14 @@ class DataPreprocessor:
 
         country_iso3c = complete_sets[0].intersection(*complete_sets[1:])
 
-        return country_iso3c
+        # Opt-in coverage rule of the emissions source: failing countries join ROW.
+        excluded = source_coverage_exclusions(
+            country_iso3c,
+            population,
+            self.config["emissions"][self.active_emissions_source]["data_parameters"],
+            self.emiss_intermediate_dir,
+        )
+        return country_iso3c - set(excluded)
 
     def save_processed_data(
         self,

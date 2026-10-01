@@ -69,6 +69,8 @@ emissions:
       world_key: "WORLD" # How the source identifies global totals
       scenario: "HISTCR" # Optional: historical scenario identifier
       bunkers_source: "gcb-2024" # Optional: registry name of the bunker data
+      # Optional: coverage rule for analysis countries
+      coverage: { emissions_recorded_before: 1990, population_from: 1850 }
 ```
 
 ### Common Configuration Parameters
@@ -80,8 +82,11 @@ emissions:
 | `world_key`            | String used to identify global totals in the data |
 | `scenario`             | Optional. Historical scenario, for sources that have one |
 | `bunkers_source`       | Optional. Bunker data paired with an emissions source (default `gcb-2024`) |
+| `coverage`             | Optional. Coverage rule for analysis countries (default: none) |
 
 The pipeline asks an emissions source only for the categories in `available_categories`. A source that declares `co2-ffi` alone, such as `gcb-2025`, runs one pass of its notebook 101 and supports `co2-ffi` runs.
+
+By default, an analysis country has complete emissions, GDP and population from 1990 through the last year of each dataset. A `coverage` block adds two tests, and a country that fails either one joins rest-of-world. `emissions_recorded_before` requires a value in the raw emissions file in a year before the threshold. `population_from` requires population for every year from the threshold. A source that zero-fills blank years needs the first test, because a blank and a reported zero look the same after the fill. Its notebook 101 writes `emiss_<category>_first_recorded_year.csv` (columns `iso3c`, `first_recorded_year`) for each category it provides. The rule is `coverage_exclusions` in `src/fair_shares/library/preprocessing/coverage.py`. `country_data_coverage_summary.csv` names the failed test for each country in the column `coverage_rule_failed`. A source without the block keeps the default check alone, and its coverage summary has no such column. `gcb-2025` sets both tests.
 
 Add every new source to `src/fair_shares/conf/data_registry.yaml` with its URL, checksums, licence and citation, and record each DOI in `tests/fixtures/verified_dois.yaml`. The config validates the path of every configured source, so a registered source downloads on first use.
 

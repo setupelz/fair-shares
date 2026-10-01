@@ -70,6 +70,21 @@ def gcb_fossil_co2(
     return emissions, excluded
 
 
+def gcb_first_recorded_year(
+    raw: pd.DataFrame, countries: set[str], first_year: int = 1850
+) -> pd.Series:
+    """Return the first year from ``first_year`` with a value in the raw file.
+
+    One entry per code in ``countries`` that has a record, indexed by iso3c.
+    A blank is not a record, and a reported zero is. After the zero-fill the
+    two look the same, so the coverage rule reads this table.
+    """
+    recorded = raw[(raw[YEAR] >= first_year) & raw[VALUE].notna()]
+    recorded = recorded[recorded[ISO].isin(countries)]
+    first = recorded.groupby(ISO)[YEAR].min()
+    return first.rename("first_recorded_year").rename_axis("iso3c")
+
+
 def gcb_bunkers(raw: pd.DataFrame, first_year: int = 1850) -> pd.DataFrame:
     """Return international shipping plus aviation as the single ``bunkers`` row."""
     wide = _wide(raw, first_year)

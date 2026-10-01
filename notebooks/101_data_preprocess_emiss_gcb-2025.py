@@ -47,6 +47,12 @@
 #      column and in no country column: its Palau column is blank before 1992
 #      and its Japan column equals the flat-file Japan row without Ryukyu.
 #
+# The notebook also saves each country's first recorded year to
+# `emiss_co2-ffi_first_recorded_year.csv`. After the zero-fill a blank and a
+# reported zero look the same, so the coverage rule of this source reads that
+# table: a country with no record before 1990, or without population from
+# 1850, joins rest-of-world (`coverage` in `data_sources_unified.yaml`).
+#
 # **Output:** `intermediate/emissions/emiss_co2-ffi_timeseries.csv`
 
 # %%
@@ -55,8 +61,9 @@ import yaml
 from pyprojroot import here
 
 from fair_shares.library.exceptions import ConfigurationError
+from fair_shares.library.preprocessing import FIRST_RECORDED_YEAR_FILENAME
 from fair_shares.library.utils import build_source_id
-from fair_shares.library.utils.data.gcb import gcb_fossil_co2
+from fair_shares.library.utils.data.gcb import gcb_first_recorded_year, gcb_fossil_co2
 
 # %% tags=["parameters"]
 emission_category = None
@@ -121,7 +128,9 @@ intermediate_dir.mkdir(parents=True, exist_ok=True)
 raw = pd.read_csv(project_root / emissions_config["path"])
 region_mapping = pd.read_csv(project_root / config["general"]["region_mapping"]["path"])
 
-emissions, excluded = gcb_fossil_co2(raw, set(region_mapping["iso3c"]), world_key)
+countries = set(region_mapping["iso3c"])
+emissions, excluded = gcb_fossil_co2(raw, countries, world_key)
+first_recorded_year = gcb_first_recorded_year(raw, countries)
 
 # %%
 emissions.reset_index().to_csv(
@@ -130,6 +139,10 @@ emissions.reset_index().to_csv(
 excluded.reset_index().to_csv(
     intermediate_dir / "emiss_co2-ffi_excluded_timeseries.csv", index=False
 )
+first_recorded_year.reset_index().to_csv(
+    intermediate_dir / FIRST_RECORDED_YEAR_FILENAME.format(category="co2-ffi"),
+    index=False,
+)
 
 # %% [markdown]
 # ## Summary
@@ -137,6 +150,8 @@ excluded.reset_index().to_csv(
 # %%
 world = emissions.xs(world_key, level="iso3c").iloc[0]
 print(f"Country rows: {len(emissions) - 1}")
+late = first_recorded_year[first_recorded_year >= 1990]
+print(f"First record in 1990 or later: {late.to_dict()}")
 print(f"Years: {emissions.columns[0]} to {emissions.columns[-1]}")
 print(f"World row ({world_key}) in 2024: {world['2024']:.1f} MtCO2")
 print("Excluded from the world row in 2024 (MtCO2):")
