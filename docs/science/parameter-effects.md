@@ -13,7 +13,7 @@ This page shows how each parameter changes the result for three countries:
 - **India**: large population, low historical emissions per capita
 - **Germany**: medium population, high historical emissions and GDP per capita
 
-**Data and version:** fair-shares 0.3.0 with the default data sources. Emissions are fossil and industry CO2 (`co2-ffi`) from PRIMAP-hist v2.8 (`primap-202609`, to 2025). Population is UN/OWID with the UN WPP 2024 median projection (`un-owid-2025`). GDP is World Bank WDI GDP PPP in constant 2021 international dollars (`wdi-2025`, to 2025). Gini is the World Bank WDI Gini index (`wdi-2025`). The budget is `lamboll_2023` 1.5°C at 50% probability, rebased to 2020: 339.2 GtCO2. The allocation covers 177 countries and one rest-of-world group.
+**Data and version:** fair-shares 0.4.0 with the default data sources. Emissions are fossil and industry CO2 (`co2-ffi`) from PRIMAP-hist v2.8 (`primap-202609`, to 2025). Population is UN/OWID with the UN WPP 2024 median projection (`un-owid-2025`). GDP is World Bank WDI GDP PPP in constant 2021 international dollars (`wdi-2025`, to 2025). Gini is the World Bank WDI Gini index (`wdi-2025`). The budget is `lamboll_2023` 1.5°C at 50% probability, rebased to 2020: 339.2 GtCO2. The allocation covers 177 countries and one rest-of-world group.
 
 `uv run python notebooks/docs/parameter_effects_examples.py` produces every number on this page.
 [Allocation approaches](allocations.md) explains the design behind each parameter.

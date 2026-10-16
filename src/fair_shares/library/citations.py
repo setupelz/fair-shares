@@ -43,7 +43,12 @@ SCENARIO_SOURCES = {"ar6": "ipcc_ar6_gidden"}
 #: Sources behind the scenario-derived terms of every budget: the scenario
 #: sets, the AR6 bunker pathways and the observed CO2 that expresses each
 #: budget from 2020.
-BUDGET_TERM_SOURCES = ("ipcc_ar6_gidden", "ipcc_ar6_bunkers", "gcb-2025-global")
+BUDGET_TERM_SOURCES = (
+    "ipcc_ar6_gidden",
+    "ipcc_ar6_bunkers",
+    "ipcc_ar6_climate",
+    "gcb-2025-global",
+)
 
 #: `active_sources` values that name something other than a data source, so are
 #: not expected to appear in the registry.
@@ -112,6 +117,17 @@ SPECIAL_TERMS = {
         "policies and embargo rules until Riahi et al. is formally published. "
         "Check those terms before sharing results that draw on it."
     ),
+    "sci-2026": (
+        "The Scenario Compass ensemble may be used for scientific research. "
+        "Its workbook asks users to adhere strictly to the Nature editorial "
+        "policies and embargo rules until Riahi et al. is formally published. "
+        "Check those terms before sharing results that draw on it."
+    ),
+    "scenariomip-cmip7": (
+        "The ScenarioMIP-CMIP7 data may be used for scientific research. "
+        "Redistribution of substantial parts is prohibited. State the release "
+        "version (v0.1) and cite its DOI in every result."
+    ),
     "un-owid-2025": (
         "Our World in Data does not re-license the underlying UN figures. If "
         "you republish population data, check the UN's own terms of use."
@@ -119,12 +135,20 @@ SPECIAL_TERMS = {
 }
 
 
-def _sci_in_bunker_share() -> bool:
-    """Whether the bunker share of rcbs.yaml reads the SCI workbook on this machine."""
+def _bunker_share_scenario_sources() -> list[str]:
+    """Registry names of the scenario files the bunker share reads on this machine.
+
+    AR6 is always a budget-term source. Every other source in
+    ``bunkers.scenario_sources`` of ``rcbs.yaml`` counts when its configured
+    release is present, under that release's registry name.
+    """
     try:
         import yaml
 
         from fair_shares.library import paths
+        from fair_shares.library.utils.data.scenario_sets import (
+            DEFAULT_BUNKER_SOURCES,
+        )
         from fair_shares.library.utils.data.scenario_sources import (
             get_scenario_source,
             source_data_path,
@@ -132,13 +156,21 @@ def _sci_in_bunker_share() -> bool:
 
         rcb_yaml = yaml.safe_load((paths.data_dir() / "rcbs" / "rcbs.yaml").read_text())
         sources = (rcb_yaml.get("bunkers") or {}).get(
-            "scenario_sources", ["ar6", "sci"]
-        )
-        return (
-            "sci" in sources and source_data_path(get_scenario_source("sci")).exists()
+            "scenario_sources", list(DEFAULT_BUNKER_SOURCES)
         )
     except Exception:
-        return False
+        return []
+    names = []
+    for name in sources:
+        if name == "ar6":
+            continue
+        try:
+            source = get_scenario_source(name)
+            if source.get("registry_source") and source_data_path(source).exists():
+                names.append(source["registry_source"])
+        except Exception:
+            continue
+    return names
 
 
 def resolve_source_names(
@@ -183,8 +215,7 @@ def resolve_source_names(
 
         names += ["rcbs", get_bunkers_source(active_sources.get("emissions"))]
         names += [n for n in BUDGET_TERM_SOURCES if n not in names]
-        if _sci_in_bunker_share():
-            names.append("sci-2025")
+        names += [n for n in _bunker_share_scenario_sources() if n not in names]
 
     if _uses_scenarios(target, emission_category):
         scenario = active_sources.get("scenario", "ar6")

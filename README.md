@@ -55,7 +55,7 @@ If you use fair-shares in academic work, policy documents or legal proceedings, 
   title={fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways},
   author={Pelz, Setu and Holz, Ceecee and Lamboll, Robin and Weber, Konstantin and Lewis, Jared and Nicholls, Zebedee},
   year={2026},
-  version={0.3.0},
+  version={0.4.0},
   url={https://github.com/setupelz/fair-shares},
   license={BSD-3-Clause}
 }

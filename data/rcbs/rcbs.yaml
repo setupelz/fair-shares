@@ -31,9 +31,10 @@
 #     1.5p50 -> C1, 2p67 -> C3, 2p50 -> C4. Other labels of the source use the
 #     role-matched sets.
 #   A set below min_scenarios is a configuration error naming the label.
-#   Net zero is the first full year from 2020 at which the climate-assessment
-#   CO2 is at or below zero (AR6 metadata convention). The AR6 net-zero years
-#   are confirmed against the harmonised-infilled CO2 (require_net_zero).
+#   Net zero is the first full year from 2020 at which the harmonised CO2 is
+#   at or below zero. A scenario without one counts as net zero when its
+#   harmonised or reported CO2 falls below 100 Mt CO2/yr by 2100, in the first
+#   such year (AR6 WGIII Table SPM.2, note j; net_zero_years).
 #
 # Labels left out of the defaults (published value, Gt CO2, and the count of
 # the volume-matched set, below min_scenarios):
@@ -41,7 +42,7 @@
 #   - forster_2026 1.5p67 (80): 8 volume-matched scenarios; 1.5p83 (30): 5;
 #     1.5p90 (10): 3.
 #   - ar6_wg1_2021 1.5p83 (300): 6 volume-matched scenarios.
-#   Counts from the AR6 reanalysis of Gidden et al. (2023), net zero confirmed.
+#   Counts from the AR6 reanalysis of Gidden et al. (2023).
 
 # Largest distance between a scenario's cumulative net CO2 from 2020 to net
 # zero and the budget from 2020, in Gt CO2.

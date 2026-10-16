@@ -127,7 +127,7 @@ The cap binds for low-income countries, not for high-inequality ones. Once a cou
 On the default data for 2025 (177 countries and rest-of-world), the 0.8 cap binds for 8 of these 178 at a floor of 2,500, 43 at 7,500, 54 at 10,000, 69 at 15,000 and 86 at 20,000.
 
 The cap level is a values choice, and above a floor of about 5,000 it decides the results.
-With capability weight 1.0 and a floor of 10,000, India's budget share is 14.0% at 0.8, 9.2% at 0.9, 5.3% at 0.95 and 0.4% with no cap.
+With capability weight 1.0 and a floor of 10,000, India's budget share is 14.0% at 0.8, 10.1% at 0.9, 5.9% at 0.95 and 0.5% with no cap ([Parameter effects](parameter-effects.md#income_floor)).
 Set `max_gini_adjustment=0` to switch the Gini correction off.
 It is available on `per-capita-adjusted-gini-budget`, `per-capita-adjusted-gini` and `cumulative-per-capita-convergence-gini-adjusted`.
 
