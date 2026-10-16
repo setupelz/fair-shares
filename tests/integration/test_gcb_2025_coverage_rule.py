@@ -23,7 +23,8 @@ from fair_shares.library.utils import ensure_string_year_columns
 RUN = here() / "output/gcb-2025_wdi-2025_un-owid-2025_wdi-2025_rcbs_co2-ffi"
 PROCESSED = RUN / "intermediate/processed"
 NO_RECORD_BEFORE_1990 = {"AND", "FSM", "LSO", "MHL", "NAM", "PLW", "TLS", "TUV"}
-NO_POPULATION_FROM_1850 = {"MAC"}
+# The OWID population export starts Ireland in 1950 and Macao in 1860.
+NO_POPULATION_FROM_1850 = {"IRL", "MAC"}
 
 
 @pytest.fixture(scope="module")
@@ -39,7 +40,7 @@ def _world_row(folder: str, name: str, world_key: str) -> pd.Series:
     return frame.loc[world_key]
 
 
-def test_the_nine_countries_are_in_rest_of_world_and_totals_close(data):
+def test_rule_countries_are_in_rest_of_world_and_totals_close(data):
     summary = pd.read_csv(PROCESSED / "country_data_coverage_summary.csv")
     summary = summary.set_index("iso3c").fillna({"coverage_rule_failed": ""})
     # A country that the rule alone moves has complete data under the default check.
@@ -51,8 +52,10 @@ def test_the_nine_countries_are_in_rest_of_world_and_totals_close(data):
     assert set(reasons[sorted(NO_RECORD_BEFORE_1990)]) == {
         "no emissions recorded before 1990"
     }
-    assert reasons["MAC"] == "population incomplete from 1850"
-    assert summary["in_analysis"].sum() == 168
+    assert set(reasons[sorted(NO_POPULATION_FROM_1850)]) == {
+        "population incomplete from 1850"
+    }
+    assert summary["in_analysis"].sum() == 167
 
     emissions = data["emissions_data"]["co2-ffi"]
     population = data["country_population_df"]
@@ -98,7 +101,7 @@ def test_responsibility_from_1850_gives_complete_shares(data, per_capita):
         pre_allocation_responsibility_per_capita=per_capita,
     )
     shares = result.relative_shares_cumulative_emission["1990"]
-    assert len(shares) == 169
+    assert len(shares) == 168
     assert not shares.isna().any()
     assert shares.sum() == pytest.approx(1.0, abs=1e-9)
 
@@ -111,6 +114,6 @@ def test_fixed_1850_population_shares_are_complete(data):
         preserve_allocation_year_shares=True,
     )
     shares = result.relative_shares_cumulative_emission["1850"]
-    assert len(shares) == 169
+    assert len(shares) == 168
     assert not shares.isna().any()
     assert shares.sum() == pytest.approx(1.0, abs=1e-9)

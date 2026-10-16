@@ -14,14 +14,15 @@ memory and returns a :class:`ResultContainer`, so downstream consumers (e.g. a
 front-end data build) never have to execute the notebook or manage its output
 directories. The heavy lifting still lives in the existing library functions
 (``setup_data``, ``run_all_allocations``, ``distribute_remaining_budgets_pathways``);
-this module only ports the notebook's §5/§6 orchestration and the historical
-coverage bookkeeping, and ties it together per (anchor, category).
+this module holds the §5/§6 orchestration, which notebook 601 also calls, and
+the historical coverage bookkeeping, and ties it together per (anchor, category).
 """
 
 from __future__ import annotations
 
 import json
 import logging
+import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -29,11 +30,12 @@ from typing import Any
 
 import pandas as pd
 
+from fair_shares.library.allocations.coverage import ROW_KEY
 from fair_shares.library.citations import (
     active_sources_from_context,
     write_citations_file,
 )
-from fair_shares.library.exceptions import ConfigurationError
+from fair_shares.library.exceptions import AllocationError, ConfigurationError
 from fair_shares.library.notebook_helpers import (
     load_allocation_data,
     run_all_allocations,
@@ -53,6 +55,38 @@ from fair_shares.library.utils.math import (
 logger = logging.getLogger(__name__)
 
 TARGET = "rcbs"  # this API is for remaining-carbon-budget allocations only
+
+NONCO2_DEBT_MODES: tuple[str, ...] = ("report-only", "co2-debit")
+"""Ways to settle past non-CO2 over-use in composite categories."""
+
+_DEPRECATED_NONCO2_DEBT_MODES = {"free-rider": "report-only"}
+
+
+def normalise_nonco2_debt_mode(mode: str) -> str:
+    """Return the canonical name of a non-CO2 debt mode.
+
+    ``"free-rider"`` is a deprecated alias of ``"report-only"`` and emits a
+    ``DeprecationWarning``.
+
+    Raises
+    ------
+    ValueError
+        If ``mode`` is not a known mode or alias
+    """
+    if mode in _DEPRECATED_NONCO2_DEBT_MODES:
+        new = _DEPRECATED_NONCO2_DEBT_MODES[mode]
+        warnings.warn(
+            f"nonco2 debt mode {mode!r} is deprecated; use {new!r}.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
+        return new
+    if mode not in NONCO2_DEBT_MODES:
+        raise ValueError(
+            f"Unknown nonco2 debt mode {mode!r}; choose one of {list(NONCO2_DEBT_MODES)}"
+        )
+    return mode
+
 
 # Which historical gas coverages each run category needs, and the parts to sum
 # to build each. The two ``combined`` baskets are the sum of their CO2 and
@@ -249,7 +283,16 @@ def compute_remaining_budgets(
                 processed_dir, part, int(ay), netting_end
             )
             idx = chunk.index
-            sub.loc[idx, "consumed-actuals"] = chunk["iso3c"].map(consumed).values
+            consumed_rows = chunk["iso3c"].map(consumed).to_numpy(dtype=float)
+            # Rest of world holds the countries moved into it for this
+            # allocation, so it also consumed their observed emissions.
+            moved_col = chunk.get("moved-to-row", pd.Series(None, index=idx))
+            for i, (iso, moved) in enumerate(zip(chunk["iso3c"], moved_col)):
+                if iso == ROW_KEY and isinstance(moved, str) and moved:
+                    consumed_rows[i] += (
+                        consumed.reindex(moved.split(";")).fillna(0).sum()
+                    )
+            sub.loc[idx, "consumed-actuals"] = consumed_rows
             sub.loc[idx, "netting-end-year"] = last_observed
         frames.append(sub)
 
@@ -283,6 +326,8 @@ def compute_remaining_budgets(
         "remaining-budget",
         "historical-deviation",
     ]
+    if "moved-to-row" in out.columns:
+        keep.append("moved-to-row")
     tidy = out[[*keep, "family", "year", "preserve"]].copy()
 
     parts = tidy["emission-category"].unique()
@@ -296,6 +341,7 @@ def compute_remaining_budgets(
         pair_keys = [k for k in _PAIR_KEYS if k in tidy.columns]
         budget_part = tidy[tidy["emission-category"] != "non-co2"]
         pathway_part = tidy[tidy["emission-category"] == "non-co2"]
+        _check_parts_moved_same_countries(budget_part, pathway_part, pair_keys)
         merged = budget_part.merge(
             pathway_part[
                 pair_keys + value_cols + ["historical-deviation"]
@@ -353,6 +399,53 @@ _CONFIG_COLS = [
 ]
 
 
+def _moved_sets(part: pd.DataFrame, config_keys: list[str]) -> pd.DataFrame:
+    """Collect the countries moved to rest of world per configuration of one part."""
+    moved = part["moved-to-row"].fillna("").astype(str)
+    return (
+        part.assign(_moved=moved)
+        .groupby(config_keys, dropna=False)["_moved"]
+        .agg(lambda v: ";".join(sorted({c for s in v for c in s.split(";") if c})))
+        .reset_index()
+    )
+
+
+def _check_parts_moved_same_countries(
+    budget_part: pd.DataFrame, pathway_part: pd.DataFrame, pair_keys: list[str]
+) -> None:
+    """Raise if a CO2 budget part and its non-CO2 part moved different countries.
+
+    Their combined rest-of-world row would otherwise add two different country
+    groups.
+    """
+    if "moved-to-row" not in budget_part.columns:
+        return
+    config_keys = [k for k in pair_keys if k != "iso3c"]
+    paired = _moved_sets(budget_part, config_keys).merge(
+        _moved_sets(pathway_part, config_keys),
+        on=config_keys,
+        how="inner",
+        suffixes=("-co2", "-nonco2"),
+    )
+    differ = paired[paired["_moved-co2"] != paired["_moved-nonco2"]]
+    if not differ.empty:
+        row = differ.iloc[0]
+        raise AllocationError(
+            f"{len(differ)} configuration(s) moved different countries to rest of "
+            f"world in the CO2 part ({row['_moved-co2'] or 'none'}) and the "
+            f"non-CO2 part ({row['_moved-nonco2'] or 'none'}), so their combined "
+            "rest-of-world row would mix two country groups."
+        )
+
+
+def _moved_to_row(cfg: pd.DataFrame) -> list[str]:
+    """Countries moved into rest of world for this configuration."""
+    if "moved-to-row" not in cfg.columns:
+        return []
+    values = cfg["moved-to-row"].dropna().unique()
+    return sorted({c for v in values if v for c in str(v).split(";")})
+
+
 def distribute_remaining_pathways(
     category: str,
     allocations_absolute: pd.DataFrame,
@@ -369,7 +462,7 @@ def distribute_remaining_pathways(
     Spreads each remaining budget to ``pathway_end_year`` across the
     distribution grid. For composite categories each CO2 configuration is
     distributed under every
-    ``nonco2_debt_modes`` entry (``free-rider`` leaves the CO2 budget as is;
+    ``nonco2_debt_modes`` entry (``report-only`` leaves the CO2 budget as is;
     ``co2-debit`` subtracts the country's past non-CO2 over-use and retires it),
     and the allocated non-CO2 and ``combined`` rows are appended.
     """
@@ -410,12 +503,19 @@ def distribute_remaining_pathways(
         budgets = pd.Series(cfg["remaining-budget"].values, index=cfg["iso3c"].values)
         regions = budgets.index
         base_cfg = base.reindex(regions)
+        moved = _moved_to_row(cfg)
+        if moved and ROW_KEY in base_cfg.index:
+            base_cfg[ROW_KEY] += base.reindex(moved).fillna(0.0).sum()
         if base_cfg.isna().any():
             raise ValueError(
                 f"{category}: missing base-year emissions for "
                 f"{base_cfg[base_cfg.isna()].index.tolist()[:5]}"
             )
-        modes = list(nonco2_debt_modes) if is_composite else [None]
+        modes = (
+            [normalise_nonco2_debt_mode(m) for m in nonco2_debt_modes]
+            if is_composite
+            else [None]
+        )
         for mode in modes:
             if mode == "co2-debit":
                 matched = cfg[[*config_cols, "iso3c"]].merge(
@@ -441,9 +541,12 @@ def distribute_remaining_pathways(
                 end_year=pathway_end_year,
             )
             for conv_year in distribution_grid["convergence_year"]:
-                pop_cfg = pd.Series(
+                pop_all = pd.Series(
                     pop[str(conv_year)].values, index=pop["iso3c"].values
-                ).reindex(regions)
+                )
+                pop_cfg = pop_all.reindex(regions)
+                if moved and ROW_KEY in pop_cfg.index:
+                    pop_cfg[ROW_KEY] += pop_all.reindex(moved).fillna(0.0).sum()
                 for shape in distribution_grid["shape"]:
                     for dev_year in distribution_grid["deviation_end_year"]:
                         paths = distribute_remaining_budgets_pathways(
@@ -648,9 +751,10 @@ def calculate_allocation_timeseries(
         The single §6 distribution setting (debt-redress envelope shape, the
         year it closes, and the per-capita convergence year).
     nonco2_debt_mode
-        The single non-CO2 debt-settlement mode (``"free-rider"`` /
+        The single non-CO2 debt-settlement mode (``"report-only"`` /
         ``"co2-debit"``) for composite categories; must be ``None`` for
-        ``co2-ffi`` (which has no non-CO2 part).
+        ``co2-ffi`` (which has no non-CO2 part). ``"free-rider"`` is a
+        deprecated alias of ``"report-only"``.
     project_root
         Deprecated. Superseded by ``data_dir`` and ``output_dir``, onto which
         it maps as ``project_root/"data"`` and ``project_root/"output"``.
@@ -675,6 +779,8 @@ def calculate_allocation_timeseries(
             f"nonco2_debt_mode must be None for non-composite category "
             f"{emission_category!r} (got {nonco2_debt_mode!r})"
         )
+    if nonco2_debt_mode is not None:
+        nonco2_debt_mode = normalise_nonco2_debt_mode(nonco2_debt_mode)
     if len(allocation) != 1:
         raise ValueError(
             f"allocation must specify exactly one approach, got {list(allocation)}"

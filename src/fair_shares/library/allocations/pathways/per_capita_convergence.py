@@ -82,6 +82,9 @@ def _per_capita_convergence_core(
         first_allocation_year=first_allocation_year,
         last_allocation_year=last_year,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        group_level=group_level,
+        unit_level=unit_level,
+        country_emissions_read_at_first_year=True,
     )
 
     # Validate inputs

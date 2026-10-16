@@ -30,6 +30,8 @@ DATA_CONTEXT_COLUMNS: list[str] = [
     "missing-net-negative-mtco2e",
     # warnings about allocation (e.g., not-fair-share, missing data)
     "warnings",
+    # analysis countries moved into ROW for this allocation (";"-separated)
+    "moved-to-row",
 ]
 
 # Allocation parameter columns (from result.parameters)
@@ -78,6 +80,7 @@ NUMERIC_COLUMN_TYPES: dict[str, str] = {
     "total-budget": "float64",
     "missing-net-negative-mtco2e": "Int64",
     "warnings": "string",
+    "moved-to-row": "string",
     "pre-allocation-responsibility-weight": "float64",
     "capability-weight": "float64",
     "pre-allocation-responsibility-year": "Int64",

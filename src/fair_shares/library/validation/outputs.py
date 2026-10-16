@@ -161,7 +161,10 @@ def validate_years_match(
 
 
 def validate_world_data_present(
-    df: TimeseriesDataFrame, dataset_name_for_error_msg: str, world_key: str = "World"
+    df: TimeseriesDataFrame,
+    dataset_name_for_error_msg: str,
+    world_key: str = "World",
+    group_level: str = "iso3c",
 ) -> None:
     """
     Validate that world data is present in the dataset.
@@ -177,6 +180,8 @@ def validate_world_data_present(
         Name of the dataset for error messages
     world_key : str
         Key used to identify world data
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
 
     Raises
     ------
@@ -185,15 +190,15 @@ def validate_world_data_present(
     """
     if not isinstance(df.index, pd.MultiIndex):
         raise DataProcessingError(
-            f"{dataset_name_for_error_msg} must have MultiIndex with 'iso3c' level"
+            f"{dataset_name_for_error_msg} must have MultiIndex with '{group_level}' level"
         )
 
-    if "iso3c" not in df.index.names:
+    if group_level not in df.index.names:
         raise DataProcessingError(
-            f"{dataset_name_for_error_msg} must have 'iso3c' in index levels"
+            f"{dataset_name_for_error_msg} must have '{group_level}' in index levels"
         )
 
-    world_mask = df.index.get_level_values("iso3c") == world_key
+    world_mask = df.index.get_level_values(group_level) == world_key
     if not world_mask.any():
         raise AllocationError(
             f"No '{world_key}' data found in {dataset_name_for_error_msg}. "

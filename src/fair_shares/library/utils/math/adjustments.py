@@ -26,6 +26,40 @@ if TYPE_CHECKING:
     from fair_shares.library.utils.dataframes import TimeseriesDataFrame
 
 
+def raise_on_missing_years(
+    data: pd.DataFrame, group_level: str, what: str
+) -> None:
+    """Raise if any group lacks a value in a year the calculation reads.
+
+    A sum that skips missing years would treat a country with a short series as
+    if it had a low total. The orchestrated route (``run_allocation``) moves
+    such a country into rest of world before the allocation runs; a direct call
+    of an allocation function gets this error instead.
+
+    Raises
+    ------
+    AllocationError
+        Naming each country and its missing years
+    """
+    gaps = data.isna()
+    if not gaps.to_numpy().any():
+        return
+    groups = data.index.get_level_values(group_level)
+    details = []
+    for country in sorted(set(groups[gaps.any(axis=1).to_numpy()])):
+        rows = gaps[groups == country]
+        years = sorted({int(c) for c in rows.columns[rows.any(axis=0).to_numpy()]})
+        span = f"{years[0]}-{years[-1]}" if len(years) > 1 else str(years[0])
+        details.append(f"{country} ({span})")
+    raise AllocationError(
+        f"Missing {what} for {', '.join(details)}.\n\n"
+        "A country needs a value in every year the allocation reads. "
+        "run_allocation() and the notebooks move such a country into rest of "
+        "world for that allocation; a direct call of an allocation function "
+        "needs complete data or ROW rows prepared by the caller."
+    )
+
+
 def calculate_responsibility_adjustment_data(
     country_actual_emissions_ts: TimeseriesDataFrame,
     population_ts: TimeseriesDataFrame,
@@ -127,6 +161,12 @@ def calculate_responsibility_adjustment_data(
             "No country-level emissions rows found for pre-allocation responsibility window."
         )
 
+    raise_on_missing_years(
+        history_countries,
+        group_level,
+        "emissions in the pre-allocation responsibility window",
+    )
+
     # Apply historical discount weights if rate > 0
     # Weight = (1 - r_d)^(reference_year - t), where reference_year = allocation_year - 1
     if historical_discount_rate > 0.0:
@@ -162,6 +202,11 @@ def calculate_responsibility_adjustment_data(
             raise AllocationError("No population data found for pre-allocation responsibility window.")
 
         pop_numeric = pop_numeric[pop_columns]
+        raise_on_missing_years(
+            pop_numeric,
+            group_level,
+            "population in the pre-allocation responsibility window",
+        )
 
         # Apply same discount weights to population for consistency
         if historical_discount_rate > 0.0:
@@ -319,6 +364,12 @@ def calculate_responsibility_adjustment_data_convergence(
             "# Should have country rows"
         )
 
+    raise_on_missing_years(
+        history_countries,
+        group_level,
+        "emissions in the pre-allocation responsibility window",
+    )
+
     # Apply historical discount weights if rate > 0
     # Weight = (1 - r_d)^(reference_year - t), where reference_year = first_allocation_year
     if historical_discount_rate > 0.0:
@@ -364,6 +415,11 @@ def calculate_responsibility_adjustment_data_convergence(
             )
 
         pop_numeric = pop_numeric[pop_columns]
+        raise_on_missing_years(
+            pop_numeric,
+            group_level,
+            "population in the pre-allocation responsibility window",
+        )
 
         # Apply same discount weights to population for consistency
         if historical_discount_rate > 0.0:
@@ -517,7 +573,7 @@ def calculate_capability_adjustment_data(
     population_common = population_single_unit[common_columns]
 
     if gini_s is not None:
-        gini_lookup = create_gini_lookup_dict(gini_s)
+        gini_lookup = create_gini_lookup_dict(gini_s, group_level)
         gdp_common = apply_gini_adjustment(
             gdp_common,
             population_common,
@@ -527,6 +583,10 @@ def calculate_capability_adjustment_data(
             group_level,
         )
 
+    raise_on_missing_years(gdp_common, group_level, "GDP in the capability years")
+    raise_on_missing_years(
+        population_common, group_level, "population in the capability years"
+    )
     gdp_cmltvsum = gdp_common.sum(axis=1)
     pop_cmltvsum = population_common.sum(axis=1)
 
@@ -686,7 +746,7 @@ def calculate_capability_window_data(
 
     if gini_s is not None:
         gdp = apply_gini_adjustment(
-            gdp, population, create_gini_lookup_dict(gini_s),
+            gdp, population, create_gini_lookup_dict(gini_s, group_level),
             income_floor, max_gini_adjustment, group_level,
         )
 

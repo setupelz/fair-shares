@@ -130,6 +130,19 @@ with packaged_config("data_sources/data_sources_unified.yaml").open() as _f:
 
 _target_yaml = _full_yaml["targets"].get(active_target_source, {})
 
+# Packaged config files and a YAML target file (data/rcbs/rcbs.yaml) shape the
+# composed config, so declare them as inputs of compose_config.
+from pathlib import Path as _Path
+from fair_shares.library.paths import data_dir as _data_dir
+
+_CONF_YAMLS = sorted(str(p) for p in _Path(str(packaged_config(""))).rglob("*.yaml"))
+_target_path = str(_target_yaml.get("path") or "")
+_TARGET_YAML_INPUT = []
+if _target_path.startswith("data/") and _target_path.endswith((".yaml", ".yml")):
+    _candidate = _data_dir() / _target_path[len("data/"):]
+    if _candidate.is_file():
+        _TARGET_YAML_INPUT = [str(_candidate)]
+
 # Infer allocation_mode from target structure (no explicit field needed in YAML)
 if _target_yaml.get("allocation_mode"):
     _allocation_mode = _target_yaml["allocation_mode"]
@@ -301,6 +314,8 @@ rule compose_config:
     input:
         # build_data_config composes the output config from this packaged file
         sources_yaml=str(packaged_config("data_sources/data_sources_unified.yaml")),
+        conf_yamls=_CONF_YAMLS,
+        target_yaml=_TARGET_YAML_INPUT,
     output:
         config=f"{OUTPUT_DIR}/config.yaml",
     params:

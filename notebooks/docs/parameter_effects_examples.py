@@ -40,6 +40,10 @@ from fair_shares.library.allocations.budgets import (
     per_capita_adjusted_budget,
     per_capita_adjusted_gini_budget,
 )
+from fair_shares.library.allocations.coverage import (
+    find_incomplete_countries,
+    move_countries_to_row,
+)
 from fair_shares.library.allocations.pathways import (
     cumulative_per_capita_convergence_adjusted,
 )
@@ -154,6 +158,7 @@ def print_table(header: list[str], rows: dict[str, list[str]]) -> None:
 # %%
 allocation_years = [2020, 1990, 1900]
 remaining = {c: [] for c in countries}
+moved_by_year = {}
 for year in allocation_years:
     year_budget = calculate_budget_from_rcb(
         rcb_value=rcb_value,
@@ -161,9 +166,16 @@ for year in allocation_years:
         world_scenario_emissions_ts=world_emissions_df,
         verbose=False,
     )
+    # As in run_allocation: a country without population from the year joins ROW.
+    moved = list(
+        find_incomplete_countries(
+            {"population": population_ts}, [("population", year, None)]
+        )
+    )
+    moved_by_year[year] = moved
     shares = shares_pct(
         equal_per_capita_budget(
-            population_ts=population_ts,
+            population_ts=move_countries_to_row(population_ts, moved),
             allocation_year=year,
             emission_category=emission_category,
         )
@@ -178,12 +190,10 @@ for year in allocation_years:
         remaining[c].append((shares[c] / 100 * year_budget - actual) / 1e3)
 
 print("## allocation_year\n")
+print(f"Moved to rest of world: {moved_by_year}\n")
 print_table(
     ["Country", *[f"allocation_year={y}" for y in allocation_years]],
-    {
-        countries[c]: [f"{v:+.1f} GtCO2" for v in remaining[c]]
-        for c in countries
-    },
+    {countries[c]: [f"{v:+.1f} GtCO2" for v in remaining[c]] for c in countries},
 )
 
 # %% [markdown]
@@ -250,9 +260,12 @@ print_table(
 # ## Example 4: income_floor
 
 # %%
-income_floors = [0, 7500, 15000]
-floor_shares = [
-    shares_pct(
+income_floors = [0, 2500, 5000, 7500, 10000, 15000, 20000]
+
+
+def gini_shares(floor: float, max_gini_adjustment: float = 0.8) -> pd.Series:
+    """Shares of per-capita-adjusted-gini-budget, capability only, from 2020."""
+    return shares_pct(
         per_capita_adjusted_gini_budget(
             population_ts=population_ts,
             country_actual_emissions_ts=emissions_ts,
@@ -263,23 +276,27 @@ floor_shares = [
             pre_allocation_responsibility_weight=0.0,
             capability_weight=1.0,
             income_floor=floor,
+            max_gini_adjustment=max_gini_adjustment,
         )
     )
-    for floor in income_floors
-]
+
+
+floor_shares = [gini_shares(floor) for floor in income_floors]
 print("## income_floor\n")
 print_table(
     ["Country", *[f"floor={f}" for f in income_floors]],
     {countries[c]: [f"{s[c]:.1f}%" for s in floor_shares] for c in countries},
 )
 
-# Capability per person, as share of GDP, and countries held at the
-# max_gini_adjustment cap (default 0.8: capability >= 20% of GDP), last GDP year.
+# Capability per person, as share of GDP, against the median of unadjusted GDP
+# per capita, and countries held at the max_gini_adjustment cap (default 0.8:
+# capability >= 20% of GDP), last GDP year.
 last = str(max(gdp_years))
 gdp_last = gdp_ts[last].droplevel("unit") * 1e3  # billion -> million
 pop_last = population_ts[last].droplevel("unit")
 gini_last = gini_ts["gini"].droplevel("unit")
 idx = gdp_last.dropna().index.intersection(pop_last.index).intersection(gini_last.index)
+median_pc = (gdp_last[idx] / pop_last[idx]).median()
 cap_rows = {}
 for floor in income_floors:
     adj = calculate_gini_adjusted_gdp(
@@ -293,7 +310,6 @@ for floor in income_floors:
     at_cap = int(np.sum(np.isclose(adj, 0.2 * gdp_last[idx].to_numpy())))
     if floor == 0:
         at_cap = 0
-    median_pc = (adj_s / pop_last[idx]).median()
     india_frac = adj_s["IND"] / gdp_last["IND"]
     india_rel = adj_s["IND"] / pop_last["IND"] / median_pc
     cap_rows[f"floor={floor}"] = [
@@ -307,11 +323,20 @@ print_table(
     [
         "Floor",
         "India capability as share of GDP",
-        "Median capability per person",
+        "Median GDP per person (unadjusted)",
         "India capability per person / median",
         "Countries and groups held at the cap",
     ],
     cap_rows,
+)
+
+# The cap level at a 10,000 floor (1.0: no cap).
+cap_levels = [0.8, 0.9, 0.95, 1.0]
+cap_shares = [gini_shares(10000, level) for level in cap_levels]
+print("## max_gini_adjustment at income_floor=10000\n")
+print_table(
+    ["Country", *[f"max_gini_adjustment={level}" for level in cap_levels]],
+    {countries[c]: [f"{s[c]:.1f}%" for s in cap_shares] for c in countries},
 )
 
 # %% [markdown]
@@ -369,7 +394,9 @@ print()
 # %%
 print("## historical_discount_rate (allocation_year=2020, reference year 2019)\n")
 for rate in [0.005, 0.01]:
-    print(f"- rate={rate}: weight of 1850 emissions = {(1 - rate) ** (2019 - 1850):.0%}")
+    print(
+        f"- rate={rate}: weight of 1850 emissions = {(1 - rate) ** (2019 - 1850):.0%}"
+    )
 print()
 
 # %% [markdown]
@@ -380,8 +407,10 @@ print("## Largest change for USA, India, Germany (percentage points)\n")
 summary = {
     "pre_allocation_responsibility_weight (0 to 1)": resp_abs - base,
     "capability_weight (0 to 1)": cap - base,
-    "income_floor (0 to 7500)": floor_shares[1] - floor_shares[0],
-    "income_floor (0 to 15000)": floor_shares[2] - floor_shares[0],
+    "income_floor (0 to 7500)": floor_shares[income_floors.index(7500)]
+    - floor_shares[0],
+    "income_floor (0 to 15000)": floor_shares[income_floors.index(15000)]
+    - floor_shares[0],
 }
 for name, diff in summary.items():
     d = diff[list(countries)]

@@ -51,6 +51,11 @@ DOCS_URLS = {
         "principle_to_code": docs_url("science/principle-to-code"),
         "glossary": docs_url("science/glossary"),
         "references": docs_url("science/references"),
+        "method_overview": docs_url("science"),
+        "remaining_carbon_budgets": docs_url("science/remaining-carbon-budgets"),
+        "greenhouse_gases": docs_url("science/greenhouse-gases"),
+        "scenario_sets": docs_url("science/scenario-sets"),
+        "data_processing": docs_url("science/other-operations"),
     },
     "user_guide": {
         "country_fair_shares": docs_url("user-guide/country-fair-shares"),

@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from fair_shares.library.exceptions import DataProcessingError
+from fair_shares.library.exceptions import AllocationError, DataProcessingError
 from fair_shares.library.utils.math.allocation import calculate_relative_adjustment
 from fair_shares.library.validation.inputs import (
     validate_emissions_data,
@@ -73,30 +73,26 @@ class TestNaNPropagation:
             )
 
     @pytest.mark.parametrize("label", ["responsibility", "capability"])
-    def test_nan_in_relative_adjustment_handles_gracefully(self, label):
-        """NaN values become 0 after median normalisation + fillna.
+    @pytest.mark.parametrize("form", ["asinh", "power"])
+    def test_nan_in_relative_adjustment_raises_naming_country(self, label, form):
+        """A missing indicator raises and names the country.
 
-        arcsinh(0) = 0, so with inverse=True the result is 0^(-exponent) = inf.
-        With inverse=False the result is 0^(exponent) = 0.
-        Either way, no NaN propagates.
+        Filling it with zero would give asinh(0) ** -exponent, an infinite factor.
         """
         values_with_nan = pd.DataFrame(
-            {"2020": [5000.0, np.nan, 3000.0]},
+            {"2020": [5000.0, np.nan, 3000.0], "2021": [5100.0, 2000.0, np.nan]},
             index=pd.MultiIndex.from_tuples(
                 [("USA", "million"), ("CHN", "million"), ("IND", "million")],
                 names=["iso3c", "unit"],
             ),
         )
-
-        result = calculate_relative_adjustment(
-            values=values_with_nan["2020"],
-            exponent=0.5,
-            inverse=True,
-        )
-
-        assert not np.isnan(result).any()
-        # NaN -> 0 after normalisation, arcsinh(0)=0, 0^(-0.5)=inf
-        assert np.isinf(result.iloc[1])
+        with pytest.raises(AllocationError, match=f"Missing {label}.*CHN, IND"):
+            calculate_relative_adjustment(
+                values=values_with_nan,
+                functional_form=form,
+                exponent=0.5,
+                indicator=label,
+            )
 
 
 class TestSingleCountryAllocation:
@@ -116,6 +112,7 @@ class TestSingleCountryAllocation:
                     allocation_year=2020,
                     emission_category="co2-ffi",
                     pre_allocation_responsibility_weight=0.3,
+                    pre_allocation_responsibility_year=2015,
                     capability_weight=0.3,
                 ),
                 id="per_capita_adjusted_budget",

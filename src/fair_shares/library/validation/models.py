@@ -23,6 +23,7 @@ from fair_shares.library.validation.inputs import (
     validate_year_in_data,
 )
 from fair_shares.library.validation.outputs import validate_shares_sum_to_one
+from fair_shares.library.validation.pipeline_validation import validate_years_in_window
 
 
 class AllocationInputs(BaseModel):
@@ -50,7 +51,7 @@ class AllocationInputs(BaseModel):
 
     # Required inputs
     population_ts: TimeseriesDataFrame = Field(
-        ..., description="Population time series data (iso3c index, year columns)"
+        ..., description="Population time series data (group_level index, year columns)"
     )
     first_allocation_year: int = Field(
         ...,
@@ -86,6 +87,10 @@ class AllocationInputs(BaseModel):
         None,
         description="World scenario emissions (required for pathway allocations)",
     )
+    responsibility_emissions_ts: TimeseriesDataFrame | None = Field(
+        None,
+        description="Country emissions of the responsibility window, when separate",
+    )
 
     # Pre-allocation responsibility parameters (when applicable)
     pre_allocation_responsibility_year: int | None = Field(
@@ -105,45 +110,42 @@ class AllocationInputs(BaseModel):
         description="Capability window (GDP is read over these years only)",
     )
 
+    # Index level names, taken from the allocation function's arguments
+    group_level: str = Field(
+        "iso3c", description="Index level holding the country or region"
+    )
+    unit_level: str = Field("unit", description="Index level holding the unit")
+    country_emissions_read_at_first_year: bool = Field(
+        False,
+        description=(
+            "True when the allocation reads country emissions at "
+            "first_allocation_year (grandfathering start of convergence methods)"
+        ),
+    )
+
     model_config = {"arbitrary_types_allowed": True}
 
-    @field_validator("population_ts")
-    @classmethod
-    def validate_population(cls, v: TimeseriesDataFrame) -> TimeseriesDataFrame:
-        """Validate population data structure and values."""
+    @model_validator(mode="after")
+    def validate_structure(self) -> AllocationInputs:
+        """Validate index structure and values against group_level and unit_level."""
+        levels = {"group_level": self.group_level, "unit_level": self.unit_level}
         validate_population_data(
-            v, dataset_name_for_error_msg="Population", verbose=False
+            self.population_ts, "Population", verbose=False, **levels
         )
-        return v
-
-    @field_validator("gdp_ts")
-    @classmethod
-    def validate_gdp(cls, v: TimeseriesDataFrame | None) -> TimeseriesDataFrame | None:
-        """Validate GDP data structure and values (if provided)."""
-        if v is not None:
-            validate_gdp_data(v, dataset_name_for_error_msg="GDP", verbose=False)
-        return v
-
-    @field_validator("gini_s")
-    @classmethod
-    def validate_gini(cls, v: pd.DataFrame | None) -> pd.DataFrame | None:
-        """Validate Gini data structure and range (if provided)."""
-        if v is not None:
-            validate_gini_data(v, dataset_name_for_error_msg="Gini", verbose=False)
-        return v
-
-    @field_validator("country_actual_emissions_ts")
-    @classmethod
-    def validate_country_emissions(
-        cls, v: TimeseriesDataFrame | None
-    ) -> TimeseriesDataFrame | None:
-        """Validate country emissions data structure and columns (if provided)."""
-        if v is not None:
+        if self.gdp_ts is not None:
+            validate_gdp_data(self.gdp_ts, "GDP", verbose=False, **levels)
+        if self.gini_s is not None:
+            validate_gini_data(self.gini_s, "Gini", verbose=False)
+        if self.country_actual_emissions_ts is not None:
             validate_index_structure(
-                v, "Country Emissions", ["iso3c", "unit", "emission-category"]
+                self.country_actual_emissions_ts,
+                "Country Emissions",
+                [self.group_level, self.unit_level, "emission-category"],
             )
-            validate_has_year_columns(v, "Country Emissions")
-        return v
+            validate_has_year_columns(
+                self.country_actual_emissions_ts, "Country Emissions"
+            )
+        return self
 
     @field_validator("world_scenario_emissions_ts")
     @classmethod
@@ -209,13 +211,25 @@ class AllocationInputs(BaseModel):
                 "GDP",
             )
 
-        # Check country emissions if provided - only validate first year to match decorator
+        # Country emissions: only the years the allocation reads. The responsibility
+        # window [pre_allocation_responsibility_year, first_allocation_year) excludes the first year.
         if self.country_actual_emissions_ts is not None:
-            validate_year_in_data(
-                self.first_allocation_year,
-                self.country_actual_emissions_ts,
-                "Country Emissions",
-            )
+            if self.country_emissions_read_at_first_year:
+                validate_year_in_data(
+                    self.first_allocation_year,
+                    self.country_actual_emissions_ts,
+                    "Country Emissions",
+                )
+            if self.pre_allocation_responsibility_year is not None:
+                separate = self.responsibility_emissions_ts is not None
+                validate_years_in_window(
+                    self.pre_allocation_responsibility_year,
+                    self.first_allocation_year,
+                    self.responsibility_emissions_ts
+                    if separate
+                    else self.country_actual_emissions_ts,
+                    "Responsibility Emissions" if separate else "Country Emissions",
+                )
 
         # Check world emissions if provided
         if self.world_scenario_emissions_ts is not None:

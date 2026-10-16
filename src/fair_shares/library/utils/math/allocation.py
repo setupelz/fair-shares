@@ -25,6 +25,8 @@ def calculate_relative_adjustment(
     exponent: float = 1.0,
     inverse: bool = True,
     normalize: bool = True,
+    reference: float | pd.Series | None = None,
+    indicator: str = "indicator",
 ) -> TimeseriesDataFrame | pd.Series:
     """
     Calculate relative adjustment factors for allocations.
@@ -33,10 +35,15 @@ def calculate_relative_adjustment(
     emissions) to produce adjustment factors. See docs/science/allocations.md
     for theoretical grounding.
 
-    When ``normalize=True`` (default), values are divided by their median before
-    transformation. This ensures unit invariance: multiplying all inputs by a
-    constant (e.g., converting USD to EUR) produces identical adjustment factors,
-    because the constant cancels in the ratio ``x / median(x)``.
+    When ``normalize=True`` (default), values are divided by a reference before
+    transformation. The reference is the cross-country median of ``values``
+    unless the caller passes ``reference``. This ensures unit invariance:
+    multiplying all inputs by a constant (e.g., converting USD to EUR) produces
+    identical adjustment factors, because the constant cancels in the ratio
+    ``x / median(x)``. The asinh form needs this scale: ``asinh(x)`` is close to
+    ``x`` below 1 and close to ``ln(2x)`` above it, so the reference sets where
+    the curve bends. The power form is scale-free within one column: the
+    reference multiplies every factor in that column by the same constant.
 
     Parameters
     ----------
@@ -58,13 +65,32 @@ def calculate_relative_adjustment(
         If True (default), higher values -> lower relative adjustment factor.
         If False, higher values -> higher relative adjustment factor.
     normalize
-        If True (default), divide values by their median before transformation
+        If True (default), divide values by a reference before transformation
         to achieve unit invariance. Set to False for legacy behaviour or when
         inputs are already dimensionless.
+    reference
+        Normalisation reference. Default ``None`` uses the cross-country
+        median of ``values`` (per column for a DataFrame). Pass a fixed
+        reference when ``values`` is a transformed indicator whose median
+        moves with a parameter. The Gini income floor is the case in point:
+        callers pass the median of the unadjusted capability indicator, so
+        raising the floor lowers adjusted capability without moving the
+        yardstick it is measured against.
+    indicator
+        Name used in the error message for missing values, such as
+        ``"capability"`` or ``"responsibility"``.
 
     Returns
     -------
     Adjustment factors with same structure as input
+
+    Raises
+    ------
+    AllocationError
+        If ``values`` contains missing values. The message names the
+        affected countries. A missing indicator has no defensible default:
+        filling it with zero gives ``asinh(0) ** -exponent``, an infinite
+        adjustment factor.
 
     Notes
     -----
@@ -87,12 +113,13 @@ def calculate_relative_adjustment(
     only). The power form clamps to a small epsilon (1e-10) for numerical
     safety with negative exponents.
     """
+    _raise_on_missing(values, indicator)
     sign = -1 if inverse else 1
 
-    # Median normalisation for unit invariance
+    # Reference normalisation for unit invariance
     if normalize:
-        median = values.median()
-        # Guard: if median is zero (degenerate case), skip normalisation
+        median = values.median() if reference is None else reference
+        # Degenerate zero reference: every normalised value becomes 0
         if isinstance(median, pd.Series):
             median = median.replace(0, np.nan)
         elif median == 0:
@@ -103,36 +130,44 @@ def calculate_relative_adjustment(
         values_norm = values
 
     if functional_form == "asinh":
-        # arcsinh handles full real line: negatives, zero, positives
-        # NaN values become 0.0 after normalisation (or need explicit handling
-        # if normalize=False)
-        transformed = (
-            values_norm.copy()
-            if isinstance(values_norm, (pd.DataFrame, pd.Series))
-            else values_norm
-        )
-        if not normalize:
-            # Legacy path: handle NaN without normalisation
-            if isinstance(transformed, (pd.DataFrame, pd.Series)):
-                transformed = transformed.fillna(0.0)
-            else:
-                transformed = np.where(np.isnan(transformed), 0.0, transformed)
-        return np.arcsinh(transformed) ** (sign * exponent)
+        return np.arcsinh(values_norm) ** (sign * exponent)
     elif functional_form == "power":
-        # Power form needs epsilon clamp for numerical safety with negative
-        # exponents
-        if isinstance(values_norm, (pd.DataFrame, pd.Series)):
+        # Epsilon clamp for numerical safety with negative exponents
+        if isinstance(values_norm, pd.DataFrame | pd.Series):
             values_clamped = values_norm.clip(lower=1e-10)
-            values_clamped = values_clamped.fillna(1e-10)
         else:
-            values_clamped = np.where(
-                (values_norm <= 0) | np.isnan(values_norm), 1e-10, values_norm
-            )
+            values_clamped = np.where(values_norm <= 0, 1e-10, values_norm)
         return values_clamped ** (sign * exponent)
     else:
         raise AllocationError(
             f"Unknown functional_form: {functional_form}. Must be 'power' or 'asinh'"
         )
+
+
+def _raise_on_missing(
+    values: TimeseriesDataFrame | pd.Series | np.ndarray, indicator: str
+) -> None:
+    """Raise AllocationError naming the countries with a missing indicator."""
+    if not isinstance(values, pd.DataFrame | pd.Series):
+        if np.isnan(np.asarray(values, dtype=float)).any():
+            raise AllocationError(f"Missing {indicator} values in the input array.")
+        return
+    missing = values.isna()
+    if isinstance(missing, pd.DataFrame):
+        missing = missing.any(axis=1)
+    if not missing.any():
+        return
+    index = missing.index[missing.to_numpy()]
+    if isinstance(index, pd.MultiIndex):
+        level = "iso3c" if "iso3c" in index.names else 0
+        index = index.get_level_values(level)
+    names = sorted({str(i) for i in index})
+    raise AllocationError(
+        f"Missing {indicator} indicator for {len(names)} "
+        f"{'country' if len(names) == 1 else 'countries'}: {', '.join(names)}. "
+        f"Fill or drop these countries before allocating. A missing {indicator} "
+        "value has no neutral default: zero gives an infinite adjustment factor."
+    )
 
 
 def apply_deviation_constraint(
@@ -330,11 +365,16 @@ def calculate_gini_adjusted_gdp(
     total_populations
         Array of total population values for each country.
     max_adjustment
-        Maximum adjustment allowed as proportion of total GDP (default: 0.8).
-        Prevents extreme reductions for countries with very high inequality.
-        Note: with the GDR formula, higher inequality actually increases
-        capability; extreme reductions are more likely for low-income,
-        low-inequality countries where most people are near the threshold.
+        Maximum reduction as a proportion of total GDP (default: 0.8). The
+        default keeps capability at no less than 20% of GDP. The cap binds
+        for low-income countries, where most people sit below the floor. It
+        is a bound the inverse capability adjustment needs: the asinh factor
+        behaves like ``reference / capability`` for small capability, so
+        without a cap a few of the poorest countries take most of the
+        allocation as the floor rises. Once the cap binds, the country's
+        capability stays at ``(1 - max_adjustment) * GDP`` for every higher
+        floor. The cap level is a values choice and decides results at high
+        floors. Set it to 0 to switch the Gini adjustment off.
 
     Returns
     -------
@@ -393,34 +433,38 @@ def calculate_gini_adjusted_gdp(
     return adjusted_total_gdps
 
 
-def create_gini_lookup_dict(gini_data_df: TimeseriesDataFrame) -> dict[str, float]:
+def create_gini_lookup_dict(
+    gini_data_df: TimeseriesDataFrame, group_level: str = "iso3c"
+) -> dict[str, float]:
     """
     Create a simple lookup dict for Gini coefficients.
 
     Assumes the common case:
-    - Index: MultiIndex with level 'iso3c' (and possibly 'unit')
+    - Index: MultiIndex with level ``group_level`` (and possibly 'unit')
     - Column: 'gini'
 
-    Falls back to using 'iso3c' as a column if not found in the index.
+    Falls back to using ``group_level`` as a column if not found in the index.
 
     Parameters
     ----------
     gini_data_df
         DataFrame containing Gini coefficient data
+    group_level
+        Name of the group identifier, e.g. "iso3c" or a region level.
 
     Returns
     -------
-    Dictionary mapping country codes to Gini coefficients
+    Dictionary mapping group identifiers to Gini coefficients
     """
-    # Prefer index level 'iso3c' if present
-    if hasattr(gini_data_df, "index") and isinstance(gini_data_df.index, pd.MultiIndex):
-        index_names = list(gini_data_df.index.names)
-        if "iso3c" in index_names:
-            iso3c_values = gini_data_df.index.get_level_values("iso3c")
-            return dict(zip(iso3c_values, gini_data_df["gini"]))
-
-    # Fallback: expect columns 'iso3c' and 'gini'
-    return dict(zip(gini_data_df["iso3c"], gini_data_df["gini"]))
+    if group_level in (gini_data_df.index.names or []):
+        groups = gini_data_df.index.get_level_values(group_level)
+        return dict(zip(groups, gini_data_df["gini"]))
+    if group_level not in gini_data_df.columns:
+        raise AllocationError(
+            f"Gini data has no '{group_level}' index level or column. "
+            "Key the Gini data on the same group level as the other inputs."
+        )
+    return dict(zip(gini_data_df[group_level], gini_data_df["gini"]))
 
 
 def apply_gini_adjustment(

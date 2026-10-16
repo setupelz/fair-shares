@@ -3,8 +3,10 @@
 # Each entry declares the world variables and metadata columns that notebook
 # 104 reads, the CO2 series whose cumulative to net zero matches a scenario to
 # a budget (co2_variables, summed), and the bunker variables. `terms` lists the
-# budget terms the source supplies. Notebook 104 processes the active source
-# for every term; the other sources enter the bunker share only.
+# budget terms the source can supply. Notebook 104 processes the active source
+# for every term. Another source enters the bunker share when listed in
+# bunkers.scenario_sources of rcbs.yaml, and the temperature-matched non-CO2
+# set when listed in non_co2.scenario_sources (default: [ar6]).
 version: 2
 
 # Energy-model family of every model that enters the bunker share. The share
@@ -12,14 +14,18 @@ version: 2
 # A family is the energy-model stem: versions and couplings (e.g. MAgPIE) drop.
 # A bunker reporter whose model is listed nowhere is a configuration error.
 model_families:
-  IMAGE: ["IMAGE 3.2", "IMAGE 3.3"]
-  REMIND: ["REMIND 2.1", "REMIND 3.0", "REMIND 3.5", "REMIND-MAgPIE 3.2-4.6"]
+  IMAGE: ["IMAGE 3.2", "IMAGE 3.3", "IMAGE 3.4"]
+  REMIND: ["REMIND 2.1", "REMIND 3.0", "REMIND 3.5", "REMIND-MAgPIE 3.2-4.6", "REMIND-MAgPIE 3.4-4.9", "REMIND-MAgPIE 3.5-4.11", "REMIND-MAgPIE 3.7-4.14"]
   IMACLIM: ["IMACLIM 1.1", "IMACLIM 2.0"]
-  WITCH: ["WITCH 5.0"]
+  WITCH: ["WITCH 5.0", "WITCH 6.0"]
   PROMETHEUS: ["PROMETHEUS V1", "PROMETHEUS 1.2"]
   MUSE: ["MUSE 1.0"]
-  MESSAGE: ["MESSAGEix-GLOBIOM 1.0", "MESSAGEix-GLOBIOM_1.1", "MESSAGEix-GLOBIOM_GEI 1.0"]
-  AIM: ["AIM/Hub-Global 2.0"]
+  MESSAGE: ["MESSAGEix-GLOBIOM 1.0", "MESSAGEix-GLOBIOM_1.1", "MESSAGEix-GLOBIOM 2.0-R12", "MESSAGEix-GLOBIOM_GEI 1.0", "MESSAGEix-GLOBIOM-GAINS 2.1-M-R12"]
+  AIM: ["AIM/Hub-Global 2.0", "AIM 3.0"]
+  GCAM: ["GCAM 6.0", "GCAM 8s", "GCAM-Europe-BC3 7.2.0"]
+  GEM-E3: ["GEM-E3 V2023"]
+  POLES: ["POLES 2.4"]
+  COFFEE: ["COFFEE 1.6"]
   McKinsey: ["McKinsey 1.0"]
   LUT-ESTM: ["LUT-ESTM 2.0"]
 
@@ -39,12 +45,23 @@ sources:
     co2_variables: ["AR6 Reanalysis|OSCARv3.2|Emissions|CO2"]
     # AR6 climate category of each scenario (rule "ar6-category").
     category_column: "Category"
-    # The at-net-zero warming columns hold the 2100 value for a scenario without
-    # a harmonised-infilled net-zero year, so the temperature-matched set needs one.
+    # A scenario without a net-zero year enters no set.
     metadata_columns:
       net_zero_year: "Year of netzero CO2 emissions (Harm-Infilled) table"
       warming_median: "Median warming at year of netzero Emissions|CO2 (MAGICCv7.5.3)"
       warming_p67: "P67 warming at year of netzero (MAGICCv7.5.3) (Harm-Infilled)"
+    # The AR6 at-net-zero warming columns take the 2100 GSAT for 72 scenarios
+    # that count as net zero only under the 100 Mt threshold of Table SPM.2.
+    # Notebook 104 derives all three columns from these series instead
+    # (warming_at_net_zero, AR6 convention).
+    climate_series:
+      path: "data/scenarios/ipcc_ar6_climate/ar6_climate_world.csv"
+      registry_source: "ipcc_ar6_climate"
+      co2: "AR6 climate diagnostics|Infilled|Emissions|CO2"
+      co2_reported: "Emissions|CO2"
+      gsat:
+        warming_median: "AR6 climate diagnostics|Surface Temperature (GSAT)|MAGICCv7.5.3|50.0th Percentile"
+        warming_p67: "AR6 climate diagnostics|Surface Temperature (GSAT)|MAGICCv7.5.3|67.0th Percentile"
     # International bunker CO2 per scenario. The AR6 Scenarios Database has no
     # bunker variable. Aviation covers domestic and international flights, so
     # it is scaled by the international share (0.6, Weber et al. 2026).
@@ -63,24 +80,108 @@ sources:
       Scenario Compass Initiative pathways ensemble (global workbook). Research
       use under the embargo terms of its README sheet until Riahi et al. is
       published. Never committed or redistributed.
-    version: "v1.0"
-    path: "data/scenarios/sci-2025-{version}/SCI-2025_{version}_pathways_ensemble_global.xlsx"
-    registry_source: "sci-2025"
-    # The metadata carry no warming at net zero (only peak, 2100 and
-    # exceedance), so the source supplies bunker reporters only.
-    terms: [bunkers]
-    # Harmonised CO2 of the SCI climate assessment, the series behind its warming.
-    co2_variables:
-      - "Climate Assessment|Harmonized|Emissions|CO2|AFOLU"
-      - "Climate Assessment|Harmonized|Emissions|CO2|Energy and Industrial Processes"
-    # Scenarios that pass the SCI 2025 vetting.
-    vetting:
-      column: "Vetting|SCI 2025"
-      keep: ["ok"]
+    # The configured release. Each release under `versions` names its file and
+    # the fields that differ between releases; set this key to switch.
+    version: "v2.0"
+    # Without NGHGI land-use CO2, SCI supplies no land-use or convention-gap
+    # term. Non-CO2 enters only through non_co2.scenario_sources.
+    terms: [bunkers, non-co2]
+    # Derived by warming_at_net_zero from co2_variables and the GSAT series,
+    # in the convention of the AR6 metadata columns (matches them on the 914
+    # AR6 scenarios that SCI carries over).
+    metadata_columns:
+      net_zero_year: "Year of net-zero CO2 (derived, Harmonized)"
+      warming_median: "Median warming at net-zero CO2 (derived, MAGICCv7.5.3)"
+      warming_p67: "P67 warming at net-zero CO2 (derived, MAGICCv7.5.3)"
     # Scenarios carried over from AR6 count once when ar6 is also in the pool.
     ar6_duplicate_column: "Scenario Ensemble|AR6"
     # The ensemble reports international bunkers directly, so no aviation share.
     # The total counts where reported; else both components.
+    bunkers:
+      total: "Emissions|CO2|Energy|Demand|Bunkers"
+      share_co2_variables: ["Emissions|CO2"]
+      components:
+        "Emissions|CO2|Energy|Demand|Bunkers|International Aviation": 1.0
+        "Emissions|CO2|Energy|Demand|Bunkers|International Shipping": 1.0
+    versions:
+      v2.0:
+        path: "data/scenarios/sci-2026-v2.0/SCI-2026_v2.0_pathways_ensemble_global.xlsx"
+        registry_source: "sci-2026"
+        # v2.0 holds the 68 ScenarioMIP v0.1 runs; they count once when
+        # scenariomip is also in the pool.
+        duplicate_columns:
+          scenariomip: "Scenario Ensemble|ScenarioMIP v0.1"
+        # v2.0 holds three climate workflows. The AR6 workflow (MAGICC v7.5.3)
+        # matches the AR6 metadata; the SCI v1.1 and ScenarioMIP workflows use
+        # MAGICC v7.6.0a3.
+        co2_variables:
+          - "Climate Assessment|Harmonized and Infilled|Emissions|CO2 [AR6]"
+        category_column: "Climate Category|AR6 [MAGICC v7.5.3]"
+        derived_warming:
+          co2_reported: "Emissions|CO2"
+          gsat:
+            warming_median: "Climate Assessment|Surface Temperature (GSAT)|Median [MAGICC v7.5.3]"
+            warming_p67: "Climate Assessment|Surface Temperature (GSAT)|67th Percentile [MAGICC v7.5.3]"
+        # Non-CO2 = Kyoto gases minus CO2, both harmonised and infilled (AR6-GWP100).
+        non_co2:
+          kyoto: "Climate Assessment|Harmonized and Infilled|Emissions|Kyoto Gases [AR6GWP100] [AR6]"
+          co2_variables:
+            - "Climate Assessment|Harmonized and Infilled|Emissions|CO2 [AR6]"
+        # Historical vetting of the evaluation criteria release v2026.08.03.
+        vetting:
+          column: "Historical Vetting [SCI 2025]"
+          keep: ["passed"]
+      v1.0:
+        path: "data/scenarios/sci-2025-v1.0/SCI-2025_v1.0_pathways_ensemble_global.xlsx"
+        registry_source: "sci-2025"
+        # Harmonised CO2 of the SCI climate assessment, the series behind its warming.
+        co2_variables:
+          - "Climate Assessment|Harmonized|Emissions|CO2|AFOLU"
+          - "Climate Assessment|Harmonized|Emissions|CO2|Energy and Industrial Processes"
+        category_column: "Climate Category|AR6 [ID]"
+        derived_warming:
+          co2_reported: "Emissions|CO2"
+          gsat:
+            warming_median: "Climate Assessment|Surface Temperature (GSAT)|Median [MAGICCv7.5.3]"
+            warming_p67: "Climate Assessment|Surface Temperature (GSAT)|67th Percentile [MAGICCv7.5.3]"
+        non_co2:
+          kyoto: "Climate Assessment|Infilled|Emissions|Kyoto Gases (AR6-GWP100)"
+          co2_variables:
+            - "Climate Assessment|Infilled|Emissions|CO2|AFOLU"
+            - "Climate Assessment|Infilled|Emissions|CO2|Energy and Industrial Processes"
+        vetting:
+          column: "Vetting|SCI 2025"
+          keep: ["ok"]
+
+  scenariomip:
+    description: >-
+      ScenarioMIP-CMIP7 IAM scenarios (global workbook, release v0.1), with
+      the climate assessment of MAGICC v7.6.0a3. Research use under the
+      database licence; redistribution of substantial parts is prohibited.
+      Never committed or redistributed. In the default bunker-share pool; off
+      by default for non-CO2.
+    version: "v0.1"
+    path: "data/scenarios/scenariomip-{version}/ScenarioMIP_{version}_global.xlsx"
+    registry_source: "scenariomip-cmip7"
+    # No NGHGI land-use CO2 split, so no land-use or convention-gap term.
+    terms: [bunkers, non-co2]
+    # Ensemble [Max]/[Min] rows are envelopes, not model runs.
+    exclude_models: ["Ensemble"]
+    co2_variables:
+      - "Climate Assessment|Harmonized and Infilled|Emissions|CO2"
+    metadata_columns:
+      net_zero_year: "Year of net-zero CO2 (derived, Harmonized and Infilled)"
+      warming_median: "Median warming at net-zero CO2 (derived, MAGICC v7.6.0a3)"
+      warming_p67: "P67 warming at net-zero CO2 (derived, MAGICC v7.6.0a3)"
+    derived_warming:
+      co2_reported: "Emissions|CO2"
+      gsat:
+        warming_median: "Climate Assessment|Surface Temperature (GSAT)|Median [MAGICC v7.6.0a3]"
+        warming_p67: "Climate Assessment|Surface Temperature (GSAT)|67th Percentile [MAGICC v7.6.0a3]"
+    non_co2:
+      kyoto: "Climate Assessment|Harmonized and Infilled|Emissions|Kyoto Gases [AR6GWP100]"
+      co2_variables:
+        - "Climate Assessment|Harmonized and Infilled|Emissions|CO2"
     bunkers:
       total: "Emissions|CO2|Energy|Demand|Bunkers"
       share_co2_variables: ["Emissions|CO2"]

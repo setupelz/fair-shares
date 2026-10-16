@@ -1,13 +1,14 @@
 """The ``fair-shares`` command line entry point.
 
-Currently one subcommand, ``fetch-data``, which is the supported way to obtain
-the pipeline's inputs::
+Two subcommands. ``fetch-data`` is the supported way to obtain the pipeline's
+inputs, and ``cite`` prints what to cite for a run::
 
     fair-shares fetch-data                 # everything a standard run needs
     fair-shares fetch-data --all           # plus the large optional sources
     fair-shares fetch-data --source wiid   # one source
     fair-shares fetch-data --list          # what exists, and under what licence
     fair-shares fetch-data --verify        # re-hash what is present, fetch nothing
+    fair-shares cite                       # software and data citations for a run
 
 If you script against this, the exit codes matter: ``--verify`` exits non-zero
 when a file fails its fixed checksum, and zero when a file from an unversioned

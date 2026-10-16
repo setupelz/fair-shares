@@ -110,7 +110,7 @@ gini:
       year_window: [2015, 2023]
 
   unu-wider-2025:
-    path: "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
+    path: "data/gini/unu-wider-2025/WIID-08SEP2026.xlsx"
     data_parameters:
       selection: "latest-high-quality"
 

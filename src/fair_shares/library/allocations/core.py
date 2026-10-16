@@ -48,11 +48,12 @@ def validate_weight_constraints(
     The weight constraints are:
 
     - Both weights must be non-negative (principles cannot be applied negatively)
-    - Sum of weights cannot exceed 1.0 (the remaining weight is implicitly
-      assigned to the equal per capita baseline)
+    - Sum of weights cannot exceed 1.0
 
-    When both weights are zero, the allocation reduces to pure equal per capita.
-    When weights sum to 1.0, no weight remains for the equal per capita baseline.
+    The allocation functions then normalise the weights to their sum, so only
+    their ratio matters: ``(0.3, 0.3)`` and ``(0.5, 0.5)`` give the same
+    allocation. When both weights are zero, the allocation reduces to pure
+    equal per capita.
 
     The literature emphasizes that weighting between equity principles involves
     normative choices that should be documented transparently, as different

@@ -23,6 +23,12 @@ from fair_shares.library.allocations.budgets.per_capita import (
     per_capita_adjusted_budget,
     per_capita_adjusted_gini_budget,
 )
+from fair_shares.library.allocations.coverage import (
+    find_incomplete_countries,
+    has_row,
+    move_countries_to_row,
+    years_read,
+)
 from fair_shares.library.allocations.pathways.cumulative_per_capita_convergence import (
     cumulative_per_capita_convergence_adjusted,
     cumulative_per_capita_convergence_adjusted_gini,
@@ -186,11 +192,13 @@ def convert_budget_config_to_pathway(config: dict) -> dict:
 
     Renames the year and preserve keys and removes budget-only parameters
     (``_BUDGET_ONLY_PARAMS``), so the derived config names only parameters
-    the pathway approach accepts.
+    the pathway approach accepts. Keys may be kebab-case or snake_case; the
+    derived config uses snake_case.
     """
+    snake = {key.replace("-", "_"): value for key, value in config.items()}
     return {
         _PARAM_RENAMES.get(key, key): value
-        for key, value in config.items()
+        for key, value in snake.items()
         if key not in _BUDGET_ONLY_PARAMS
     }
 
@@ -272,6 +280,7 @@ def run_allocation(
     responsibility_emissions_ts: TimeseriesDataFrame | None = None,
     world_scenario_emissions_ts: TimeseriesDataFrame | None = None,
     emission_category: str | None = None,
+    move_incomplete_to_row: bool = True,
     **kwargs,
 ) -> BudgetAllocationResult | PathwayAllocationResult:
     """
@@ -304,6 +313,12 @@ def run_allocation(
         World scenario emissions pathway (used by approaches that require it)
     emission_category : str, optional
         Emission category to allocate
+    move_incomplete_to_row : bool, default True
+        Move an analysis country without a value in a year this allocation
+        reads into rest of world (ROW), for this allocation only. Needs ROW
+        rows in the input frames; without them the allocation function raises
+        an ``AllocationError`` that names the gaps. The result records the
+        moved countries in ``moved_to_row``.
     **kwargs
         Additional parameters specific to the allocation approach
 
@@ -426,6 +441,63 @@ def run_allocation(
             f"{unknown_params}. Accepted parameters: {accepted}."
         )
 
+    # A country without data for a year this allocation reads joins rest of
+    # world for this allocation only.
+    moved_to_row: list[str] = []
+    if move_incomplete_to_row:
+        group_level = kwargs.get("group_level") or "iso3c"
+        defaults = {
+            name: param.default
+            for name, param in inspect.signature(allocation_func).parameters.items()
+            if param.default is not inspect.Parameter.empty
+        }
+        resolved = {**defaults, **{k: v for k, v in kwargs.items() if v is not None}}
+        responsibility_input = (
+            responsibility_emissions_ts
+            if responsibility_emissions_ts is not None
+            else country_actual_emissions_ts
+        )
+        incomplete = find_incomplete_countries(
+            {
+                "population": population_ts,
+                "gdp": gdp_ts,
+                "emissions": country_actual_emissions_ts,
+                "responsibility-emissions": responsibility_input,
+            },
+            years_read(approach, resolved, allocation_year, first_allocation_year),
+            group_level,
+        )
+        summed_frames = [
+            f
+            for f in (
+                population_ts,
+                gdp_ts,
+                country_actual_emissions_ts,
+                responsibility_emissions_ts,
+            )
+            if f is not None
+        ]
+        if incomplete and all(has_row(f, group_level) for f in summed_frames):
+            moved_to_row = list(incomplete)
+            population_ts = move_countries_to_row(
+                population_ts, moved_to_row, group_level
+            )
+            gdp_ts = move_countries_to_row(gdp_ts, moved_to_row, group_level)
+            country_actual_emissions_ts = move_countries_to_row(
+                country_actual_emissions_ts, moved_to_row, group_level
+            )
+            responsibility_emissions_ts = move_countries_to_row(
+                responsibility_emissions_ts, moved_to_row, group_level
+            )
+            gini_s = move_countries_to_row(
+                gini_s, moved_to_row, group_level, add_values=False
+            )
+            logger.info(
+                "%s: moved to rest of world for this allocation: %s",
+                approach,
+                "; ".join(f"{c} ({gap})" for c, gap in incomplete.items()),
+            )
+
     # Prepare all function arguments
     func_args = {
         "population_ts": population_ts,
@@ -447,7 +519,9 @@ def run_allocation(
     # Validate parameters first, then filter them
     validate_function_parameters(allocation_func, func_args)
     filtered_args = filter_function_parameters(allocation_func, func_args)
-    return allocation_func(**filtered_args)
+    result = allocation_func(**filtered_args)
+    result.moved_to_row = tuple(moved_to_row)
+    return result
 
 
 def run_parameter_grid(
@@ -616,7 +690,10 @@ def run_parameter_grid(
             )
         # LULUCF-containing frames start at the first NGHGI year of the active source.
         nghgi_min_year = None
-        if emission_category in {"co2", "all-ghg"} and country_actual_emissions_ts is not None:
+        if (
+            emission_category in {"co2", "all-ghg"}
+            and country_actual_emissions_ts is not None
+        ):
             nghgi_min_year = min(
                 get_year_columns(country_actual_emissions_ts, return_type="int")
             )
@@ -695,7 +772,7 @@ def run_parameter_grid(
 
 def _to_list(value: Any) -> list[Any]:
     """Convert value to list if not already a list/tuple."""
-    if isinstance(value, (list, tuple)):
+    if isinstance(value, list | tuple):
         return list(value)
     return [value]
 

@@ -26,6 +26,10 @@ from fair_shares.library.allocations.budgets.per_capita import (
     equal_per_capita_budget,
     per_capita_adjusted_budget,
 )
+from fair_shares.library.allocations.coverage import (
+    find_incomplete_countries,
+    move_countries_to_row,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 OUT = REPO / "output" / "_prr2023_method_check"
@@ -192,8 +196,12 @@ def library_allocate(pop, emis, gdp, year, basis, exponent) -> pd.DataFrame:
         if ay != year or col not in LIBRARY_TESTABLE:
             continue
         if kind == "res":
+            # As in run_allocation: a country without population in the window joins ROW.
+            window = [("population", start, ay - 1)] if per_cap else []
+            moved = list(find_incomplete_countries({"population": pop}, window))
             out[col] = per_capita_adjusted_budget(
-                **common, country_actual_emissions_ts=emis,
+                **{**common, "population_ts": move_countries_to_row(pop, moved)},
+                country_actual_emissions_ts=move_countries_to_row(emis, moved),
                 pre_allocation_responsibility_weight=1.0,
                 pre_allocation_responsibility_year=start,
                 pre_allocation_responsibility_per_capita=per_cap,

@@ -7,6 +7,7 @@ that prepares input data for fair share allocations.
 
 from __future__ import annotations
 
+import logging
 import subprocess
 from pathlib import Path
 from typing import Any
@@ -18,6 +19,18 @@ from fair_shares.library.exceptions import (
     MissingPipelineDependency,
 )
 from fair_shares.library.paths import DATA_DIR_ENV, OUTPUT_DIR_ENV
+from fair_shares.library.utils.data.provenance import (
+    TRUST_CACHE_ENV,
+    changed_components,
+    clear_stamp,
+    compute_components,
+    describe_changes,
+    read_stamp,
+    trust_cache_enabled,
+    write_stamp,
+)
+
+logger = logging.getLogger(__name__)
 
 
 def _enumerate_required_files(
@@ -453,6 +466,7 @@ def build_data_setup(
     timeout: int = 600,
     verbose: bool = True,
     repo_root: Path | str | None = None,
+    force: bool = False,
 ) -> dict[str, Any]:
     """
     Run the Snakemake build for a resolved setup, in place.
@@ -472,6 +486,9 @@ def build_data_setup(
         Whether to print progress messages
     repo_root : Path | str | None, optional
         The checkout to run Snakemake in. Autodetected when omitted.
+    force : bool, default False
+        Pass ``--forceall`` so Snakemake reruns every rule the target needs,
+        whatever the file timestamps say.
 
     Raises
     ------
@@ -491,7 +508,10 @@ def build_data_setup(
             f"point {DATA_DIR_ENV} and {OUTPUT_DIR_ENV} at a prebuilt data tree."
         )
 
-    command = setup_info["command"]
+    command = list(setup_info["command"])
+    if force:
+        # --forceall reruns the target and every rule it depends on.
+        command.insert(command.index("--"), "--forceall")
 
     if verbose:
         print("Running Snakemake...")
@@ -499,7 +519,12 @@ def build_data_setup(
         print()
 
     stdout, stderr = execute_snakemake_setup(command, resolved_root, timeout)
-    setup_info["execution"] = {"success": True, "stdout": stdout, "stderr": stderr}
+    setup_info["execution"] = {
+        "success": True,
+        "command": command,
+        "stdout": stdout,
+        "stderr": stderr,
+    }
 
     if verbose:
         print("Data setup completed successfully!")
@@ -530,7 +555,7 @@ def _require_pipeline_dependencies() -> None:
             "Building the data tree needs the pipeline toolchain, but "
             f"{', '.join(sorted(missing))} "
             f"{'is' if len(missing) == 1 else 'are'} not installed. Either run "
-            'pip install "fair-shares[pipeline]", or point '
+            'pip install "fair-shares[pipeline] @ git+https://github.com/setupelz/fair-shares", or point '
             f"{DATA_DIR_ENV} and {OUTPUT_DIR_ENV} at a prebuilt data tree."
         )
 
@@ -544,14 +569,21 @@ def setup_data(
     harmonisation_year: int | None = None,
     data_dir: Path | str | None = None,
     output_dir: Path | str | None = None,
+    trust_cache: bool | None = None,
 ) -> dict[str, Any]:
     """
     Set up the complete data pipeline for custom fair share allocations.
 
     Resolves configuration and paths, then builds the data tree with Snakemake
-    **only when required files are missing**. A prebuilt tree therefore costs
-    no Snakemake startup, and an installed wheel pointed at one never needs the
-    pipeline extra at all.
+    when required files are missing or the folder's provenance stamp is out of
+    date. The stamp hashes the code, config and input data that shape the
+    folder (see :mod:`fair_shares.library.utils.data.provenance`). A mismatch
+    reruns all preprocessing for the folder with ``--forceall`` and logs the
+    changed components. A current tree costs no Snakemake startup.
+
+    The check needs a checkout, because the notebooks live there. An installed
+    wheel pointed at a prebuilt tree reuses it as it is and never needs the
+    pipeline extra.
 
     Used in the custom fair share allocation notebook.
 
@@ -574,6 +606,9 @@ def setup_data(
     data_dir, output_dir : Path | str | None, optional
         Explicit input and product directories. Default to the resolved
         directories (see :mod:`fair_shares.library.paths`).
+    trust_cache : bool | None, optional
+        ``True`` reuses existing outputs without the provenance check. ``None``
+        reads ``FAIR_SHARES_TRUST_CACHE`` (``1`` switches the check off).
 
     Returns
     -------
@@ -601,10 +636,21 @@ def setup_data(
         data_dir=data_dir,
     )
 
-    if not setup_info["verification"]["all_files_exist"]:
+    needs_build = not setup_info["verification"]["all_files_exist"]
+    force, components = _check_provenance(setup_info, repo_root, trust_cache)
+    if needs_build or force:
+        base_dir = setup_info["paths"]["base_dir"]
+        if components is not None:
+            clear_stamp(base_dir)
         build_data_setup(
-            setup_info, timeout=timeout, verbose=verbose, repo_root=repo_root
+            setup_info,
+            timeout=timeout,
+            verbose=verbose,
+            repo_root=repo_root,
+            force=force,
         )
+        if components is not None:
+            write_stamp(base_dir, components)
 
     file_info = setup_info["verification"]["file_info"]
     all_files_exist = setup_info["verification"]["all_files_exist"]
@@ -628,6 +674,51 @@ def setup_data(
         )
 
     return setup_info
+
+
+def _check_provenance(
+    setup_info: dict[str, Any],
+    repo_root: Path | None,
+    trust_cache: bool | None,
+) -> tuple[bool, dict[str, str] | None]:
+    """Compare the folder's provenance stamp with the current inputs.
+
+    Returns ``(force, components)``. ``force`` is True when an existing folder
+    has a missing or different stamp. ``components`` is the fresh stamp to
+    write after a build, or ``None`` when the check is off or needs a checkout
+    that is absent.
+    """
+    from fair_shares.library.paths import data_dir as resolve_data_dir
+    from fair_shares.library.paths import find_repo_root
+
+    if trust_cache_enabled(trust_cache):
+        return False, None
+    checkout = Path(repo_root) if repo_root is not None else find_repo_root()
+    if checkout is None:
+        return False, None
+
+    try:
+        data_root: Path | None = resolve_data_dir()
+    except ConfigurationError:
+        data_root = None
+    components = compute_components(
+        setup_info["config"].model_dump(mode="json"), checkout, data_root
+    )
+    base_dir = setup_info["paths"]["base_dir"]
+    if not Path(base_dir).exists():
+        return False, components
+
+    changed = changed_components(read_stamp(base_dir), components)
+    if not changed:
+        return False, components
+    logger.warning(
+        "Preprocessed outputs in %s are out of date (changed: %s); rerunning all "
+        "preprocessing for this folder. Set %s=1 to reuse them as they are.",
+        base_dir,
+        describe_changes(changed),
+        TRUST_CACHE_ENV,
+    )
+    return True, components
 
 
 def _deprecate_project_root(

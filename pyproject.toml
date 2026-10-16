@@ -31,7 +31,7 @@ dependencies = [
     "platformdirs>=4.0.0",
     "plotly>=5.18.0",
     # Runtime, not a dev extra: `fair-shares fetch-data` is how a bare
-    # `pip install fair-shares` obtains its inputs, so the fetcher cannot sit
+    # `pip install` from GitHub obtains its inputs, so the fetcher cannot sit
     # behind an optional dependency. pooch is small and pure-Python.
     "pooch>=1.8.0",
     "pyam-iamc>=3.0.0",
@@ -196,7 +196,7 @@ doctest_optionflags = [
 # uv installs the `dev` group on a bare `uv sync`, so pulling the three extras
 # in here is what keeps the clone workflow zero-config: contributors get
 # Snakemake, the notebook toolchain and the test runner with no extra flags,
-# while `pip install fair-shares` gets none of them.
+# while a plain `pip install` from GitHub gets none of them.
 [dependency-groups]
 dev = [
     "snakefmt>=0.10.3",

@@ -31,7 +31,7 @@ ROOT = here()
 OUT = ROOT / "output" / "_gini_source_comparison"
 
 WDI_PATH = ROOT / "data/gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv"
-WIID_PATH = ROOT / "data/gini/unu-wider-2025/WIID-29APR2025.xlsx"
+WIID_PATH = ROOT / "data/gini/unu-wider-2025/WIID-08SEP2026.xlsx"
 REGIONS_PATH = ROOT / "data/regions/iso3c_region_mapping_20240319.csv"
 YEAR_WINDOW = (2015, 2023)
 

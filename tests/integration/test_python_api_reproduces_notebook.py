@@ -1,14 +1,16 @@
 """The Python API reproduces notebook 601, series for series.
 
-``fair_shares.library.python_api.calculate_allocation_timeseries`` was extracted
-from notebook 601 (§4-§6). This test guards against drift: for a spread of
-single allocations it re-runs the API and asserts the resulting pathways equal
-the ones the notebook wrote.
+Notebook 601 and ``calculate_allocation_timeseries`` share one implementation
+of §5-§6 (``compute_remaining_budgets`` and ``distribute_remaining_pathways``).
+They still differ in §4: the notebook runs the whole preset grid through
+``run_all_allocations`` and writes it, while the API runs one allocation in
+memory under one budget anchor. This test checks that the two routes give the
+same pathways for a spread of single allocations.
 
 The notebook outputs are pre-saved fixtures under ``tests/fixtures/python_api/``
 (example-country slices of the distributed pathways for the
 ``ar6_2020 / 1.5C / 0.5`` anchor). Regenerate them -- e.g. after changing the
-notebook or the ported §5/§6 -- with::
+notebook or §5/§6 -- with::
 
     uv run python tests/fixtures/save_python_api_fixture.py
 
@@ -114,8 +116,8 @@ CASES = [
         },
         "half-sine",
         2050,
-        "free-rider",
-        id="all-ghg-EPC-free-rider",
+        "report-only",
+        id="all-ghg-EPC-report-only",
     ),
     pytest.param(
         "all-ghg",
@@ -159,7 +161,7 @@ CASES = [
         },
         "half-sine",
         2100,
-        "free-rider",
+        "report-only",
         id="all-ghg-ex-ECPC",
     ),
 ]

@@ -3,7 +3,7 @@
 ## Population Data
 
 ### Historical Population Data
-Our World in Data. Population. https://ourworldindata.org/population-growth
+Our World in Data. Population. https://ourworldindata.org/population-growth (grapher export retrieved 2026-10-16, data to 2023)
 
 ### Population Projections
 United Nations, Department of Economic and Social Affairs, Population Division. (2024). World Population Prospects 2024. https://population.un.org/wpp/

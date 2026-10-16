@@ -220,10 +220,14 @@ def _cumulative_per_capita_convergence_core(
         gdp_ts=gdp_ts,
         gini_s=gini_s,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         world_scenario_emissions_ts=world_scenario_emissions_ts,
         pre_allocation_responsibility_year=pre_allocation_responsibility_year
         if pre_allocation_responsibility_weight > 0
         else None,
+        group_level=group_level,
+        unit_level=unit_level,
+        country_emissions_read_at_first_year=True,
     )
 
     # Validate inputs
@@ -352,6 +356,7 @@ def _cumulative_per_capita_convergence_core(
             functional_form=pre_allocation_responsibility_functional_form,
             exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
             inverse=True,
+            indicator="responsibility",
         )
         adjusted_population = adjusted_population * responsibility_adjustment
 
@@ -383,11 +388,25 @@ def _cumulative_per_capita_convergence_core(
             max_gini_adjustment=max_gini_adjustment,
         )
         capability_data = capability_data.reindex(cmltv_pop_by_group.index)
+        # Unadjusted metric: a reference that does not move with the floor
+        capability_reference = None
+        if gini_s is not None:
+            capability_reference = calculate_capability_adjustment_data(
+                population_ts=population_ts,
+                gdp_ts=gdp_ts,
+                first_allocation_year=first_allocation_year,
+                capability_per_capita=capability_per_capita,
+                group_level=group_level,
+                unit_level=unit_level,
+                ur=ur,
+            ).reindex(cmltv_pop_by_group.index).median()
         capability_adjustment = calculate_relative_adjustment(
             capability_data,
             functional_form=capability_functional_form,
             exponent=normalized_capability_weight * capability_exponent,
             inverse=True,
+            reference=capability_reference,
+            indicator="capability",
         )
         adjusted_population = adjusted_population * capability_adjustment
 

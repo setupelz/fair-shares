@@ -36,6 +36,7 @@ from fair_shares.library.utils.data.rcb import (
 from fair_shares.library.utils.data.scenario_sets import (
     CUMULATIVE_CO2,
     NET_ZERO_CROSSING,
+    add_source_non_co2_members,
     budget_from_2020,
     budget_specs,
     build_budget_sets,
@@ -46,7 +47,11 @@ from fair_shares.library.utils.data.scenario_sets import (
     select_temperature_matched,
     select_volume_matched,
 )
-from fair_shares.library.utils.data.scenario_sources import load_bunker_pathways
+from fair_shares.library.utils.data.scenario_sources import (
+    apply_derived_net_zero,
+    ar6_at_net_zero,
+    load_bunker_pathways,
+)
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 RCB_YAML = REPO_ROOT / "data" / "rcbs" / "rcbs.yaml"
@@ -54,6 +59,8 @@ GOLDEN_MASTER = REPO_ROOT / "tests" / "fixtures" / "rcb_golden_master.yaml"
 AR6_METADATA = (
     REPO_ROOT / "data" / "scenarios" / "ipcc_ar6_gidden" / "metadata_ar6_gidden.xlsx"
 )
+
+AR6_CLIMATE = REPO_ROOT / "data/scenarios/ipcc_ar6_climate/ar6_climate_world.csv"
 
 # Toy metadata columns, as in scenario_sources.yaml.
 COLUMNS = {
@@ -84,8 +91,16 @@ def test_defaults_hold_the_published_budgets_and_label_semantics():
     sources = rcb_yaml["rcb_data"]
     assert sources["lamboll_2023"]["scenarios"] == {
         "1.5p50": 250,
+        "2p50": 1220,
         "2p66": 940,
         "2p90": 500,
+    }
+    assert {k: sources[k]["scenarios"]["2p50"] for k in sources} == {
+        "lamboll_2023": 1220,
+        "forster_2024": 1100,
+        "ar6_2020": 1350,
+        "forster_2026": 1050,
+        "ar6_wg1_2021": 1350,
     }
     assert sources["lamboll_2023"]["likelihood_scope"] == "tcre-zec-esf"
     assert sources["lamboll_2023"]["budget_metric"] == "peak-warming"
@@ -101,7 +116,7 @@ def test_defaults_hold_the_published_budgets_and_label_semantics():
     )
     settings = scenario_set_settings(rcb_yaml)
     assert (settings["volume_tolerance_gt"], settings["min_scenarios"]) == (50.0, 10)
-    assert settings["bunkers"]["scenario_sources"] == ["ar6", "sci"]
+    assert settings["bunkers"]["scenario_sources"] == ["ar6", "sci", "scenariomip"]
 
 
 def test_full_years_to_the_interpolated_net_zero_year():
@@ -252,6 +267,34 @@ def test_role_matched_and_category_sets_of_each_budget():
     }
 
 
+def test_other_sources_join_the_non_co2_set_of_role_matched_budgets():
+    """SCI scenarios at T with net zero join role-matched non-CO2 sets only."""
+    metadata = _metadata(
+        {"a": ("C1", 300.0, 1.50, 2045), "b": ("C1", 300.0, 1.40, 2045)}
+    )
+    rcb_yaml = {
+        "min_scenarios": 1,
+        "rcb_data": {
+            "band": {"baseline_year": 2020, "scenarios": {"1.5p50": 300}},
+            "ar6": {
+                "baseline_year": 2020,
+                "scenario_selection": "ar6-category",
+                "scenarios": {"1.5p50": 300},
+            },
+        },
+    }
+    sets = build_budget_sets(rcb_yaml, metadata, OBSERVED, COLUMNS)
+    sci = pd.DataFrame(
+        {"nz_year": [2050, None, 2050], "w50": [1.52, 1.50, 1.70]},
+        index=pd.MultiIndex.from_tuples([("s", "in"), ("s", "no-nz"), ("s", "warm")]),
+    )
+    added = add_source_non_co2_members(sets, "sci", sci, COLUMNS, 0.05)
+    assert added == {"band:1.5p50": 1}
+    assert sorted(sets["band:1.5p50"]["non_co2"]) == [("m", "a"), ("s", "in")]
+    assert sets["band:1.5p50"]["record"]["non_co2_set"]["n"] == 2
+    assert list(sets["ar6:1.5p50"]["non_co2"]) == [("m", "a"), ("m", "b")]
+
+
 def test_corrected_ar6_category_map_and_removed_rules():
     """C1 holds the 1.5 C p50 budget, C3 >67% below 2 C, C4 >50% below 2 C."""
     assert AR6_CATEGORY_BY_RCB_LABEL == {"1.5p50": "C1", "2p67": "C3", "2p50": "C4"}
@@ -370,14 +413,21 @@ def test_temperature_sets_on_the_ar6_metadata():
     """Median warming at net zero within 0.05 C, harmonised-infilled net zero."""
     if not AR6_METADATA.exists():
         pytest.skip("AR6 scenario metadata is not redistributable and is absent")
-    metadata = pd.read_excel(AR6_METADATA)
+    if not AR6_CLIMATE.exists():
+        pytest.skip("AR6 climate series extract is absent")
+    metadata = pd.read_excel(AR6_METADATA).set_index(["model", "scenario"])
     column = "Median warming at year of netzero Emissions|CO2 (MAGICCv7.5.3)"
     nz = "Year of netzero CO2 emissions (Harm-Infilled) table"
+    derived, changed = apply_derived_net_zero(metadata, ar6_at_net_zero("ar6"))
+    # Same scenarios reach net zero; years differ only where AR6 used 2100 warming.
+    assert derived[nz].notna().equals(metadata[nz].notna())
+    assert len(changed) == 48
+    metadata = derived
     sizes = {
         t: len(select_temperature_matched(metadata, "k", t, column, nz, 0.05, 10))
         for t in (1.5, 1.7, 2.0)
     }
-    assert sizes == {1.5: 38, 1.7: 151, 2.0: 41}
+    assert sizes == {1.5: 32, 1.7: 156, 2.0: 43}
 
 
 def test_rebase_raises_when_emissions_end_before_the_baseline_year():

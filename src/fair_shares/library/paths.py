@@ -231,7 +231,7 @@ def resolve_source_path(
     """Resolve a repo-relative config path against the resolved directories.
 
     Data-source configs store repo-relative strings such as
-    ``data/gini/unu-wider-2025/WIID-29APR2025.xlsx`` or
+    ``data/gini/unu-wider-2025/WIID-08SEP2026.xlsx`` or
     ``output/{source_id}/intermediate/emissions/bunker_timeseries.csv``. The
     leading segment selects the directory: ``data/`` resolves against the data
     directory and ``output/`` against the output directory, both with the

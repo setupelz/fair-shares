@@ -18,8 +18,7 @@ import pandas as pd
 
 from fair_shares.library.error_messages import format_error
 from fair_shares.library.exceptions import AllocationError, DataProcessingError
-from fair_shares.library.utils.dataframes import get_year_columns
-from fair_shares.library.utils.dataframes import TimeseriesDataFrame
+from fair_shares.library.utils.dataframes import TimeseriesDataFrame, get_year_columns
 
 
 def validate_not_empty(
@@ -657,6 +656,8 @@ def validate_emissions_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "Emissions",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate emissions data in TimeseriesDataFrame format.
@@ -672,10 +673,14 @@ def validate_emissions_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
     validate_not_empty(df, dataset_name_for_error_msg)
     validate_index_structure(
-        df, dataset_name_for_error_msg, ["iso3c", "unit", "emission-category"]
+        df, dataset_name_for_error_msg, [group_level, unit_level, "emission-category"]
     )
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
@@ -696,6 +701,8 @@ def validate_gdp_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "GDP",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate GDP data in TimeseriesDataFrame format.
@@ -710,9 +717,13 @@ def validate_gdp_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
     validate_not_empty(df, dataset_name_for_error_msg)
-    validate_index_structure(df, dataset_name_for_error_msg, ["iso3c", "unit"])
+    validate_index_structure(df, dataset_name_for_error_msg, [group_level, unit_level])
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
         raise AllocationError(f"{dataset_name_for_error_msg} has no year columns")
@@ -725,6 +736,8 @@ def validate_population_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "Population",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate population data in TimeseriesDataFrame format.
@@ -739,9 +752,13 @@ def validate_population_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
     validate_not_empty(df, dataset_name_for_error_msg)
-    validate_index_structure(df, dataset_name_for_error_msg, ["iso3c", "unit"])
+    validate_index_structure(df, dataset_name_for_error_msg, [group_level, unit_level])
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
         raise AllocationError(f"{dataset_name_for_error_msg} has no year columns")

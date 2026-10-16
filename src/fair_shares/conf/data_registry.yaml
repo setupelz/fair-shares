@@ -240,54 +240,54 @@ sources:
 
   wdi-2025:
     tier: default
-    version: "2025 bulk export"
+    version: "bulk export of 2026-10-08"
     license: "CC-BY-4.0"
     redistributable: true
     citation: >-
       World Bank. World Development Indicators: GDP (constant 2015 US$,
       NY.GDP.MKTP.KD), GDP PPP (constant 2021 international $,
       NY.GDP.MKTP.PP.KD) and Gini index (SI.POV.GINI, sourced by the World Bank
-      from its Poverty and Inequality Platform), 2025 export.
+      from its Poverty and Inequality Platform), export of 8 October 2026.
       https://data.worldbank.org/
     # The bulk endpoint serves a zip whose CSV member carries a World Bank
     # export-job number (`..._v2_1004.csv`) that changes on every regeneration.
     # The member is extracted under the filename the configs expect; the job
     # number is upstream bookkeeping and carries no meaning for the data.
     #
-    # All three references re-fetched and re-pinned 2026-08-03. The two GDP
-    # files had drifted from their previous pins — the World Bank regenerates
-    # these exports in place (this vintage says "Last Updated 2026-07-13"),
-    # which is what `unversioned` describes. The local copies are this vintage.
+    # All three references re-fetched and re-pinned 2026-10-16. The World Bank
+    # regenerates these exports in place (this vintage says "Last Updated
+    # 2026-10-08"), which is what `unversioned` describes. The local copies
+    # are this vintage. Data years: GDP to 2025, Gini to 2025.
     downloads:
       - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.PP.KD?downloadformat=csv"
         transform: unzip-member
         member_pattern: "API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_*.csv"
         target: "gdp/wdi-2025/API_NY.GDP.MKTP.PP.KD_DS2_en_csv_v2_1004.csv"
         unversioned: true
-        reference_sha256: "00d482e29f4911826f6e91153606fd72539f311bbef1b0928e155dce11b512b5"
+        reference_sha256: "c1a901f0c2ebf8f146e102048992fb2d0dd0646df6dea4f684c39f45caedf374"
       - url: "https://api.worldbank.org/v2/en/indicator/NY.GDP.MKTP.KD?downloadformat=csv"
         transform: unzip-member
         member_pattern: "API_NY.GDP.MKTP.KD_DS2_en_csv_v2_*.csv"
         target: "gdp/wdi-2025/API_NY.GDP.MKTP.KD_DS2_en_csv_v2_213435.csv"
         unversioned: true
-        reference_sha256: "956908eafd226680383eb830f14392a722a2e7478e489da928bb143c35d4e846"
+        reference_sha256: "6e4d1e4a24d29cd98f3bc75d44789e049045a0d92ffd6be752e31296cdf95957"
       # Gini index, the default Gini source. Same provider, same licence and
       # same bulk-export mechanics as the two GDP files above, so it sits in
       # this entry rather than a separate one. The export-job number is dropped
       # from the target filename: it changes on every regeneration and means
-      # nothing. Fetched live and pinned 2026-08-03.
+      # nothing. Fetched live and pinned 2026-10-16.
       - url: "https://api.worldbank.org/v2/en/indicator/SI.POV.GINI?downloadformat=csv"
         transform: unzip-member
         member_pattern: "API_SI.POV.GINI_DS2_en_csv_v2_*.csv"
         target: "gini/wdi-2025/API_SI.POV.GINI_DS2_en_csv_v2.csv"
         unversioned: true
-        reference_sha256: "ef26b11f4b4a46d08409c304606dfc274fc7a94ee7e808576e8ed924cd896d11"
+        reference_sha256: "17336cd7ee812eebb71f9fbf385fc3b37ec6328a752a8535fafcbf4b2e260260"
 
   # --- Population ------------------------------------------------------------
 
   un-owid-2025:
     tier: default
-    version: "OWID long-run series (2025 export) + UN WPP 2024 probabilistic projections"
+    version: "OWID long-run series (export of 2026-10-16, to 2023) + UN WPP 2024 probabilistic projections"
     license: "Mixed — UN WPP data under UN terms of use; OWID processing is open but OWID does not relicense the UN data"
     redistributable: false
     citation: >-
@@ -299,12 +299,12 @@ sources:
       https://population.un.org/wpp/
     downloads:
       # OWID regenerates its grapher exports continuously and publishes no
-      # version identifier, so this file cannot be pinned. See the spec's open
-      # question: depositing our vintage to Zenodo is the durable fix.
+      # version identifier, so this file cannot be pinned. This vintage
+      # (retrieved 2026-10-16) runs to 2023, column "Population".
       - url: "https://ourworldindata.org/grapher/population.csv"
         target: "population/un-owid-2025/population.csv"
         unversioned: true
-        reference_sha256: "e46703de26aa68b562732fa6c0a4589e5aba179aa019976dd2866b4c38f16b8e"
+        reference_sha256: "6e72d4ffe8f0e940df60c90b13c8ad6eda85043b995b244e8b3e20b1e833b541"
       # Verified 2026-08-03: this URL returns the repo's copy byte for byte.
       # Resolves the "UN WPP direct URL unverified" item in the spec. The path
       # comes from the WPP site's own downloads manifest
@@ -321,24 +321,24 @@ sources:
 
   unu-wider-2025:
     tier: optional
-    version: "29 April 2025"
-    doi: "10.35188/UNU-WIDER/WIID-290425"
+    version: "8 September 2026"
+    doi: "10.35188/UNU-WIDER/WIID-080926"
     license: "CC-BY-NC-SA-3.0-IGO"
     redistributable: false
     citation: >-
-      UNU-WIDER (2025). World Income Inequality Database (WIID) — Version
-      29 April 2025. United Nations University UNU-WIDER.
-      https://doi.org/10.35188/UNU-WIDER/WIID-290425
+      UNU-WIDER (2026). World Income Inequality Database (WIID) — Version
+      8 September 2026. United Nations University UNU-WIDER.
+      https://doi.org/10.35188/UNU-WIDER/WIID-080926
     # The NonCommercial + ShareAlike terms are why this file cannot ship in the
     # repository. It is freely downloadable, and the
     # landing page is not a consent gate — but a WAF rejects default client
     # user-agents with HTTP 403. The browser User-Agent below is that
     # workaround, kept per-source so it is visible exactly where it applies.
     downloads:
-      - url: "https://www.wider.unu.edu/sites/default/files/WIID/WIID-29APR2025.xlsx"
-        target: "gini/unu-wider-2025/WIID-29APR2025.xlsx"
-        sha256: "fd56af5d862fd88ddd3c4a4b94d34d7e3c4abcd4af78268efcdda666877c3168"
-        size_bytes: 10868605
+      - url: "https://www.wider.unu.edu/sites/default/files/WIID/WIID-08SEP2026.xlsx"
+        target: "gini/unu-wider-2025/WIID-08SEP2026.xlsx"
+        sha256: "b05c6e824eea1cb2fed100feb9dbc5ebbe25851cbed784f92eb96874346ed069"
+        size_bytes: 12059311
         headers:
           User-Agent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
 
@@ -453,6 +453,32 @@ sources:
       - target: "scenarios/ipcc_ar6_bunkers/ar6_bunkers_world.csv"
         sha256: "1a743833a82542700c169255ab80385f604555971b5423f443fdb64293989e9a"
 
+  ipcc_ar6_climate:
+    tier: manual
+    version: "AR6 Scenarios Database v1.1, retrieved 2026-10-16"
+    doi: "10.5281/zenodo.5886911"
+    license: >-
+      AR6 Scenarios Database licence (IIASA): use for scientific research and
+      science communication; redistribution of substantial parts is restricted
+    redistributable: false
+    citation: >-
+      Byers, E., Krey, V., Kriegler, E., Riahi, K., et al. (2022). AR6 Scenarios
+      Database (v1.1). Integrated Assessment Modeling Consortium & International
+      Institute for Applied Systems Analysis. https://doi.org/10.5281/zenodo.5886911
+    # World harmonised-infilled CO2, reported CO2 and MAGICCv7.5.3 GSAT median
+    # and 67th percentile of every scenario (1871), read anonymously from
+    # "ar6-public" with pyam 3.2.0. Notebook 104 derives the at-net-zero
+    # columns of the AR6 scenarios from them (warming_at_net_zero).
+    manual_instructions: >-
+      Run `uv run python -c "from fair_shares.library.utils.data.scenario_sources
+      import fetch_ar6_climate_series; fetch_ar6_climate_series()"`. It reads the
+      public AR6 Scenarios Database without a login and writes
+      <data_dir>/scenarios/ipcc_ar6_climate/ar6_climate_world.csv. A new
+      retrieval can differ from the pinned hash; check the provenance file.
+    downloads:
+      - target: "scenarios/ipcc_ar6_climate/ar6_climate_world.csv"
+        sha256: "fcc548842cfdce1f5ec8ab5d19fe2e53e01850b4b51bedff6864fae34e42c8fa"
+
   sci-2025:
     tier: manual
     version: "v1.0 (Release 1.0, February 2026)"
@@ -472,8 +498,10 @@ sources:
       emissions pathways. Research Square preprint.
       https://doi.org/10.21203/rs.3.rs-8891091/v1
     # Global timeseries and meta indicators of the Scenario Compass ensemble.
-    # Later releases exist (v1.1, v1.2, v2.0 at 10.5281/zenodo.23232097); the
-    # version in scenario_sources.yaml selects the file. Never committed.
+    # Release v2.0 is the entry sci-2026. The version in scenario_sources.yaml
+    # selects the file. The metadata carry no warming at net zero;
+    # warming_at_net_zero derives it from the GSAT percentile series. Never
+    # committed.
     manual_instructions: >-
       Download the global pathways workbook of the release you use from
       https://download.scenariocompass.org (access on request) and place it
@@ -484,6 +512,68 @@ sources:
       - target: "scenarios/sci-2025-v1.0/SCI-2025_v1.0_pathways_ensemble_global.xlsx"
         sha256: "7507f185ec431d64ac134c5c14d8b147fa0144197b6a2bbbc670cbbb4ed07a17"
         size_bytes: 118929400
+
+  sci-2026:
+    tier: manual
+    version: "v2.0 (Release 2.0, 2026-10-08)"
+    doi: "10.5281/zenodo.23232097"
+    license: >-
+      IAMC licence (https://scenariocompass.org/license), copyright 2026 IIASA
+      and contributing modeling teams. The workbook states: "The data may be
+      used for scientific research purposes. However, users must strictly
+      adhere to the applicable Nature editorial policies and embargo rules
+      until the manuscript has been formally published."
+    redistributable: false
+    citation: >-
+      Huppmann, D., Riahi, K., Clarke, L., Hasegawa, T., et al. (2026). Scenario
+      Compass Initiative - Pathways Ensemble 2026 (v2.0). Zenodo.
+      https://doi.org/10.5281/zenodo.23232097. Manuscript: Riahi, K., Clarke,
+      L., Hasegawa, T., Huppmann, D., et al. (2026). Mitigation benchmarks from
+      the 2025 community update of global emissions pathways. Research Square
+      preprint. https://doi.org/10.21203/rs.3.rs-8891091/v1
+    # Global timeseries and meta indicators, 1977 scenarios: SCI v1.1, the 68
+    # ScenarioMIP v0.1 runs and later submissions. Climate assessment in three
+    # workflows (AR6 with MAGICC v7.5.3; SCI v1.1 and ScenarioMIP with
+    # MAGICC v7.6.0a3). Never committed.
+    manual_instructions: >-
+      Download the global pathways workbook of release v2.0 from
+      https://download.scenariocompass.org (login required) and place it at
+      <data_dir>/scenarios/sci-2026-v2.0/SCI-2026_v2.0_pathways_ensemble_global.xlsx.
+      The terms in the workbook's README sheet apply until the manuscript is
+      published.
+    downloads:
+      - target: "scenarios/sci-2026-v2.0/SCI-2026_v2.0_pathways_ensemble_global.xlsx"
+        sha256: "051fdd1976fcbbc46817900999b77d19d3cb28b84c5310b1b5734a19a241503e"
+        size_bytes: 156276953
+
+  scenariomip-cmip7:
+    tier: manual
+    version: "v0.1 (Release v0.1, September 2026)"
+    doi: "10.5281/zenodo.22296051"
+    license: >-
+      Copyright 2026 IIASA and contributing modeling teams. The workbook states
+      that the licence "permits reuse for scientific analysis and similar uses,
+      but redistribution of substantial parts of the data is prohibited"
+      (https://scenariomip.apps.ece.iiasa.ac.at/license). The early-access
+      rules of 2 February 2026 (registration, own use, no submission before
+      1 September 2026) ended on 1 September 2026.
+    redistributable: false
+    citation: >-
+      Riahi, K., van Vuuren, D., et al. (2026). Scenario data of the
+      'Socioeconomic, Emissions and Land Use Futures - The ScenarioMIP Pathways
+      for CMIP7' (v0.1). Zenodo. https://doi.org/10.5281/zenodo.22296051
+    # Global timeseries and meta indicators, 68 model runs of 7 IAMs plus
+    # ensemble envelopes, climate assessment MAGICC v7.6.0a3. Off by default
+    # for every budget term (scenario_sources.yaml). Never committed.
+    manual_instructions: >-
+      Register at the ScenarioMIP Explorer (https://scenariomip.apps.ece.iiasa.ac.at),
+      download the global workbook of release v0.1 and place it at
+      <data_dir>/scenarios/scenariomip-v0.1/ScenarioMIP_v0.1_global.xlsx.
+      State the release version with every result.
+    downloads:
+      - target: "scenarios/scenariomip-v0.1/ScenarioMIP_v0.1_global.xlsx"
+        sha256: "555902b4d592ed34748901defb819b41ff6f94267672fb954aa6887e80fc343f"
+        size_bytes: 12191925
 
   # --- Bundled: ships in the repository, never fetched ------------------------
 
@@ -519,7 +609,7 @@ sources:
       derived from the IPCC AR6 Scenarios Database.
     downloads:
       - target: "rcbs/rcbs.yaml"
-        sha256: "82178ff8479d35bf291264e5a24d274c2cc552341b38b934ded8a8ef41786d6f"
+        sha256: "2d268c8266a3c17b3c3a39a47b20ef999e2e1e8c52778c33a6d739fd8d7e6060"
       - target: "rcbs/ar6_scenario_nz_years.parquet"
         sha256: "3df82c7ecfcf7b80782d666093d117e204f75e5e74f0c5ae1f22de80336a8ffc"
 

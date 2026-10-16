@@ -50,7 +50,7 @@ def run_notebook(
     except ImportError as e:
         raise MissingPipelineDependency(
             "Executing notebooks needs papermill, which ships with the "
-            'pipeline extra: pip install "fair-shares[pipeline]".'
+            'pipeline extra: pip install "fair-shares[pipeline] @ git+https://github.com/setupelz/fair-shares".'
         ) from e
 
     try:

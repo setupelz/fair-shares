@@ -31,17 +31,17 @@
 #     1.5p50 -> C1, 2p67 -> C3, 2p50 -> C4. Other labels of the source use the
 #     role-matched sets.
 #   A set below min_scenarios is a configuration error naming the label.
+#   Net zero is the first full year from 2020 at which the climate-assessment
+#   CO2 is at or below zero (AR6 metadata convention). The AR6 net-zero years
+#   are confirmed against the harmonised-infilled CO2 (require_net_zero).
 #
-# Labels left out of the defaults (published value, Gt CO2, and the count):
-#   - Every 2p50: lamboll_2023 (1220), forster_2024 (1100), forster_2026
-#     (1050), ar6_wg1_2021 (1350, AR6 C4). No scenario that reaches net zero at
-#     that volume reports bunkers: the bunker reporters reach net zero with at
-#     most 1017 Gt from 2020, and C4 holds none.
+# Labels left out of the defaults (published value, Gt CO2, and the count of
+# the volume-matched set, below min_scenarios):
 #   - forster_2024 1.5p67 (150): 6 volume-matched scenarios; 1.5p83 (100): 3.
 #   - forster_2026 1.5p67 (80): 8 volume-matched scenarios; 1.5p83 (30): 5;
 #     1.5p90 (10): 3.
 #   - ar6_wg1_2021 1.5p83 (300): 6 volume-matched scenarios.
-#   Counts from the AR6 reanalysis of Gidden et al. (2023) and SCI v1.0.
+#   Counts from the AR6 reanalysis of Gidden et al. (2023), net zero confirmed.
 
 # Largest distance between a scenario's cumulative net CO2 from 2020 to net
 # zero and the budget from 2020, in Gt CO2.
@@ -57,7 +57,10 @@ min_scenarios: 10
 # share s of the median net CO2 of the budget's set from the next year to net
 # zero. Each scenario of scenario_sources that reports international aviation
 # and shipping and reaches net zero gives a ratio: its cumulative bunkers over
-# its own net CO2 in the same window. No historical vetting applies to these
+# its own net CO2 in the same window. Net zero uses the run's own net CO2 in
+# the AR6 convention (crossing of zero, else the first year below 100 Mt), so
+# the climate emulator behind a source does not enter. A run carried over from
+# another listed source counts once. No historical vetting applies to these
 # reporters. s is the median of the per-family medians of the ratios (model
 # families in src/fair_shares/conf/scenario_sources.yaml); a family counts only
 # with at least min_runs_per_family reporters. AR6 category
@@ -65,10 +68,16 @@ min_scenarios: 10
 # absent is left out with a warning; fewer than min_reporters reporters or
 # min_families families is an error.
 bunkers:
-  scenario_sources: [ar6, sci]
+  scenario_sources: [ar6, sci, scenariomip]
   min_reporters: 10
   min_families: 3
   min_runs_per_family: 3
+
+# Sources pooled into the temperature-matched non-CO2 set. SCI and ScenarioMIP
+# add their vetted scenarios that are not AR6 carry-overs, with warming at net
+# zero derived from their GSAT series (warming_at_net_zero).
+non_co2:
+  scenario_sources: [ar6]
 
 # Observed global net CO2 behind the budget from 2020 (registry: gcb-2025-global).
 observed_co2_path: "data/emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx"
@@ -90,6 +99,7 @@ rcb_data:
     budget_metric: peak-warming
     scenarios:
       "1.5p50": 250
+      "2p50": 1220
       "2p66": 940
       "2p90": 500
 
@@ -105,6 +115,7 @@ rcb_data:
       "1.7p50": 550
       "1.7p67": 450
       "1.7p83": 350
+      "2p50": 1100
       "2p67": 900
       "2p83": 750
 
@@ -117,6 +128,7 @@ rcb_data:
     scenario_selection: ar6-category
     scenarios:
       "1.5p50": 500
+      "2p50": 1350
       "2p67": 1150
       "2p83": 900
 
@@ -133,6 +145,7 @@ rcb_data:
       "1.7p67": 390
       "1.7p83": 300
       "1.7p90": 250
+      "2p50": 1050
       "2p67": 860
       "2p83": 690
       "2p90": 600
@@ -151,5 +164,6 @@ rcb_data:
       "1.7p50": 850
       "1.7p67": 700
       "1.7p83": 550
+      "2p50": 1350
       "2p67": 1150
       "2p83": 900

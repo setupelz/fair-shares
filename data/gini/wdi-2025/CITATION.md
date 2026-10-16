@@ -2,7 +2,7 @@
 
 ## World Bank Gini index
 
-World Bank. (2025). Gini index (`SI.POV.GINI`). World Bank Open Data. https://data.worldbank.org/
+World Bank. (2026). Gini index (`SI.POV.GINI`). World Bank Open Data, export of 8 October 2026 (data to 2025). https://data.worldbank.org/
 
 Files:
 - `API_SI.POV.GINI_DS2_en_csv_v2.csv` — Gini index, WDI indicator `SI.POV.GINI`

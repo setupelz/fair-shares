@@ -131,7 +131,7 @@ def _capability_snapshot(
         pop_at_ref = pop_full[pop_all[ref_year]].reindex(gdp_at_ref.index)
 
     if gini_s is not None:
-        gini_lookup = create_gini_lookup_dict(gini_s)
+        gini_lookup = create_gini_lookup_dict(gini_s, group_level)
         gdp_at_ref = apply_gini_adjustment(
             gdp_at_ref, pop_at_ref, gini_lookup,
             income_floor, max_gini_adjustment, group_level,
@@ -290,10 +290,13 @@ def _per_capita_core(
         gdp_ts=gdp_ts,
         gini_s=gini_s,
         country_actual_emissions_ts=country_actual_emissions_ts,
+        responsibility_emissions_ts=responsibility_emissions_ts,
         pre_allocation_responsibility_year=pre_allocation_responsibility_year
         if pre_allocation_responsibility_weight > 0
         else None,
         capability_window=capability_window,
+        group_level=group_level,
+        unit_level=unit_level,
     )
 
     # Validate data requirements
@@ -400,79 +403,91 @@ def _per_capita_core(
         # Compute raw capability metric (DataFrame, year-by-year), or a
         # broadcast single-year snapshot when capability_reference_year is
         # set (Decision-level semantics mirror the budget approaches).
-        capability_metric_dynamic = None
-        if use_capability and capability_window is not None:
-            # Cumulative-window mode: one value per country, broadcast like the snapshot.
-            window_values = calculate_capability_window_data(
-                population_ts, gdp_ts, capability_window, capability_per_capita,
-                group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
-            ).reindex(
-                base_population.index.get_level_values(group_level)
-            ).to_numpy()
-            capability_metric_dynamic = pd.DataFrame(
-                {c: window_values for c in population_numeric.columns},
-                index=base_population.index,
-            )
-        elif use_capability and capability_reference_year is not None:
-            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
-            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
-            gdp_single_unit = convert_unit_robust(
-                gdp_single_unit, "million", unit_level=unit_level, ur=ur
-            )
-            gdp_numeric = gdp_single_unit.droplevel(unit_level)
-            snapshot = _capability_snapshot(
-                gdp_ts, population_ts, gdp_numeric, population_numeric,
-                capability_reference_year, capability_per_capita, gini_s,
-                income_floor, max_gini_adjustment, group_level, unit_level, ur,
-            ).reindex(base_population.index)
-            capability_metric_dynamic = pd.DataFrame(
-                {c: snapshot for c in population_numeric.columns}
-            )
-        elif use_capability:
-            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
-            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
-            gdp_single_unit = convert_unit_robust(
-                gdp_single_unit, "million", unit_level=unit_level, ur=ur
-            )
-            gdp_numeric = gdp_single_unit.droplevel(unit_level)
-
-            common_columns = population_numeric.columns.intersection(
-                gdp_numeric.columns
-            )
-            gdp_common = gdp_numeric[common_columns]
-            pop_common = population_numeric[common_columns]
-
-            if gini_s is not None:
-                gini_lookup = create_gini_lookup_dict(gini_s)
-                gdp_common = apply_gini_adjustment(
-                    gdp_common, pop_common, gini_lookup,
-                    income_floor, max_gini_adjustment, group_level,
+        def _capability_dynamic(gini_s):
+            capability_metric_dynamic = None
+            if use_capability and capability_window is not None:
+                # Cumulative-window mode: one value per country, broadcast like the snapshot.
+                window_values = calculate_capability_window_data(
+                    population_ts, gdp_ts, capability_window, capability_per_capita,
+                    group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
+                ).reindex(
+                    base_population.index.get_level_values(group_level)
+                ).to_numpy()
+                capability_metric_dynamic = pd.DataFrame(
+                    {c: window_values for c in population_numeric.columns},
+                    index=base_population.index,
                 )
+            elif use_capability and capability_reference_year is not None:
+                gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+                gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+                gdp_single_unit = convert_unit_robust(
+                    gdp_single_unit, "million", unit_level=unit_level, ur=ur
+                )
+                gdp_numeric = gdp_single_unit.droplevel(unit_level)
+                snapshot = _capability_snapshot(
+                    gdp_ts, population_ts, gdp_numeric, population_numeric,
+                    capability_reference_year, capability_per_capita, gini_s,
+                    income_floor, max_gini_adjustment, group_level, unit_level, ur,
+                ).reindex(base_population.index)
+                capability_metric_dynamic = pd.DataFrame(
+                    {c: snapshot for c in population_numeric.columns}
+                )
+            elif use_capability:
+                gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+                gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+                gdp_single_unit = convert_unit_robust(
+                    gdp_single_unit, "million", unit_level=unit_level, ur=ur
+                )
+                gdp_numeric = gdp_single_unit.droplevel(unit_level)
 
-            if capability_per_capita:
-                gdp_cumsum = gdp_common.cumsum(axis=1)
-                pop_cumsum = pop_common.cumsum(axis=1)
-                capability_metric_dynamic = gdp_cumsum.divide(pop_cumsum)
-            else:
-                capability_metric_dynamic = gdp_common.cumsum(axis=1)
+                common_columns = population_numeric.columns.intersection(
+                    gdp_numeric.columns
+                )
+                gdp_common = gdp_numeric[common_columns]
+                pop_common = population_numeric[common_columns]
 
-            # GDP window note: when the allocation pathway extends past the
-            # last year of the input GDP time series (population_ts typically
-            # runs to 2100; gdp_ts often ends at the last observed year, e.g.
-            # 2023 for wdi-2025), this reindex forward-fills the cumulative
-            # GDP-per-capita values from the last observed year onward. The
-            # cross-country capability ratios of the last observed year are
-            # then held constant for every subsequent year of the pathway. The
-            # capability adjustment is applied year-by-year against the
-            # population trajectory, so the frozen final-observed-year snapshot
-            # gets weighted by the full post-observation population. Users who
-            # want different post-observation capability dynamics (SSP2 GDP
-            # projections, custom growth assumptions, or a future-extended WDI
-            # release) should extend the input ``gdp_ts`` time series with
-            # projected data before calling this function.
-            capability_metric_dynamic = capability_metric_dynamic.reindex(
-                population_numeric.columns, axis=1, method="ffill"
-            )
+                if gini_s is not None:
+                    gini_lookup = create_gini_lookup_dict(gini_s, group_level)
+                    gdp_common = apply_gini_adjustment(
+                        gdp_common, pop_common, gini_lookup,
+                        income_floor, max_gini_adjustment, group_level,
+                    )
+
+                if capability_per_capita:
+                    gdp_cumsum = gdp_common.cumsum(axis=1)
+                    pop_cumsum = pop_common.cumsum(axis=1)
+                    capability_metric_dynamic = gdp_cumsum.divide(pop_cumsum)
+                else:
+                    capability_metric_dynamic = gdp_common.cumsum(axis=1)
+
+                # GDP window note: when the allocation pathway extends past the
+                # last year of the input GDP time series (population_ts typically
+                # runs to 2100; gdp_ts often ends at the last observed year, e.g.
+                # 2023 for wdi-2025), this reindex forward-fills the cumulative
+                # GDP-per-capita values from the last observed year onward. The
+                # cross-country capability ratios of the last observed year are
+                # then held constant for every subsequent year of the pathway. The
+                # capability adjustment is applied year-by-year against the
+                # population trajectory, so the frozen final-observed-year snapshot
+                # gets weighted by the full post-observation population. Users who
+                # want different post-observation capability dynamics (SSP2 GDP
+                # projections, custom growth assumptions, or a future-extended WDI
+                # release) should extend the input ``gdp_ts`` time series with
+                # projected data before calling this function.
+                capability_metric_dynamic = capability_metric_dynamic.reindex(
+                    population_numeric.columns, axis=1, method="ffill"
+                )
+            return capability_metric_dynamic
+
+        capability_metric_dynamic = None
+        capability_reference = None
+        if use_capability:
+            capability_metric_dynamic = _capability_dynamic(gini_s)
+            if gini_s is not None:
+                # Unadjusted metric: a reference that does not move with the floor
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    capability_reference = _capability_dynamic(None).median()
 
         # Compute raw pre-allocation responsibility data (Series, constant across years)
         responsibility_data = None
@@ -498,6 +513,8 @@ def _per_capita_core(
                 functional_form=capability_functional_form,
                 exponent=normalized_capability_weight * capability_exponent,
                 inverse=True,
+                reference=capability_reference,
+                indicator="capability",
             )
             base_population = base_population * capability_adjustment
 
@@ -507,6 +524,7 @@ def _per_capita_core(
                 functional_form=pre_allocation_responsibility_functional_form,
                 exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
                 inverse=True,
+                indicator="responsibility",
             )
             base_population = base_population.mul(responsibility_adjustment, axis=0)
 
@@ -526,50 +544,62 @@ def _per_capita_core(
         population_at_ta = population_numeric[pop_year_to_label[first_allocation_year]]
         base_population_at_ta = population_at_ta.copy()
 
-        capability_metric_at_ta = None
-        if use_capability and capability_window is not None:
-            window_values = calculate_capability_window_data(
-                population_ts, gdp_ts, capability_window, capability_per_capita,
-                group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
-            ).reindex(
-                base_population_at_ta.index.get_level_values(group_level)
-            ).to_numpy()
-            capability_metric_at_ta = pd.Series(
-                window_values, index=base_population_at_ta.index
-            )
-        elif use_capability and capability_reference_year is not None:
-            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
-            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
-            gdp_single_unit = convert_unit_robust(
-                gdp_single_unit, "million", unit_level=unit_level, ur=ur
-            )
-            gdp_numeric = gdp_single_unit.droplevel(unit_level)
-            capability_metric_at_ta = _capability_snapshot(
-                gdp_ts, population_ts, gdp_numeric, population_numeric,
-                capability_reference_year, capability_per_capita, gini_s,
-                income_floor, max_gini_adjustment, group_level, unit_level, ur,
-            ).reindex(base_population_at_ta.index)
-        elif use_capability:
-            gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
-            gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
-            gdp_single_unit = convert_unit_robust(
-                gdp_single_unit, "million", unit_level=unit_level, ur=ur
-            )
-            gdp_numeric = gdp_single_unit.droplevel(unit_level)
-            gdp_year_to_label = {int(c): c for c in gdp_numeric.columns}
-            gdp_at_ta = gdp_numeric[gdp_year_to_label[first_allocation_year]]
-
-            if gini_s is not None:
-                gini_lookup = create_gini_lookup_dict(gini_s)
-                gdp_at_ta = apply_gini_adjustment(
-                    gdp_at_ta, population_at_ta, gini_lookup,
-                    income_floor, max_gini_adjustment, group_level,
+        def _capability_at_ta(gini_s):
+            capability_metric_at_ta = None
+            if use_capability and capability_window is not None:
+                window_values = calculate_capability_window_data(
+                    population_ts, gdp_ts, capability_window, capability_per_capita,
+                    group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
+                ).reindex(
+                    base_population_at_ta.index.get_level_values(group_level)
+                ).to_numpy()
+                capability_metric_at_ta = pd.Series(
+                    window_values, index=base_population_at_ta.index
                 )
+            elif use_capability and capability_reference_year is not None:
+                gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+                gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+                gdp_single_unit = convert_unit_robust(
+                    gdp_single_unit, "million", unit_level=unit_level, ur=ur
+                )
+                gdp_numeric = gdp_single_unit.droplevel(unit_level)
+                capability_metric_at_ta = _capability_snapshot(
+                    gdp_ts, population_ts, gdp_numeric, population_numeric,
+                    capability_reference_year, capability_per_capita, gini_s,
+                    income_floor, max_gini_adjustment, group_level, unit_level, ur,
+                ).reindex(base_population_at_ta.index)
+            elif use_capability:
+                gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
+                gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
+                gdp_single_unit = convert_unit_robust(
+                    gdp_single_unit, "million", unit_level=unit_level, ur=ur
+                )
+                gdp_numeric = gdp_single_unit.droplevel(unit_level)
+                gdp_year_to_label = {int(c): c for c in gdp_numeric.columns}
+                gdp_at_ta = gdp_numeric[gdp_year_to_label[first_allocation_year]]
 
-            if capability_per_capita:
-                capability_metric_at_ta = gdp_at_ta.divide(population_at_ta)
-            else:
-                capability_metric_at_ta = gdp_at_ta
+                if gini_s is not None:
+                    gini_lookup = create_gini_lookup_dict(gini_s, group_level)
+                    gdp_at_ta = apply_gini_adjustment(
+                        gdp_at_ta, population_at_ta, gini_lookup,
+                        income_floor, max_gini_adjustment, group_level,
+                    )
+
+                if capability_per_capita:
+                    capability_metric_at_ta = gdp_at_ta.divide(population_at_ta)
+                else:
+                    capability_metric_at_ta = gdp_at_ta
+            return capability_metric_at_ta
+
+        capability_metric_at_ta = None
+        capability_reference = None
+        if use_capability:
+            capability_metric_at_ta = _capability_at_ta(gini_s)
+            if gini_s is not None:
+                # Unadjusted metric: a reference that does not move with the floor
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    capability_reference = _capability_at_ta(None).median()
 
         responsibility_data = None
         if use_responsibility:
@@ -596,6 +626,8 @@ def _per_capita_core(
                 functional_form=capability_functional_form,
                 exponent=normalized_capability_weight * capability_exponent,
                 inverse=True,
+                reference=capability_reference,
+                indicator="capability",
             )
             base_population_at_ta = base_population_at_ta * capability_adjustment
 
@@ -605,6 +637,7 @@ def _per_capita_core(
                 functional_form=pre_allocation_responsibility_functional_form,
                 exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
                 inverse=True,
+                indicator="responsibility",
             )
             base_population_at_ta = base_population_at_ta * responsibility_adjustment
 
@@ -940,9 +973,10 @@ def per_capita_adjusted(
         **Capability.** GDP time series used from ``first_allocation_year``
         onwards. Required when ``capability_weight > 0``.
     pre_allocation_responsibility_weight
-        **Pre-allocation responsibility.** Relative weight (0–1). Only the
-        ratio to ``capability_weight`` matters — ``(0.5, 0.5)`` is
-        identical to ``(1.0, 1.0)``. When 0, pre-allocation
+        **Pre-allocation responsibility.** Relative weight (0–1). The two
+        weights may sum to at most 1.0 and are normalised to their sum, so
+        only the ratio to ``capability_weight`` matters: ``(0.5, 0.5)`` is
+        identical to ``(0.3, 0.3)``. When 0, pre-allocation
         responsibility is disabled.
         See ``docs/science/parameter-effects.md`` §weights.
     capability_weight

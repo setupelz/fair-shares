@@ -8,7 +8,9 @@ the bunker variables. A new scenario source plugs in as a new entry.
 
 The AR6 bunker series come from the public AR6 Scenarios Database, read
 anonymously through pyam (``fetch_ar6_bunkers``). The Scenario Compass (SCI)
-workbook is a manual download (``bunker_reporter_series``).
+and ScenarioMIP workbooks are manual downloads (``bunker_reporter_series``,
+``derived_source_inputs``). Their metadata carry no warming at net zero;
+``warming_at_net_zero`` derives it from their GSAT percentile series.
 """
 
 from __future__ import annotations
@@ -27,6 +29,9 @@ from fair_shares.library.exceptions import ConfigurationError, DataLoadingError
 
 SCENARIO_SOURCES_RESOURCE = "scenario_sources.yaml"
 DEFAULT_SCENARIO_SOURCE = "ar6"
+# AR6 WGIII Table SPM.2, note j: a pathway counts as reaching net zero when its
+# harmonised or reported CO2 falls below 100 Mt CO2/yr by 2100.
+NET_ZERO_THRESHOLD_MT = 100.0
 
 # Platform and query behind data/scenarios/ipcc_ar6_bunkers.
 AR6_PUBLIC_PLATFORM = "ar6-public"
@@ -43,7 +48,9 @@ def _load_all() -> dict[str, Any]:
     return raw["sources"]
 
 
-def get_scenario_source(name: str = DEFAULT_SCENARIO_SOURCE) -> dict[str, Any]:
+def get_scenario_source(
+    name: str = DEFAULT_SCENARIO_SOURCE, version: str | None = None
+) -> dict[str, Any]:
     """
     Return the registry entry of one scenario source.
 
@@ -51,11 +58,13 @@ def get_scenario_source(name: str = DEFAULT_SCENARIO_SOURCE) -> dict[str, Any]:
     ----------
     name : str
         Key in ``scenario_sources.yaml`` (default: "ar6")
+    version : str, optional
+        Release of an entry with ``versions`` (default: its ``version`` key)
 
     Returns
     -------
     dict
-        The entry as declared. Every entry has "terms", "co2_variables" and
+        The entry as declared, merged with the fields of the selected release. Every entry has "terms", "co2_variables" and
         "bunkers"; "ar6" also has "variables", "category_column" and
         "metadata_columns"
 
@@ -69,7 +78,17 @@ def get_scenario_source(name: str = DEFAULT_SCENARIO_SOURCE) -> dict[str, Any]:
         raise ConfigurationError(
             f"Unknown scenario source '{name}'. Known sources: {sorted(sources)}."
         )
-    return sources[name]
+    entry = dict(sources[name])
+    versions = entry.pop("versions", None)
+    if versions is None:
+        return entry
+    version = version or entry.get("version")
+    if version not in versions:
+        raise ConfigurationError(
+            f"Scenario source '{name}' has no version '{version}'. Known versions: "
+            f"{sorted(versions)}."
+        )
+    return {**entry, **versions[version], "version": version}
 
 
 def metadata_column_names(source: dict[str, Any]) -> list[str]:
@@ -265,9 +284,14 @@ def bunker_reporter_series(
     name: str,
     data_dir: str | Path | None = None,
     exclude_ar6_duplicates: bool = False,
+    pool: list[str] | tuple[str, ...] = (),
 ) -> tuple[pd.DataFrame, pd.DataFrame] | None:
     """
     Return the net CO2 and bunker CO2 of every bunker reporter of a source.
+
+    Runs that the entry flags as carried over from another source of ``pool``
+    (``duplicate_columns``; ``exclude_ar6_duplicates`` for AR6) count once,
+    under that other source.
 
     No vetting applies: the bunker share needs the ratio of bunkers to net CO2
     within each model run, which historical vetting does not test. Both series
@@ -295,9 +319,11 @@ def bunker_reporter_series(
             return None
         variables = {*co2_variables, *block["components"], block["total"]}
         data = read_workbook_sheet(path, "data", variables)
-        if exclude_ar6_duplicates and source.get("ar6_duplicate_column"):
+        data = data[~data["Model"].isin(source.get("exclude_models", []))]
+        flags = _duplicate_columns(source, exclude_ar6_duplicates, pool, name)
+        if flags:
             meta = read_workbook_sheet(path, "meta").set_index(["Model", "Scenario"])
-            dupes = set(meta.index[meta[source["ar6_duplicate_column"]].eq(True)])
+            dupes = set(meta.index[meta[flags].eq(True).any(axis=1)])
             keys = list(zip(data["Model"], data["Scenario"]))
             data = data[[k not in dupes for k in keys]]
         bunkers = load_bunker_pathways(data, block["components"], block["total"])
@@ -311,6 +337,289 @@ def bunker_reporter_series(
     co2 = _wide(data, co2_variables)
     keys = bunkers.index.intersection(co2.index)
     return co2.loc[keys], bunkers.loc[keys]
+
+
+def _duplicate_columns(
+    source: dict[str, Any], exclude_ar6: bool, pool, name: str
+) -> list[str]:
+    """Meta columns that flag runs carried over from other sources of the pool."""
+    columns = dict(source.get("duplicate_columns", {}))
+    if source.get("ar6_duplicate_column"):
+        columns.setdefault("ar6", source["ar6_duplicate_column"])
+    wanted = {o for o in pool if o != name} | ({"ar6"} if exclude_ar6 else set())
+    return [column for other, column in columns.items() if other in wanted]
+
+
+def _annual(frame: pd.DataFrame, last_year: int) -> pd.DataFrame:
+    """Interpolate year columns linearly to every year up to ``last_year``."""
+    frame = frame.astype(float)
+    frame.columns = frame.columns.astype(int)
+    frame = frame.reindex(columns=range(int(min(frame.columns)), last_year + 1))
+    return frame.interpolate(axis=1, limit_area="inside")
+
+
+def net_zero_years(
+    co2_mt: pd.DataFrame,
+    start: int = 2020,
+    last_year: int = 2100,
+    reported_mt: pd.DataFrame | None = None,
+    threshold_mt: float = NET_ZERO_THRESHOLD_MT,
+) -> pd.Series:
+    """
+    Return the net-zero CO2 year of every scenario, in the AR6 convention.
+
+    Every series is linear between its reported years. The net-zero year is
+    the first full year from ``start`` at which the harmonised CO2 is at or
+    below zero. A scenario without one counts as reaching net zero when its
+    harmonised or reported CO2 falls below ``threshold_mt`` by ``last_year``
+    (AR6 WGIII Table SPM.2, note j), in the first such year. Other scenarios
+    get NaN.
+
+    Parameters
+    ----------
+    co2_mt : pd.DataFrame
+        Harmonised net CO2 of the climate assessment, Mt CO2/yr, year columns
+    reported_mt : pd.DataFrame, optional
+        The model's own (non-harmonised) net CO2, same layout
+    threshold_mt : float, optional
+        Threshold of the AR6 count, Mt CO2/yr (default: 100)
+    """
+    co2 = _annual(co2_mt, last_year).loc[:, start:last_year]
+    below = co2.lt(threshold_mt)
+    if reported_mt is not None:
+        reported = _annual(reported_mt, last_year).reindex(
+            index=co2.index, columns=co2.columns
+        )
+        below |= reported.lt(threshold_mt)
+
+    def first(mask: pd.DataFrame) -> pd.Series:
+        return mask.idxmax(axis=1).where(mask.any(axis=1)).astype(float)
+
+    return first(co2.le(0)).fillna(first(below))
+
+
+def _ascii_key(key: tuple) -> tuple:
+    return tuple(str(part).encode("ascii", "replace").decode() for part in key)
+
+
+def warming_at_net_zero(
+    co2_mt: pd.DataFrame,
+    gsat: dict[str, pd.DataFrame],
+    start: int = 2020,
+    last_year: int = 2100,
+    reported_mt: pd.DataFrame | None = None,
+) -> pd.DataFrame:
+    """
+    Return the net-zero CO2 year of every scenario and the warming in that year.
+
+    The net-zero year follows ``net_zero_years`` (AR6 convention). The warming
+    is the GSAT of that year, linear between reported years. A scenario
+    without net zero by ``last_year`` takes the GSAT of ``last_year``.
+
+    Parameters
+    ----------
+    co2_mt : pd.DataFrame
+        Harmonised net CO2 of the climate assessment, one row per scenario,
+        year columns
+    gsat : dict[str, pd.DataFrame]
+        Output column -> GSAT series of one percentile, same layout
+    start, last_year : int, optional
+        First and last year searched (default: 2020, 2100)
+    reported_mt : pd.DataFrame, optional
+        The model's own net CO2, for the threshold count of ``net_zero_years``
+
+    Returns
+    -------
+    pd.DataFrame
+        One row per scenario present in every input, columns
+        "net_zero_year" and the keys of ``gsat``
+    """
+    temperatures = {name: _annual(frame, last_year) for name, frame in gsat.items()}
+    keys = co2_mt.index
+    for frame in temperatures.values():
+        keys = keys.intersection(frame.index)
+    net_zero = net_zero_years(co2_mt.loc[keys], start, last_year, reported_mt)
+    result = pd.DataFrame({"net_zero_year": net_zero}, index=keys)
+    years = net_zero.fillna(last_year).astype(int)
+    for name, frame in temperatures.items():
+        frame = frame.loc[keys]
+        result[name] = [frame.at[key, year] for key, year in zip(keys, years)]
+    return result
+
+
+def apply_derived_net_zero(
+    metadata: pd.DataFrame, derived: pd.DataFrame
+) -> tuple[pd.DataFrame, pd.Index]:
+    """
+    Replace the at-net-zero columns of the metadata with derived values.
+
+    Keys match after non-ASCII characters become "?", as in exports of the
+    public AR6 database.
+
+    Parameters
+    ----------
+    metadata : pd.DataFrame
+        One row per scenario, indexed by (Model, Scenario)
+    derived : pd.DataFrame
+        Output of ``ar6_at_net_zero``: the same column names, one row per
+        scenario
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.Index]
+        The metadata with the derived columns, and the scenarios whose
+        net-zero year changed
+
+    Raises
+    ------
+    DataProcessingError
+        If a scenario of the metadata has no derived row
+    """
+    from fair_shares.library.exceptions import DataProcessingError
+
+    by_ascii = {_ascii_key(k): row for k, row in derived.iterrows()}
+    missing = [k for k in metadata.index if _ascii_key(k) not in by_ascii]
+    if missing:
+        raise DataProcessingError(
+            f"No derived net-zero values for {len(missing)} scenarios, e.g. "
+            f"{missing[:3]}. Fetch the AR6 climate series again."
+        )
+    rows = pd.DataFrame(
+        [by_ascii[_ascii_key(k)] for k in metadata.index], index=metadata.index
+    )
+    result = metadata.copy()
+    year = derived.columns[0]
+    old = result[year]
+    changed = metadata.index[~((old == rows[year]) | (old.isna() & rows[year].isna()))]
+    result[derived.columns] = rows[derived.columns]
+    return result, changed
+
+
+def ar6_at_net_zero(
+    name: str = DEFAULT_SCENARIO_SOURCE, data_dir: str | Path | None = None
+) -> pd.DataFrame | None:
+    """
+    Derive the at-net-zero columns of a source from its climate series, or None.
+
+    Reads the ``climate_series`` block of the registry entry (AR6: the
+    harmonised-infilled CO2, the reported CO2 and the GSAT percentiles of the
+    AR6 climate assessment, fetched with ``fetch_ar6_climate_series``) and
+    applies ``warming_at_net_zero``. None when the entry has no such block.
+
+    Returns
+    -------
+    pd.DataFrame or None
+        One row per scenario, columns named as in ``metadata_columns``
+        (net-zero year first)
+
+    Raises
+    ------
+    DataLoadingError
+        If the entry declares the block and the file is absent
+    """
+    from fair_shares.library import paths
+
+    source = get_scenario_source(name)
+    block = source.get("climate_series")
+    if block is None:
+        return None
+    path = paths._resolve("data", data_dir) / Path(block["path"]).relative_to("data")
+    if not path.exists():
+        raise DataLoadingError(
+            f"AR6 climate series not found: {path}. Fetch them with "
+            '`uv run python -c "from fair_shares.library.utils.data.'
+            "scenario_sources import fetch_ar6_climate_series; "
+            'fetch_ar6_climate_series()"`.'
+        )
+    data = pd.read_csv(path)
+    columns = source["metadata_columns"]
+    derived = warming_at_net_zero(
+        _wide(data, [block["co2"]]),
+        {columns[role]: _wide(data, [v]) for role, v in block["gsat"].items()},
+        reported_mt=_wide(data, [block["co2_reported"]]),
+    )
+    return derived.rename(columns={"net_zero_year": columns["net_zero_year"]})
+
+
+def derived_source_inputs(
+    name: str,
+    data_dir: str | Path | None = None,
+    exclude_ar6_duplicates: bool = False,
+) -> tuple[pd.DataFrame, pd.DataFrame] | None:
+    """
+    Return the metadata and non-CO2 pathways of a source with derived warming.
+
+    For a registry entry with a ``derived_warming`` block (SCI, ScenarioMIP):
+    keeps the scenarios that pass its ``vetting`` and are not in
+    ``exclude_models``, derives the at-net-zero columns with
+    ``warming_at_net_zero`` and takes non-CO2 as Kyoto gases minus CO2 of
+    its ``non_co2`` block.
+
+    Returns
+    -------
+    tuple[pd.DataFrame, pd.DataFrame] or None
+        (metadata, non-CO2 in Mt CO2e/yr at the reported years), both indexed
+        by (Model, Scenario). The metadata hold the columns named in
+        ``metadata_columns`` and ``category_column``. None when the workbook
+        is absent.
+
+    Raises
+    ------
+    ConfigurationError
+        If the entry has no ``derived_warming`` block
+    """
+    source = get_scenario_source(name)
+    derived = source.get("derived_warming")
+    if derived is None:
+        raise ConfigurationError(
+            f"Scenario source '{name}' declares no derived_warming block."
+        )
+    path = source_data_path(source, data_dir)
+    if not path.exists():
+        warnings.warn(
+            f"Scenario source workbook not found: {path}. Registry name: "
+            f"{source.get('registry_source')}.",
+            stacklevel=2,
+        )
+        return None
+    block = source["non_co2"]
+    reported = derived.get("co2_reported")
+    variables = {
+        *source["co2_variables"],
+        *([reported] if reported else []),
+        *derived["gsat"].values(),
+        block["kyoto"],
+        *block["co2_variables"],
+    }
+    data = read_workbook_sheet(path, "data", variables)
+    meta = read_workbook_sheet(path, "meta").set_index(["Model", "Scenario"])
+    keep = ~meta.index.get_level_values("Model").isin(source.get("exclude_models", []))
+    if "vetting" in source:
+        keep &= meta[source["vetting"]["column"]].isin(source["vetting"]["keep"])
+    if exclude_ar6_duplicates and source.get("ar6_duplicate_column"):
+        keep &= ~meta[source["ar6_duplicate_column"]].eq(True)
+    meta = meta[keep]
+
+    columns = source["metadata_columns"]
+    derived_frame = warming_at_net_zero(
+        _wide(data, list(source["co2_variables"])),
+        {
+            columns[role]: _wide(data, [variable])
+            for role, variable in derived["gsat"].items()
+        },
+        reported_mt=_wide(data, [reported]) if reported else None,
+    ).rename(columns={"net_zero_year": columns["net_zero_year"]})
+    keys = meta.index.intersection(derived_frame.index)
+    metadata = derived_frame.loc[keys]
+    category = source.get("category_column")
+    if category:
+        metadata[category] = meta.loc[keys, category]
+    non_co2 = (
+        _wide(data, [block["kyoto"]])
+        .sub(_wide(data, list(block["co2_variables"])))
+        .dropna(how="all")
+    )
+    return metadata, non_co2.loc[non_co2.index.intersection(keys)]
 
 
 def fetch_ar6_bunkers(
@@ -368,17 +677,65 @@ def fetch_ar6_bunkers(
         co2 = co2[[k in reporters for k in zip(co2["model"], co2["scenario"])]]
         table = pd.concat([table, co2], ignore_index=True)
         variables = variables + share_co2
+    return _write_with_provenance(table, target, variables)
+
+
+def _write_with_provenance(
+    table: pd.DataFrame, target: Path, variables: list[str]
+) -> Path:
+    """Write an ar6-public extract and its provenance file next to it."""
+    import pyam
+
     table.to_csv(target, index=False)
-    sha256 = hashlib.sha256(target.read_bytes()).hexdigest()
     provenance = {
         "platform": AR6_PUBLIC_PLATFORM,
         "query": {"variable": variables, "region": AR6_BUNKER_REGION},
         "retrieved": _dt.date.today().isoformat(),
         "pyam_version": pyam.__version__,
         "n_scenarios": int(table[["model", "scenario"]].drop_duplicates().shape[0]),
-        "sha256": sha256,
+        "sha256": hashlib.sha256(target.read_bytes()).hexdigest(),
     }
     target.with_suffix(".provenance.yaml").write_text(
         yaml.safe_dump(provenance, sort_keys=False)
     )
     return target
+
+
+def fetch_ar6_climate_series(
+    data_dir: str | Path | None = None,
+    source: str = DEFAULT_SCENARIO_SOURCE,
+) -> Path:
+    """
+    Download the world climate series behind the AR6 at-net-zero columns.
+
+    Reads the variables of the ``climate_series`` block of the registry entry
+    (harmonised-infilled CO2, reported CO2, GSAT percentiles) from the public
+    AR6 Scenarios Database (platform "ar6-public") anonymously through pyam
+    and writes them with a provenance file next to them.
+
+    Returns
+    -------
+    Path
+        The written CSV
+    """
+    import pyam
+
+    from fair_shares.library import paths
+
+    block = get_scenario_source(source)["climate_series"]
+    variables = [block["co2"], block["co2_reported"], *block["gsat"].values()]
+    target = paths.data_dir_for_write(data_dir) / Path(block["path"]).relative_to(
+        "data"
+    )
+    target.parent.mkdir(parents=True, exist_ok=True)
+    table = (
+        pyam.read_iiasa(
+            AR6_PUBLIC_PLATFORM,
+            variable=variables,
+            region=AR6_BUNKER_REGION,
+            meta=False,
+        )
+        .timeseries()
+        .reset_index()
+    )
+    return _write_with_provenance(table, target, variables)

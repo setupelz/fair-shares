@@ -191,7 +191,8 @@ def test_responsibility_only_run_with_a_reference_year_does_not_read_gdp():
 
 
 # Shares from the code before the snapshot change (allocation years inside the
-# GDP series), in COUNTRIES order.
+# GDP series), in COUNTRIES order. Gini cases use the fixed normalisation reference
+# (median of unadjusted capability), introduced after the snapshot change.
 PINNED = {
     "adjusted, 1990, year-by-year": (
         dict(allocation_year=1990, capability_weight=1.0),
@@ -231,28 +232,28 @@ PINNED = {
     "gini, 1990, year-by-year": (
         dict(allocation_year=1990),
         [
-            0.6557159057156675,
-            0.2719315511156184,
-            0.04220255322242418,
-            0.030149989946289923,
+            0.6640399190307589,
+            0.2757308646071765,
+            0.03701188579073111,
+            0.023217330571333468,
         ],
     ),
     "gini, 1990, snapshot 2020": (
         dict(allocation_year=1990, capability_reference_year=2020),
         [
-            0.6677068995500234,
-            0.2625082675903675,
-            0.04075970083585096,
-            0.029025132023758147,
+            0.6763487058161727,
+            0.26525956466332024,
+            0.03583705840466903,
+            0.02255467111583809,
         ],
     ),
     "gini, 2015, snapshot 2000": (
         dict(allocation_year=2015, capability_reference_year=2000),
         [
-            0.6346141754907716,
-            0.288667408408946,
-            0.04466689143303458,
-            0.032051524667247644,
+            0.6445185307718585,
+            0.2924308882163189,
+            0.03881988911570136,
+            0.02423069189612125,
         ],
     ),
 }

@@ -183,6 +183,53 @@ def validate_year_in_data(
             )
 
 
+def validate_years_in_window(
+    start_year: int,
+    end_year_exclusive: int,
+    df: TimeseriesDataFrame,
+    dataset_name_for_error_msg: str,
+) -> None:
+    """
+    Validate that the dataset covers the window [start_year, end_year_exclusive).
+
+    Used for the pre-allocation responsibility window, which excludes the
+    allocation year itself. A year counts as covered when its column holds at
+    least one value. The window must hold a covered year, and the data must
+    reach from its start to its last year; gaps between covered years are
+    allowed (e.g. five-year steps).
+
+    Raises
+    ------
+    DataProcessingError
+        If the data start after the window start or end before its last year,
+        naming the missing years
+    """
+    # An empty window is a parameter error, which the allocation reports itself
+    if start_year >= end_year_exclusive:
+        return
+    covered = sorted(int(c) for c in get_year_columns(df) if df[c].notna().any())
+    last = end_year_exclusive - 1
+    inside = [y for y in covered if start_year <= y <= last]
+    if inside and covered[0] <= start_year and covered[-1] >= last:
+        return
+    window = f"{start_year}-{last}"
+    missing = [window]
+    if inside:
+        # Years before the first and after the last covered year
+        edges = ((start_year, covered[0] - 1), (covered[-1] + 1, last))
+        missing = [f"{a}-{b}" if a < b else str(a) for a, b in edges if a <= b]
+    available = f"{covered[0]}-{covered[-1]}" if covered else "none"
+    raise DataProcessingError(
+        format_error(
+            "missing_year_range",
+            dataset_name=dataset_name_for_error_msg,
+            required_years=window,
+            available_years=available,
+            missing_years=", ".join(missing),
+        )
+    )
+
+
 def validate_positive_values(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str,

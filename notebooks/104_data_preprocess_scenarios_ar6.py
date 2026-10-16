@@ -72,6 +72,7 @@ from fair_shares.library.utils.data.rcb import (
 from fair_shares.library.utils.data.scenario_sets import (
     NET_ZERO_CROSSING,
     SHARE_START_YEARS,
+    add_source_non_co2_members,
     build_budget_sets,
     bunker_share,
     bunker_share_table,
@@ -80,7 +81,11 @@ from fair_shares.library.utils.data.scenario_sets import (
     scenario_set_settings,
 )
 from fair_shares.library.utils.data.scenario_sources import (
+    annual_pathways,
+    apply_derived_net_zero,
+    ar6_at_net_zero,
     bunker_reporter_series,
+    derived_source_inputs,
     get_scenario_source,
     metadata_column_names,
 )
@@ -506,6 +511,16 @@ _co2_world = _world_frame(rcb_scenario_data["CO2"])
 scenario_accounts = scenario_accounting(_co2_world)
 scenario_metadata = scenario_metadata.join(scenario_accounts, how="left")
 
+# At-net-zero columns derived in the AR6 convention (warming_at_net_zero): the
+# AR6 metadata hold 2100 warming for scenarios that reach net zero only under
+# the 100 Mt threshold of Table SPM.2.
+_derived_net_zero = ar6_at_net_zero(_active_scenario)
+if _derived_net_zero is not None:
+    scenario_metadata, _changed = apply_derived_net_zero(
+        scenario_metadata, _derived_net_zero
+    )
+    print(f"  Derived at-net-zero columns; net-zero year changed for {len(_changed)}")
+
 # Select the scenario sets of every budget in the RCB file of the active target.
 # A target without an RCB file (pathway mode) needs no RCB adjustments.
 _rcb_target = config.get("active_target_source", active_target_source)
@@ -533,6 +548,27 @@ else:
     budget_sets = {}
     rcb_baseline_years = []
     print(f"  Target '{_rcb_target}' has no RCB file: no RCB adjustments computed.")
+
+# Sources of non_co2.scenario_sources beyond the active one (SCI, ScenarioMIP)
+# add their temperature-matched scenarios to the non-CO2 set of every budget.
+# AR6 carry-overs count once. An absent workbook leaves its source out.
+extra_non_co2_pathways = {}
+if budget_sets:
+    for _name in _set_settings["non_co2"]["scenario_sources"]:
+        if _name == _active_scenario:
+            continue
+        _inputs = derived_source_inputs(_name, exclude_ar6_duplicates=True)
+        if _inputs is None:
+            continue
+        _extra_meta, extra_non_co2_pathways[_name] = _inputs
+        _added = add_source_non_co2_members(
+            budget_sets,
+            _name,
+            _extra_meta,
+            get_scenario_source(_name)["metadata_columns"],
+            _set_settings["temperature_half_width"],
+        )
+        print(f"  Non-CO2 scenarios added from {_name}: {_added}")
 
 for _key, _entry in budget_sets.items():
     _record = _entry["record"]
@@ -578,6 +614,9 @@ all_timeseries = {}
 
 # Median pathway of every budget's scenario set, per timeseries
 budget_timeseries = {}
+
+# Harmonised pathway of every scenario, per timeseries
+per_scenario_harmonised = {}
 
 # Dictionary to store harmonization comparison data for plotting
 harmonization_comparison = {}
@@ -845,6 +884,9 @@ for timeseries_name in timeseries_specs:
                     index=["model", "scenario"], columns="year", values=timeseries_name
                 )
             )
+            per_scenario_harmonised[timeseries_name] = _per_scenario
+            # Scenarios of other non-CO2 sources have no row here; their
+            # non-CO2 enters below.
             _by_budget = median_pathways_by_budget(_per_scenario, budget_sets)
             _by_budget.index = pd.MultiIndex.from_tuples(
                 [
@@ -960,6 +1002,39 @@ def _derive_category(minuend_key, subtrahend_key, new_category, timeseries=None)
     return result
 
 
+def _budget_index(by_budget, category):
+    """Index levels of the per-budget timeseries."""
+    result = by_budget.copy()
+    result.index = pd.MultiIndex.from_tuples(
+        [(ca, q, src, world_key, "Mt * CO2e", category) for ca, q, src in result.index],
+        names=_scenario_index_levels,
+    )
+    return result
+
+
+def _harmonise_non_co2(pathways):
+    """Annual non-CO2 of another source, harmonised to historical all-GHG minus CO2."""
+    iamc_years = [str(y) for y in [*range(2020, 2060, 5), *range(2060, 2110, 10)]]
+    annual = annual_pathways(pathways[[y for y in iamc_years if y in pathways]])
+    hist_ghg = historical_emissions_data.get("all-ghg")
+    hist_co2 = historical_emissions_data.get("co2")
+    if hist_ghg is None or hist_co2 is None:
+        return annual
+    keys = [(m, s, world_key, "Mt * CO2e") for m, s in annual.index]
+    index = pd.MultiIndex.from_tuples(
+        keys, names=["model", "scenario", "iso3c", "unit"]
+    )
+    history = hist_ghg.iloc[0].sub(hist_co2.iloc[0])
+    harmonised = harmonize_to_historical_with_convergence(
+        annual.set_axis(index),
+        ensure_string_year_columns(pd.DataFrame([history] * len(index), index=index)),
+        anchor_year,
+        convergence_year,
+        preserve_cumulative_peak=True,
+    )
+    return harmonised.droplevel(["iso3c", "unit"])
+
+
 if "co2-lulucf" in derived_to_process or "co2-lulucf" in final_categories:
     print("Deriving co2-lulucf (NGHGI) = co2 - co2-ffi...")
     co2_lulucf = _derive_category("co2", "co2-ffi", "co2-lulucf")
@@ -976,6 +1051,15 @@ if "non-co2" in derived_to_process or "non-co2" in final_categories:
     non_co2_by_budget = _derive_category(
         "all-ghg", "co2", "non-co2", timeseries=budget_timeseries
     )
+    if non_co2_by_budget is not None and extra_non_co2_pathways:
+        # Pooled sources: median over the set of each scenario's non-CO2.
+        _pooled = [
+            per_scenario_harmonised["all-ghg"].sub(per_scenario_harmonised["co2"]),
+            *(_harmonise_non_co2(p) for p in extra_non_co2_pathways.values()),
+        ]
+        non_co2_by_budget = _budget_index(
+            median_pathways_by_budget(pd.concat(_pooled), budget_sets), "non-co2"
+        )
     if non_co2_by_budget is not None:
         budget_timeseries["non-co2"] = non_co2_by_budget
 
@@ -1029,10 +1113,7 @@ share_sources = {}
 if budget_sets:
     _bunker_sources = _set_settings["bunkers"]["scenario_sources"]
     for _name in _bunker_sources:
-        _loaded = bunker_reporter_series(
-            _name,
-            exclude_ar6_duplicates=_name != "ar6" and "ar6" in _bunker_sources,
-        )
+        _loaded = bunker_reporter_series(_name, pool=_bunker_sources)
         if _loaded is not None:
             share_sources[_name] = _loaded
     share_table = bunker_share_table(share_sources)

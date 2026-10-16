@@ -44,7 +44,7 @@ class MissingPipelineDependency(ConfigurationError):
     """Raised when the Snakemake build pipeline is needed but not installed.
 
     The build path (jupytext + Snakemake) is an opt-in extra, so a plain
-    ``pip install fair-shares`` can read a prebuilt data tree but cannot
+    install without the extra can read a prebuilt data tree but cannot
     regenerate one.
     """
 

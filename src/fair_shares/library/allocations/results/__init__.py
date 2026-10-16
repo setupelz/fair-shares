@@ -32,6 +32,7 @@ of specifying what is being allocated, each with distinct policy implications.
 
 from __future__ import annotations
 
+import pandas as pd
 from attrs import define, field
 from pandas_openscm.index_manipulation import set_index_levels_func
 
@@ -46,6 +47,12 @@ from fair_shares.library.validation import (
     validate_world_data_present,
     validate_years_match,
 )
+
+
+def _share_index_names(df: TimeseriesDataFrame) -> list[str]:
+    """Return the share index names: the group level, then unit and category."""
+    group = df.index.names[0] if isinstance(df.index, pd.MultiIndex) else "iso3c"
+    return [group or "iso3c", "unit", "emission-category"]
 
 
 @define
@@ -70,11 +77,15 @@ class BaseAllocationResult:
         data quality or methodological issues affecting those countries'
         allocations. Transparency about data limitations is essential for
         credible fair share analysis.
+    moved_to_row
+        Analysis countries that joined rest of world for this allocation only,
+        because they lack a value in a year the allocation reads.
     """
 
     approach: str
     parameters: dict
     country_warnings: dict[str, str] | None = field(default=None, kw_only=True)
+    moved_to_row: tuple[str, ...] = field(default=(), kw_only=True)
 
 
 @define
@@ -123,7 +134,9 @@ class BudgetAllocationResult(BaseAllocationResult):
         validate_index_structure(
             self.relative_shares_cumulative_emission,
             "Cumulative emission shares",
-            expected_index_names=["iso3c", "unit", "emission-category"],
+            expected_index_names=_share_index_names(
+                self.relative_shares_cumulative_emission
+            ),
         )
 
         # Validate that there is one year column (budget allocations are single-year)
@@ -246,7 +259,9 @@ class PathwayAllocationResult(BaseAllocationResult):
         validate_index_structure(
             self.relative_shares_pathway_emissions,
             "Pathway emission shares",
-            expected_index_names=["iso3c", "unit", "emission-category"],
+            expected_index_names=_share_index_names(
+                self.relative_shares_pathway_emissions
+            ),
         )
 
     def get_absolute_emissions(

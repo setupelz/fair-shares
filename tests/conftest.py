@@ -32,6 +32,24 @@ def _disable_auto_fetch(monkeypatch):
     auto-fetch path re-enable it explicitly.
     """
     monkeypatch.setenv("FAIR_SHARES_AUTO_FETCH", "0")
+    # Tests read prebuilt output trees; a stale stamp must never start a rebuild.
+    monkeypatch.setenv("FAIR_SHARES_TRUST_CACHE", "1")
+
+
+@pytest.fixture(autouse=True)
+def _fresh_path_cache():
+    """Resolve data and output paths afresh in every test.
+
+    ``paths`` caches each resolved directory per process. A test that patches
+    ``find_repo_root`` or a path variable would otherwise leave its temporary
+    directory in the cache for every later test.
+    """
+    from fair_shares.library import paths
+
+    paths.reset_path_cache()
+    yield
+    paths.reset_path_cache()
+
 
 # Common test parameters to avoid redundancy
 PATHWAY_TEST_PARAMS = {
@@ -87,7 +105,8 @@ def generate_simple_test_data():
     Returns TimeseriesDataFrame format with proper MultiIndex structure.
     """
     countries = ["AAA", "BBB", "CCC", "DDD"]
-    years = [2015, 2019, 2020, 2030, 2040, 2050]
+    # 1990 starts the default responsibility window.
+    years = [1990, 2015, 2019, 2020, 2030, 2040, 2050]
 
     np.random.seed(42)  # For reproducible test data
 

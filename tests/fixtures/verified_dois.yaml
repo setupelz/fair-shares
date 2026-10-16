@@ -95,13 +95,15 @@ verified:
       shifts global benchmarks", Nature 624, 102-108. The paper behind the
       dataset above. Crossref reports a CC BY 4.0 licence.
 
-  - doi: "10.35188/UNU-WIDER/WIID-290425"
+  - doi: "10.35188/UNU-WIDER/WIID-080926"
     used_by: unu-wider-2025
-    verified: 2026-08-03
+    verified: 2026-10-16
     registrar: Crossref
     evidence: >-
-      World Income Inequality Database (WIID), version 29 April 2025, publisher
-      United Nations University UNU-WIDER. Present in Crossref and absent from
+      "World Income Inequality Database (WIID) – Version 8 September 2026",
+      dataset, publisher United Nations University, World Institute for
+      Development Economics Research; resolves to the WIID page, which gives
+      the same citation. Present in Crossref and absent from
       DataCite, so Crossref is the authority here. Crossref returns no licence
       field, which is why the NonCommercial terms come from UNU-WIDER's own
       copyright page instead.
@@ -143,6 +145,26 @@ verified:
       2026, creator Huppmann, Daniel; rights "IAMC License" and "Copyright
       2026 IIASA and contributing modeling teams". v2.0 is a separate record
       (10.5281/zenodo.23232097).
+
+  - doi: "10.5281/zenodo.23232097"
+    used_by: sci-2026
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      "Scenario Compass Initiative - Pathways Ensemble 2026 (v2.0)", version
+      2.0, issued 2026-10-08, publisher Zenodo, 223 creators led by Huppmann,
+      Daniel and Riahi, Keywan; rights "IAMC License" and "Copyright 2026 IIASA
+      and contributing modeling teams". The workbook README cites the same DOI.
+
+  - doi: "10.5281/zenodo.22296051"
+    used_by: scenariomip-cmip7
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      Zenodo record 22296051: "Scenario data of the 'Socioeconomic, Emissions
+      and Land Use Futures - The ScenarioMIP Pathways for CMIP7'", version
+      v0.1, published 2026-09-01, restricted access, creators Riahi, Keywan
+      and van Vuuren, Detlef. The workbook README cites the same DOI.
 
   - doi: "10.21203/rs.3.rs-8891091/v1"
     used_by: sci-2025

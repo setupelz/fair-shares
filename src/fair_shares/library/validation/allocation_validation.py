@@ -250,7 +250,10 @@ def validate_years_match(
 
 
 def validate_world_data_present(
-    df: TimeseriesDataFrame, dataset_name_for_error_msg: str, world_key: str = "World"
+    df: TimeseriesDataFrame,
+    dataset_name_for_error_msg: str,
+    world_key: str = "World",
+    group_level: str = "iso3c",
 ) -> None:
     """
     Validate that world data is present in the dataset.
@@ -263,6 +266,8 @@ def validate_world_data_present(
         Name of the dataset for error messages
     world_key : str
         Key used to identify world data
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
 
     Raises
     ------
@@ -271,15 +276,15 @@ def validate_world_data_present(
     """
     if not isinstance(df.index, pd.MultiIndex):
         raise DataProcessingError(
-            f"{dataset_name_for_error_msg} must have MultiIndex with 'iso3c' level"
+            f"{dataset_name_for_error_msg} must have MultiIndex with '{group_level}' level"
         )
 
-    if "iso3c" not in df.index.names:
+    if group_level not in df.index.names:
         raise DataProcessingError(
-            f"{dataset_name_for_error_msg} must have 'iso3c' in index levels"
+            f"{dataset_name_for_error_msg} must have '{group_level}' in index levels"
         )
 
-    world_mask = df.index.get_level_values("iso3c") == world_key
+    world_mask = df.index.get_level_values(group_level) == world_key
     if not world_mask.any():
         raise AllocationError(
             f"No '{world_key}' data found in {dataset_name_for_error_msg}. "
@@ -463,6 +468,8 @@ def validate_emissions_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "Emissions",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate emissions data in TimeseriesDataFrame format.
@@ -478,9 +485,13 @@ def validate_emissions_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
     validate_index_structure(
-        df, dataset_name_for_error_msg, ["iso3c", "unit", "emission-category"]
+        df, dataset_name_for_error_msg, [group_level, unit_level, "emission-category"]
     )
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
@@ -501,6 +512,8 @@ def validate_gdp_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "GDP",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate GDP data in TimeseriesDataFrame format.
@@ -513,8 +526,12 @@ def validate_gdp_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
-    validate_index_structure(df, dataset_name_for_error_msg, ["iso3c", "unit"])
+    validate_index_structure(df, dataset_name_for_error_msg, [group_level, unit_level])
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
         raise AllocationError(f"{dataset_name_for_error_msg} has no year columns")
@@ -527,6 +544,8 @@ def validate_population_data(
     df: TimeseriesDataFrame,
     dataset_name_for_error_msg: str = "Population",
     verbose: bool = True,
+    group_level: str = "iso3c",
+    unit_level: str = "unit",
 ) -> None:
     """
     Validate population data in TimeseriesDataFrame format.
@@ -539,8 +558,12 @@ def validate_population_data(
         Name for error messages
     verbose : bool, optional
         Whether to print validation details
+    group_level : str, optional
+        Index level holding the country or region (default: 'iso3c')
+    unit_level : str, optional
+        Index level holding the unit (default: 'unit')
     """
-    validate_index_structure(df, dataset_name_for_error_msg, ["iso3c", "unit"])
+    validate_index_structure(df, dataset_name_for_error_msg, [group_level, unit_level])
     year_cols = get_year_columns(df)
     if len(year_cols) == 0:
         raise AllocationError(f"{dataset_name_for_error_msg} has no year columns")

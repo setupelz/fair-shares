@@ -57,7 +57,8 @@ DEFAULT_BUNKER_MIN_FAMILIES = 3
 DEFAULT_BUNKER_MIN_RUNS_PER_FAMILY = 3
 # Start years of the bunker-share window (the year after the last observed bunker year).
 SHARE_START_YEARS = tuple(range(2021, 2032))
-DEFAULT_BUNKER_SOURCES = ("ar6", "sci")
+DEFAULT_BUNKER_SOURCES = ("ar6", "sci", "scenariomip")
+DEFAULT_NON_CO2_SOURCES = ("ar6",)
 DEFAULT_OBSERVED_CO2_PATH = (
     "data/emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx"
 )
@@ -156,9 +157,27 @@ def scenario_set_settings(rcb_yaml: dict) -> dict:
 
     Keys: volume_tolerance_gt, min_scenarios, temperature_half_width (the
     deprecated ``band_half_width`` is read as it), bunkers (min_reporters,
-    min_families, min_runs_per_family, scenario_sources) and observed_co2_path.
+    min_families, min_runs_per_family, scenario_sources), non_co2
+    (scenario_sources: the sources pooled into the temperature-matched non-CO2
+    set, default ["ar6"]) and observed_co2_path.
+
+    Raises
+    ------
+    ConfigurationError
+        If a non-CO2 source does not list "non-co2" in its registry terms
     """
+    from fair_shares.library.utils.data.scenario_sources import get_scenario_source
+
     tolerance = float(rcb_yaml.get("volume_tolerance_gt", DEFAULT_VOLUME_TOLERANCE_GT))
+    non_co2_sources = list(
+        (rcb_yaml.get("non_co2") or {}).get("scenario_sources", DEFAULT_NON_CO2_SOURCES)
+    )
+    for name in non_co2_sources:
+        if "non-co2" not in get_scenario_source(name)["terms"]:
+            raise ConfigurationError(
+                f"rcbs.yaml: non_co2.scenario_sources lists '{name}', whose entry "
+                f"in scenario_sources.yaml does not supply the non-co2 term."
+            )
     bunkers = rcb_yaml.get("bunkers") or {}
     removed = sorted(
         {"fallback", "volume_tolerance_gt", "min_scenarios"} & set(bunkers)
@@ -192,6 +211,7 @@ def scenario_set_settings(rcb_yaml: dict) -> dict:
                 bunkers.get("scenario_sources", DEFAULT_BUNKER_SOURCES)
             ),
         },
+        "non_co2": {"scenario_sources": non_co2_sources},
         "observed_co2_path": rcb_yaml.get(
             "observed_co2_path", DEFAULT_OBSERVED_CO2_PATH
         ),
@@ -388,7 +408,8 @@ def build_budget_sets(
         Observed global net CO2 in Gt per year (see ``budget_from_2020``)
     columns : dict
         Metadata column names: "category", "net_zero_year", "warming_median"
-        and "warming_p67"
+        and "warming_p67". A scenario without a net-zero year enters no
+        volume-matched, temperature-matched or category terms set
     max_fill_years : int, optional
         Trailing observed years that may take the last value (default: 1)
 
@@ -401,6 +422,8 @@ def build_budget_sets(
     """
     settings = scenario_set_settings(rcb_yaml)
     min_n = settings["min_scenarios"]
+    # Every set needs a net-zero year (AR6 convention, see net_zero_years).
+    reaches = metadata[columns["net_zero_year"]].notna()
     sets = {}
     for spec in budget_specs(rcb_yaml):
         budget_2020, observed_added = budget_from_2020(
@@ -409,7 +432,9 @@ def build_budget_sets(
         if spec.category is not None:
             in_category = metadata[columns["category"]] == spec.category
             non_co2 = metadata.index[in_category]
-            terms = metadata.index[in_category & metadata[CUMULATIVE_CO2].notna()]
+            terms = metadata.index[
+                in_category & reaches & metadata[CUMULATIVE_CO2].notna()
+            ]
             _require(
                 len(terms),
                 min_n,
@@ -422,7 +447,7 @@ def build_budget_sets(
         else:
             tolerance = settings["volume_tolerance_gt"]
             terms = select_volume_matched(
-                metadata, spec.key, budget_2020, tolerance, min_n
+                metadata[reaches], spec.key, budget_2020, tolerance, min_n
             )
             half_width = settings["temperature_half_width"]
             non_co2 = select_temperature_matched(
@@ -478,6 +503,60 @@ def build_budget_sets(
     return sets
 
 
+def add_source_non_co2_members(
+    budget_sets: dict[str, dict],
+    source: str,
+    metadata: pd.DataFrame,
+    columns: dict,
+    half_width: float,
+) -> dict[str, int]:
+    """
+    Add the temperature-matched scenarios of another source to the non-CO2 sets.
+
+    Applies the temperature-matched rule of ``select_temperature_matched`` to
+    ``metadata`` (one row per scenario of ``source``) for every role-matched
+    budget. AR6-category budgets keep their category pool. The provenance
+    record of each set counts the added scenarios under "added_by_source".
+
+    Parameters
+    ----------
+    budget_sets : dict[str, dict]
+        Output of ``build_budget_sets``, changed in place
+    source : str
+        Name of the added scenario source
+    metadata : pd.DataFrame
+        Metadata of the source, indexed by (Model, Scenario)
+    columns : dict
+        Metadata column names "net_zero_year" and "warming_median"
+    half_width : float
+        Half-width of the temperature-matched set, in degrees C
+
+    Returns
+    -------
+    dict[str, int]
+        Budget key -> number of scenarios added
+    """
+    added_counts = {}
+    for key, entry in budget_sets.items():
+        if entry["category"] is not None:
+            continue
+        added = select_temperature_matched(
+            metadata,
+            key,
+            entry["spec"].temperature,
+            columns["warming_median"],
+            columns["net_zero_year"],
+            half_width,
+            0,
+        ).difference(entry["non_co2"])
+        entry["non_co2"] = entry["non_co2"].append(added)
+        record = entry["record"]["non_co2_set"]
+        record["n"] = len(entry["non_co2"])
+        record.setdefault("added_by_source", {})[source] = len(added)
+        added_counts[key] = len(added)
+    return added_counts
+
+
 def bunker_share_table(
     sources: dict[str, tuple[pd.DataFrame, pd.DataFrame]],
     family_of=None,
@@ -486,8 +565,10 @@ def bunker_share_table(
     """
     Return the cumulative CO2 and bunkers of every reporter that reaches net zero.
 
-    Each reporter's net-zero crossing comes from its own net CO2. A window that
-    the reported bunker years do not cover leaves the value empty.
+    Each reporter's net zero comes from its own net CO2, in the AR6 convention
+    (``net_zero_years``): the crossing of zero, linear between reported years;
+    without one, the first full year below 100 Mt CO2/yr. A window that the
+    reported bunker years do not cover leaves the value empty.
 
     Parameters
     ----------
@@ -506,15 +587,20 @@ def bunker_share_table(
         and, per start year Y in ``SHARE_START_YEARS``, "co2_from_Y" and
         "bunkers_from_Y" (Mt, from the start of Y to the net-zero crossing)
     """
-    if family_of is None:
-        from fair_shares.library.utils.data.scenario_sources import model_family
+    from fair_shares.library.utils.data.scenario_sources import (
+        model_family,
+        net_zero_years,
+    )
 
-        family_of = model_family
+    family_of = family_of or model_family
     rows = []
     for source, (co2, bunkers) in sources.items():
+        threshold_years = net_zero_years(co2, last_year=last_year)
         for key in co2.index:
             crossing = net_zero_crossing(co2.loc[key])
             if crossing is None or crossing > last_year:
+                crossing = threshold_years.get(key)
+            if crossing is None or pd.isna(crossing):
                 continue
             row = {"source": source, "Model": key[0], "family": family_of(key[0])}
             row.update({"Scenario": key[1], NET_ZERO_CROSSING: crossing})

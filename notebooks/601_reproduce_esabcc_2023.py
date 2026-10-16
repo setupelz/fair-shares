@@ -25,6 +25,10 @@
 #   climate change mitigation pathways for the EU Scientific Advisory Board
 #   on Climate Change.* IIASA, Laxenburg. https://pure.iiasa.ac.at/18830
 #
+# Summary of this reproduction, its differences from PRR2023 and the checks
+# against the PRR2023 code:
+# https://setupelz.github.io/fair-shares/reproductions/esabcc-2023/
+#
 # The ESABCC report draws directly on the Pelz/Rogelj/Riahi (hereafter PRR2023)
 # technical report for its equity methodology. PRR2023 is the primary
 # methodological source; the ESABCC report presents the conclusions.
@@ -132,9 +136,9 @@
 #     country in a `historical-deviation` column, and § 6 runs every
 #     configuration under two modes, selected by the `nonco2-debt-mode`
 #     column:
-#     - **`free-rider`** — no penalty. Past non-CO2 over- and under-use
+#     - **`report-only`** — no penalty. Past non-CO2 over- and under-use
 #       nearly cancel globally (§ 6.2 quantifies this at +1.4% of 2015-2025
-#       non-CO2), so the historical debts are simply named and left at that.
+#       non-CO2), so the historical deviations are reported and carry no penalty.
 #     - **`co2-debit`** — each country's non-CO2 over-use is subtracted from
 #       its remaining CO2 budget (AR6 GWP100 equivalence): missing a methane
 #       target costs CO2 space. The collected debt is retired. It leaves the
@@ -318,8 +322,8 @@ active_sources = {
 # indicators, and added 1030 Gt (1990-2019) and 204 Gt (2015-2019) from GCB 2021
 # to the 500 Gt to get its global budgets from 1990 and 2015. This notebook uses
 # PRIMAP-hist v2.8 and adds the same fossil series without bunkers (857 and
-# 177 Gt), after the 31 Gt future-bunker deduction. The global budget is 1327 Gt
-# from 1990 (PRR2023: 1530) and 647 Gt from 2015 (PRR2023: 704). See § 7.3.
+# 177 Gt), after the 26 Gt future-bunker deduction. The global budget is 1331 Gt
+# from 1990 (PRR2023: 1530) and 651 Gt from 2015 (PRR2023: 704). See § 7.3.
 
 desired_harmonisation_year = 2020
 # Year scenario-based pathways are harmonised to observed emissions. Applied
@@ -358,7 +362,7 @@ BASE_SHARE_FLOOR_MT = 0.001
 # How past non-CO2 over-use is treated in the § 6 distribution (Decision 11).
 # Both modes are always computed; the output column `nonco2-debt-mode`
 # selects one. Removing an entry drops its rows from the § 6 output.
-NONCO2_DEBT_MODES = ["free-rider", "co2-debit"]
+NONCO2_DEBT_MODES = ["report-only", "co2-debit"]
 
 # ISO3c codes shown in the § 4 / 5.1 / 6.1 example plots and preview tables
 EXAMPLE_COUNTRIES = ["DEU", "FRA", "POL", "USA", "CHN", "IND", "BRA"]
@@ -551,196 +555,20 @@ pd.DataFrame(
 
 
 # %% tags=[]
-def _cumulative_actuals(
-    processed_dir, part: str, start_year: int, end_year: int | None = None
-) -> tuple[pd.Series, int]:
-    """Actual emissions per country from start_year through the last observed
-    data year (or end_year when earlier), plus that year. Observed data only —
-    no extrapolation.
-    """
-    df = pd.read_csv(processed_dir / f"country_emissions_{part}_timeseries.csv")
-    year_cols = sorted(c for c in df.columns if c.isdigit())
-    first_year, last_observed = int(year_cols[0]), int(year_cols[-1])
-    if end_year is not None:
-        last_observed = min(last_observed, end_year)
-    if start_year < first_year:
-        raise ValueError(
-            f"{part}: data start {first_year} is after allocation year {start_year}"
-        )
-    window = [str(y) for y in range(start_year, last_observed + 1)]
-    consumed = df[window].sum(axis=1)
-    return pd.Series(consumed.values, index=df["iso3c"].values), last_observed
-
-
-# Columns identifying one allocation configuration (used for part pairing and
-# de-duplication; year columns and value columns excluded).
-_ID_COLS = [
-    "iso3c",
-    "source",
-    "climate-assessment",
-    "quantile",
-    "approach",
-    "emission-category",
-    "unit",
-    "allocation-year",
-    "first-allocation-year",
-    "preserve-allocation-year-shares",
-    "preserve-first-allocation-year-shares",
-    "pre-allocation-responsibility-weight",
-    "capability-weight",
-    "pre-allocation-responsibility-year",
-    "pre-allocation-responsibility-per-capita",
-    "capability-per-capita",
-    "pre-allocation-responsibility-exponent",
-    "capability-exponent",
-]
-
-# Canonical keys shared by a budget config and its pathway analogue: approach
-# family (strip "-budget"), allocation year, preserve flag, equity parameters.
-# Both parts carry the RCB source key (the non-CO2 rows are paired with one
-# budget each), so parts pair on source, climate assessment and quantile.
-_PAIR_KEYS = [
-    "iso3c",
-    "source",
-    "climate-assessment",
-    "quantile",
-    "family",
-    "year",
-    "preserve",
-    "pre-allocation-responsibility-weight",
-    "pre-allocation-responsibility-year",
-    "pre-allocation-responsibility-per-capita",
-    "pre-allocation-responsibility-exponent",
-    "capability-weight",
-    "capability-exponent",
-]
-
-
-def _remaining_for_category(category: str, reg: dict) -> pd.DataFrame:
-    ab = pd.read_parquet(reg["output_dir"] / "allocations_absolute.parquet")
-    year_cols = sorted(c for c in ab.columns if c.isdigit())
-
-    # Every part nets through the last year that all parts observe, so a
-    # composite category combines its parts over one window (Decision 6).
-    netting_end = min(
-        max(
-            int(c)
-            for c in pd.read_csv(
-                reg["processed_dir"] / f"country_emissions_{part}_timeseries.csv",
-                nrows=0,
-            ).columns
-            if c.isdigit()
-        )
-        for part in ab["emission-category"].unique()
-    )
-
-    frames = []
-    for part, sub in ab.groupby("emission-category"):
-        sub = sub.copy()
-        is_budget_part = sub["allocation-year"].notna().all()
-        if is_budget_part:
-            sub["year"] = sub["allocation-year"].astype(int)
-            # Budget rows hold one cumulative value in the allocation-year column
-            sub["allocated-total"] = [
-                row[str(y)] for y, row in zip(sub["year"], sub.to_dict("records"))
-            ]
-            sub["preserve"] = sub["preserve-allocation-year-shares"].astype(bool)
-        else:
-            sub["year"] = sub["first-allocation-year"].astype(int)
-            sub["allocated-total"] = sub[year_cols].sum(axis=1)
-            sub["preserve"] = sub["preserve-first-allocation-year-shares"].astype(bool)
-
-        for ay, chunk in sub.groupby("year"):
-            consumed, last_observed = _cumulative_actuals(
-                reg["processed_dir"], part, int(ay), netting_end
-            )
-            idx = chunk.index
-            sub.loc[idx, "consumed-actuals"] = chunk["iso3c"].map(consumed).values
-            sub.loc[idx, "netting-end-year"] = last_observed
-        frames.append(sub)
-
-    out = pd.concat(frames, ignore_index=True)
-    out["netting-end-year"] = out["netting-end-year"].astype(int)
-    out["remaining-from-year"] = out["netting-end-year"] + 1
-
-    # Budget parts: remaining = allocated minus actual consumption (CO2 is a
-    # stock budget; past over-use is real debt and the § 6 distribution
-    # redresses it). Non-CO2 pathway parts: remaining = the forward-window
-    # allocation, with the historical deviation (actual minus allocated over
-    # the past window) reported in its own column; § 6 decides how that
-    # deviation is treated (Decision 11).
-    out["remaining-budget"] = out["allocated-total"] - out["consumed-actuals"]
-    out["historical-deviation"] = float("nan")
-    pathway_mask = out["allocation-year"].isna()
-    if pathway_mask.any():
-        for ne, chunk in out[pathway_mask].groupby("netting-end-year"):
-            fwd = [y for y in year_cols if int(y) > int(ne)]
-            fwd_sum = out.loc[chunk.index, fwd].sum(axis=1)
-            past_alloc = out.loc[chunk.index, "allocated-total"] - fwd_sum
-            out.loc[chunk.index, "remaining-budget"] = fwd_sum
-            out.loc[chunk.index, "historical-deviation"] = (
-                out.loc[chunk.index, "consumed-actuals"] - past_alloc
-            )
-
-    out["family"] = out["approach"].str.replace("-budget", "", regex=False)
-    out["category"] = category
-
-    keep = [
-        "category",
-        *[c for c in _ID_COLS if c in out.columns],
-        "netting-end-year",
-        "remaining-from-year",
-        "allocated-total",
-        "consumed-actuals",
-        "remaining-budget",
-        "historical-deviation",
-    ]
-    tidy = out[[*keep, "family", "year", "preserve"]].copy()
-
-    # Combined rows for composite categories: CO2 budget part + non-CO2 pathway
-    # part, matched on the shared equity parameters. Combining requires both
-    # parts to be netted through the same observed year.
-    parts = tidy["emission-category"].unique()
-    if len(parts) > 1:
-        if tidy["netting-end-year"].nunique() != 1:
-            raise ValueError(
-                f"{category}: parts have different last observed years "
-                f"({sorted(tidy['netting-end-year'].unique())}) — cannot combine"
-            )
-        value_cols = ["allocated-total", "consumed-actuals", "remaining-budget"]
-        pair_keys = [k for k in _PAIR_KEYS if k in tidy.columns]
-        budget_part = tidy[tidy["emission-category"] != "non-co2"]
-        pathway_part = tidy[tidy["emission-category"] == "non-co2"]
-        merged = budget_part.merge(
-            pathway_part[
-                pair_keys + value_cols + ["historical-deviation"]
-            ].drop_duplicates(pair_keys),
-            on=pair_keys,
-            how="inner",
-            suffixes=("", "-nonco2"),
-        )
-        combined = merged.copy()
-        for col in value_cols:
-            combined[col] = combined[col] + combined[f"{col}-nonco2"]
-        # The deviation concept only exists on the non-CO2 part; a combined
-        # row inherits it unchanged (the CO2 part nets its debt directly).
-        combined["historical-deviation"] = combined["historical-deviation-nonco2"]
-        combined["emission-category"] = "combined"
-        combined = combined[tidy.columns]
-        n_expected = len(budget_part)
-        if len(combined) != n_expected:
-            print(
-                f"  {category}: paired {len(combined)}/{n_expected} budget rows "
-                "with a non-CO2 analogue (unpaired configs remain as parts only)"
-            )
-        tidy = pd.concat([tidy, combined], ignore_index=True)
-
-    return tidy.drop(columns=["family", "year", "preserve"])
-
+# The Python API holds the one implementation of § 5 and § 6, so this
+# notebook and `calculate_allocation_timeseries` give the same numbers.
+from fair_shares.library.python_api import (
+    compute_remaining_budgets,
+    distribute_remaining_pathways,
+)
 
 remaining_all = []
 for category, reg in run_registry.items():
-    tidy = _remaining_for_category(category, reg)
+    tidy = compute_remaining_budgets(
+        category,
+        pd.read_parquet(reg["output_dir"] / "allocations_absolute.parquet"),
+        reg["processed_dir"],
+    )
     from_year = int(tidy["remaining-from-year"].min())
     csv_path = reg["output_dir"] / f"remaining_budgets_from_{from_year}.csv"
     tidy.to_csv(csv_path, index=False)
@@ -824,7 +652,7 @@ with pd.option_context("display.max_rows", 200, "display.width", 250):
 #   (back-loaded).
 #
 # **CO2 parts** are distributed under two non-CO2 debt modes (Decision 11):
-# `free-rider` leaves the CO2 budgets as they are; `co2-debit` subtracts
+# `report-only` leaves the CO2 budgets as they are; `co2-debit` subtracts
 # each country's past non-CO2 over-use (2015 to the netting year) from its remaining CO2 budget
 # (AR6 GWP100) and retires the collected debt, shrinking the global envelope
 # by the gross debt sum. Negative CO2 pathways are allowed (CO2 removal is
@@ -838,222 +666,18 @@ with pd.option_context("display.max_rows", 200, "display.width", 250):
 
 
 # %% tags=[]
-from fair_shares.library.utils.math import (
-    calculate_exponential_decay_pathway,
-    distribute_remaining_budgets_pathways,
-)
-
-# Parameter columns that identify one §5 configuration (values differ per run)
-_CONFIG_COLS = [
-    "approach",
-    "allocation-year",
-    "first-allocation-year",
-    "preserve-allocation-year-shares",
-    "preserve-first-allocation-year-shares",
-    "pre-allocation-responsibility-weight",
-    "capability-weight",
-    "pre-allocation-responsibility-year",
-    "pre-allocation-responsibility-per-capita",
-    "capability-per-capita",
-    "pre-allocation-responsibility-exponent",
-    "capability-exponent",
-]
-
-
-def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> pd.DataFrame:
-    """Distribute every budget-part configuration's remaining budgets to 2100.
-
-    For composite categories, each CO2 configuration is distributed under two
-    non-CO2 debt modes (Decision 11):
-
-    - ``free-rider`` — the CO2 budget stays as it is; past non-CO2 over-use
-      is reported and carries no penalty.
-    - ``co2-debit`` — each country's past non-CO2 over-use is subtracted
-      from its remaining CO2 budget (AR6 GWP100) and the collected debt is
-      retired. CO2 budgets can go negative, so debts of any size are payable.
-    """
-    rem = remaining[
-        (remaining["category"] == category)
-        & (~remaining["emission-category"].isin(["non-co2", "combined"]))
-    ].copy()
-    part = rem["emission-category"].iloc[0]
-    start_year = int(rem["remaining-from-year"].iloc[0])
-    last_observed = str(int(rem["netting-end-year"].iloc[0]))
-
-    emiss = pd.read_csv(
-        reg["processed_dir"] / f"country_emissions_{part}_timeseries.csv"
-    )
-    base = pd.Series(emiss[last_observed].values, index=emiss["iso3c"].values)
-    n_floored = int((base <= 0).sum())
-    if n_floored:
-        print(
-            f"  {category}: {n_floored} net-sink countries floored to "
-            f"{BASE_SHARE_FLOOR_MT} Mt for base-year shares (Decision 10)"
-        )
-    base = base.clip(lower=BASE_SHARE_FLOOR_MT)
-
-    pop = pd.read_csv(reg["processed_dir"] / "country_population_timeseries.csv")
-
-    config_cols = [c for c in _CONFIG_COLS if c in rem.columns]
-    is_composite = category != "co2-ffi"
-
-    # Non-CO2 historical deviation per CO2 configuration, read from the
-    # combined rows (they inherit it through § 5's part pairing and carry the
-    # same budget-style config keys as the CO2 part). Looked up by merge —
-    # unlike tuple keys, a merge matches NaN config values.
-    dev_lookup = None
-    if is_composite:
-        dev_lookup = remaining[
-            (remaining["category"] == category)
-            & (remaining["emission-category"] == "combined")
-        ][[*config_cols, "iso3c", "historical-deviation"]]
-
-    out_frames = []
-    for key, cfg in rem.groupby(config_cols, dropna=False):
-        budgets = pd.Series(
-            cfg["remaining-budget"].values, index=cfg["iso3c"].values
-        )
-        regions = budgets.index
-        base_cfg = base.reindex(regions)
-        if base_cfg.isna().any():
-            raise ValueError(
-                f"{category}: missing base-year emissions for "
-                f"{base_cfg[base_cfg.isna()].index.tolist()[:5]}"
-            )
-        modes = NONCO2_DEBT_MODES if is_composite else [None]
-        for mode in modes:
-            if mode == "co2-debit":
-                matched = cfg[[*config_cols, "iso3c"]].merge(
-                    dev_lookup, on=[*config_cols, "iso3c"], how="left"
-                )
-                deviation = pd.Series(
-                    matched["historical-deviation"].values,
-                    index=matched["iso3c"].values,
-                ).reindex(regions)
-                if deviation.isna().any():
-                    raise ValueError(
-                        f"{category}: no combined-row deviation match for "
-                        "this configuration"
-                    )
-                debt = deviation.clip(lower=0.0)
-            else:
-                debt = pd.Series(0.0, index=regions)
-            # The collected debt is retired (Decision 11): the global
-            # allocated CO2 shrinks by the gross debt sum, so the envelope
-            # pathway is rebuilt per mode to integrate to the reduced total,
-            # keeping country pathways consistent with the smaller envelope.
-            budgets_mode = budgets - debt
-            global_pathway = calculate_exponential_decay_pathway(
-                total_budget=float(budgets_mode.sum()),
-                start_value=float(base_cfg.sum()),
-                start_year=start_year,
-                end_year=PATHWAY_END_YEAR,
-            )
-            for conv_year in DISTRIBUTION_GRID["convergence_year"]:
-                pop_cfg = pd.Series(
-                    pop[str(conv_year)].values, index=pop["iso3c"].values
-                ).reindex(regions)
-                for shape in DISTRIBUTION_GRID["shape"]:
-                    for dev_year in DISTRIBUTION_GRID["deviation_end_year"]:
-                        paths = distribute_remaining_budgets_pathways(
-                            base_year_emissions=base_cfg,
-                            population=pop_cfg,
-                            global_pathway=global_pathway,
-                            remaining_budgets=budgets_mode,
-                            convergence_year=conv_year,
-                            deviation_end_year=dev_year,
-                            shape=shape,
-                        )
-                        paths.columns = [str(c) for c in paths.columns]
-                        block = cfg.drop(
-                            columns=["allocated-total", "consumed-actuals"]
-                        ).set_index("iso3c")
-                        block = block.join(paths)
-                        block["adjusted-target"] = budgets_mode
-                        if mode is not None:
-                            block["nonco2-debt-mode"] = mode
-                            block["nonco2-debt-paid"] = debt
-                        block["shape"] = shape
-                        block["deviation-end-year"] = dev_year
-                        block["convergence-year"] = conv_year
-                        out_frames.append(block.reset_index())
-
-    out = pd.concat(out_frames, ignore_index=True)
-
-    # Composite categories: the non-CO2 part is the allocated scenario pathway,
-    # identical under both debt modes (the debt is settled in CO2 space or not
-    # at all). Combined rows sum the distributed CO2 part and the allocated
-    # non-CO2 pathway per mode and shape variant.
-    if is_composite:
-        ab = pd.read_parquet(reg["output_dir"] / "allocations_absolute.parquet")
-        nonco2 = ab[ab["emission-category"] == "non-co2"].copy()
-        pathway_years = [
-            str(y) for y in range(start_year, PATHWAY_END_YEAR + 1)
-        ]
-        nonco2["nonco2-forward"] = nonco2[pathway_years].sum(axis=1)
-        nd = nonco2.assign(
-            family=nonco2["approach"],
-            year=nonco2["first-allocation-year"].astype(int),
-            preserve=nonco2["preserve-first-allocation-year-shares"].astype(bool),
-        )
-        pair_cols = [
-            "iso3c", "family", "year", "preserve",
-            "pre-allocation-responsibility-weight",
-            "pre-allocation-responsibility-year",
-            "pre-allocation-responsibility-per-capita",
-            "pre-allocation-responsibility-exponent",
-            "capability-weight", "capability-exponent",
-        ]
-        co2_part = out.assign(
-            family=out["approach"].str.replace("-budget", "", regex=False),
-            year=out["allocation-year"].astype(int),
-            preserve=out["preserve-allocation-year-shares"].astype(bool),
-        )
-        merged = co2_part.merge(
-            nd[pair_cols + pathway_years + ["nonco2-forward"]].drop_duplicates(
-                pair_cols
-            ),
-            on=pair_cols,
-            how="inner",
-            suffixes=("", "-nonco2"),
-        )
-        for y in pathway_years:
-            merged[y] = merged[y] + merged[f"{y}-nonco2"]
-        # A combined row's target is the mode-adjusted CO2 target plus the
-        # forward non-CO2 allocation, so every part verifies uniformly against
-        # its own adjusted-target column.
-        merged["adjusted-target"] = (
-            merged["adjusted-target"] + merged["nonco2-forward"]
-        )
-        combined = merged[list(out.columns)].copy()
-        combined["emission-category"] = "combined"
-        if len(combined) != len(out):
-            print(
-                f"  {category}: paired {len(combined)}/{len(out)} distributed "
-                "rows with a non-CO2 pathway (unpaired remain CO2-part only)"
-            )
-
-        # The allocated non-CO2 rows themselves (forward window), once per
-        # configuration — no mode or shape variants apply to them. Year
-        # columns up to the netting year are dropped so the distributed output stays on the
-        # forward window.
-        nonco2_rows = nonco2.copy()
-        nonco2_rows["adjusted-target"] = nonco2_rows["nonco2-forward"]
-        past_cols = [
-            c for c in nonco2_rows.columns
-            if c.isdigit() and int(c) < start_year
-        ]
-        nonco2_rows = nonco2_rows.drop(columns=["nonco2-forward", *past_cols])
-
-        out = pd.concat([out, nonco2_rows, combined], ignore_index=True)
-
-    out["category"] = category
-    return out
-
-
 distributed_all = []
 for category, reg in run_registry.items():
-    dist = _distribute_category(category, reg, remaining_all)
+    dist = distribute_remaining_pathways(
+        category,
+        pd.read_parquet(reg["output_dir"] / "allocations_absolute.parquet"),
+        remaining_all,
+        reg["processed_dir"],
+        distribution_grid=DISTRIBUTION_GRID,
+        pathway_end_year=PATHWAY_END_YEAR,
+        base_share_floor_mt=BASE_SHARE_FLOOR_MT,
+        nonco2_debt_modes=NONCO2_DEBT_MODES,
+    )
     pq_path = reg["output_dir"] / "distributed_remaining_pathways.parquet"
     csv_path = reg["output_dir"] / "distributed_remaining_pathways.csv"
     dist.to_parquet(pq_path, index=False)
@@ -1116,7 +740,7 @@ plt.show()
 #
 # 1. **CO2-FFI part** — the cumulative distributed pathway (netting year + 1 to 2100) must
 #    equal its `adjusted-target` exactly (closed-form guarantee of the
-#    distribution function). Under `free-rider` that target is the § 5
+#    distribution function). Under `report-only` that target is the § 5
 #    remaining CO2 budget; under `co2-debit` it is that budget minus the
 #    country's non-CO2 debt, which is retired (Decision 11). A debtor's
 #    pathway integrates to its negative target either way.
@@ -1264,7 +888,7 @@ print(
     f"\nGlobal non-CO2 {past_years[0]}-{past_years[-1]}: actual {global_actual / 1000:.1f} Gt CO2e; "
     f"net deviation vs allocation {global_deviation / 1000:+.1f} Gt CO2e "
     f"({100 * global_deviation / global_actual:+.1f}%) — over- and under-use "
-    "nearly cancel globally, which is the case for the free-rider mode; "
+    "nearly cancel globally, which is the case for the report-only mode; "
     "the co2-debit mode settles the per-country transfers in CO2 space."
 )
 _deb = recon[(recon["iso3c"] == debtor) & (recon["mode"] == "co2-debit")].iloc[0]
@@ -1278,7 +902,7 @@ print(
     f"{_deb['debt paid'] / 1000:.1f} Gt, which is retired (CO2 target "
     f"{_deb['co2 target'] / 1000:+.1f} Gt vs "
     f"{co2_rem.loc[debtor, 'remaining-budget'] / 1000:+.1f} Gt under "
-    "free-rider)."
+    "report-only)."
 )
 print(
     f"  {creditor}: {c_dev / 1000:+.1f} Gt CO2e past non-CO2 under-use — "
@@ -1330,7 +954,7 @@ for row_i, iso in enumerate((creditor, debtor)):
         ax.legend(fontsize=7)
 
     ax = axes[row_i, 1]
-    for mode, color in (("free-rider", "tab:gray"), ("co2-debit", "tab:blue")):
+    for mode, color in (("report-only", "tab:gray"), ("co2-debit", "tab:blue")):
         g = sub[
             (sub["shape"] == "half-sine")
             & (sub["nonco2-debt-mode"] == mode)
@@ -1360,7 +984,7 @@ for row_i, iso in enumerate((creditor, debtor)):
 
 fig.suptitle(
     f"Verification: {VERIFY_CATEGORY} pathways integrate to remaining budgets "
-    "(AR6 GWP100), under free-rider and co2-debit non-CO2 debt modes"
+    "(AR6 GWP100), under report-only and co2-debit non-CO2 debt modes"
 )
 fig.tight_layout()
 plt.show()
@@ -1400,7 +1024,7 @@ plt.show()
 # operations (responsibility/capability-adjusted with `1/x` or `1/sqrt(x)`
 # penalty), Jensen's inequality applies: country-level and R11-level allocations
 # give different answers whenever within-region variance is material. See
-# `docs/science/esabcc-and-updates.md`.
+# https://setupelz.github.io/fair-shares/reproductions/esabcc-2023/
 #
 # **Capability snapshot.** PRR2023 uses a single-year GDP-per-capita snapshot
 # (1990 for `ay=1990`, 2014 for `ay=2015`). The budget parts replicate this via
@@ -1419,7 +1043,7 @@ plt.show()
 # constrain CO2 only, so the library allocates the CO2 component as a budget
 # and the non-CO2 component as a pathway from AR6 scenarios of the matching
 # climate category, in NGHGI convention where land use is involved. See
-# `docs/science/other-operations.md` for the decomposition and the BM-to-NGHGI
+# `docs/science/greenhouse-gases.md` for the decomposition and `docs/science/remaining-carbon-budgets.md` for the BM-to-NGHGI
 # convention gap.
 #
 # ### 7.3 Where fair-shares and PRR2023 differ on inputs
@@ -1430,8 +1054,8 @@ plt.show()
 # | Population historical | un-owid-2025 | OWID historical CSV |
 # | Population projection | un-owid-2025 (UN WPP 2024) | IIASA WiC SSP2 v9_130115 (2013 vintage) |
 # | Emissions | PRIMAP-hist v2.8 (CO2-FFI) | GCB 2022 (national) |
-# | Global budget from 1990 / 2015 | 1327 / 647 Gt: 469 Gt from 2020 plus fossil CO2 without bunkers | 1530 / 704 Gt: 500 Gt plus 1030 / 204 Gt from GCB 2021 |
-# | International bunkers | 31 Gt deducted, 2020 to net zero | inside the 500 Gt |
+# | Global budget from 1990 / 2015 | 1331 / 651 Gt: 474 Gt from 2020 plus fossil CO2 without bunkers | 1530 / 704 Gt: 500 Gt plus 1030 / 204 Gt from GCB 2021 |
+# | International bunkers | 26 Gt deducted, 2020 to net zero | inside the 500 Gt |
 # | Future land-use CO2 | AR6 median removed; the net sink is capped at 0 (`precautionary_lulucf`) | not separated |
 # | RCB anchor | `ar6_2020` (+ Lamboll, Forster) | `ar6_2020` (Canadell et al. 2021) |
 # | Allocation granularity | country (ISO3c) | R11 regions |

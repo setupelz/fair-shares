@@ -241,8 +241,8 @@ def prepare_dataframe(
     data_context = data_context or {}
     for col in DATA_CONTEXT_COLUMNS:
         if col not in df.columns:
-            # Skip warnings column as it will be computed below
-            if col == "warnings":
+            # Skip columns computed below
+            if col in ("warnings", "moved-to-row"):
                 continue
             df[col] = data_context.get(col)
 
@@ -257,6 +257,7 @@ def prepare_dataframe(
     # Warnings flag allocations that require attention or represent
     # normative choices that users should be aware of.
     df["warnings"] = None
+    df["moved-to-row"] = ";".join(result.moved_to_row) or None
 
     # Process warnings for each row (country)
     for idx in df.index:
