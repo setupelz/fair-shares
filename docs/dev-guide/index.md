@@ -1,53 +1,46 @@
 ---
-title: Developer Guide
-description: Architecture overview and extension guide for the fair-shares library
-icon: material/code-braces
+title: Contributing
+description: How to report issues, set up a development checkout and contribute to fair-shares
 ---
 
-# Developer Guide
+# Contributing
 
-This guide explains the fair-shares architecture and how to extend the library.
+Bug reports, allocation approaches, data sources, documentation fixes and reproductions of published studies are all welcome.
 
----
+## Reporting issues
 
-## Architecture Overview
+Open an issue at [github.com/setupelz/fair-shares/issues](https://github.com/setupelz/fair-shares/issues).
+Say what you ran (notebook, API call or `snakemake` invocation, with its sources and target), what you expected, what happened (the full traceback), and your Python version and install method.
+For numbers that look wrong, name the approach, the emission category and the affected countries and years.
 
-> **For a detailed end-to-end walkthrough with worked examples**, see the [Architecture Walkthrough](architecture-walkthrough.md).
+## Setup
 
-```mermaid
-graph TB
-    subgraph Input
-        DS[Data Sources<br/>src/fair_shares/conf/]
-        RAW[Raw Data<br/>data/]
-    end
-
-    subgraph Pipeline
-        PP[Preprocessing<br/>notebooks/1xx]
-        SM[Snakemake<br/>Snakefile]
-    end
-
-    subgraph Library
-        AL[Allocations<br/>allocations/]
-        UT[Utilities<br/>utils/]
-        CF[Config<br/>config/]
-    end
-
-    subgraph Output
-        RES[Results<br/>output/]
-    end
-
-    DS --> PP
-    RAW --> PP
-    PP --> SM
-    SM --> AL
-    AL --> RES
-    UT --> AL
-    CF --> AL
+```bash
+git clone https://github.com/<your-username>/fair-shares.git
+cd fair-shares
+uv sync --extra dev
+uv run pre-commit install
 ```
 
----
+Notebooks are jupytext `.py` files. Edit the `.py`, never the `.ipynb`, and regenerate with `make sync-ipynb`.
 
-## Key Modules
+## Making a change
+
+1. Fork, and branch from `main` (for example `fix/lulucf-year-bounds`).
+2. Change code and tests together. Allocation logic needs a test that pins the expected numbers.
+3. Run `make test` and `make lint` (`make lint-fix` fixes what it can). Pre-commit runs ruff and checks 80% docstring coverage.
+4. For docs changes, run `uv run mkdocs build --strict` ([Docs conventions](docs-conventions.md)).
+5. Open a pull request that says what changed and why. If allocation results change, name the approaches and categories.
+
+Docstrings follow the numpy convention and are the authoritative description of behaviour, because the API pages are generated from them. A behaviour change changes the docstring in the same commit.
+
+## Conventions
+
+- **Year columns are strings:** `df["2020"]`, never `df[2020]`. Call `ensure_string_year_columns(df)` after loading data.
+- **Kebab-case for configuration, snake_case for Python:** `equal-per-capita-budget` names the approach, `equal_per_capita_budget` the function.
+- **Index levels:** emissions use `iso3c`, `unit`, `emission-category`. GDP, population and Gini use `iso3c`, `unit`.
+
+## Where the code lives
 
 | Module            | Location                                  | Responsibility                                                    |
 | ----------------- | ----------------------------------------- | ----------------------------------------------------------------- |
@@ -64,165 +57,16 @@ graph TB
 | **Data registry** | `src/fair_shares/library/data_registry.py` | Reads and checks `conf/data_registry.yaml` (source, licence, citation) |
 | **Notebooks**     | `notebooks/1xx_*.py`                      | Data pipeline notebooks                                           |
 
----
+[Architecture](architecture-walkthrough.md) follows one budget run and one pathway run through this code.
 
-## Allocations Module
+## New approaches and data sources
 
-### Structure
+Every allocation approach expresses a set of equity principles. Before you add one, read [From principle to code](../science/principle-to-code.md) and work through the five entry points of [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
 
-```
-allocations/
-├── __init__.py
-├── budgets/
-│   ├── __init__.py
-│   └── per_capita.py      # Budget allocation functions
-├── pathways/
-│   ├── __init__.py
-│   ├── per_capita.py      # Pathway allocation functions
-│   ├── per_capita_convergence.py
-│   └── cumulative_per_capita_convergence.py
-├── results/               # Result dataclasses
-├── core.py               # Shared logic
-└── manager.py            # Orchestration + approach name → function registry
-```
+Three points from the literature apply to every new approach:
 
-### Entry Points
+- **No approach is value-neutral.** Every allocation choice embeds normative judgements [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
+- **Grandfathering has no philosophical support** and conflicts with the purpose of equity analysis [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
+- **Contradictory principles do not combine** into a coherent result [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8).
 
-**Direct function calls:**
-
-```python
-from fair_shares.library.allocations.budgets import equal_per_capita_budget
-
-result = equal_per_capita_budget(
-    population_ts=population_df,
-    allocation_year=2020,
-    emission_category="co2-ffi",
-)
-```
-
-**Manager functions (high-level):**
-
-```python
-from fair_shares.library.allocations import run_parameter_grid
-
-results = run_parameter_grid(
-    allocations_config=config,
-    population_ts=population_df,
-    # ...
-)
-```
-
-### Result Types
-
-| Type                      | Module                | Description                     |
-| ------------------------- | --------------------- | ------------------------------- |
-| `BudgetAllocationResult`  | `allocations.results` | Single cumulative allocation    |
-| `PathwayAllocationResult` | `allocations.results` | Time-varying annual allocations |
-
-`BudgetAllocationResult` contains `relative_shares_cumulative_emission`; `PathwayAllocationResult` contains `relative_shares_pathway_emissions`. Both sum to 1.0 and provide methods to compute absolute emissions.
-
----
-
-## Adding New Functionality
-
-All allocation approaches in this library can be linked to specific (sets of) equity principles. Before contributing new approaches, review the [From Principle to Code](../science/principle-to-code.md) documentation to understand the normative foundations.
-
-Use the **Entry Points Framework** when considering any new approach: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
-
-In particular, avoid:
-
-- **Claiming value neutrality** — all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
-- **Including grandfathering** — it has no philosophical support and contradicts equity purposes [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)
-- **Combining contradictory principles** — produces incoherent results [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8)
-
-### Guides
-
-- **[Adding Allocation Approaches](adding-approaches.md)** — implementing new equity principles
-- **[Adding Data Sources](adding-data-sources.md)** — integrating new datasets
-
----
-
-## Conventions
-
-### Year Columns as Strings
-
-**Critical:** Year columns must be strings, not integers.
-
-```python
-# Correct
-df["2020"]
-
-# Incorrect
-df[2020]
-```
-
-Always call `ensure_string_year_columns(df)` after loading data.
-
-### Kebab vs Snake Case
-
-| Context               | Style      | Example                   |
-| --------------------- | ---------- | ------------------------- |
-| Config/approach names | kebab-case | `equal-per-capita-budget` |
-| Python identifiers    | snake_case | `equal_per_capita_budget` |
-
-### Index Structure
-
-DataFrames use MultiIndex with standard levels:
-
-| Data Type      | Index Levels                         |
-| -------------- | ------------------------------------ |
-| Emissions      | `iso3c`, `unit`, `emission-category` |
-| GDP/Population | `iso3c`, `unit`                      |
-| Gini           | `iso3c`, `unit`                      |
-
----
-
-## Testing
-
-```bash
-# Run all tests
-uv run pytest tests/
-
-# Run specific test module
-uv run pytest tests/unit/allocations/
-
-# Run with coverage
-uv run pytest --cov=fair_shares tests/
-```
-
----
-
-## Code Quality
-
-```bash
-# Lint
-uv run ruff check src/ tests/
-
-# Format
-uv run ruff format src/ tests/
-```
-
----
-
-## Documentation Workflow
-
-Run these checks before you commit documentation changes:
-
-```bash
-# Build the site; warnings fail the build (broken links, missing pages)
-uv run mkdocs build --strict
-
-# Run the test suite
-uv run pytest tests/
-
-# Run the pre-commit hooks (ruff, ruff-format, interrogate docstring coverage)
-uv run pre-commit run --all-files
-```
-
----
-
-## See Also
-
-- **[Architecture Walkthrough](architecture-walkthrough.md)** - End-to-end code path walkthrough with worked examples
-- **[API Reference](../api/index.md)** - Function documentation
-- **[Scientific Documentation](../science/allocations.md)** - Theoretical foundations
+Then follow [Adding approaches](adding-approaches.md) or [Adding data sources](adding-data-sources.md). A new data source needs a registry entry, a verified DOI record and a `CITATION.md` ([Registering the source](adding-data-sources.md#registering-the-source)).

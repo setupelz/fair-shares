@@ -1,90 +1,59 @@
 ---
-title: Fair shares for IAM model regions
-description: Calculate fair share allocations for the model regions in an IAMC-format scenario file
+title: IAM model regions
+description: Prepare an IAMC scenario file with notebook 400 and divide a budget or pathway between its model regions
 ---
 
-# Fair shares for IAM model regions
+# IAM model regions
 
-Use this workflow when your data is an IAMC-format scenario file (columns for
-model, scenario, region, variable, and one column per year) and you want to
-divide a budget or a pathway between that model's regions. For allocations to
-individual countries, use
-[country-fair-shares](country-fair-shares.md) instead.
+Use this guide when your data is an IAMC-format scenario file and you want to divide a budget or a pathway between that model's regions.
+For individual countries, use [Country fair shares](country-fair-shares.md).
 
-## Run the notebooks in this order
+## 1. Prepare the scenario with notebook 400
 
-**Step 1 — always run `400_data_preprocess_scenario_for_allocation.ipynb` first.**
-It reads a raw IAMC scenario file, prepends the historical emissions, population
-and GDP that an allocation needs, and writes `output/iamc/iamc_covered.xlsx`.
-Everything below reads that file.
+`400_data_preprocess_scenario_for_allocation` reads your scenario, adds the history an allocation needs and writes `output/iamc/iamc_covered.xlsx`.
+Notebooks 401, 402 and 403 read that file. They fail with a missing-file error if you skip notebook 400.
 
-To run it on **your own** scenario, edit the `SCENARIO_FILE` line near the top of
-notebook 400 to point at your file. Out of the box it points at the bundled
-MESSAGEix-GLOBIOM example. If you leave it, notebook 400 processes that example
-instead of your scenario and raises no error. Change the path before you run it.
+Set four values in the Config cell:
 
-**Step 2 — pick the notebook that matches what you want:**
+| Setting | What to give |
+| --- | --- |
+| `SCENARIO_FILE` | Your IAMC file. It points at the bundled MESSAGEix-GLOBIOM example by default, and notebook 400 runs on that example without error if you forget to change it. |
+| `MODEL_NAME` | The model's name as it appears in [IAMconsortium/common-definitions](https://github.com/IAMconsortium/common-definitions), for example `MESSAGEix-GLOBIOM 2.1-R12`. The notebook reads the country-to-region mapping from there. |
+| `EMISSION_CATEGORY` | `all-ghg-ex-co2-lulucf`, the only supported category. |
+| `START_YEAR` | The first year of history to add, 1990 by default. It must be no later than your allocation year. |
 
-| Notebook                                     | What it does                                                                      |
-| -------------------------------------------- | --------------------------------------------------------------------------------- |
-| `402_example_iamc_budget_allocations.ipynb`  | Worked budget examples — one cumulative number per region. Runs unchanged.         |
-| `403_example_iamc_pathway_allocations.ipynb` | Worked pathway examples — a value per region per year. Runs unchanged.             |
-| `401_custom_iamc_allocation.ipynb`           | Blank workspace you configure yourself, plus export of a model-ready budget.       |
+Your file needs these variables for every model region:
 
-!!! warning "401, 402 and 403 will not run on their own"
+- `Emissions|CO2|Energy and Industrial Processes`
+- `Emissions|CH4`
+- `Emissions|N2O`
+- `Population`
+- `GDP|PPP`
 
-    All three open `output/iamc/iamc_covered.xlsx`. That file does not exist in
-    a fresh clone — notebook 400 creates it. If you see a missing-file error
-    naming `iamc_covered.xlsx`, you have skipped step 1.
+Notebook 400 adds CEDS-based regional emissions history, UN and OWID population and World Bank WDI GDP before your scenario starts.
+It then builds `Emissions|Covered`: CO2 from energy and industry plus CH4 and N2O, weighted with AR6 GWP100, in Mt CO2e per year.
+Land-use emissions are out of scope. F-gases exist in the historical source at World level only.
+Expect a step at the join year between your model's output and the history.
 
-!!! note "Entry Points Framework"
-    Fair share quantification involves five structured decision stages [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
+**Region patches.** common-definitions can lack ISO3 codes that the CEDS history covers.
+Add them to a region with `mapping.add_countries(...)`.
+The example cell patches five small territories for the R12 regions. Remove or replace that cell for another model.
 
-!!! info "Regions come from your data"
-    The library uses **whatever regions are in your IAMC input file**. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.
+The output holds one model and one scenario. Notebook 400 labels every row with the first model and scenario name in your file, and interpolates all values to annual years.
 
----
+## 2. Allocate
 
-## Data Requirements
+| Notebook | What it does |
+| --- | --- |
+| `402_example_iamc_budget_allocations` | Worked budget examples, one cumulative number per region. Runs unchanged. |
+| `403_example_iamc_pathway_allocations` | Worked pathway examples, a value per region per year. Runs unchanged. |
+| `401_custom_iamc_allocation` | Workspace you configure yourself, with export of a model-ready remaining budget. |
 
-### IAMC Format
-
-Your data should have columns:
-
-| Column       | Description                                         |
-| ------------ | --------------------------------------------------- |
-| `model`      | Model name (e.g., "SSP_SSP2_v6.3_ES")               |
-| `scenario`   | Scenario name (e.g., "ECPC-2015-800Gt")             |
-| `region`     | Region identifier                                   |
-| `variable`   | Variable name                                       |
-| Year columns | `1990`, `1995`, `2000`, `2015`, `2020`, `2025`, ... |
-
-### Required Variables
-
-| Variable     | Purpose                           |
-| ------------ | --------------------------------- |
-| `Population` | Per capita calculations           |
-| `GDP\|PPP`   | Capability adjustments from allocation year onwards (optional) |
-
-An emissions variable is needed only if you're subtracting historical emissions to compute remaining budgets (see [Preparing Remaining Budgets](#preparing-remaining-budgets-for-iam-model-input)). The variable name is configurable -- use whatever your IAMC data provides.
-
----
-
-## Key Functions
-
-<!-- REFERENCE: Function implementations in src/fair_shares/library/utils/data/iamc.py
-     See load_iamc_data() docstring for complete parameter documentation
--->
-
-### Loading Data
-
-The notebooks load the file notebook 400 produced. Read the region names out of
-the file rather than typing them — they are whatever your model calls them, and
-often carry a model prefix such as
-`MESSAGEix-GLOBIOM 2.1-R12|Western Europe`:
+The regions are whatever your file holds. Read them from the file, because they often carry a model prefix such as `MESSAGEix-GLOBIOM 2.1-R12|Western Europe`:
 
 ```python
 import pyam
+from fair_shares.library.allocations.budgets.per_capita import equal_per_capita_budget
 from fair_shares.library.utils.data.iamc import load_iamc_data
 
 scenario = pyam.IamDataFrame("output/iamc/iamc_covered.xlsx")
@@ -98,144 +67,47 @@ data = load_iamc_data(
     regions=regions,
     allocation_start_year=1990,
     budget_end_year=2100,
-    expand_to_annual=True,  # Interpolate non-annual data
+    expand_to_annual=True,
 )
-```
-
-`Emissions|Covered` is the combined emissions variable notebook 400 builds.
-
-!!! warning "Why not load the raw scenario file directly"
-
-    You can point `data_file` at a raw IAMC file instead — the bundled example
-    is `data/scenarios/iamc_example/iamc_reporting_example.xlsx`. But a raw file
-    only holds the scenario's own years. That example starts in 2015, while the
-    notebooks allocate from 1990 by default, so there would be no data for the
-    first 25 years and the result would be wrong without any error being raised.
-    Notebook 400 exists to prepend that history. Use its output unless you are
-    certain your allocation never reaches back before your scenario starts.
-
-<!-- REFERENCE: Allocation approaches documented in docs/science/allocations.md
-     Budget allocation implementations:
-     - equal_per_capita_budget() in src/fair_shares/library/allocations/budgets/per_capita.py
-     - per_capita_adjusted_budget() in src/fair_shares/library/allocations/budgets/per_capita.py
-     Parameter behaviors and theoretical foundations in function docstrings and science docs
--->
-
-### Equal Per Capita Allocation
-
-```python
-from fair_shares.library.allocations.budgets.per_capita import equal_per_capita_budget
-
-# Extract dataframes from loaded data
-population_ts = data["population"].rename_axis(index={"region": "iso3c"})
 
 result = equal_per_capita_budget(
-    population_ts=population_ts,
+    population_ts=data["population"].rename_axis(index={"region": "iso3c"}),
     allocation_year=2015,
     emission_category="all-ghg-ex-co2-lulucf",
     preserve_allocation_year_shares=False,
     group_level="iso3c",
 )
-
 shares = result.relative_shares_cumulative_emission["2015"]
 ```
 
-### Capability-Adjusted Allocation
+`per_capita_adjusted_budget` takes `gdp_ts=data["gdp"]` in the same way. The [Approach catalog](approach-catalog.md) lists the approaches.
 
-```python
-from fair_shares.library.allocations.budgets.per_capita import per_capita_adjusted_budget
+!!! warning "Load the output of notebook 400, not the raw file"
 
-# Extract dataframes from loaded data
-population_ts = data["population"].rename_axis(index={"region": "iso3c"})
-gdp_ts = data["gdp"].rename_axis(index={"region": "iso3c"})
+    A raw scenario file holds only the scenario's own years. The bundled example starts in 2015, while the notebooks allocate from 1990 by default.
+    The first 25 years would then have no data, and the result would be wrong without any error.
 
-result = per_capita_adjusted_budget(
-    population_ts=population_ts,
-    gdp_ts=gdp_ts,
-    allocation_year=2015,
-    emission_category="all-ghg-ex-co2-lulucf",
-    capability_weight=1.0,
-    pre_allocation_responsibility_weight=0.0,
-    pre_allocation_responsibility_year=1990,
-    preserve_allocation_year_shares=False,
-    group_level="iso3c",
-)
-```
+## 3. Export a remaining budget for your model
 
-!!! note "Capability-only is a minimal example"
-    Setting `pre_allocation_responsibility_weight=0.0` produces a capability-only configuration for illustration. When one weight is 0, the other is the sole adjustment — its specific value does not matter (only the ratio between weights affects results), so `1.0` is used for clarity. The normatively recommended configuration typically includes both responsibility and capability components — see [Principle to Code](../science/principle-to-code.md) for guidance.
+Step 7 of notebook 401 turns a budget allocation into a remaining budget for a model run.
+The global budget is the scenario's own cumulative `Emissions|Covered` from the allocation year to `MODEL_HORIZON_YEAR`.
+Each region's remaining budget is its share of that total minus its emissions from the allocation year to the year before the first model period.
+Those emissions come from `iamc_covered.xlsx`: history up to the scenario's first year, the scenario's own values after it.
 
----
-
-## Preparing Remaining Budgets for IAM Model Input
-
-**Use notebook 401** for model input preparation. Notebooks 402/403 show allocation examples only.
-
-### Understanding Timesteps vs Periods
-
-IAM models often use timestep labels that represent multi-year periods. For example, in MESSAGEix, timestep `2030` represents 2026-2030, `2040` represents 2031-2040, etc.
-
-**Critical:** Your remaining budget must start from the first year of the first period, not the timestep label.
-
-### Calculation Method
-
-If allocating from 2015 and your first model period is 2026-2030:
+IAM models label each period by its last year. In MESSAGEix with 5-year periods, timestep `2030` covers 2026 to 2030.
+The remaining budget must start in the first year of the first period, so set `FIRST_MODEL_TIMESTEP` and `TIMESTEP_LENGTH`:
 
 ```
-Remaining Budget (from 2026) = Fair Share Allocation (2015→) - Actual Emissions (2015-2025)
+Remaining budget (from 2026) = allocation (from 2015) - emissions (2015 to 2025)
 ```
 
-**Steps:**
+The notebook writes `iamc_remaining_budget_from_<year>_<approach>.csv` in Gt CO2e, for use as a cumulative emissions bound such as `bound_emission` in MESSAGEix.
+Pathway allocations are already annual. Use their Step 6 export directly.
 
-1. Run allocation from your allocation year (e.g., 2015)
-2. Subtract cumulative actual emissions from allocation year to (first period start - 1)
-3. Export remaining budget in Mt CO2e
-4. Use as cumulative emission constraint in your model (e.g., `bound_emission` in MESSAGEix)
+## Negative allocations
 
-### Example Workflow in Notebook 401
-
-See "Step 7: Prepare for IAM Model Input" in notebook 401 for:
-
-- Configuration cells for model timestep/period
-- Automated calculation of remaining budgets
-- Export in model-ready format
-
-**Important:**
-
-- Emissions must be annual (use `expand_to_annual=True` when loading data)
-- Units should match your model (typically Mt CO2e)
-- Negative remaining budgets indicate the region has exceeded its allocation — see [Negative Allocations](#negative-allocations) below
-
----
-
-## Handling Model Timesteps
-
-The notebook automatically handles different timestep patterns from IAMC models:
-
-- **Annual data** (2020, 2021, 2022, ...) - No interpolation needed
-- **5-year intervals** (2020, 2025, 2030, ...) - Interpolates to annual when `expand_to_annual=True`
-- **10-year intervals** (2020, 2030, 2040, ...) - Interpolates to annual when `expand_to_annual=True`
-- **Mixed patterns** - Handles non-uniform timesteps automatically
-
----
-
-## Negative Allocations
-
-Under principled approaches (e.g., ECPC from 1990), some developed regions will have exhausted their fair share and will show negative remaining allocations. For example, EU27 has a negative remaining allocation as of 2023 under 1.5°C budgets [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
-
-Negative allocations are a feature, not a bug — they underscore the importance of minimizing overshoot duration and magnitude [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122). They signal:
-
-- **Highest possible domestic ambition** — emissions reductions should be as deep and fast as possible
-- **Carbon Dioxide Removal (CDR)** — negative allocations may call for net-negative targets in model runs
-- **International support and cooperation** — regions that have exceeded their share have corresponding obligations to support others
-
-Do not interpret negative allocations as prescriptive about timing or mechanism — they provide versatility for how regions respond. Transparently communicate negative allocations rather than clipping to zero, as the signal is normatively meaningful [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
-
----
-
-## See Also
-
-- **[country-fair-shares](country-fair-shares.md)** - Full pipeline for country-level analysis
-- **[Allocation Approaches](../science/allocations.md)** - Theoretical foundations
-- **[Budget Functions API](../api/allocations/budgets.md)** - Function signatures
-- **[Data Sources & Licensing](data-sources.md)** - Bundled data and attribution requirements
+A negative remaining budget means the region's past emissions exceed its allocation.
+It is an expected result for high historical emitters, for example under equal cumulative per capita from 1990 ([Negative allocation](../science/glossary.md#negative-allocation)).
+In a model run it can call for a net-negative emissions target.
+It does not prescribe timing or mechanism.
+Keep negative values rather than clipping them to zero, so the result keeps that information [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).

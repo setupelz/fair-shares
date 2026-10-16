@@ -5,7 +5,7 @@ description: Complete bibliography for the fair-shares project
 
 # References
 
-Complete bibliography for the fair-shares project. All citations are drawn from curated rubrics reviewed for climate equity scholarship.
+Complete bibliography for the fair-shares project.
 
 !!! note "Scope and contributions"
 
@@ -15,13 +15,18 @@ For context on how these inform allocation approaches, see:
 
 - [Allocation Approaches](allocations.md)
 - [From Principle to Code](principle-to-code.md)
-- [Other Operations](other-operations.md)
+- [Method overview](index.md)
+- [Remaining carbon budgets](remaining-carbon-budgets.md)
+- [Greenhouse gases](greenhouse-gases.md)
+- [Scenario sets](scenario-sets.md)
 
-Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyperlink to the source where possible. This page is a complete bibliography — the inline hyperlinks are the primary path to the source material.
+Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyperlink to the source where possible. This page is a complete bibliography; the inline hyperlinks are the primary path to the source material.
 
 ---
 
 **[Agarwal 1991]** Anil Agarwal and Sunita Narain. "Global Warming in an Unequal World: A Case of Environmental Colonialism." _Centre for Science and Environment_, New Delhi. [cseindia.org](https://cdn.cseindia.org/userfiles/GlobalWarming%20Book.pdf)
+
+**[Baer 2008]** Paul Baer, Glenn Fieldman, Tom Athanasiou, and Sivan Kartha. "Greenhouse Development Rights: towards an equitable framework for global climate policy." _Cambridge Review of International Affairs_, 21(4), 649-669. DOI: [10.1080/09557570802453050](https://doi.org/10.1080/09557570802453050)
 
 **[Baer 2009]** Paul Baer, Tom Athanasiou, Sivan Kartha, and Eric Kemp-Benedict. "Greenhouse Development Rights: A Proposal for a Fair Global Climate Treaty." _Ethics, Place and Environment_. DOI: [10.1080/13668790903195495](https://doi.org/10.1080/13668790903195495)
 
@@ -47,23 +52,31 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[ESABCC 2023]** European Scientific Advisory Board on Climate Change. "Scientific advice for the determination of an EU-wide 2040 climate target and a greenhouse gas budget for 2030-2050." Publications Office of the European Union. DOI: [10.2800/609405](https://doi.org/10.2800/609405)
 
+**[Friedlingstein 2022]** Pierre Friedlingstein et al. "Global Carbon Budget 2021." _Earth System Science Data_, 14, 1917-2005. DOI: [10.5194/essd-14-1917-2022](https://doi.org/10.5194/essd-14-1917-2022)
+
 **[Friedlingstein 2026]** Pierre Friedlingstein, Michael O'Sullivan, Matthew W. Jones, Robbie M. Andrew, Dorothee C. E. Bakker, and others. "Global Carbon Budget 2025." _Earth System Science Data_, 18, 3211-3288. DOI: [10.5194/essd-18-3211-2026](https://doi.org/10.5194/essd-18-3211-2026). Dataset: Robbie M. Andrew and Glen P. Peters. "The Global Carbon Project's fossil CO2 emissions dataset" (2025v15). Zenodo. DOI: [10.5281/zenodo.17417124](https://doi.org/10.5281/zenodo.17417124)
 
 **[GCP 2026]** Global Carbon Project. "Supplemental data of Global Carbon Budget 2025" (Version 1.1). ICOS Carbon Portal. DOI: [10.18160/GCP-2025](https://doi.org/10.18160/GCP-2025). Global workbook behind the observed global net CO₂ that expresses each budget from 2020 (`gcb-2025-global`).
 
 **[Gidden 2023]** Matthew J. Gidden, Thomas Gasser, Giacomo Grassi, Nicklas Forsell, Iris Janssens, William F. Lamb, Jan Minx, Zebedee Nicholls, and others. "Dataset for Gidden et al. 2023 Updated AR6 Mitigation Benchmarks using National Emissions Inventories" (v2). Zenodo. DOI: [10.5281/zenodo.10158920](https://doi.org/10.5281/zenodo.10158920). Source of the AR6 scenario reanalysis (`ipcc_ar6_gidden`).
 
+**[Gignac 2015]** Renaud Gignac and H. Damon Matthews. "Allocating a 2 °C cumulative carbon budget to countries." _Environmental Research Letters_, 10, 075004. DOI: [10.1088/1748-9326/10/7/075004](https://doi.org/10.1088/1748-9326/10/7/075004)
+
 **[Heyward 2021]** Clare Heyward. "Is the beneficiary pays principle essential in climate justice?." _Norsk filosofisk tidsskrift_. DOI: [10.18261/issn.1504-2901-2021-02-03-07](https://doi.org/10.18261/issn.1504-2901-2021-02-03-07)
 
-**[Huppmann 2026]** Daniel Huppmann and others. "Scenario Compass Initiative - Pathways Ensemble 2025" (v1.0). Zenodo. DOI: [10.5281/zenodo.18598251](https://doi.org/10.5281/zenodo.18598251). Read by fair-shares for bunker reporters (`sci-2025`). Later releases include v2.0, "Scenario Compass Initiative - Pathways Ensemble 2026", DOI: [10.5281/zenodo.23232097](https://doi.org/10.5281/zenodo.23232097), which fair-shares does not read.
+**[Huppmann 2026]** Daniel Huppmann and others. "Scenario Compass Initiative - Pathways Ensemble 2025" (v1.0). Zenodo. DOI: [10.5281/zenodo.18598251](https://doi.org/10.5281/zenodo.18598251). Release v1.0 of the Scenario Compass ensemble (`sci-2025`), selectable in `scenario_sources.yaml`.
+
+**[Huppmann 2026b]** Daniel Huppmann, Keywan Riahi, Leon Clarke, Tomoko Hasegawa, and others. "Scenario Compass Initiative - Pathways Ensemble 2026 (v2.0)." Zenodo, 2026-10-08. DOI: [10.5281/zenodo.23232097](https://doi.org/10.5281/zenodo.23232097). The configured Scenario Compass release (`sci-2026`): bunker reporters and, when listed, the non-CO₂ set.
 
 **[ICJ 2025]** International Court of Justice. "Obligations of States in Respect of Climate Change (Advisory Opinion)." _ICJ Advisory Opinion_. [icj-cij.org](https://www.icj-cij.org/case/187)
 
-**[IPCC 2021]** IPCC. _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_. Cambridge University Press. DOI: [10.1017/9781009157896](https://doi.org/10.1017/9781009157896) — basis for the near-linear relationship between cumulative CO₂ emissions and global warming (TCRE) underpinning remaining carbon budgets.
+**[IPCC 2021]** IPCC. _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_. Cambridge University Press. DOI: [10.1017/9781009157896](https://doi.org/10.1017/9781009157896), the basis for the near-linear relationship between cumulative CO₂ emissions and global warming (TCRE) underpinning remaining carbon budgets.
 
 **[IPCC 2021 SPM]** IPCC. "Summary for Policymakers." In _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 3-32. Cambridge University Press. DOI: [10.1017/9781009157896.001](https://doi.org/10.1017/9781009157896.001). Source of the Table SPM.2 budgets in RCB source `ar6_wg1_2021`.
 
 **[IPCC 2022 Annex III]** IPCC. "Annex III: Scenarios and Modelling Methods." In _Climate Change 2022: Mitigation of Climate Change. Contribution of Working Group III to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 1841-1908. Cambridge University Press. DOI: [10.1017/9781009157926.022](https://doi.org/10.1017/9781009157926.022). Source of the AR6 category definitions behind the `ar6-category` rule.
+
+**[IPCC 2022 SPM]** IPCC. "Summary for Policymakers." In _Climate Change 2022: Mitigation of Climate Change. Contribution of Working Group III to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 3-48. Cambridge University Press. DOI: [10.1017/9781009157926.001](https://doi.org/10.1017/9781009157926.001). Table SPM.2, note j: the net-zero count behind `net_zero_years()`.
 
 **[Kartha 2018]** Sivan Kartha, Tom Athanasiou, Simon Caney, Elizabeth Cripps, Kate Dooley, Navroz K. Dubash, Teng Fei, Paul G. Harris, Christian Holz, Bård Lahn, Darrel Moellendorf, Benito Müller, J. Timmons Roberts, Ambuj Sagar, Henry Shue, Peter Singer, and Harald Winkler. "Cascading biases against poorer countries." _Nature Climate Change_. DOI: [10.1038/s41558-018-0152-7](https://doi.org/10.1038/s41558-018-0152-7)
 
@@ -101,7 +114,9 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Riahi 2026]** Keywan Riahi, Leon Clarke, Tomoko Hasegawa, Daniel Huppmann, and others. "Mitigation benchmarks from the 2025 community update of global emissions pathways." Research Square preprint. DOI: [10.21203/rs.3.rs-8891091/v1](https://doi.org/10.21203/rs.3.rs-8891091/v1). The manuscript behind the Scenario Compass ensemble.
 
-<a id="shue-2014"></a>**[Shue 2014]** Henry Shue. "Climate Justice: Vulnerability and Protection." _Oxford University Press_ (Book). ISBN: 9780198713500 — no DOI registered; this bibliography entry serves as the anchor for inline citations.
+**[Riahi 2026b]** Keywan Riahi, Detlef van Vuuren, and others. "Scenario data of the 'Socioeconomic, Emissions and Land Use Futures - The ScenarioMIP Pathways for CMIP7'" (v0.1). Zenodo. DOI: [10.5281/zenodo.22296051](https://doi.org/10.5281/zenodo.22296051). ScenarioMIP-CMIP7 release v0.1 (`scenariomip-cmip7`): bunker reporters and, when listed, the non-CO₂ set.
+
+<a id="shue-2014"></a>**[Shue 2014]** Henry Shue. "Climate Justice: Vulnerability and Protection." _Oxford University Press_ (Book). ISBN: 9780198713500; no DOI registered; this bibliography entry serves as the anchor for inline citations.
 
 **[Shue 2015]** Henry Shue. "Historical Responsibility, Harm Prohibition, and Preservation Requirement: Core Practical Convergence on Climate Change." _Moral Philosophy and Politics_. DOI: [10.1515/mopp-2013-0009](https://doi.org/10.1515/mopp-2013-0009)
 

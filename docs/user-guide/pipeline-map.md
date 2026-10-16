@@ -1,9 +1,9 @@
 ---
-title: What happens where
+title: Pipeline map
 description: Every notebook and library module in run order, with what each reads and writes
 ---
 
-# What happens where
+# Pipeline map
 
 This page follows one allocation run from raw input files to saved results.
 Each row names the notebook that does the work, the library code behind it, and the files it writes.
@@ -14,7 +14,7 @@ Use it to find where a number comes from, or where to change a step.
 ```mermaid
 flowchart TD
     U["Your notebook: 301 / 302 / 303 / 601<br/>set sources, category, approaches"] --> S["setup_data()<br/>writes output/&lt;source-id&gt;/config.yaml"]
-    S --> SM["Snakemake (Snakefile)<br/>runs only the steps whose outputs are missing or stale"]
+    S --> SM["Snakemake (Snakefile)<br/>reruns everything when the provenance stamp differs"]
     SM --> P1["101 emissions"]
     SM --> P2["102 GDP"]
     SM --> P3["103 population"]
@@ -32,6 +32,12 @@ flowchart TD
 You run one notebook. That notebook calls `setup_data()`, which writes a run configuration and calls Snakemake.
 Snakemake runs the preprocessing notebooks in the order their inputs require.
 Control then returns to your notebook, which runs the allocations and saves the results.
+
+`setup_data()` reuses an existing `output/<source-id>/` folder only when its provenance stamp matches.
+The stamp is `output/<source-id>/.provenance_stamp.json`.
+It hashes the package version, the run config, the preprocessing notebooks, the `Snakefile`, the preprocessing library code, the packaged config files, `data/rcbs/rcbs.yaml` and the registry checksums of the input files.
+When any of these change, `setup_data()` reruns all preprocessing for the folder and logs which components changed.
+Set `FAIR_SHARES_TRUST_CACHE=1` or pass `trust_cache=True` to reuse the folder without the check.
 
 ## Step by step
 
@@ -68,19 +74,20 @@ Notebooks with a source name in the file name come in one copy per source. The S
 
 The master step calls the library functions in `library/pipeline/preprocessing.py` (`run_rcb_preprocessing`, `run_pathway_preprocessing`, `run_non_co2_preprocessing`).
 Budget rebasing lives in `library/utils/data/rcb.py` and `library/preprocessing/rcbs.py`. The scenario sets and the bunker share live in `library/utils/data/scenario_sets.py`, and the scenario source registry in `library/utils/data/scenario_sources.py` with `src/fair_shares/conf/scenario_sources.yaml`. The analysis-country rule lives in `library/preprocessing/coverage.py`, and rest of world in `library/preprocessing/row.py`.
-The [Other Operations](../science/other-operations.md) page explains the rebasing, the NGHGI corrections and the multi-gas split.
+[Remaining carbon budgets](../science/remaining-carbon-budgets.md) explains the rebasing and the NGHGI corrections, and [Greenhouse gases](../science/greenhouse-gases.md) the multi-gas split.
 
 ### Inputs of the scenario step
 
 Notebook 104 reads the scenario sources in `src/fair_shares/conf/scenario_sources.yaml` and the observed global CO2 named in `rcbs.yaml`.
-Three of these inputs are manual downloads. `fair-shares fetch-data` reports where each one goes.
+Four of these inputs are manual. `fair-shares fetch-data --source <name>` gives the steps for each one. [Files you place yourself](../quickstart.md#files-you-place-yourself) lists every manual input.
 
 | Input | Registry name | How to get it | Needed for |
 | --- | --- | --- | --- |
 | AR6 reanalysis of Gidden et al. (2023) | `ipcc_ar6_gidden` | `fair-shares fetch-data` | every scenario set and non-CO2 pathway |
-| AR6 Scenarios Database aviation and maritime CO2 | `ipcc_ar6_bunkers` | `fetch_ar6_bunkers()` in `library/utils/data/scenario_sources.py` (public database, no login) | bunker share |
+| AR6 Scenarios Database aviation and maritime CO2 | `ipcc_ar6_bunkers` | manual, one command from the public database (no login) | bunker share |
+| AR6 Scenarios Database CO2 and warming series | `ipcc_ar6_climate` | manual, one command from the public database (no login) | net-zero year and warming at net zero of each scenario |
 | Global Carbon Budget 2025 global workbook | `gcb-2025-global` | manual, behind the ICOS licence page | budget from 2020 of the volume-matched sets |
-| Scenario Compass ensemble v1.0 | `sci-2025` | manual, on request from the Scenario Compass platform | bunker share (optional; left out with a warning when absent) |
+| Scenario Compass ensemble v2.0 (v1.0 selectable) | `sci-2026` (`sci-2025`) | manual, with a login at the Scenario Compass platform | bunker share (optional; left out with a warning when absent) |
 
 Licences and file locations are in [Data Sources & Licensing](data-sources.md#scenario-data).
 
@@ -122,7 +129,7 @@ These notebooks run outside Snakemake. Run 400 first.
 
 | Notebook | Study | Status |
 | --- | --- | --- |
-| `601_reproduce_esabcc_2023` | ESABCC (2023) and the underlying IIASA study, Pelz, Rogelj and Riahi (2023) | Same approaches and parameters, current data. Differences listed in [ESABCC 2023 and what changed since](../science/esabcc-and-updates.md) |
+| `601_reproduce_esabcc_2023` | ESABCC (2023) and the underlying IIASA study, Pelz, Rogelj and Riahi (2023) | Same approaches and parameters, current data. |
 | `602_reproduce_dekker_2025` | Dekker et al. (2025) | Four of six approaches, expressed in library terms |
 | `604_reproduce_vandenberg_2020` | van den Berg et al. (2020) | Effort-sharing approaches, expressed in library terms |
 | `605_reproduce_matthews_2016` | Gignac and Matthews (2015), Matthews (2016) | Carbon-debt formulation, expressed in library terms |

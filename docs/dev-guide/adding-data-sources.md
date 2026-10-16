@@ -1,57 +1,28 @@
 ---
-title: Adding Data Sources
-description: Step-by-step guide for integrating new data sources into the fair-shares pipeline
-icon: material/database-plus
+title: Adding data sources
+description: How to add a new data source to the fair-shares pipeline
 ---
 
-# Adding Data Sources
+# Adding data sources
 
-This guide explains how to add new data sources to fair-shares.
+A data source is an entry in `src/fair_shares/conf/data_sources/data_sources_unified.yaml`, a registry entry, and a preprocessing notebook in the `notebooks/1xx_*.py` series.
+A new release of a source the library already uses is simpler: see [Updating data each year](../user-guide/update-data.md).
 
----
+| Type | Purpose | Current sources |
+| --- | --- | --- |
+| `emissions` | Historical emissions without land use | PRIMAP-hist v2.8 `primap-202609` (default), v2.6.1 `primap-202503`, Global Carbon Budget 2025 `gcb-2025` |
+| `gdp` | Capability | World Bank WDI |
+| `population` | Per capita calculations | UN/OWID |
+| `gini` | Inequality within countries | World Bank WDI (default), UNU-WIDER WIID |
+| `lulucf` | National-inventory land-use CO₂ | Melo et al. (2026): `melo-2026-v4` (default), `melo-2026` |
+| `targets` | Global limits | AR6 scenarios, remaining carbon budgets |
+| scenario sources | Scenario-derived budget terms | `ar6`, `sci` in `src/fair_shares/conf/scenario_sources.yaml` |
 
-## Overview
+## 1. Place the raw data
 
-Data sources are configured in `src/fair_shares/conf/data_sources/data_sources_unified.yaml` and processed through preprocessing notebooks in the `notebooks/1xx_*.py` series.
+Put the files in `data/<type>/<source>-<year>/`, for example `data/emissions/my-source-2026/`. The `{source}-{year}` name versions the source.
 
-### Data Types
-
-| Type         | Purpose                              | Current Sources        |
-| ------------ | ------------------------------------ | ---------------------- |
-| `emissions`  | Historical non-LULUCF emissions      | PRIMAP-hist v2.8 `primap-202609` (default), PRIMAP-hist v2.6.1 `primap-202503`, Global Carbon Budget 2025 `gcb-2025` |
-| `gdp`        | Economic capability                  | World Bank WDI         |
-| `population` | Per capita calculations              | UN/OWID                |
-| `gini`       | Within-country inequality            | World Bank WDI (default), UNU-WIDER WIID |
-| `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026): `melo-2026-v4` (default), `melo-2026` |
-| `targets`    | Global constraints                   | AR6 scenarios, RCBs    |
-| scenario sources | Scenario-derived budget terms     | `ar6`, `sci` in `src/fair_shares/conf/scenario_sources.yaml` |
-
----
-
-## Step 1: Add Raw Data
-
-Place your data files in the appropriate subdirectory:
-
-```
-data/
-├── emissions/
-│   └── my-source-YYYY/
-│       └── raw_data_file.csv
-├── gdp/
-│   └── my-source-YYYY/
-├── population/
-├── gini/
-├── lulucf/
-│   └── my-source-YYYY/
-├── scenarios/
-└── rcbs/
-```
-
-Use the naming convention `{source}-{year}/` for versioning.
-
----
-
-## Step 2: Configure the Source
+## 2. Configure the source
 
 Add an entry to `src/fair_shares/conf/data_sources/data_sources_unified.yaml`:
 
@@ -89,7 +60,7 @@ The pipeline asks an emissions source only for the categories in `available_cate
 
 By default, an analysis country has complete emissions, GDP and population from 1990 through the last year of each dataset. A `coverage` block adds two tests, and a country that fails either one joins rest-of-world. `emissions_recorded_before` requires a value in the raw emissions file in a year before the threshold. `population_from` requires population for every year from the threshold. A source that zero-fills blank years needs the first test, because a blank and a reported zero look the same after the fill. Its notebook 101 writes `emiss_<category>_first_recorded_year.csv` (columns `iso3c`, `first_recorded_year`) for each category it provides. The rule is `coverage_exclusions` in `src/fair_shares/library/preprocessing/coverage.py`. `country_data_coverage_summary.csv` names the failed test for each country in the column `coverage_rule_failed`. A source without the block keeps the default check alone, and its coverage summary has no such column. `gcb-2025` sets both tests.
 
-### Registering the source
+### Registering the source {#registering-the-source}
 
 Every new source needs three things:
 
@@ -99,265 +70,102 @@ Every new source needs three things:
 
 Assert only a DOI or licence you have verified upstream. A source with no DOI gets name-only credit.
 
----
+## 3. Write the preprocessing notebook
 
-## Step 3: Create Preprocessing Notebook
+The Snakefile builds the notebook name from the source key: `101_data_preprocess_emiss_{source}.py` for emissions and `108_data_preprocess_bunkers_{bunkers_source}.py` for bunkers.
+An emissions entry with a `notebook` key names the notebook instead. Both PRIMAP-hist entries set `notebook: "101_data_preprocess_emiss_primap"`, so a new PRIMAP release needs a config entry and a registry entry and no new notebook.
 
-Create a preprocessing notebook in the `1xx` series. The Snakefile builds the notebook name from the source key, so the name must follow the pattern for its data type (see [Step 5](#step-5-integrate-with-pipeline)). A new release of an existing source can reuse that source's notebook instead: see [Step 5](#step-5-integrate-with-pipeline).
-
-```
-notebooks/
-├── 101_data_preprocess_emiss_primap.py              # Existing, every PRIMAP-hist release
-├── 102_data_preprocess_gdp_wdi-2025.py              # Existing
-├── 103_data_preprocess_population_un-owid-2025.py   # Existing
-├── 101_data_preprocess_emiss_my-source-2026.py      # New notebook
-```
-
-### Preprocessing Pattern
+The notebook reads the path in the config and writes to the run's intermediate directory, which the Snakefile sets through `source_id`:
 
 ```python
-"""
-Preprocess my-source-2026 data.
-
-Input: Raw data file
-Output: Standardized DataFrame with proper index structure
-"""
-
 import pandas as pd
 from pyprojroot import here
-
-# Load raw data
-raw_path = here() / "data/emissions/my-source-2026/emissions_data.csv"
-df = pd.read_csv(raw_path)
-
-# Standardize country codes to ISO3c
-df["iso3c"] = convert_to_iso3c(df["country_column"])
-
-# Set standard index
-df = df.set_index(["iso3c", "unit", "emission-category"])
-
-# Ensure year columns are strings
 from fair_shares.library.utils import ensure_string_year_columns
+
+df = pd.read_csv(here() / "data/emissions/my-source-2026/emissions_data.csv")
+df["iso3c"] = convert_to_iso3c(df["country_column"])          # your country-code mapping
+df = df.set_index(["iso3c", "unit", "emission-category"])
 df = ensure_string_year_columns(df)
 
-# Add World row if missing
-if "World" not in df.index.get_level_values("iso3c"):
-    world_row = df.groupby(["unit", "emission-category"]).sum()
-    world_row["iso3c"] = "World"
-    df = pd.concat([df, world_row.set_index("iso3c", append=True)])
+if "World" not in df.index.get_level_values("iso3c"):        # add a World row if missing
+    world = df.groupby(["unit", "emission-category"]).sum()
+    world["iso3c"] = "World"
+    df = pd.concat([df, world.set_index("iso3c", append=True)])
 
-# Save to the run's intermediate directory (the Snakefile sets source_id)
-output_path = here() / f"output/{source_id}/intermediate/emissions/emiss_co2-ffi_timeseries.csv"
-output_path.parent.mkdir(parents=True, exist_ok=True)
-df.to_csv(output_path)
+out = here() / f"output/{source_id}/intermediate/emissions/emiss_co2-ffi_timeseries.csv"
+out.parent.mkdir(parents=True, exist_ok=True)
+df.to_csv(out)
 ```
+
+Every output follows one index structure, with year columns as strings (`"1990"`):
+
+| Data | Index levels | Columns |
+| --- | --- | --- |
+| Emissions | `iso3c`, `unit`, `emission-category` | Years |
+| GDP, population | `iso3c`, `unit` | Years |
+| Gini | `iso3c`, `unit` | `gini` (one value, not time-varying) |
+
+A new source should cover at least the major emitters, include a World total, use standard units (Mt CO₂e for emissions, `million` for population) and document its gaps.
+
+## 4. Test
+
+Run the preprocessing notebook, then an allocation that names the new source in `active_sources` of notebook 301. Check the country coverage and year ranges in `country_data_coverage_summary.csv`.
+
+These notebooks are good models:
+
+| Notebook | Type | Example of |
+| --- | --- | --- |
+| `101_data_preprocess_emiss_primap.py` | Emissions | NetCDF processing, category mapping, one notebook for every release |
+| `101_data_preprocess_emiss_gcb-2025.py` | Emissions | Long CSV, single category, logic in one library function |
+| `102_data_preprocess_gdp_wdi-2025.py` | GDP | CSV processing, country code mapping |
+| `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data |
+| `105_data_preprocess_gini_wdi-2025.py` | Gini | Latest value in a window, filtering aggregates |
+| `105_data_preprocess_gini_unu-wider-2025.py` | Gini | Quality filtering, stationary output |
+| `107_derive_nghgi_categories.py` | Land use | National-inventory corrections, metadata, world totals |
 
 ---
 
-## Step 4: Index Structure Requirements
+## Land-use sources
 
-All data must follow standardized MultiIndex structures:
+National-inventory land-use CO₂ replaces the bookkeeping estimates in PRIMAP. Total CO₂ (`co2`) and `all-ghg` need it ([Convention gap](../science/remaining-carbon-budgets.md#convention-gap)).
 
-### Emissions
+Notebook 107 serves every land-use source and receives `active_lulucf_source` as a papermill parameter. It writes:
 
-```python
-# Index: iso3c, unit, emission-category
-# Columns: year columns as strings ("1990", "2000", ...)
-df.index.names == ["iso3c", "unit", "emission-category"]
-```
+- `emiss_co2-lulucf_nghgi_timeseries.csv`: country land-use CO₂ (the PRIMAP bookkeeping version from notebook 101 keeps its base filename);
+- `world_co2-lulucf_timeseries.csv`: the world total for the budget corrections;
+- `lulucf_metadata.yaml`: the year bounds and the files written.
 
-### GDP / Population
+To add a source, place it in `data/lulucf/{source-name}/` and add an entry under `lulucf:` with `data_parameters`: `format`, `iso3_column`, `year_column`, `value_column`, `category_filter`, `gas_filter` and `exclude_regions`.
+The notebook reads the release label from the file name (`..._v3.1.csv`, `..._4.0.0.csv`), so the name must end in a version number.
 
-```python
-# Index: iso3c, unit
-# Columns: year columns as strings
-df.index.names == ["iso3c", "unit"]
-```
+Allocations in `co2` and `all-ghg` start no earlier than the first year of the land-use data. Both Melo releases start in 2000.
 
-### Gini (Stationary)
-
-```python
-# Index: iso3c, unit
-# Columns: "gini" (single value, not time-varying)
-df.index.names == ["iso3c", "unit"]
-df.columns == ["gini"]
-```
-
----
-
-## Step 5: Integrate with Pipeline
-
-The Snakemake workflow automatically picks up sources from the configuration. It builds the notebook name from the source key: `101_data_preprocess_emiss_{source}.py` for emissions and `108_data_preprocess_bunkers_{bunkers_source}.py` for bunkers. An emissions entry with a `notebook` key names the notebook stem instead. Both PRIMAP-hist entries set `notebook: "101_data_preprocess_emiss_primap"`, so a new PRIMAP release needs a config entry and a registry entry, and no new notebook. Ensure your preprocessing notebook:
-
-1. Reads from the path specified in the config
-2. Outputs to the standard processed data location
-3. Uses consistent index structures
-
----
-
-## Step 6: Test
-
-1. **Run preprocessing notebook** - Verify it completes without errors
-2. **Run allocation with new source** - Use in 301 notebook
-3. **Check results** - Verify country coverage and data ranges
-
-```python
-# In 301 notebook:
-active_sources = {
-    "target": "rcbs",
-    "emissions": "my-source-2026",  # Use new source
-    "gdp": "wdi-2025",
-    "population": "un-owid-2025",
-    "gini": "wdi-2025",
-    "lulucf": "melo-2026-v4",
-}
-```
-
----
-
-## LULUCF Data Sources
-
-LULUCF data provides NGHGI-consistent land-use CO2 emissions that replace
-the bookkeeping model (BM) estimates in PRIMAP. Total CO2 (`co2`) and all-GHG (`all-ghg`) need it. See
-[NGHGI Corrections](../science/other-operations.md) for the science.
-
-### What LULUCF preprocessing produces
-
-Notebook 107 reads the raw LULUCF source and outputs:
-
-- `emiss_co2-lulucf_nghgi_timeseries.csv`: country-level NGHGI LULUCF emissions
-  (the PRIMAP BM version from notebook 101 keeps its base filename)
-- `world_co2-lulucf_timeseries.csv`: world-total LULUCF for RCB corrections
-- `lulucf_metadata.yaml`: NGHGI year bounds and the files the notebook writes
-
-Allocations in `co2` and `all-ghg` start no earlier than the first year of the
-loaded NGHGI-consistent country frame. Both Melo releases start in 2000.
-`all-ghg-ex-co2-lulucf` and `co2-ffi` have no such limit.
-
-Notebook 108 (`108_data_preprocess_bunkers_{bunkers_source}.py`, Snakefile rule
-`preprocess_bunkers`) writes `bunker_timeseries.csv`, the international bunker fuel emissions.
-
-### Adding a new LULUCF source
-
-1. Place data in `data/lulucf/{source-name}/`
-2. Add config entry under `lulucf:` in `data_sources_unified.yaml` with
-   `data_parameters` including `format`, `iso3_column`, `year_column`,
-   `value_column`, `category_filter`, `gas_filter`, and `exclude_regions`
-3. No new notebook: `107_derive_nghgi_categories.py` serves every LULUCF
-   source and receives `active_lulucf_source` as a papermill parameter. It reads
-   the release label from the file name (`..._v3.1.csv`, `..._4.0.0.csv`), so the
-   CSV name must end in a version number
-4. The Snakefile will pick it up via `active_lulucf_source`
-
-### Which categories use LULUCF?
-
-| Emission category | Uses LULUCF? | Why |
-|-------------------|-------------|-----|
+| Category | Uses land-use data | Why |
+| --- | --- | --- |
 | `co2-ffi` | No | Fossil fuels only |
-| `co2` | **Yes** | Country `co2` = `co2-ffi` + NGHGI `co2-lulucf` on shared years. Bunkers enter only at world and budget level |
-| `all-ghg` | **Yes** | Decomposes into `co2` (NGHGI) + `non-co2` |
-| `all-ghg-ex-co2-lulucf` | No | CO2 component is `co2-ffi` |
-| `co2-lulucf` | Indirect | IS the LULUCF data |
+| `co2` | Yes | Country `co2` = `co2-ffi` + national-inventory `co2-lulucf` on shared years. Bunkers enter only at world and budget level |
+| `all-ghg` | Yes | Splits into `co2` and `non-co2` |
+| `all-ghg-ex-co2-lulucf` | No | Its CO₂ part is `co2-ffi` |
+| `co2-lulucf` | Indirectly | It is the land-use data |
 | `non-co2` | No | Derived by subtraction |
 
----
+Notebook 108 (rule `preprocess_bunkers`) writes `bunker_timeseries.csv`, the international bunker emissions.
 
-## Scenario Data and NGHGI Consistency
+## Scenario sources and budgets
 
-When adding or updating scenario data (AR6 or custom), ensure the scenarios
-use NGHGI-consistent emissions conventions. The pipeline applies NGHGI
-corrections to remaining carbon budgets (RCBs) to account for the gap
-between bookkeeping model and NGHGI LULUCF estimates, but scenario pathways
-must already be internally consistent.
+Scenario pathways must already be internally consistent with the emissions convention. The pipeline corrects the budgets, not the pathways.
+The Gidden et al. AR6 reanalysis is consistent with PRIMAP history. A custom scenario source in another convention needs its corrections in its preprocessing notebook before the data enter the pipeline.
 
-**For AR6 scenarios:** The Gidden et al. reanalysis provides scenarios that
-are consistent with PRIMAP historical emissions. NGHGI corrections are
-applied at the RCB level (adjusting the budget), not at the scenario pathway
-level.
+Every scenario source maps its categories to the normalised `climate-assessment` and `quantile` fields; AR6 maps C1 to `1.5C` and `0.5`. A new source **must** write these columns. Notebook 104 is the reference.
+A new scenario source is an entry in `src/fair_shares/conf/scenario_sources.yaml` that declares the world variables, metadata columns and bunker variables notebook 104 reads, and the budget terms it supplies.
 
-**For custom scenarios:** If your scenario data uses a different emissions
-convention than PRIMAP/NGHGI, apply the necessary corrections in the
-preprocessing notebook (e.g. `104_data_preprocess_scenarios_ar6.py`) before
-the data enters the pipeline. The allocation functions take scenario data as
-convention-consistent.
+An all-GHG budget run splits into a CO₂ budget and a non-CO₂ pathway. Notebook 104 builds the non-CO₂ pathway of each budget from its own scenario set (the temperature-matched set, or the AR6 category under `scenario_selection: ar6-category`), and non-CO₂ rows carry the budget's source key.
+A new budget label needs at least `min_scenarios` scenarios in each of its sets, or notebook 104 raises a `ConfigurationError` that names it. `data/rcbs/rcbs.yaml` lists the labels left out of the defaults and why ([Decomposition](../science/greenhouse-gases.md#decomposition-rules); [Architecture](architecture-walkthrough.md#composite-category-decomposition)).
 
-### Normalised scenario schema
-
-The pipeline normalises all scenario data into a common schema with
-`climate-assessment` (temperature target) and `quantile` (probability
-percentile) fields. Each scenario source defines its own mapping into this
-schema. For example, AR6 maps C1 to `climate-assessment="1.5C"`,
-`quantile=0.5`. All downstream code works with these normalised fields
-regardless of the upstream source.
-
-Any new data processing notebook that introduces a scenario source **must**
-output data with `climate-assessment` and `quantile` columns conforming to
-this schema. See notebook 104 for the AR6 reference implementation.
-
----
-
-## RCB Sources and All-GHG Pathway Dependency
-
-When adding or updating remaining carbon budget (RCB) data, keep in mind
-that all-GHG allocations using RCBs require a **decomposition** into CO₂
-(allocated via the budget) and non-CO₂ (allocated via scenario pathways).
-This means:
-
-- Notebook 104 builds the non-CO₂ pathway of each budget from its own
-  scenario set: the temperature-matched set, or the AR6 category under
-  `scenario_selection: ar6-category`. Non-CO₂ rows carry the RCB source key,
-  so each budget pairs with its own pathway.
-- A new RCB label needs at least `min_scenarios` scenarios in each of its
-  sets. Otherwise notebook 104 raises a `ConfigurationError` that names the
-  label. `data/rcbs/rcbs.yaml` lists the labels left out of the defaults and
-  the reason for each.
-- A new scenario source is an entry in
-  `src/fair_shares/conf/scenario_sources.yaml`. It declares the world
-  variables, metadata columns and bunker variables that notebook 104 reads,
-  and the budget terms it supplies.
-
-See [Other Operations: Decomposition](../science/other-operations.md#decomposition-rules)
-for the science and [Architecture Walkthrough: Composite Category Decomposition](architecture-walkthrough.md#composite-category-decomposition)
-for the code path.
-
----
-
-## Normative Implications
+## Normative implications
 
 Some data source choices carry normative weight. Contributors should document the rationale for their data source choices. For example, some decision points include:
 
 - **GDP:** PPP vs. MER measurement can significantly affect allocation results. PPP tends to raise developing-country capacity shares [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
 - **Emissions:** Production vs. consumption accounting embeds different theories of responsibility. Production accounting (territorial) excludes embedded imports; consumption accounting includes them.
 - **Population:** Projection method choices (UN median, SSP scenarios) affect per capita allocations, particularly for countries with high projected growth.
-
----
-
-## Validation Requirements
-
-New data sources should:
-
-1. **Cover expected countries** - At minimum, major emitters
-2. **Include World total** - Required for validation
-3. **Use standard units** - Mt CO2e for emissions, million people for population (unit `million`)
-4. **Handle missing values** - Document any gaps
-
----
-
-## Existing Notebooks as Examples
-
-| Notebook                                         | Data Type  | Good Example Of                                    |
-| ------------------------------------------------ | ---------- | -------------------------------------------------- |
-| `101_data_preprocess_emiss_primap.py`            | Emissions  | NetCDF processing, category mapping, one notebook for every release |
-| `101_data_preprocess_emiss_gcb-2025.py`          | Emissions  | Long CSV, single category, logic in one library function |
-| `102_data_preprocess_gdp_wdi-2025.py`            | GDP        | CSV processing, country code mapping               |
-| `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data            |
-| `105_data_preprocess_gini_wdi-2025.py`           | Gini       | Latest-available-in-window selection, aggregate filtering |
-| `105_data_preprocess_gini_unu-wider-2025.py`     | Gini       | Quality filtering, stationary output               |
-| `107_derive_nghgi_categories.py`                 | LULUCF     | NGHGI corrections, metadata export, world totals   |
-
----
-
-## See Also
-
-- **Data Sources Config**: `src/fair_shares/conf/data_sources/data_sources_unified.yaml` in the repository
-- **[Validation Utilities](../api/utils/validation.md)** - Data validation functions

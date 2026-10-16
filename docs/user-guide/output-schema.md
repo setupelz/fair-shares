@@ -1,30 +1,33 @@
 ---
-title: Output Schema
-description: Detailed reference for allocation output file formats and column structures
+title: Outputs
+description: Files and columns of allocation results, remaining budgets, annual pathways and the Python API result
 ---
 
-# Output Schema
+# Outputs
 
-This page documents the structure of allocation outputs and how parquet files are transformed to CSV format.
+## Files
 
----
+An allocation run writes to `output/<source-id>/allocations/<allocation_folder>/`:
 
-## Output Files
+| File | Holds |
+| --- | --- |
+| `allocations_relative.parquet` | Shares summing to 1, every column below |
+| `allocations_absolute.parquet` | Share × global target in Mt CO₂e, every column below |
+| `param_manifest.csv` | Every parameter combination of the run |
+| `README_relative.txt`, `README_absolute.txt` | A short description of the folder |
+| `CITATIONS.md` | The software and every data source the run used |
+| `allocations_wide.csv` | Wide format for spreadsheets. The notebooks write it with `convert_parquet_to_wide_csv()` |
 
-All allocation runs produce four output files:
+Notebook 601 adds two products to the same folder:
 
-| File                           | Format  | Description                                     |
-| ------------------------------ | ------- | ----------------------------------------------- |
-| `allocations_relative.parquet` | Parquet | Country fractions summing to 1.0 (all columns)  |
-| `allocations_absolute.parquet` | Parquet | Shares × global target in Mt CO2e (all columns) |
-| `allocations_wide.csv`         | CSV     | Simplified wide format for spreadsheet use      |
-| `param_manifest.csv`           | CSV     | Parameter combinations used in the run          |
+| File | Holds |
+| --- | --- |
+| `remaining_budgets_from_<year>.csv` | Each country's remaining budget after observed emissions ([Remaining budgets](#remaining-budgets)) |
+| `distributed_remaining_pathways.parquet` and `.csv` | Each remaining budget spread into an annual pathway ([Annual pathways](#annual-pathways)) |
 
----
+## Allocation columns
 
-## Parquet Format (Full Detail)
-
-The parquet files contain the **complete** allocation results with all metadata and parameter columns.
+The parquet files hold every result with its metadata and parameters.
 
 ### Identifier Columns
 
@@ -92,37 +95,21 @@ Individual parameter columns for each allocation approach:
 | Column                        | Type   | Description                    |
 | ----------------------------- | ------ | ------------------------------ |
 | `warnings`                    | string | Quality warnings (if any)      |
+| `moved-to-row`                | string | Analysis countries placed in rest of world for this allocation only, `;`-separated ([Analysis countries](../science/other-operations.md#analysis-countries)) |
 | `missing-net-negative-mtco2e` | float  | Missing net-negative emissions |
 
 ---
 
-## CSV Format (Simplified)
+## Wide CSV
 
-The `allocations_wide.csv` file **simplifies** the parquet structure for spreadsheet use by:
+`allocations_wide.csv` holds relative and absolute values in one file for spreadsheets.
+A `data-type` column says which: `relative` (shares) or `absolute` (Mt CO₂e).
+The parameter columns collapse into `approach-short`, and the metadata into `variable`.
+The columns run: data context, sources, `target-source`, `data-type`, `approach-short`, `variable`, `iso3c`, `unit`, quality columns, then years in order.
 
-1. **Combining relative and absolute** into one file with a `data-type` column
-2. **Collapsing parameter columns** into `approach-short`
-3. **Collapsing metadata columns** into `variable`
-4. **Excluding redundant columns**
-5. **Converting to kebab-case** for consistency
+### approach-short
 
-### Column Transformation
-
-#### 1. Data Type Column (Added)
-
-| Column      | Type   | Values                 |
-| ----------- | ------ | ---------------------- |
-| `data-type` | string | 'relative', 'absolute' |
-
-Indicates whether values are fractions (relative) or Mt CO2e (absolute).
-
-#### 2. Approach Short (Collapsed)
-
-The `approach-short` column **collapses all parameter columns** into a compact code:
-
-**Format:** `{approach-code}-{param1}{value1}-{param2}{value2}...`
-
-**Example transformations:**
+Format: `{approach-code}-{param1}{value1}-{param2}{value2}...`
 
 | Parquet Columns                                                                        | CSV `approach-short` |
 | -------------------------------------------------------------------------------------- | -------------------- |
@@ -130,7 +117,7 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | `approach="per-capita-adjusted"`, `pre-allocation-responsibility-weight=0.5`, `capability-weight=0.5` | `PC-Adj-rw0.5-cw0.5` |
 | `approach="cumulative-per-capita-convergence"`, `convergence-speed=0.42`               | `CPCC-cs0.42`        |
 
-**Approach codes:**
+Approach codes:
 
 | Full Approach Name                                | Short Code      |
 | ------------------------------------------------- | --------------- |
@@ -145,7 +132,7 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | `per-capita-adjusted-budget`                      | `PC-Adj-B`      |
 | `per-capita-adjusted-gini-budget`                 | `PC-Adj-Gini-B` |
 
-**Parameter prefixes:**
+Parameter prefixes:
 
 | Parameter                               | Prefix |
 | --------------------------------------- | ------ |
@@ -170,151 +157,69 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | `income-floor`                          | `if`   |
 | `max-gini-adjustment`                   | `ga`   |
 
-#### 3. Variable Column (Collapsed)
+### variable
 
-The `variable` column **encodes key metadata** in pipe-delimited format:
+Format: `{emission-category}|{target-source}|{source}|{climate-assessment}|{quantile}|{approach-short}`, for example `co2-ffi|rcbs|lamboll_2023|1.5C|0.5|EPC-B-ay2020`.
 
-**Format:** `{emission-category}|{target-source}|{source}|{climate-assessment}|{quantile}|{approach-short}`
+`convert_parquet_to_wide_csv()` takes `config_prefixes` and `approach_names` to change the codes, for example `{"capability-weight": "cap"}` or `{"equal-per-capita": "Equal"}`.
 
-**Example:**
+## Remaining budgets
 
-```
-co2-ffi|rcbs|lamboll_2023|1.5C|0.5|EPC-B-ay2020
-```
+`remaining_budgets_from_<year>.csv` has one row per country and configuration.
+It keeps the identifier and parameter columns above and adds:
 
-This enables filtering and pivoting in spreadsheet software.
+| Column | Meaning |
+| --- | --- |
+| `category` | The emission category of the run, for example `all-ghg` |
+| `emission-category` | The part of that category: the CO₂ part, `non-co2`, or `combined` for their sum |
+| `netting-end-year` | The last observed year that every part of the category covers |
+| `remaining-from-year` | `netting-end-year` + 1 |
+| `allocated-total` | The allocation from the allocation year |
+| `consumed-actuals` | Observed emissions from the allocation year to `netting-end-year` |
+| `remaining-budget` | `allocated-total` minus `consumed-actuals`. For a non-CO₂ pathway part: its allocation after `netting-end-year` |
+| `historical-deviation` | Non-CO₂ parts only: observed minus allocated emissions up to `netting-end-year` |
 
-#### 4. CSV Column Order
+A remaining budget can be negative.
+[`compute_remaining_budgets`](../api/python-api.md#compute_remaining_budgets) computes this table.
 
-The CSV uses this column order:
+## Annual pathways
 
-1. **Data Context**: `source-id`, `allocation-folder`
-2. **Source Data**: `emissions-source`, `gdp-source`, `population-source`, `gini-source`
-3. **Target**: `target-source`
-4. **Approach**: `data-type`, `approach-short`, `variable`
-5. **Identity**: `iso3c`, `unit`
-6. **Quality**: `warnings`, `missing-net-negative-mtco2e`
-7. **Years**: `2020`, `2021`, ..., `2100` (in chronological order)
+`distributed_remaining_pathways` has one row per country, configuration and distribution setting, with one column per year to the pathway end year.
+Each country's pathway sums to its remaining budget. It adds:
 
-#### 5. Excluded Columns
+| Column | Meaning |
+| --- | --- |
+| `adjusted-target` | The total the pathway sums to: the remaining budget, less any non-CO₂ debt in `co2-debit` mode |
+| `shape`, `deviation-end-year`, `convergence-year` | The distribution setting |
+| `nonco2-debt-mode` | Composite categories only: `report-only` or `co2-debit` |
+| `nonco2-debt-paid` | Composite categories only: the non-CO₂ over-use subtracted from the CO₂ budget |
 
-These columns from parquet are **excluded** from CSV:
+[`distribute_remaining_pathways`](../api/python-api.md#distribute_remaining_pathways) computes this table. [Greenhouse gases](../science/greenhouse-gases.md) explains the two debt modes.
 
-**Parameter columns** (collapsed into `approach-short`):
+## Python API result
 
-- All individual parameter columns listed in Parquet Format section
+[`calculate_allocation_timeseries`](../api/python-api.md#calculate_allocation_timeseries) returns a `ResultContainer`:
 
-**Metadata columns** (collapsed into `variable` or redundant):
+| Attribute | Holds |
+| --- | --- |
+| `allocation_timeseries` | The annual pathways. The MultiIndex holds every identifying column above; the columns are years |
+| `history` | Observed emissions, indexed by `coverage`, `unit` and `iso3c`, including the `combined` basket |
+| `netting_end_year`, `pathway_end_year`, `harmonisation_year` | The years of the run |
+| `emission_category`, `rcb_source`, `climate_assessment`, `quantile` | The budget anchor |
+| `source_id` and the five `*_source` attributes | The data sources |
+| `shape`, `deviation_end_year`, `convergence_year`, `nonco2_debt_mode`, `base_share_floor_mt` | The distribution setting |
+| `unit`, `allocation_folder`, `metadata` | Unit, label and any approach-specific extras |
 
-- `approach` (encoded in `approach-short`)
-- `emission-category` (encoded in `variable`)
-- `climate-assessment` (encoded in `variable`)
-- `quantile` (encoded in `variable`)
-- `source` (encoded in `variable`)
+[`save_results`](../api/python-api.md#save_results) writes `allocation_timeseries.parquet`, `history.parquet`, `metadata.json` with every scalar attribute, and `CITATIONS.md`.
 
----
-
-## Customizing CSV Output
-
-The CSV transformation can be customized when calling `convert_parquet_to_wide_csv()`:
-
-### Custom Parameter Prefixes
-
-```python
-from fair_shares.library.utils.data.parquet_to_csv import convert_parquet_to_wide_csv
-
-# Use custom prefixes for specific parameters
-custom_prefixes = {
-    "pre-allocation-responsibility-weight": "resp",
-    "capability-weight": "cap",
-}
-
-convert_parquet_to_wide_csv(
-    allocations_dir="output/example/allocations/run-001/",
-    config_prefixes=custom_prefixes
-)
-```
-
-Result: `PC-Adj-resp0.5-cap0.5` instead of `PC-Adj-rw0.5-cw0.5`
-
-### Custom Approach Names
-
-```python
-# Use custom short codes for approaches
-custom_names = {
-    "equal-per-capita": "Equal",
-    "per-capita-adjusted": "Adjusted",
-}
-
-convert_parquet_to_wide_csv(
-    allocations_dir="output/example/allocations/run-001/",
-    approach_names=custom_names
-)
-```
-
-Result: `Equal-y2020` instead of `EPC-y2020`
-
----
-
-## Working with Outputs
-
-### In Python (Parquet)
+## Reading the files
 
 ```python
 import pandas as pd
 
-# Load full detail
-df_relative = pd.read_parquet("allocations_relative.parquet")
-df_absolute = pd.read_parquet("allocations_absolute.parquet")
-
-# Filter by approach
-epc = df_relative[df_relative["approach"] == "equal-per-capita"]
-
-# Filter by parameter value
-high_responsibility = df_relative[df_relative["pre-allocation-responsibility-weight"] >= 0.5]
+df = pd.read_parquet("allocations_relative.parquet")
+epc = df[df["approach"] == "equal-per-capita"]
+high_responsibility = df[df["pre-allocation-responsibility-weight"] >= 0.5]
 ```
 
-### In Python (CSV)
-
-```python
-import pandas as pd
-
-# Load simplified format
-df = pd.read_csv("allocations_wide.csv")
-
-# Separate relative and absolute
-relative = df[df["data-type"] == "relative"]
-absolute = df[df["data-type"] == "absolute"]
-
-# Filter by approach-short
-epc = df[df["approach-short"].str.startswith("EPC")]
-```
-
-### In R (Parquet)
-
-```r
-library(arrow)
-
-# Load full detail
-df_relative <- read_parquet("allocations_relative.parquet")
-df_absolute <- read_parquet("allocations_absolute.parquet")
-
-# Filter by approach
-epc <- df_relative %>%
-  filter(approach == "equal-per-capita")
-```
-
-### In Excel (CSV)
-
-1. Open `allocations_wide.csv` directly
-2. Filter by `data-type` column to see relative or absolute
-3. Filter by `approach-short` to compare approaches
-4. Use pivot tables with `variable` column for cross-cutting analysis
-
----
-
-## See Also
-
-- **[User Guide](index.md)** - Workflows for running allocations
-- **[API Reference](../api/index.md)** - Function documentation
-- **[Allocation Approaches](../science/allocations.md)** - Approach descriptions and parameters
+In R, `arrow::read_parquet()` reads the same files.

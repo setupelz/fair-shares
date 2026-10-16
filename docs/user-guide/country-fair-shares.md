@@ -1,172 +1,50 @@
 ---
-title: Fair shares for countries
-description: Guide to calculating fair share allocations for individual countries
+title: Country fair shares
+description: Divide a carbon budget or an emissions pathway between individual countries
 ---
 
-# Fair shares for countries
+# Country fair shares
 
 Divide a carbon budget or an emissions pathway between individual countries.
 
 ## Which notebook
 
-`301_custom_fair_share_allocation.ipynb` is the blank workspace: you set every
-option yourself. This page documents it step by step.
+`301_custom_fair_share_allocation` is the blank workspace. You set every option in its one configuration cell, then run all cells.
+If you are new, start from a worked example and change it once it runs:
 
-If you are new, start from a worked example instead and change it once it runs:
+| Notebook | What it does |
+| --- | --- |
+| `302_example_templates_budget_allocations` | Budgets: one cumulative number per country. Runs unchanged. |
+| `303_example_templates_pathway_allocations` | Pathways: a value per country per year. Runs unchanged. |
 
-| Notebook                                        | What it does                                                                |
-| ----------------------------------------------- | --------------------------------------------------------------------------- |
-| `302_example_templates_budget_allocations.ipynb`  | Budgets — one cumulative number per country. Runs unchanged.                |
-| `303_example_templates_pathway_allocations.ipynb` | Pathways — a value per country per year. Runs unchanged.                    |
+Each notebook builds the processed data it needs on its first run, which takes a few minutes. Later runs reuse it.
+Budget runs (`rcbs`) also read three files you place by hand once ([Files you place yourself](../quickstart.md#files-you-place-yourself)).
 
-All three build whatever processed data they need on their first run, so there
-is no notebook you must run beforehand. The first run takes a few minutes; later
-runs reuse what was built. Budget runs (`rcbs`) also read inputs that you place
-by hand once. [What happens where](pipeline-map.md#inputs-of-the-scenario-step)
-lists them.
+## 1. Choose the data
 
----
+`emission_category` sets the gases:
 
-## Workflow
+| Category | Covers | Notes |
+| --- | --- | --- |
+| `co2-ffi` | CO₂ from fossil fuels and industry | |
+| `co2` | `co2-ffi` plus land-use CO₂ | National-inventory land use; start years from 2000 |
+| `all-ghg-ex-co2-lulucf` | All greenhouse gases except land-use CO₂ | GWP100 AR6. Historical PRIMAP data also exclude land-use CH₄ and N₂O |
+| `all-ghg` (default in 301) | All greenhouse gases | GWP100 AR6; start years from 2000 |
 
-```mermaid
-graph LR
-    A[1. Data Sources] --> B[2. Approaches]
-    B --> C[3. Pipeline]
-    C --> D[4. Allocations]
-    D --> E[5. Results]
-```
+`active_sources["target"]` sets what is divided:
 
-| Step             | Action                                     |
-| ---------------- | ------------------------------------------ |
-| **Data Sources** | Select emissions, population, GDP datasets |
-| **Approaches**   | Configure allocation approach parameters   |
-| **Pipeline**     | Run data preprocessing (automated)         |
-| **Allocations**  | Calculate country shares                   |
-| **Results**      | Export to Parquet/CSV                      |
+| Target | Approaches | Divides |
+| --- | --- | --- |
+| `rcbs` | Budget | A remaining carbon budget, one cumulative value per country |
+| `pathway` | Pathway | Scenario pathways such as IPCC AR6 |
+| `rcb-pathways` | Pathway | A budget turned into a global pathway, then divided year by year ([RCB pathway generation](../science/other-operations.md#rcb-pathway-generation)) |
 
----
+The other entries of `active_sources` pick the emissions, population, GDP, Gini and land-use sources.
+The comments in the cell list the options. [Data & licences](data-sources.md) gives each source's coverage and terms.
 
-## Step 1: Data Sources
+## 2. Choose the approaches
 
-### Emission Category
-
-| Category                | Description                           | Notes                                 |
-| ----------------------- | ------------------------------------- | ------------------------------------- |
-| `co2-ffi`               | CO₂ from fossil fuels and industry    |                                       |
-| `co2`                   | CO₂ from fossil fuels and industry plus LULUCF | NGHGI LULUCF; start years from 2000 |
-| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | GWP100 AR6 values; avoids LULUCF measurement uncertainty. Historical PRIMAP data also exclude land-use CH₄ and N₂O |
-| `all-ghg` **(default in 301)** | All greenhouse gases including LULUCF | GWP100 AR6 values; start years from 2000 |
-
-### Target Source
-
-| Source         | Allocation Functions | Description                                                             |
-| -------------- | -------------------- | ----------------------------------------------------------------------- |
-| `rcbs`         | Budget approaches    | Remaining Carbon Budgets -- single cumulative value per country         |
-| `pathway`      | Pathway approaches   | Scenario pathways (e.g. IPCC AR6) -- allocate existing scenario pathways |
-| `rcb-pathways` | Pathway approaches   | RCB to global pathway, then allocated annually using pathway approaches |
-
-### Supporting Data
-
-| Data Type    | Purpose                                              |
-| ------------ | ---------------------------------------------------- |
-| `emissions`  | Historical emissions for pre-allocation responsibility calculations |
-| `population` | Per capita calculations                              |
-| `gdp`        | Capability-based adjustments                         |
-| `gini`       | Within-country inequality adjustments                |
-| `lulucf`     | NGHGI LULUCF CO₂ for `co2` and `all-ghg`; also corrects the RCB to the NGHGI convention |
-
-Available sources are configured in `src/fair_shares/conf/data_sources/`.
-
----
-
-!!! note "Entry Points Framework"
-    Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. See [From Principle to Code](../science/principle-to-code.md) for details.
-
-## Step 2: Allocation Approaches
-
-<!-- REFERENCE: Approach implementations in src/fair_shares/library/allocations/
-     Budget approaches: budgets/per_capita.py
-     Pathway approaches: pathways/per_capita.py, pathways/cumulative_per_capita_convergence.py
-     Mathematical details and design rationale: docs/science/allocations.md
--->
-
-### Budget Approaches (for `target="rcbs"`)
-
-| Approach                          | Description                                    |
-| --------------------------------- | ---------------------------------------------- |
-| `equal-per-capita-budget`         | Equal share per person                         |
-| `per-capita-adjusted-budget`      | Adjusted for pre-allocation responsibility and capability     |
-| `per-capita-adjusted-gini-budget` | Further adjusted for within-country inequality |
-
-### Pathway Approaches (for `target="pathway"` or `target="rcb-pathways"`)
-
-| Approach                                          | Description                                                                                                                                                                         |
-| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `equal-per-capita`                                | Equal share per person per year                                                                                                                                                     |
-| `per-capita-adjusted`                             | Adjusted for pre-allocation responsibility (backward-looking) and capability (year by year, a snapshot year or a cumulative window)                                                                |
-| `per-capita-adjusted-gini`                        | Further adjusted for within-country inequality                                                                                                                                      |
-| `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only — convergence from current levels embeds implicit grandfathering during the transition period [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)) |
-| `cumulative-per-capita-convergence`               | Budget-preserving transition from current emissions to cumulative targets                                                                                                           |
-| `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with pre-allocation responsibility (backward-looking) and capability adjustments (from allocation year onwards)                                                              |
-| `cumulative-per-capita-convergence-gini-adjusted` | Cumulative convergence accounting for intra-national inequality                                                                                                                     |
-
-For detailed explanations, see [Allocation Approaches](../science/allocations.md).
-
----
-
-## Step 3: Data Pipeline
-
-The pipeline runs automatically when you execute the Step 3 cell. It:
-
-1. Validates your configuration
-2. Loads raw data files
-3. Processes emissions, GDP, population data
-4. Prepares target scenarios or budgets
-5. Saves processed files for allocation
-
-Processing typically takes 1-3 minutes depending on data sources.
-
----
-
-## Step 4: Run Allocations
-
-The allocation step:
-
-1. Loads processed data from the pipeline
-2. Runs each approach with all parameter combinations
-3. Calculates relative shares (summing to 1)
-4. Computes absolute emissions (Mt CO2e)
-5. Saves results to parquet and CSV
-
----
-
-## Step 5: Explore Results
-
-### Output Files
-
-Results are saved to `output/{source_id}/allocations/{allocation_folder}/`:
-
-| File                           | Format  | Description                  |
-| ------------------------------ | ------- | ---------------------------- |
-| `allocations_relative.parquet` | Parquet | Relative shares (0-1)        |
-| `allocations_absolute.parquet` | Parquet | Absolute emissions (Mt CO2e) |
-| `allocations_wide.csv`         | CSV     | Wide format for spreadsheets |
-| `param_manifest.csv`           | CSV     | All parameter combinations   |
-
-### Output Types
-
-- **Relative shares**: Country fractions summing to 1.0 per year
-- **Absolute emissions**: Relative share × global target in physical units
-
-!!! note "Negative allocations under principled approaches"
-    Under approaches like ECPC from 1990, some developed regions have already exhausted their fair share and will show negative remaining allocations. This is a feature, not a bug — it signals the need for maximum domestic ambition and active support for international cooperation to compensate for past overshoot.
-
----
-
-## Comparing Approaches
-
-To compare multiple allocation approaches:
+`allocations` maps each approach to a list of parameter sets. The notebook runs every combination in each set:
 
 ```python
 allocations = {
@@ -184,24 +62,31 @@ allocations = {
 }
 ```
 
-!!! note "Illustrative parameters only"
-    The `per-capita-adjusted-budget` entry above shows the config *structure*, not a complete parameter set. For full worked examples with all adjustment parameters, see [From Principle to Code](../science/principle-to-code.md).
+The second entry shows the structure only. [From principle to code](../science/principle-to-code.md) has complete worked configurations.
+For `all-ghg`, the notebook derives the non-CO₂ pathway approaches from the budget approaches.
 
-Both approaches run in a single pipeline execution. Results include an `approach` column for filtering.
+Budget approaches: `equal-per-capita-budget`, `per-capita-adjusted-budget` (responsibility and capability), `per-capita-adjusted-gini-budget` (plus inequality within countries).
 
----
+Pathway approaches: `equal-per-capita`, `per-capita-adjusted`, `per-capita-adjusted-gini`, `cumulative-per-capita-convergence` and its `-adjusted` and `-gini-adjusted` forms, and `per-capita-convergence`.
+`per-capita-convergence` is for comparison only, because convergence from current levels embeds grandfathering during the transition ([Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)).
 
-## Reference Notebooks
+The [Approach catalog](approach-catalog.md) describes each approach, and [Allocation approaches](../science/allocations.md) its parameters.
+The five entry points of [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f) help you decide: foundational principles, allocation quantity, allocation approach, indicators, and implications for all others.
 
-| Notebook                                       | Purpose                     |
-| ---------------------------------------------- | --------------------------- |
-| `302_example_templates_budget_allocations.py`  | Budget allocation examples  |
-| `303_example_templates_pathway_allocations.py` | Pathway allocation examples |
+## 3. Read the results
 
----
+Results land in `output/{source_id}/allocations/{allocation_folder}/`. A folder of the same name is overwritten.
 
-## See Also
+| File | Holds |
+| --- | --- |
+| `allocations_relative.parquet` | Relative shares, summing to 1 |
+| `allocations_absolute.parquet` | Relative share × global target, in Mt CO₂e |
+| `allocations_wide.csv` | Wide format for spreadsheets |
+| `param_manifest.csv` | Every parameter combination |
 
-- **[Allocation Approaches](../science/allocations.md)** - Theoretical foundations
-- **[API Reference](../api/allocations/budgets.md)** - Function signatures
-- **[Other Operations](../science/other-operations.md)** - RCB pathway generation, net-negative handling
+The `approach` column separates the approaches. [Outputs](output-schema.md) documents every column.
+
+!!! note "Negative allocations"
+    A negative allocation means past emissions exceed the allocation. It is an expected result for high historical emitters, for example under equal cumulative per capita from 1990. [Negative allocation](../science/glossary.md#negative-allocation) gives how the literature reads it.
+
+To subtract observed emissions and spread a budget into an annual pathway, see [Remaining budgets and annual pathways](pipeline-map.md#4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api).

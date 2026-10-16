@@ -1,242 +1,37 @@
 ---
 title: Glossary
-description: Definitions of key terms, parameters, and data structures in fair-shares
-icon: material/book-alphabet
+description: Definitions of terms used in the fair-shares documentation and code
 ---
 
 # Glossary
 
-This page provides definitions for key terms used throughout the fair-shares documentation and codebase.
+Parameters are explained in [Parameter effects](parameter-effects.md) and in the [API reference](../api/allocations/budgets.md). Approach names use kebab-case; the [Approach catalog](../user-guide/approach-catalog.md) lists them all.
 
----
+## Approaches
 
-## Allocation Approaches
+**Budget approach**
+: Allocates one cumulative budget: `equal-per-capita-budget`, `per-capita-adjusted-budget` (responsibility and capability) and `per-capita-adjusted-gini-budget` (plus inequality within countries). The name ends in `-budget`.
 
-All approach names use `kebab-case` notation. For complete details, see the [Approach Catalog](../user-guide/approach-catalog.md).
+**Pathway approach**
+: Allocates a value for every year: `equal-per-capita`, `per-capita-adjusted`, `per-capita-adjusted-gini`, and the convergence approaches.
 
-!!! info "Key concept: allocation_year"
+**Convergence approach**
+: Moves each country from its current emission share to a target share. `cumulative-per-capita-convergence` and its `-adjusted` and `-gini-adjusted` forms preserve the cumulative budget. `per-capita-convergence` does not, and it includes grandfathering, so it is for comparison only.
+: See: [Convergence](allocations.md#convergence-mechanism-pathways-only)
 
-    All approaches incorporate historical differentiation via `allocation_year` (budget) or `first_allocation_year` (pathway). When set in the past, cumulative population from that year determines each country's share of the total budget — leaving different **remaining allocations** for each country. The `*-adjusted` approaches additionally apply pre-allocation responsibility and capability rescaling on top of this mechanism.
+**ECPC**
+: Equal cumulative per capita: cumulative population from the allocation year sets each country's share of a budget.
 
-### Budget Approaches
+**Allocation year**
+: `allocation_year` (budget) or `first_allocation_year` (pathway). Cumulative population from this year sets the shares. It decides whether past emissions create present obligations, so it has no neutral default.
+: See: [Allocation year](allocations.md#allocation-year)
 
-**`equal-per-capita-budget`**
-: Population-proportional allocation. Historical accountability via `allocation_year` only.
+## Concepts
 
-**`per-capita-adjusted-budget`**
-: Adds `pre_allocation_responsibility_weight` (covers the window prior to allocation year) and `capability_weight` (by default from allocation year onwards) adjustments. CBDR-RC.
+**Carbon debt**
+: The emissions by which a country has exceeded its fair share of atmospheric space, read as an obligation. Can be quantified in tonnes CO2 or monetary terms. [Matthews 2016](https://doi.org/10.1038/NCLIMATE2774) calculates debts against an equal per capita benchmark; [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122) introduces a net-zero framing that makes post-peak obligations explicit. Moral grounding: [Pickering 2012](https://doi.org/10.1080/13698230.2012.727311).
 
-**`per-capita-adjusted-gini-budget`**
-: Adds Gini adjustment for within-country inequality. Subsistence protection.
-
-### Pathway Approaches (Standard)
-
-**`equal-per-capita`**
-: Annual population-proportional shares. Historical accountability via `first_allocation_year`.
-
-**`per-capita-adjusted`**
-: Annual shares with pre-allocation responsibility (backward-looking) and capability (by default from allocation year onwards) adjustments. CBDR-RC.
-
-**`per-capita-adjusted-gini`**
-: Annual shares with Gini adjustment. Subsistence protection.
-
-### Pathway Approaches (Convergence)
-
-**`per-capita-convergence`**
-: Gradual transition to equal per capita. **Not a fair share approach**—includes grandfathering.
-
-**`cumulative-per-capita-convergence`**
-: Budget-preserving convergence. Distributes cumulative per capita shares over time. **Fair share approach.**
-
-**`cumulative-per-capita-convergence-adjusted`** / **`-gini-adjusted`**
-: Convergence with pre-allocation responsibility/capability/Gini adjustments.
-
-See: [API Reference](../api/allocations/budgets.md) · [From Principle to Code](principle-to-code.md)
-
----
-
-## Parameters
-
-For detailed parameter effects and examples, see [Parameter Effects](parameter-effects.md).
-
-### Core Parameters
-
-**`allocation_year`** / **`first_allocation_year`** (type: `int`)
-: Start year for cumulative accounting. Cumulative population from this year determines each country's share of the total budget. No neutral default: the choice operationalises whether past emissions create present obligations.
-: Budget approaches use `allocation_year`; pathway approaches use `first_allocation_year`.
-
-**`convergence_year`** (type: `int`)
-: Year by which allocations converge to equal per capita shares. Must be > allocation year. Required when `convergence_method="sine-deviation"`. Earlier convergence years demand steeper near-term reductions; later years spread the transition. Convergence approaches only. See [Parameter Effects](parameter-effects.md#convergence_method-convergence-only).
-
-**`emission_category`** (type: `str`)
-: Emission species (e.g., `"co2-ffi"`, `"co2"`, `"all-ghg"`, `"all-ghg-ex-co2-lulucf"`, `"non-co2"`). Must match data sources. Both `all-ghg` and `all-ghg-ex-co2-lulucf` use GWP100 AR6 values to convert non-CO2 gases to CO2-equivalent. Composite categories (`all-ghg`, `all-ghg-ex-co2-lulucf`) trigger [decomposition into CO2 + non-CO2](other-operations.md#all-ghg-allocations-with-rcbs) when used with RCB targets, because RCBs constrain CO2 only and non-CO2 requires scenario pathway data.
-
-**`group_level`** (type: `str`, default: `"iso3c"`)
-: Index level for countries/regions (ISO 3166-1 alpha-3 codes).
-
-### Adjustment Weights
-
-Constraint: `pre_allocation_responsibility_weight + capability_weight ≤ 1.0`
-
-Only the **ratio** between the two weights matters -- they are normalized by their sum before use. `(0.3, 0.7)` and `(0.15, 0.35)` produce identical results. When one weight is 0, the other is the sole adjustment regardless of its specific value -- `(0.0, 0.3)` is identical to `(0.0, 1.0)`.
-
-**`pre_allocation_responsibility_weight`** (type: `float`, default: `0.0`)
-: Weight for relative per-capita rescaling based on emissions in [`pre_allocation_responsibility_year`, `allocation_year`). Higher relative to `capability_weight` = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early `allocation_year`. Always produces positive allocations if `allocation_year` is the present.
-
-**`capability_weight`** (type: `float`, default: `1.0` in `per_capita_adjusted_gini_budget`, `0.0` in every other approach)
-: Weight for GDP-based adjustment. Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. By default capability is computed year by year from the allocation year onwards, while pre-allocation responsibility covers the window before it. `capability_reference_year` and `capability_window` move capability to a fixed year or a past window.
-
-### Pre-allocation Responsibility Parameters
-
-**`pre_allocation_responsibility_year`** (type: `int`, default: `1990`)
-: Start year for cumulative emissions in the pre-allocation responsibility window. Must be strictly less than `allocation_year` for the adjustment to have effect — when equal, the window is empty.
-
-**`pre_allocation_responsibility_per_capita`** (type: `bool`, default: `False`)
-: Per capita (True) or absolute (False) emissions for pre-allocation responsibility calculation. Default is `False` (absolute) to match the polluter-pays framing used in most of the historical-responsibility literature, which treats responsibility as a country's total cumulative contribution to atmospheric CO2 — see [Matthews 2016](https://doi.org/10.1038/NCLIMATE2774) (absolute cumulative emissions as the debt metric) and the [Greenhouse Development Rights framework (Baer 2009)](https://doi.org/10.1080/13668790903195495), which starts from country-level absolute cumulative emissions and applies a within-country subsistence filter (not a per-capita normalisation). Set to `True` if your research framing genuinely calls for per-capita historical responsibility.
-
-**`pre_allocation_responsibility_exponent`** (type: `float`, default: `1.0`)
-: Exponent for pre-allocation responsibility adjustment. >1.0 increases non-linearity.
-
-**`pre_allocation_responsibility_functional_form`** (type: `str`, default: `"asinh"`)
-: Functional form: `"asinh"` or `"power"`.
-
-### Capability Parameters
-
-**`capability_per_capita`** (type: `bool`, default: `True`)
-: Per capita (True) or absolute (False) GDP for capability calculation.
-
-**`capability_exponent`** (type: `float`, default: `1.0`)
-: Exponent for capability adjustment. >1.0 increases non-linearity.
-
-**`capability_functional_form`** (type: `str`, default: `"asinh"`)
-: Functional form: `"asinh"` or `"power"`.
-
-**`capability_reference_year`** (type: `int | None`, default: `None`)
-: Snapshot year. When set, capability is GDP (per capita) in this one year, held constant over the allocation window. The year may precede the allocation year. Exclusive with `capability_window`. See [Allocations](allocations.md#building-blocks).
-
-**`capability_window`** (type: `tuple[int, int] | None`, default: `None`)
-: Inclusive `(start, end)` years. When set, capability is one value per country, cumulative GDP over cumulative population for the window, held constant over the allocation window. Exclusive with `capability_reference_year`. Available in the per-capita adjusted budget and pathway approaches and their Gini variants. In a grid config, `[1990, 2019]` is one window and `[[1990, 2019], [2000, 2019]]` is two. See [Allocations](allocations.md#building-blocks).
-
-### Inequality Parameters
-
-**`income_floor`** (type: `float`, default: `0.0`)
-: Income below this threshold (USD PPP per capita) is excluded from capability calculations, protecting subsistence needs. The library default is `0.0` (all income counts); the GDR framework's threshold is $7,500 on a 2005 price base ($8,500 on 2010) and must be converted to the GDP series' price base before it is passed. Higher floors reduce measured capability for all countries, with the largest effect on middle-income countries where population clusters around the threshold. See [Parameter Effects](parameter-effects.md#income_floor).
-
-**`max_gini_adjustment`** (type: `float`, default: `0.8`)
-: Maximum proportional reduction from the Gini-based capability correction. Caps the influence of extreme inequality (Gini > 0.6) on measured capability, preventing outsized adjustments from dominating the allocation. At 0.8, the Gini adjustment can reduce a country's measured GDP by at most 80%. Available on `*-gini-*` approaches only.
-
-### Discounting Parameters
-
-**`historical_discount_rate`** (type: `float`, default: `0.0`)
-: Weights earlier historical emissions less when computing pre-allocation responsibility adjustments. `0.0` treats all years equally. Available on `*-adjusted` functions only. See [Parameter Effects](parameter-effects.md#historical_discount_rate).
-
-### Convergence Parameters
-
-**`convergence_method`** (type: `str`, default: `"minimum-speed"`)
-: Solver for convergence pathway. `"minimum-speed"` finds the minimum exponential speed satisfying cumulative constraints. `"sine-deviation"` uses iterative sine-shaped deviation from a PCC baseline (requires `convergence_year`). Convergence approaches only.
-
-**`max_convergence_speed`** (type: `float`, default: `0.9`)
-: Upper bound on exponential convergence speed. Lower values force slower transitions but may cause infeasibility. Convergence approaches only.
-
-**`strict`** (type: `bool`, default: `True`)
-: Controls behavior on infeasible convergence targets. `True` raises an error; `False` clips infeasible long-run shares and reports per-country deviation ratios. Convergence approaches only. See [Parameter Effects](parameter-effects.md#strict-convergence-only).
-
-### Constraint Parameters
-
-**`max_deviation_sigma`** (type: `float | None`, default: `None`)
-: Optional outlier constraint (standard deviations from mean). Default `None` means no constraint — the raw, unconstrained adjustment is returned. Set to a positive float (e.g. `2.0`) to opt into a ±N-σ cap that compresses extreme values. Only relevant when applying scaling adjustments. See [Parameter Effects](parameter-effects.md#max_deviation_sigma).
-
-**`preserve_allocation_year_shares`** / **`preserve_first_allocation_year_shares`** (type: `bool`, default: `False`)
-: When `True`, freezes population (and adjustment) shares at the allocation year instead of recalculating as demographics evolve. The choice reflects whether future population growth should increase a country's atmospheric entitlement. See [Parameter Effects](parameter-effects.md#preserve_allocation_year_shares-preserve_first_allocation_year_shares).
-
----
-
-## Result Types
-
-### BudgetAllocationResult
-
-Container for budget allocation results. Contains relative shares of a cumulative carbon budget.
-
-**Attributes:**
-
-- `approach` (str): Name of allocation approach (e.g., `"equal-per-capita-budget"`)
-- `parameters` (dict): Parameter values used for allocation
-- `relative_shares_cumulative_emission` ([TimeseriesDataFrame](#timeseriesdataframe)): Relative shares (fractions summing to 1.0) for each country. Has exactly one year column representing the allocation year.
-- `country_warnings` (dict[str, str] | None): Optional warnings about data quality issues
-
-**Methods:**
-
-- `get_absolute_budgets(remaining_budget)`: Multiply relative shares by a global budget to get absolute country-level budgets
-
-See: [Budget Approaches](allocations.md)
-
-### PathwayAllocationResult
-
-Container for pathway allocation results. Contains relative shares of annual emissions across multiple years.
-
-**Attributes:**
-
-- `approach` (str): Name of allocation approach (e.g., `"per-capita-adjusted"`)
-- `parameters` (dict): Parameter values used for allocation
-- `relative_shares_pathway_emissions` ([TimeseriesDataFrame](#timeseriesdataframe)): Relative shares (fractions summing to 1.0) for each country and year. Has multiple year columns.
-- `country_warnings` (dict[str, str] | None): Optional warnings about data quality issues
-
-**Methods:**
-
-- `get_absolute_emissions(annual_emissions_budget)`: Multiply relative shares by global annual budgets to get absolute country-level pathways
-
-See: [Pathway Approaches](allocations.md)
-
----
-
-## Data Structures
-
-### TimeseriesDataFrame
-
-A `pandas.DataFrame` with a `pandas.MultiIndex` and year columns. The standard structure for all timeseries data in fair-shares.
-
-**Index levels (in order):**
-
-1. `iso3c` (str): ISO 3166-1 alpha-3 country code (e.g., `"USA"`, `"IND"`, `"DEU"`)
-2. `unit` (str): Physical unit for the data (e.g., `"Mt CO2/yr"`, `"billion 2011 USD"`)
-3. `emission-category` (str): Emission species (e.g., `"co2-ffi"`, `"all-ghg"`, `"non-co2"`)
-
-**Columns:**
-
-- Year columns as strings (e.g., `"2020"`, `"2021"`, ...)
-- **Important:** Year columns must be strings, not integers. Use `ensure_string_year_columns(df)` after loading data.
-
-**Example:**
-
-```python
-                                            2020    2021    2022
-iso3c  unit       emission-category
-USA    Mt CO2/yr  co2-ffi                  5000    4900    4800
-IND    Mt CO2/yr  co2-ffi                  2500    2600    2700
-World  Mt CO2/yr  co2-ffi                 35000   34500   34000
-```
-
-See: [Function Signature](../dev-guide/adding-approaches.md#function-signature) for implementation details
-
-### MultiIndex
-
-A hierarchical index for pandas DataFrames. All fair-shares data uses a 3-level MultiIndex with levels `["iso3c", "unit", "emission-category"]`.
-
-Operations like `.loc[]`, `.xs()`, and `.groupby()` can select/aggregate along specific index levels.
-
-See: [pandas MultiIndex documentation](https://pandas.pydata.org/docs/user_guide/advanced.html)
-
----
-
-## Key Concepts
-
-Brief definitions. For detailed explanations and operationalization, see [Allocation Approaches](allocations.md) and [From Principle to Code](principle-to-code.md).
-
-**Carbon Debt**
-: Obligation owed by high-emitting nations that have exceeded their fair share of atmospheric space. Can be quantified in tonnes CO2 or monetary terms. [Matthews 2016](https://doi.org/10.1038/NCLIMATE2774) calculates debts against an equal per capita benchmark; [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122) introduces a net-zero framing that makes post-peak obligations explicit. Moral grounding: [Pickering 2012](https://doi.org/10.1080/13698230.2012.727311).
-: See: [References](references.md)
-
-**Cascading Biases**
+**Cascading biases**
 : Systematic methodological choices in effort-sharing frameworks that compound to favor wealthy nations. [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7) identifies three types: scope bias (including cost-effectiveness alongside equity approaches), framing bias (late base years that embed grandfathering), and aggregation bias (equal weighting of ethically unequal approaches).
 : See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
@@ -249,112 +44,113 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : See: [Allocation Approaches](allocations.md)
 
 **Equal per capita**
-: Each person has equal entitlement to atmospheric space. In fair-shares, historical accountability is usually incorporated via `allocation_year` (cumulative accounting includes past emissions), not via weight adjustments.
-: See: [Allocation Approaches](allocations.md)
+: Each person has an equal entitlement to atmospheric space. Historical accountability enters through an early `allocation_year`, not through weights.
+: See: [Allocation approaches](allocations.md)
 
 **Grandfathering**
-: Allocating future entitlements based on current emission shares. Critiqued as lacking ethical basis — [Caney 2009](https://doi.org/10.1080/17449620903110300) calls it "morally perverse" and [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8) finds "virtually no support" for it among moral and political philosophers. `per-capita-convergence` includes grandfathering elements.
+: Allocating future entitlements based on current emission shares. Critiqued as lacking an ethical basis: [Caney 2009](https://doi.org/10.1080/17449620903110300) calls it "morally perverse" and [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8) finds "virtually no support" for it among moral and political philosophers. `per-capita-convergence` includes grandfathering elements.
 : See: [Allocation Approaches](allocations.md#approaches-debated-in-the-literature)
 
 **Historical responsibility**
-: Past emissions reduce remaining fair share. Two distinct mechanisms: (1) early `allocation_year` — cumulative accounting where cumulative population from that year determines shares (can produce negative allocations as a mathematical consequence); (2) `pre_allocation_responsibility_weight` in `*-adjusted` approaches — multiplicative rescaling of shares by relative per-capita emissions in a historical window (always positive).
-: See: [Allocation Approaches](allocations.md#historical-responsibility)
+: Past emissions reduce a country's remaining fair share. Two mechanisms put it into practice: an early `allocation_year` (cumulative accounting, which can give negative allocations) and `pre_allocation_responsibility_weight` (multiplicative rescaling by emissions in a past window).
+: See: [The two mechanisms](allocations.md#building-blocks)
 
-**Negative Allocation**
-: When a party's remaining fair share under a carbon budget is negative — its past emissions have already exceeded its equal per capita entitlement. Signals the need for highest possible domestic ambition, negative emissions targets (CDR), and international support. Negative allocations are a feature, not a bug: they communicate the scale of overshoot and the urgency of minimizing its duration and magnitude. [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)
+<a id="negative-allocation"></a>
+**Negative allocation**
+: A remaining allocation below zero: a country's past emissions exceed its allocation. It is an expected result for high historical emitters under an early allocation year. [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f) report a negative remaining allocation for the EU27 as of 2023 under 1.5 °C budgets. [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122) and [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f) read it as calling for the highest possible domestic ambition, net-negative targets through carbon dioxide removal (CDR) and international support for others, and stress minimising the duration and magnitude of overshoot. It does not prescribe timing or mechanism, and reporting it rather than clipping it to zero keeps that information.
 : See: [Allocation Approaches](allocations.md) · [From Principle to Code](principle-to-code.md)
 
+**Relative and absolute results**
+: The allocation functions return relative shares that sum to 1. Absolute results multiply them by a global budget or pathway.
+: See: [Outputs](../user-guide/output-schema.md)
+
+**Remaining budget**
+: A country's allocation minus its observed emissions from the allocation year to the last observed year.
+: See: [Remaining budgets and annual pathways](../user-guide/pipeline-map.md#4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api)
+
 **Subsistence protection**
-: Basic needs emissions protected from mitigation burdens. Grounded in [Shue 2014](references.md#shue-2014)'s distinction between subsistence and luxury emissions; operationalised in the [Greenhouse Development Rights framework (Baer 2009)](https://doi.org/10.1080/13668790903195495) via a development threshold that excludes both income and emissions of low-income individuals from a country's responsibility and capacity calculations. In fair-shares, implemented via `income_floor` and Gini adjustments.
+: Basic needs emissions protected from mitigation burdens. Grounded in [Shue 2014](references.md#shue-2014)'s distinction between subsistence and luxury emissions; operationalised in the [Greenhouse Development Rights framework (Baer 2009)](https://doi.org/10.1080/13668790903195495) via a development threshold that excludes both income and emissions of low-income individuals from a country's responsibility and capacity calculations. In fair-shares, implemented via `income_floor` and Gini adjustments. [Shue 2014](references.md#shue-2014) also notes that people in poverty need energy rather than emissions rights, which makes the development threshold of [Baer 2013](https://doi.org/10.1002/wcc.201) the closer operational concept.
 : See: [Allocation Approaches](allocations.md#gini-adjustment)
 
----
+## Data and budget terms
 
-## Abbreviations and Terms
-
-**API**
-: Application Programming Interface. In this documentation, refers to the function-level reference for allocation approaches.
-
-**AR6**
-: IPCC Sixth Assessment Report (2021-2023). Source of global emissions scenarios used in fair-shares.
+**Analysis countries and rest of world (ROW)**
+: Countries with complete emissions, GDP and population data are allocated individually. The ROW row is the world total minus them.
+: See: [Analysis countries](other-operations.md#analysis-countries)
 
 **Budget label (`TpL`)**
-: The key of a budget in `rcbs.yaml`, for example `1.7p67`. $T$ is the warming when CO₂ reaches net zero; $L$ is the likelihood of staying below it. Each source records what $L$ covers (`likelihood_scope`) and what $T$ measures (`budget_metric`). See: [What a budget label means](other-operations.md#what-a-budget-label-means)
-
-**BAU**
-: Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued as inconsistent with CBDR-RC — fair shares must be assessed relative to other parties, not against a country's own BAU ([Winkler 2018](https://doi.org/10.1007/s10784-017-9381-x); [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
+: The key of a budget in `rcbs.yaml`, for example `1.7p67`. $T$ is the warming when CO₂ reaches net zero; $L$ is the likelihood of staying below it. Each source records what $L$ covers (`likelihood_scope`) and what $T$ measures (`budget_metric`). See: [What a budget label means](scenario-sets.md#what-a-budget-label-means)
 
 **Bookkeeping (BM)**
-: LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: [NGHGI-Consistent RCB Corrections](other-operations.md#why-two-lulucf-conventions-matter)
+: Land-use accounting that estimates only direct human-caused fluxes (deforestation, afforestation, land management). IPCC budgets use it. National inventories also count indirect effects.
+: See: [Convention gap](remaining-carbon-budgets.md#convention-gap)
 
-**Bunker fuels**
-: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). The deduction counts observed bunkers to the last observed year, then a bunker share of the net CO₂ of the budget's scenario set. See: [Bunker term](other-operations.md#bunker-term)
+**Bunkers**
+: CO₂ from international aviation and shipping. Global totals include it and national inventories do not, so it leaves the allocatable budget [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
+: See: [Bunker deduction](remaining-carbon-budgets.md#bunker-deduction)
 
-**ECPC**
-: Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis. Cumulative population from the allocation year determines each country's share.
+**Composite category**
+: `all-ghg` or `all-ghg-ex-co2-lulucf`. A remaining carbon budget limits CO₂ only, so the run allocates a CO₂ budget and a non-CO₂ pathway with the same equity approach.
+: See: [Greenhouse gases](greenhouse-gases.md#decomposition-rules)
 
 **GCB 2025**
 : Global Carbon Budget 2025 fossil CO₂ dataset, version 2025v15 ([Friedlingstein 2026](references.md)). Opt-in emissions source `gcb-2025`, `co2-ffi` only, 1850-2024. Its world row excludes international bunkers and the 1991 Kuwaiti oil fires. The same file supplies the observed bunker series of every run (`bunkers_source: gcb-2025`, the default).
 
 **GCB 2025 global workbook**
-: The Global Carbon Budget 2025 global workbook (`gcb-2025-global`, manual download). It supplies observed global net CO₂, which expresses each budget from the start of 2020 for its volume-matched scenario set. See: [RCB sources and scenario sets](other-operations.md#rcb-sources-and-scenario-sets)
-
-**GDP**
-: Gross Domestic Product. Economic output measure used for capability adjustments.
-
-**GHG**
-: Greenhouse Gas (e.g., CO2, CH4, N2O). "Kyoto GHG" refers to the basket of gases covered by the Kyoto Protocol.
-
-**IAMC**
-: Integrated Assessment Modeling Consortium. Data format used for AR6 scenarios.
+: The Global Carbon Budget 2025 global workbook (`gcb-2025-global`, manual download). It supplies observed global net CO₂, which expresses each budget from the start of 2020 for its volume-matched scenario set. See: [RCB sources and scenario sets](scenario-sets.md#budget-from-2020)
 
 **IGCC 2025 (`forster_2026`)**
 : Indicators of Global Climate Change 2025 ([Forster 2026](references.md)). RCB source `forster_2026` in `rcbs.yaml` takes its Table 8 budgets from the start of 2026, for eight temperature and likelihood labels in the defaults. Its scenario-derived terms use the role-matched scenario sets.
 
-**IPCC**
-: Intergovernmental Panel on Climate Change.
-
-**ISO 3166-1 alpha-3**
-: Three-letter country codes (e.g., `USA`, `IND`, `DEU`). Standard for the `iso3c` index level.
-
-**Mt CO2/yr**
-: Megatonnes of CO2 per year. Common unit for annual emissions.
-
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries from the LULUCF Data Hub. Two versions are configured. `melo-2026-v4` (v4.0.0, 2026 NGHGI release, default) covers 187 countries, 2000-2024. `melo-2026` (v3.1.1, opt-in) covers 185 countries, 2000-2023. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries from the LULUCF Data Hub. Two versions are configured. `melo-2026-v4` (v4.0.0, 2026 NGHGI release, default) covers 187 countries, 2000-2024. `melo-2026` (v3.1.1, opt-in) covers 185 countries, 2000-2023. See: [NGHGI-Consistent RCB Corrections](remaining-carbon-budgets.md#allocatable-budget)
 
 **NGHGI**
-: National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: National greenhouse gas inventory, reported under the UNFCCC. Its land-use estimates include indirect fluxes such as CO₂ fertilisation, unlike bookkeeping models.
+: See: [From published budget to allocatable budget](remaining-carbon-budgets.md#allocatable-budget)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of -91.4 GtCO₂ from 2020 to net-zero CO₂ and -65.6 GtCO₂ from 2024 (median of the AR6 C1 scenarios, `melo-2026-v4`; the gap does not depend on the emissions source). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of -91.4 GtCO₂ from 2020 to net-zero CO₂ and -65.6 GtCO₂ from 2024 (median of the AR6 C1 scenarios, `melo-2026-v4`; the gap does not depend on the emissions source). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [National-inventory convention gap](remaining-carbon-budgets.md#convention-gap)
 
-**Scenario selection rule**
-: The rule in `rcbs.yaml` (`scenario_selection`) that picks the scenarios behind the scenario-derived terms of a budget. The default, `role-matched`, takes the LULUCF, convention-gap and bunker-window terms from a volume-matched set (cumulative net CO₂ from 2020 to net zero within 50 Gt of the budget from 2020) and the non-CO₂ pathway from a temperature-matched set (median warming at net zero within ±0.05 °C of the budget temperature). `ar6-category` pairs `1.5p50` with AR6 C1, `2p67` with C3 and `2p50` with C4. See: [RCB sources and scenario sets](other-operations.md#rcb-sources-and-scenario-sets)
-
-**PRIMAP-hist**
-: Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research). v2.8 (`primap-202609`, data to 2025, CC BY-NC-SA 4.0) is the default emissions source. v2.6.1 (`primap-202503`, data to 2023, CC BY 4.0) is opt-in. See: [Data Sources & Licensing](../user-guide/data-sources.md)
+**Non-CO₂ debt mode**
+: How past non-CO₂ over-use is settled in a composite category: `report-only` (reported, no penalty) or `co2-debit` (subtracted from the remaining CO₂ budget and retired).
+: See: [Greenhouse gases](greenhouse-gases.md)
 
 **Presets**
 : Named parameter grids that reproduce a published study (`fair_shares.library.presets`). `esabcc_2023_allocations()` returns the ESABCC 2023 / PRR2023 grid that notebook 601 runs. See: [Python API](../api/python-api.md)
 
+**PRIMAP-hist**
+: Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research). v2.8 (`primap-202609`, data to 2025, CC BY-NC-SA 4.0) is the default emissions source. v2.6.1 (`primap-202503`, data to 2023, CC BY 4.0) is opt-in. See: [Data Sources & Licensing](../user-guide/data-sources.md)
+
 **RCB**
-: Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Remaining carbon budget: the net CO₂ the world can still emit from a start year until CO₂ reaches net zero, for a warming level and a likelihood. Published budgets use bookkeeping land use and include bunkers, so they need corrections before allocation [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
+: See: [Remaining carbon budgets](remaining-carbon-budgets.md)
 
 **Scenario Compass (SCI)**
-: The Scenario Compass Initiative pathways ensemble (`sci-2025`, v1.0, manual download). Research use under the embargo terms of its workbook until Riahi et al. is published. fair-shares reads it for bunker reporters only. See: [Scenario Compass](other-operations.md#scenario-compass)
+: The Scenario Compass Initiative pathways ensemble (`sci-2026` v2.0, or `sci-2025` v1.0; manual download). Research use under the embargo terms of its workbook until Riahi et al. is published. fair-shares reads it for bunker reporters and, opt-in, for the non-CO₂ set. See: [Scenario Compass](scenario-sets.md#scenario-compass)
+
+**Scenario selection rule**
+: The rule in `rcbs.yaml` (`scenario_selection`) that picks the scenarios behind the scenario-derived terms of a budget. The default, `role-matched`, takes the LULUCF, convention-gap and bunker-window terms from a volume-matched set (cumulative net CO₂ from 2020 to net zero within 50 Gt of the budget from 2020) and the non-CO₂ pathway from a temperature-matched set (median warming at net zero within ±0.05 °C of the budget temperature). `ar6-category` pairs `1.5p50` with AR6 C1, `2p67` with C3 and `2p50` with C4. See: [RCB sources and scenario sets](scenario-sets.md#role-matched-scenario-sets)
 
 **Scenario sets (volume-matched, temperature-matched)**
-: The volume-matched set of a budget holds the scenarios whose cumulative net CO₂ from 2020 to net zero lies within 50 Gt of the budget from 2020. It supplies the land-use, convention-gap and bunker terms. The temperature-matched set holds the scenarios whose median warming at net zero lies within ±0.05 °C of the budget temperature. It supplies the non-CO₂ pathway. See: [Role-matched scenario sets](other-operations.md#role-matched-scenario-sets)
+: The volume-matched set of a budget holds the scenarios whose cumulative net CO₂ from 2020 to net zero lies within 50 Gt of the budget from 2020. It supplies the land-use, convention-gap and bunker terms. The temperature-matched set holds the scenarios whose median warming at net zero lies within ±0.05 °C of the budget temperature. It supplies the non-CO₂ pathway. See: [Role-matched scenario sets](scenario-sets.md#role-matched-scenario-sets)
 
-**SSP**
-: Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).
-
-**TCRE**
-: Transient Climate Response to Cumulative Emissions. The near-linear relationship between cumulative CO2 emissions and global temperature increase.
-
-**UNFCCC**
-: United Nations Framework Convention on Climate Change.
+**TimeseriesDataFrame**
+: A pandas DataFrame indexed by `iso3c` and `unit` (plus `emission-category` for emissions), with one string column per year (`"2020"`).
 
 **WDI Gini**
 : World Bank Gini index (`SI.POV.GINI`, from the Poverty and Inequality Platform), source `wdi-2025`. It is the default Gini source. Each country takes its latest value within 2015-2023. UNU-WIDER WIID (`unu-wider-2025`) is opt-in.
+
+## Abbreviations
+
+- **AR6**: IPCC Sixth Assessment Report (2021-2023).
+- **BAU**: business as usual. Treating deviation from BAU as a cost has been critiqued as inconsistent with CBDR-RC, because fair shares are assessed relative to other parties ([Winkler 2018](https://doi.org/10.1007/s10784-017-9381-x); [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
+- **GDP**: gross domestic product.
+- **GHG**: greenhouse gas. "Kyoto GHG" is the basket of the Kyoto Protocol.
+- **IAMC**: Integrated Assessment Modeling Consortium, and its data format.
+- **IPCC**: Intergovernmental Panel on Climate Change.
+- **ISO 3166-1 alpha-3**: three-letter country codes (`USA`, `IND`, `DEU`), the `iso3c` index level.
+- **Mt CO2/yr**: megatonnes of CO₂ per year.
+- **SSP**: Shared Socioeconomic Pathway.
+- **TCRE**: transient climate response to cumulative emissions.
+- **UNFCCC**: United Nations Framework Convention on Climate Change.

@@ -1,7 +1,6 @@
 ---
 title: Adding Allocation Approaches
 description: Step-by-step guide for implementing new allocation approaches in the fair-shares library
-icon: material/code-braces-box
 ---
 
 # Adding Allocation Approaches
@@ -34,12 +33,12 @@ Every allocation approach operationalizes specific equity principles. Before wri
 If unclear, read [Principle-to-Code](../science/principle-to-code.md) first.
 
 !!! warning "Value neutrality"
-    Do not present the approach as value-neutral — all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
+    Do not present the approach as value-neutral: all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
 
 Use the Entry Points Framework to structure your normative documentation: (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). See [From Principle to Code](../science/principle-to-code.md).
 
-!!! warning "Grandfathering"
-    Grandfathering-based allocation — assigning shares proportional to current emissions — has no support in the equity literature and contradicts the normative foundations of this project [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). Contraction-and-convergence approaches that begin from current national emissions levels embed grandfathering during the convergence period and should be treated with the same caution [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). New approaches should be grounded in defensible equity principles documented in [From Principle to Code](../science/principle-to-code.md).
+!!! note "Grandfathering"
+    Grandfathering assigns shares in proportion to current emissions. It has no support in the equity literature and conflicts with the normative basis of this library [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). Contraction-and-convergence approaches that start from current national emissions embed grandfathering during the convergence period, so the same applies to them [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7). Ground a new approach in the equity principles documented in [From Principle to Code](../science/principle-to-code.md).
 
 ---
 
@@ -148,6 +147,8 @@ def my_new_budget(
         population_ts=population_ts,
         first_allocation_year=allocation_year,
         last_allocation_year=allocation_year,
+        group_level=group_level,
+        unit_level=unit_level,
     )
 
     # Calculate shares (must sum to 1)
@@ -174,10 +175,10 @@ def my_new_budget(
 
 ### Key Implementation Details
 
-1. **Validate inputs** using `AllocationInputs` Pydantic model
+1. **Validate inputs** using `AllocationInputs` Pydantic model. Pass the function's `group_level` and `unit_level`, and set `country_emissions_read_at_first_year=True` when the approach reads country emissions at the first allocation year
 2. **Shares must sum to 1** for each group (e.g., climate-assessment, quantile)
 3. **Validate outputs** using `AllocationOutputs` model
-4. **Document thoroughly** with academic citations (see [Docstring Template](docstring-template.md) for required structure)
+4. **Document thoroughly** with academic citations (see [Docs conventions](docs-conventions.md#docstrings-for-allocation-approaches) for required structure)
 
 ---
 
@@ -274,7 +275,7 @@ def test_my_new_budget_parameter_effect():
 
 ## Step 6: Document
 
-1. **Docstring** - See [Docstring Template](docstring-template.md) for required sections
+1. **Docstring** - See [Docs conventions](docs-conventions.md#docstrings-for-allocation-approaches) for required sections
 2. **Science docs** - Add to `docs/science/allocations.md` if introducing new principle
 3. **API docs** - Auto-generated from docstrings
 
@@ -321,5 +322,5 @@ uv run mkdocs build --strict               # Check docs build
 
 **Common issues:**
 
-- **Shares don't sum to 1.0** — Check for division by zero or NaN values
-- **Missing year columns** — Use `ensure_string_year_columns()` on input DataFrames
+- **Shares don't sum to 1.0**: Check for division by zero or NaN values
+- **Missing year columns**: Use `ensure_string_year_columns()` on input DataFrames

@@ -51,7 +51,7 @@ Functions for processing and transforming input datasets: convergence pathway da
 
 ## NGHGI Corrections
 
-Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et al. (2026). See [Scientific Documentation](../../science/other-operations.md#weber-rcb-corrections) for methodology.
+Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et al. (2026). See [Scientific Documentation](../../science/remaining-carbon-budgets.md#allocatable-budget) for methodology.
 
 ### load_world_co2_lulucf
 
@@ -204,7 +204,7 @@ Functions that parse RCB labels, integrate scenario series to net zero, and reba
 
 ## Scenario Sets
 
-Role-matched scenario sets behind the scenario-derived budget terms: the volume-matched set (land-use deduction, convention gap, bunker window), the temperature-matched set (non-CO2 pathway) and the AR6 category pool. See [Other Operations](../../science/other-operations.md) for the method.
+Role-matched scenario sets behind the scenario-derived budget terms: the volume-matched set (land-use deduction, convention gap, bunker window), the temperature-matched set (non-CO2 pathway) and the AR6 category pool. See [Scenario sets](../../science/scenario-sets.md) for the method.
 
 ### BudgetSpec
 
@@ -368,4 +368,4 @@ The registry `fair_shares/conf/scenario_sources.yaml` declares each scenario sou
 
 - **[Core Utilities](core.md)**: General data manipulation functions
 - **[Math Utilities](math.md)**: Convergence solver and adjustments
-- **[NGHGI Corrections (Science)](../../science/other-operations.md#weber-rcb-corrections)**: Scientific methodology
+- **[Remaining carbon budgets (Science)](../../science/remaining-carbon-budgets.md#allocatable-budget)**: Scientific methodology

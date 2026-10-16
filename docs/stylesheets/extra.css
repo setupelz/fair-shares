@@ -140,3 +140,26 @@ div.arithmatex {
     border-top: 1px solid var(--md-default-fg-color--lightest);
     padding-top: 1.5em;
 }
+
+/* ============================================================================
+   No icons: hide the palette toggle, repository icon and admonition icons
+   ============================================================================ */
+
+.md-header__option,
+.md-source__icon {
+    display: none;
+}
+
+.md-source__repository {
+    margin-left: 0;
+}
+
+.md-typeset .admonition-title::before,
+.md-typeset summary::before {
+    display: none;
+}
+
+.md-typeset .admonition-title,
+.md-typeset summary {
+    padding-left: 0.8rem;
+}

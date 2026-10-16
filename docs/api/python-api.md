@@ -13,7 +13,7 @@ different requirements.
 The allocation functions take population (and, for capability-adjusted
 approaches, GDP) as pandas dataframes and hand back a result object. They read
 no files, need no data directory, and take no configuration. A plain
-`pip install fair-shares` is enough, and the code below runs from any directory:
+`pip install "fair-shares @ git+https://github.com/setupelz/fair-shares"` is enough, and the code below runs from any directory:
 
 ```python
 import pandas as pd
@@ -47,35 +47,50 @@ and [Pathway Functions](allocations/pathways.md).
 
 ## The orchestrated timeseries API
 
-The `fair_shares.library.python_api` module runs a whole allocation (budget,
-remaining budget, and annual pathway) in memory and returns it as a dataclass,
-so downstream consumers never have to execute a notebook or manage its output
-directories. Unlike the functions above, it loads processed data from disk.
+`calculate_allocation_timeseries` runs one allocation end to end in memory: the budget allocation, each country's remaining budget after observed emissions, and an annual pathway that spreads it.
+It takes one budget anchor (`rcb_source`, `climate_assessment`, `quantile`), one emission category and one approach with scalar parameters.
+It reads processed data from disk and builds it on the first run.
+Notebook `601_reproduce_esabcc_2023` calls the same remaining-budget and pathway functions for its whole grid. `tests/integration/test_python_api_reproduces_notebook.py` checks that the single-allocation route gives the same numbers as the notebook's grid run. If you change either, regenerate its fixtures with `uv run python tests/fixtures/save_python_api_fixture.py`.
 
-[`calculate_allocation_timeseries`](#calculate_allocation_timeseries) takes one remaining-carbon-budget *anchor* (a `rcb_source` / `climate_assessment` / `quantile` triple) and one emission category. It returns a [`ResultContainer`](#resultcontainer) with:
+```python
+from fair_shares.library.python_api import calculate_allocation_timeseries
 
-- budget allocations of the remaining carbon budget,
-- each country's remaining budget after netting observed emissions, and
-- an annual pathway to `pathway_end_year` that spreads that remaining budget under a normative distribution grid, plus the non-CO2 and combined parts.
+result = calculate_allocation_timeseries(
+    emission_category="co2-ffi",
+    rcb_source="lamboll_2023",
+    climate_assessment="1.5C",
+    quantile=0.5,
+    allocation={
+        "equal-per-capita-budget": {
+            "allocation_year": 2020,
+            "preserve_allocation_year_shares": False,
+        }
+    },
+    shape="half-sine",            # how the pathway redresses past over-use
+    deviation_end_year=2050,      # year that redress ends
+    convergence_year=2050,        # year per-capita emissions converge
+    nonco2_debt_mode=None,        # "report-only" or "co2-debit" for all-GHG categories
+    pathway_end_year=2100,
+    base_share_floor_mt=0.001,    # floor for net-sink countries' starting share
+    desired_harmonisation_year=2020,
+    emissions_source="primap-202609",
+    gdp_source="wdi-2025",
+    population_source="un-owid-2025",
+    gini_source="wdi-2025",
+    lulucf_source="melo-2026-v4",
+    allocation_folder="my-run",
+)
 
-The existing library functions do the computation. This module orchestrates them per anchor and category. It ports the orchestration of notebook `601_reproduce_esabcc_2023` (see [ESABCC 2023 and updates](../science/esabcc-and-updates.md)).
+pathways = result.allocation_timeseries   # one row per country, one column per year
+in_2030 = pathways["2030"].groupby(level="iso3c").sum()   # Mt CO2 in 2030
+print(in_2030[["IND", "USA", "DEU"]])
+```
 
-The notebook and this module are two implementations of the same calculation. `tests/integration/test_python_api_reproduces_notebook.py` is the guard against them drifting apart: it re-runs `calculate_allocation_timeseries` against fixtures saved from the notebook. If you change either side, regenerate the fixtures with `uv run python tests/fixtures/save_python_api_fixture.py` and confirm that test still passes.
+The distribution settings are normative choices. [Outputs](../user-guide/output-schema.md#python-api-result) lists what the result holds, and [EU budgets](../user-guide/eu-budgets.md) sums the result over a group of countries.
+Loop over approaches, anchors and settings to build a larger set. Parameter grids and pathway targets run in the notebooks.
 
-!!! note "Scope"
-
-    This module computes remaining-carbon-budget allocations only (`TARGET = "rcbs"`), for a single fully-specified allocation under a single RCB anchor. Loop over allocations, distribution settings and debt modes around it to build a fuller set. To run parameter grids or pathway targets, use the notebook workflows described in the [User Guide](../user-guide/index.md).
-
-!!! note "Data location"
-
-    `calculate_allocation_timeseries` reads processed data from disk. Inside a
-    checkout it finds `data/` and `output/` on its own. From an installed wheel,
-    set `FAIR_SHARES_DATA_DIR` and `FAIR_SHARES_OUTPUT_DIR`, or pass `data_dir=`
-    and `output_dir=`. If the processed files are missing it rebuilds them with
-    Snakemake, which ships in the `pipeline` extra. A plain
-    `pip install fair-shares` works against a data tree that is already
-    built. The deprecated `project_root` argument maps onto the two
-    directories.
+Inside a checkout the function finds `data/` and `output/` itself. From an installed package, set `FAIR_SHARES_DATA_DIR` and `FAIR_SHARES_OUTPUT_DIR`, or pass `data_dir=` and `output_dir=`.
+Building missing processed data needs Snakemake, from the `pipeline` extra.
 
 ## Computing Allocation Timeseries
 
@@ -89,26 +104,10 @@ The notebook and this module are two implementations of the same calculation. `t
 
 ## Presets
 
-A preset holds the full parameter set of a published study. Use it to run that study's approaches with its own settings. Several library defaults differ from published settings, so a run built by hand can drift from the study.
-
-`fair_shares.library.presets` holds the ESABCC 2023 / PRR2023 preset, the grid that notebook 601 runs. `esabcc_2023_allocations(category)` returns the grid for `run_all_allocations`. `esabcc_2023_allocation_list(category)` returns the same runs one by one, in the form that `calculate_allocation_timeseries` takes. `ESABCC_2023_RCB_ANCHOR` is the budget anchor.
-
-```python
-from fair_shares.library.presets import (
-    ESABCC_2023_RCB_ANCHOR,
-    esabcc_2023_allocation_list,
-)
-
-for allocation in esabcc_2023_allocation_list("co2-ffi"):
-    result = calculate_allocation_timeseries(
-        emission_category="co2-ffi",
-        allocation=allocation,
-        rcb_source=ESABCC_2023_RCB_ANCHOR["source"],
-        climate_assessment=ESABCC_2023_RCB_ANCHOR["climate-assessment"],
-        quantile=ESABCC_2023_RCB_ANCHOR["quantile"],
-        ...,  # distribution settings and data sources
-    )
-```
+A preset holds the parameter set of a published study, because several library defaults differ from published settings.
+`fair_shares.library.presets` holds the ESABCC 2023 preset that notebook 601 runs.
+`esabcc_2023_allocations(category)` returns the grid for `run_all_allocations`, and `esabcc_2023_allocation_list(category)` the same runs one by one for `calculate_allocation_timeseries`.
+[EU budgets with the ESABCC preset](../user-guide/eu-budgets.md) runs it.
 
 ::: fair_shares.library.presets.esabcc_2023.esabcc_2023_allocations
     options:
@@ -136,7 +135,7 @@ for allocation in esabcc_2023_allocation_list("co2-ffi"):
 
 ## Allocation Steps
 
-These are the individual steps `calculate_allocation_timeseries` composes. Call them directly when you already hold an allocations frame and want only part of the calculation.
+`calculate_allocation_timeseries` composes these steps. Call them directly when you already hold an allocations frame.
 
 ### compute_remaining_budgets
 
@@ -183,49 +182,27 @@ These are the individual steps `calculate_allocation_timeseries` composes. Call 
 
 ## Citing a run
 
-Most inputs are third-party datasets that require attribution, and which ones a
-run uses depends on its settings: a budget run subtracts international bunker
-emissions, a composite category such as `all-ghg` also draws on the AR6 scenario
-ensemble, and the Gini source is whichever you chose.
-
-`save_results` writes a `CITATIONS.md` into the output directory alongside the
-parquet files, so a saved run always records what to cite. Runs kept in memory
-produce no file, since there is no directory to put one in.
-
-To get the same list directly:
+`save_results` writes a `CITATIONS.md` next to the results. It lists the software and exactly the data sources the run used.
+To get the list in code, or from the command line:
 
 ```python
 from fair_shares.library.citations import citations
 
 run = citations(active_sources, emission_category="all-ghg")
 print(run.text())     # software, then each data source with DOI and licence
-print(run.bibtex())   # the same as BibTeX entries
+print(run.bibtex())
 ```
 
-Or from the command line, without writing any code:
-
 ```bash
-uv run fair-shares cite
 uv run fair-shares cite --sources gini=wdi-2025,target=pathway --bibtex
 ```
 
-Sources with no DOI issued (World Bank, OWID, UN WPP) are credited by name, and
-the output says so rather than leaving a blank field. Sources whose terms ask
-for more than attribution are called out in a separate section. Examples are
-the Global Carbon Project's co-authorship request, CMIP7's component datasets,
-the non-commercial share-alike licence of PRIMAP-hist v2.8 (the default
-emissions source), WIID's non-commercial clause and the Scenario Compass
-embargo terms. See [Data Sources & Licensing](../user-guide/data-sources.md)
-for what this means for outputs.
+Sources without a DOI (World Bank, OWID, UN WPP) are credited by name.
+Terms that ask for more than attribution get their own section: the Global Carbon Project's co-authorship request, CMIP7's component datasets, the non-commercial share-alike licence of PRIMAP-hist v2.8, WIID's non-commercial clause and the Scenario Compass embargo terms.
+[Data & licences](../user-guide/data-sources.md) explains what this means for outputs.
 
 ::: fair_shares.library.citations.citations
     options:
         show_root_heading: true
         heading_level: 4
         show_source: false
-
-## See Also
-
-- **[Allocation Manager](allocations/manager.md)**: The allocation engine this module calls into
-- **[Math Utilities](utils/math.md)**: The convergence and pathway-distribution solvers used by the pathway step
-- **[Output Schema](../user-guide/output-schema.md)**: Column meanings for the returned frames

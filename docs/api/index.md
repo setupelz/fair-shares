@@ -1,7 +1,6 @@
 ---
 title: API Reference
 description: API documentation for fair-shares library
-icon: material/code-braces
 ---
 
 # API Reference

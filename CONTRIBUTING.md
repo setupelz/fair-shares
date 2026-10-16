@@ -1,6 +1,6 @@
 # Contributing to fair-shares
 
-Bug reports, allocation approaches, data sources, documentation fixes, and reproductions of published studies are all welcome. Documentation-editing conventions live in [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md).
+Bug reports, allocation approaches, data sources, documentation fixes, and reproductions of published studies are all welcome. Documentation conventions live in [`docs/dev-guide/docs-conventions.md`](docs/dev-guide/docs-conventions.md).
 
 ## Reporting issues
 

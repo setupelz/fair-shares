@@ -14,17 +14,16 @@ Each allocation approach applies stated equity principles, such as equal per-cap
 The library fetches the input data, runs the allocations and records every parameter and data source with the results.
 It serves researchers and analysts who need national or regional fair share benchmarks they can reproduce.
 
-## Getting Started
+## Where to go
 
-| Goal                                          | Start Here                                                          |
-| :-------------------------------------------- | :------------------------------------------------------------------ |
-| Install and run a first allocation             | [Quick Start](quickstart.md)                                        |
-| Work out which notebook I need                 | [User Guide](user-guide/index.md)                                   |
-| See what each notebook and module does, in run order | [What happens where](user-guide/pipeline-map.md)              |
-| Divide budgets or pathways between countries   | [Fair shares for countries](user-guide/country-fair-shares.md)      |
-| Divide them between IAM model regions          | [Fair shares for IAM model regions](user-guide/iamc-regional-fair-shares.md) |
-| Call the library from my own Python code       | [Python API](api/python-api.md)                                     |
-| Understand the allocation methodology          | [Science](science/index.md)                                         |
-| See the ESABCC 2023 reproduction and later changes | [ESABCC 2023 and what changed since](science/esabcc-and-updates.md) |
-| Explore function signatures                    | [API Reference](api/index.md)                                       |
-| Extend the library                             | [Developer Guide](dev-guide/index.md)                               |
+| Goal | Start here |
+| :--- | :--- |
+| Install and fetch the input data | [Install & data](quickstart.md) |
+| Pick the notebook for my case | [How-to](user-guide/index.md) |
+| Divide budgets or pathways between countries | [Country fair shares](user-guide/country-fair-shares.md) |
+| Divide them between IAM model regions | [IAM model regions](user-guide/iamc-regional-fair-shares.md) |
+| Reproduce a published study | [Reproductions](reproductions/index.md) |
+| Look up an approach, output column or data licence | [Approach catalog](user-guide/approach-catalog.md), [Outputs](user-guide/output-schema.md), [Data & licences](user-guide/data-sources.md) |
+| Call the library from my own Python code | [Python API](api/python-api.md) |
+| Understand the method | [Science](science/index.md) |
+| Extend the library | [Develop](dev-guide/index.md) |

@@ -27,8 +27,6 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tooltips
-    - content.action.edit
-    - content.action.view
   palette:
     - media: "(prefers-color-scheme)"
       scheme: default
@@ -139,50 +137,59 @@ markdown_extensions:
       title: On this page
       toc_depth: 3
 
+# Pages reached by direct link only (e.g. from a reproduction notebook).
+not_in_nav: |
+  /reproductions/esabcc-2023.md
+
 nav:
-  - Home: index.md
-  - Quick Start: quickstart.md
-  - User Guide:
+  - Get started:
+      - Home: index.md
+      - Install & data: quickstart.md
+  - How-to:
       - user-guide/index.md
-      - What Happens Where: user-guide/pipeline-map.md
-      - Approach Catalog: user-guide/approach-catalog.md
-      - Fair shares for countries: user-guide/country-fair-shares.md
-      - Fair shares for IAM model regions: user-guide/iamc-regional-fair-shares.md
-      - Output Schema: user-guide/output-schema.md
-      - Data Sources & Licensing: user-guide/data-sources.md
-  - API Reference:
-      - api/index.md
+      - Country fair shares: user-guide/country-fair-shares.md
+      - EU budgets with the ESABCC preset: user-guide/eu-budgets.md
+      - IAM model regions: user-guide/iamc-regional-fair-shares.md
+      - Updating data each year: user-guide/update-data.md
+      - Reproduce a published study: reproductions/index.md
+  - Reference:
+      - Approach catalog: user-guide/approach-catalog.md
+      - Outputs: user-guide/output-schema.md
+      - Data & licences: user-guide/data-sources.md
+      - Pipeline map: user-guide/pipeline-map.md
       - Python API: api/python-api.md
-      - Allocations:
-          - Budget Functions: api/allocations/budgets.md
-          - Pathway Functions: api/allocations/pathways.md
-          - Allocation Manager: api/allocations/manager.md
-      - Utilities:
-          - Core: api/utils/core.md
-          - Data Processing: api/utils/data.md
-          - Math: api/utils/math.md
-          - Adjustments: api/utils/adjustments.md
-          - Validation: api/utils/validation.md
-      - Validation:
-          - Convergence: api/validation/convergence.md
-      - Configuration: api/config/models.md
-  - Scientific Documentation:
-      - science/index.md
-      - ESABCC 2023 and What Changed: science/esabcc-and-updates.md
-      - Allocation Approaches: science/allocations.md
-      - From Principle to Code: science/principle-to-code.md
-      - Parameter Effects Reference: science/parameter-effects.md
+      - API:
+          - api/index.md
+          - Allocations:
+              - Budget Functions: api/allocations/budgets.md
+              - Pathway Functions: api/allocations/pathways.md
+              - Allocation Manager: api/allocations/manager.md
+          - Utilities:
+              - Core: api/utils/core.md
+              - Data Processing: api/utils/data.md
+              - Math: api/utils/math.md
+              - Adjustments: api/utils/adjustments.md
+              - Validation: api/utils/validation.md
+          - Validation:
+              - Convergence: api/validation/convergence.md
+          - Configuration: api/config/models.md
+  - Science:
+      - Overview: science/index.md
+      - Remaining carbon budgets: science/remaining-carbon-budgets.md
+      - Greenhouse gases: science/greenhouse-gases.md
+      - Allocation approaches: science/allocations.md
+      - From principle to code: science/principle-to-code.md
+      - Parameter effects: science/parameter-effects.md
+      - Scenario sets: science/scenario-sets.md
+      - Data processing: science/other-operations.md
       - Glossary: science/glossary.md
-      - Other Operations: science/other-operations.md
       - References: science/references.md
-  - Developer Guide:
-      - dev-guide/index.md
-      - Contributing: CONTRIBUTING.md
-      - Architecture Walkthrough: dev-guide/architecture-walkthrough.md
-      - Adding Allocation Approaches: dev-guide/adding-approaches.md
-      - Adding Data Sources: dev-guide/adding-data-sources.md
-      - Documentation Links: dev-guide/docs-links.md
-      - Docstring Template: dev-guide/docstring-template.md
+  - Develop:
+      - Contributing: dev-guide/index.md
+      - Docs conventions: dev-guide/docs-conventions.md
+      - Architecture: dev-guide/architecture-walkthrough.md
+      - Adding approaches: dev-guide/adding-approaches.md
+      - Adding data sources: dev-guide/adding-data-sources.md
 
 extra_css:
   - stylesheets/extra.css
@@ -192,11 +199,6 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 extra:
-  social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/setupelz/fair-shares
-    - icon: fontawesome/brands/python
-      link: https://pypi.org/project/fair-shares/
   version:
     provider: mike
   analytics:
