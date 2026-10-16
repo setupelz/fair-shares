@@ -1,19 +1,22 @@
 ---
 title: Method overview
-description: The full fair-shares method in five steps, from a published global carbon budget to national budgets and pathways, with the source for each step
+description: The full fair-shares method in five steps, from a global emissions limit to fair shares for countries or IAM model regions, as budgets or annual pathways, with the source for each step
 ---
 
 # Method overview
 
-fair-shares computes national fair shares of a global emissions limit.
-This page walks the full chain in five steps.
+fair-shares computes fair shares of a global emissions limit, for countries or for the regions of an integrated assessment model (IAM).
+The limit is a global remaining carbon budget or a global emissions pathway.
+The result is one cumulative budget per country or region, or a value for every year.
+
+This page walks the full chain in five steps, with countries as the example.
 Each step names its sources and links to the page with the detail.
 
 **In short:**
 
 - The starting point is a published global remaining carbon budget.
 - fair-shares adjusts that budget so that it matches what countries report in their national inventories ([Weber 2026](https://doi.org/10.1038/s41467-026-69078-9)).
-- Equity-based allocation approaches split the adjusted budget among countries ([Pelz 2025a](https://doi.org/10.1073/pnas.2409316122); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
+- Equity-based allocation approaches split the adjusted budget among countries, either as one cumulative budget or year by year along a global pathway ([Pelz 2025a](https://doi.org/10.1073/pnas.2409316122); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
 - CO₂ is allocated as a budget and the other greenhouse gases as an annual pathway from scenarios at the same warming level ([Weber 2026b](https://doi.org/10.1038/s43247-026-03832-1)).
 - Observed emissions to date give each country's remaining budget, which can be spread into an annual pathway.
 
@@ -31,7 +34,7 @@ Each budget limits CO₂ only.
 ## 2. Allocatable budget {#allocatable-budget}
 
 Every budget is rebased to start in 2020 with observed emissions.
-International aviation and shipping leave the budget, because no national inventory holds them.
+International aviation and shipping leave the budget because national inventories report them only as memo items outside their national totals.
 For fossil CO₂ the projected land-use share leaves the budget. For total CO₂ land use switches to the national-inventory convention, which lowers the budget.
 
 **Sources:** [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9); scenarios from [Gidden 2023](https://doi.org/10.5281/zenodo.10158920).
@@ -39,12 +42,17 @@ For fossil CO₂ the projected land-use share leaves the budget. For total CO₂
 
 ## 3. Allocation approaches {#allocation-approaches}
 
-An allocation approach turns an equity principle into each country's share of the budget.
+An allocation approach turns an equity principle into each country's share of a global limit.
 The approaches start from equal per capita shares and can adjust them for historical responsibility, capability and inequality within countries.
-Budget approaches give one cumulative value per country, and pathway approaches give annual values.
+Each approach comes in two forms:
+
+- A budget approach divides a global budget and gives one cumulative value per country.
+- A pathway approach divides a global pathway year by year and gives annual values. The pathway is a scenario pathway, such as one from IPCC AR6, or a budget turned into a pathway.
+
+The same approaches also divide among IAM model regions. The region route reads population, GDP and emissions from the scenario file. The IAM's own `Emissions|Covered` then sets the global limit and the budget adjustments of step 2 therefore apply only to the country route.
 
 **Sources:** [Pelz 2025a](https://doi.org/10.1073/pnas.2409316122); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f).
-**Detail:** [Allocation approaches](allocations.md), [From principle to code](principle-to-code.md), [Parameter effects](parameter-effects.md).
+**Detail:** [Allocation approaches](allocations.md), [From principle to code](principle-to-code.md), [Parameter effects](parameter-effects.md), [RCB pathway generation](other-operations.md#rcb-pathway-generation), [IAM model regions](../user-guide/iamc-regional-fair-shares.md).
 
 ## 4. Greenhouse gases {#greenhouse-gases}
 

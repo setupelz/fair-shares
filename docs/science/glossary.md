@@ -16,7 +16,7 @@ Parameters are explained in [Parameter effects](parameter-effects.md) and in the
 : Allocates a value for every year: `equal-per-capita`, `per-capita-adjusted`, `per-capita-adjusted-gini`, and the convergence approaches.
 
 **Convergence approach**
-: Moves each country from its current emission share to a target share. `cumulative-per-capita-convergence` and its `-adjusted` and `-gini-adjusted` forms preserve the cumulative budget. `per-capita-convergence` does not, and it includes grandfathering, so it is for comparison only.
+: Moves each country from its current emission share to a target share. `cumulative-per-capita-convergence` and its `-adjusted` and `-gini-adjusted` forms preserve the cumulative budget. `per-capita-convergence` does not preserve it and also includes grandfathering. It is therefore for comparison only.
 : See: [Convergence](allocations.md#convergence-mechanism-pathways-only)
 
 **ECPC**
@@ -127,7 +127,7 @@ Parameters are explained in [Parameter effects](parameter-effects.md) and in the
 : See: [Remaining carbon budgets](remaining-carbon-budgets.md)
 
 **Scenario Compass (SCI)**
-: The Scenario Compass Initiative pathways ensemble (`sci-2026` v2.0, or `sci-2025` v1.0; manual download). Research use under the embargo terms of its workbook until Riahi et al. is published. fair-shares reads it for bunker reporters and, opt-in, for the non-CO₂ set. See: [Scenario Compass](scenario-sets.md#scenario-compass)
+: The Scenario Compass Initiative pathways ensemble (`sci-2026` v2.0, or `sci-2025` v1.0; manual download). Research use under the embargo terms of its workbook until Riahi et al. is published. fair-shares reads it for scenarios that report bunkers and, opt-in, for the non-CO₂ set. See: [Scenario Compass](scenario-sets.md#scenario-compass)
 
 **Scenario selection rule**
 : The rule in `rcbs.yaml` (`scenario_selection`) that picks the scenarios behind the scenario-derived terms of a budget. The default, `role-matched`, takes the LULUCF, convention-gap and bunker-window terms from a volume-matched set (cumulative net CO₂ from 2020 to net zero within 50 Gt of the budget from 2020) and the non-CO₂ pathway from a temperature-matched set (median warming at net zero within ±0.05 °C of the budget temperature). `ar6-category` pairs `1.5p50` with AR6 C1, `2p67` with C3 and `2p50` with C4. See: [RCB sources and scenario sets](scenario-sets.md#role-matched-scenario-sets)

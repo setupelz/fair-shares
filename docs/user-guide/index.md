@@ -24,10 +24,10 @@ You configure 301 and 401 yourself. 401 also exports a model-ready remaining bud
 ## Guides
 
 - **[Country fair shares](country-fair-shares.md)**: the country notebooks, step by step.
-- **[EU budgets with the ESABCC preset](eu-budgets.md)**: national and EU27 budgets with the settings of the ESABCC 2023 advice.
 - **[IAM model regions](iamc-regional-fair-shares.md)**: preparing a scenario file with notebook 400 and allocating to its regions.
 - **[Updating data each year](update-data.md)**: moving to a new data release.
 - **[Reproduce a published study](../reproductions/index.md)**: the 600-series notebooks.
+- **[The ESABCC presets](eu-budgets.md)**: national and EU27 budgets with the settings of the ESABCC 2023 advice.
 
 Calling the library from your own Python code? See the [Python API](../api/python-api.md).
 

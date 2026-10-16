@@ -36,7 +36,7 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Budolfson 2021]** Mark B. Budolfson, David Anthoff, Francis Dennig, Frank Errickson, Kevin Kuruc, Dean Spears, and Navroz K. Dubash. "Utilitarian benchmarks for emissions and pledges promote equity, climate and development." _Nature Climate Change_. DOI: [10.1038/s41558-021-01130-6](https://doi.org/10.1038/s41558-021-01130-6)
 
-**[Byers 2022]** Edward Byers, Volker Krey, Elmar Kriegler, Keywan Riahi, and others. "AR6 Scenarios Database" (v1.1). Integrated Assessment Modeling Consortium and International Institute for Applied Systems Analysis. Zenodo. DOI: [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911). Source of the aviation and maritime CO₂ series behind the AR6 bunker reporters (`ipcc_ar6_bunkers`).
+**[Byers 2022]** Edward Byers, Volker Krey, Elmar Kriegler, Keywan Riahi, and others. "AR6 Scenarios Database" (v1.1). Integrated Assessment Modeling Consortium and International Institute for Applied Systems Analysis. Zenodo. DOI: [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911). Source of the aviation and maritime CO₂ series behind the AR6 scenarios that report bunkers (`ipcc_ar6_bunkers`).
 
 **[Caney 2009]** Simon Caney. "Justice and the distribution of greenhouse gas emissions." _Journal of Global Ethics_. DOI: [10.1080/17449620903110300](https://doi.org/10.1080/17449620903110300)
 
@@ -66,7 +66,7 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Huppmann 2026]** Daniel Huppmann and others. "Scenario Compass Initiative - Pathways Ensemble 2025" (v1.0). Zenodo. DOI: [10.5281/zenodo.18598251](https://doi.org/10.5281/zenodo.18598251). Release v1.0 of the Scenario Compass ensemble (`sci-2025`), selectable in `scenario_sources.yaml`.
 
-**[Huppmann 2026b]** Daniel Huppmann, Keywan Riahi, Leon Clarke, Tomoko Hasegawa, and others. "Scenario Compass Initiative - Pathways Ensemble 2026 (v2.0)." Zenodo, 2026-10-08. DOI: [10.5281/zenodo.23232097](https://doi.org/10.5281/zenodo.23232097). The configured Scenario Compass release (`sci-2026`): bunker reporters and, when listed, the non-CO₂ set.
+**[Huppmann 2026b]** Daniel Huppmann, Keywan Riahi, Leon Clarke, Tomoko Hasegawa, and others. "Scenario Compass Initiative - Pathways Ensemble 2026 (v2.0)." Zenodo, 2026-10-08. DOI: [10.5281/zenodo.23232097](https://doi.org/10.5281/zenodo.23232097). The configured Scenario Compass release (`sci-2026`): scenarios that report bunkers and, when listed, the non-CO₂ set.
 
 **[ICJ 2025]** International Court of Justice. "Obligations of States in Respect of Climate Change (Advisory Opinion)." _ICJ Advisory Opinion_. [icj-cij.org](https://www.icj-cij.org/case/187)
 
@@ -114,7 +114,7 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Riahi 2026]** Keywan Riahi, Leon Clarke, Tomoko Hasegawa, Daniel Huppmann, and others. "Mitigation benchmarks from the 2025 community update of global emissions pathways." Research Square preprint. DOI: [10.21203/rs.3.rs-8891091/v1](https://doi.org/10.21203/rs.3.rs-8891091/v1). The manuscript behind the Scenario Compass ensemble.
 
-**[Riahi 2026b]** Keywan Riahi, Detlef van Vuuren, and others. "Scenario data of the 'Socioeconomic, Emissions and Land Use Futures - The ScenarioMIP Pathways for CMIP7'" (v0.1). Zenodo. DOI: [10.5281/zenodo.22296051](https://doi.org/10.5281/zenodo.22296051). ScenarioMIP-CMIP7 release v0.1 (`scenariomip-cmip7`): bunker reporters and, when listed, the non-CO₂ set.
+**[Riahi 2026b]** Keywan Riahi, Detlef van Vuuren, and others. "Scenario data of the 'Socioeconomic, Emissions and Land Use Futures - The ScenarioMIP Pathways for CMIP7'" (v0.1). Zenodo. DOI: [10.5281/zenodo.22296051](https://doi.org/10.5281/zenodo.22296051). ScenarioMIP-CMIP7 release v0.1 (`scenariomip-cmip7`): scenarios that report bunkers and, when listed, the non-CO₂ set.
 
 <a id="shue-2014"></a>**[Shue 2014]** Henry Shue. "Climate Justice: Vulnerability and Protection." _Oxford University Press_ (Book). ISBN: 9780198713500; no DOI registered; this bibliography entry serves as the anchor for inline citations.
 

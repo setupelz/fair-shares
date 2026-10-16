@@ -331,6 +331,32 @@ class TestIAMCLoaderErrors:
         assert "missing" in error_msg.lower()
         assert "year" in error_msg.lower()
 
+    def test_iamc_region_missing_start_year_error(self, minimal_iamc_df):
+        """A region without its own start-year value raises, even with annual expansion."""
+        from fair_shares.library.exceptions import IAMCDataError
+        from fair_shares.library.utils.data.iamc import load_iamc_data
+
+        import pyam
+
+        data = minimal_iamc_df.data
+        usa_2010 = data[(data["region"] == "USA") & (data["year"] == 2030)].assign(
+            year=2010
+        )
+        df = pyam.IamDataFrame(pd.concat([data, usa_2010]))
+        with pytest.raises(IAMCDataError) as exc_info:
+            load_iamc_data(
+                df,
+                population_variable="Population",
+                regions=["USA", "CHN"],
+                allocation_start_year=2010,
+                budget_end_year=2030,
+                expand_to_annual=True,
+            )
+
+        error_msg = str(exc_info.value)
+        assert "CHN | 2010" in error_msg
+        assert "USA | 2010" not in error_msg
+
     def test_iamc_pyam_not_installed_error(self, monkeypatch):
         """IAMC loader raises clear error when pyam is not installed."""
         import fair_shares.library.utils.data.iamc as iamc_module

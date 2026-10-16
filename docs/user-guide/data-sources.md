@@ -152,7 +152,7 @@ Huppmann, D., Riahi, K., Clarke, L., Hasegawa, T., et al. (2026). Scenario Compa
 
 **Location:** `data/scenarios/sci-2026-v2.0/SCI-2026_v2.0_pathways_ensemble_global.xlsx` (`sci-2026`, download from the Scenario Compass platform with a login). Release v1.0 sits at `data/scenarios/sci-2025-v1.0/` (`sci-2025`). The `version` key of the `sci` entry in `scenario_sources.yaml` selects the release.
 
-**Provides:** bunker reporters for the bunker share and, opt-in, scenarios for the non-CO2 set. [Scenario sets](../science/scenario-sets.md#scenario-compass) gives what it contributes and how its warming at net zero is derived.
+**Provides:** scenarios that report bunkers, for the bunker share, and, opt-in, scenarios for the non-CO2 set. [Scenario sets](../science/scenario-sets.md#scenario-compass) gives what it contributes and how its warming at net zero is derived.
 
 ### ScenarioMIP-CMIP7 ensemble (manual)
 

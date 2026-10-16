@@ -107,7 +107,7 @@ Building missing processed data needs Snakemake, from the `pipeline` extra.
 A preset holds the parameter set of a published study, because several library defaults differ from published settings.
 `fair_shares.library.presets` holds the ESABCC 2023 preset that notebook 601 runs.
 `esabcc_2023_allocations(category)` returns the grid for `run_all_allocations`, and `esabcc_2023_allocation_list(category)` the same runs one by one for `calculate_allocation_timeseries`.
-[EU budgets with the ESABCC preset](../user-guide/eu-budgets.md) runs it.
+[The ESABCC presets](../user-guide/eu-budgets.md) runs it.
 
 ::: fair_shares.library.presets.esabcc_2023.esabcc_2023_allocations
     options:

@@ -14,7 +14,7 @@ The adjustments follow [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
 
 - The library ships budgets from IPCC AR6 WGI, Lamboll et al. (2023) and the Indicators of Global Climate Change updates (Forster et al. 2024 and 2026).
 - Every budget is rebased to start in 2020 with observed emissions.
-- International aviation and shipping (bunkers) are deducted, because no national inventory holds them.
+- International aviation and shipping (bunkers) are deducted because national inventories report them only as memo items outside their national totals.
 - For fossil CO₂ (`co2-ffi`), the land-use share of the budget is removed. A projected land sink never adds to the fossil budget.
 - For total CO₂ (`co2`), land-use CO₂ switches to the national-inventory convention. This lowers the budget.
 
@@ -112,7 +112,7 @@ Three adjustments close these gaps:
     | BM land-use term ($L_{\text{BM}}$, `co2-ffi` only) | Gidden et al. AR6 reanalysis, scenario median of AFOLU\|Direct | 2015 to 2100 |
     | Convention gap (`co2` only) | Observed NGHGI, then AFOLU\|Indirect from the same reanalysis | 2015 to 2100 |
     | Net-zero crossing (NZ) | The same reanalysis, Emissions\|CO2 | Interpolated per scenario |
-    | Future bunkers | A bunker share of the set's median net CO₂ (AR6 and Scenario Compass reporters) | From 2025 to net zero |
+    | Future bunkers | A bunker share of the set's median net CO₂ (AR6, Scenario Compass and ScenarioMIP scenarios that report bunkers) | From 2025 to net zero |
     | Budget from 2020 | Global Carbon Budget 2025 global workbook (`gcb-2025-global`) | 1959 to 2024; 2025 takes the 2024 value |
 
     **[API Reference →](../api/utils/data.md#nghgi-corrections)** | `src/fair_shares/library/utils/data/nghgi.py`, `src/fair_shares/library/utils/data/rcb.py`
@@ -139,7 +139,7 @@ For a budget from 2020 every rebase term is zero.
 
     The years 2020 to $\text{base}{-}1$ cancel.
     The formula therefore omits land use from the rebase and starts the decomposition at $\text{base}$.
-    The pipeline holds no observed land-use series in the BM convention, and this form needs none.
+    This form suits the pipeline because it needs no observed land-use series in the BM convention.
 
 ??? note "Why the `co2` rebase adds NGHGI land-use CO₂"
 
@@ -170,7 +170,7 @@ For a budget from 2020 every rebase term is zero.
 
 ### Bunker deduction {#bunker-deduction}
 
-International aviation and shipping appear in global totals, and no national inventory holds them.
+International aviation and shipping count towards global emission totals but national inventories report them only as memo items outside their national totals.
 The deduction removes them from 2020 to net zero, for every baseline year.
 
 Observed bunkers count from 2020 to the last observed year $L$ (`gcb-2025` by default, $L = 2024$).

@@ -56,7 +56,7 @@ This is the default rule, `scenario_selection: role-matched`.
 | ---- | --- | ---- | --- |
 | Land-use term (`co2-ffi`) | Volume-matched | Reaches net-zero CO₂ by 2100; cumulative net CO₂ from 2020 to net zero within ±`volume_tolerance_gt` (50 Gt) of the budget from 2020 | The term integrates to net zero, so its scenarios spend the budget's volume |
 | Convention gap (`co2`) | Volume-matched | Same | Same |
-| Bunkers after the last observed year | Volume-matched, times the bunker share | Median net CO₂ of the set from the year after the last observed year to net zero, times the share $s$ | Few scenarios report bunkers, so $s$ pools every reporter ([Bunker share](#bunker-share)) |
+| Bunkers after the last observed year | Volume-matched, times the bunker share | Median net CO₂ of the set from the year after the last observed year to net zero, times the share $s$ | Few scenarios report bunkers and $s$ therefore pools every scenario that does ([Bunker share](#bunker-share)) |
 | Non-CO₂ pathway | Temperature-matched | Net-zero year; median warming at net zero in $[T - 0.05,\; T + 0.05)$, for every likelihood | Published budgets assume the median non-CO₂ warming at $T$ |
 
 Every set needs a net-zero year, in the AR6 convention ([Net zero](#net-zero)).
@@ -95,7 +95,7 @@ Their labels with an AR6 WGIII category take that category for every term: `1.5p
 - C4 limits warming to 2 °C (>50%).
 
 These definitions come from [IPCC 2022 Annex III](https://doi.org/10.1017/9781009157926.022), Table 14.
-C2 returns warming to 1.5 °C after a high overshoot and pairs with no label.
+C2 returns warming to 1.5 °C (>50%) by 2100 after a high overshoot. Its warming peaks above 1.5 °C and a budget counts emissions to peak warming, so C2 stays outside every budget label.
 The integral terms use the category members that reach net zero. The non-CO₂ pathway uses every member.
 The bunker term applies the same bunker share to the net CO₂ of the category set.
 The other labels of these sources use the role-matched sets.
@@ -156,17 +156,17 @@ Few scenarios report international aviation and shipping.
 The bunker term therefore uses one share $s$ of net CO₂, taken from every scenario that reports bunkers.
 [Bunker deduction](remaining-carbon-budgets.md#bunker-deduction) shows how the budget applies it.
 
-Each reporter that reaches net zero gives a ratio $r_k$: its cumulative bunkers over its own net CO₂ (the model's `Emissions|CO2`).
+Each scenario that reports bunkers and reaches net zero gives a ratio $r_k$: its cumulative bunkers over its own net CO₂ (the model's `Emissions|CO2`).
 Both run from the year after the last observed bunker year to the scenario's net-zero crossing.
 The share is family-balanced: the median of the per-family medians, $s = \text{median}_f\, \text{median}_{k \in f}\, r_k$.
-A family counts only with at least `bunkers.min_runs_per_family` (3) reporters.
+A family counts only with at least `bunkers.min_runs_per_family` (3) scenarios.
 A family is the energy-model stem without version or coupling: `IMAGE 3.2` and `IMAGE 3.3` are IMAGE, and `REMIND-MAgPIE 3.2-4.6` is REMIND.
 
 With `gcb-2025` bunkers (last observed year 2024) the share runs from 2025.
 The default pool is AR6, Scenario Compass v2.0 and ScenarioMIP v0.1.
-156 reporters reach net zero: 22 from AR6, 92 from Scenario Compass and 42 from ScenarioMIP.
+156 scenarios that report bunkers reach net zero: 22 from AR6, 92 from Scenario Compass and 42 from ScenarioMIP.
 
-| Family | Family median | Reporters | Counts |
+| Family | Family median | Scenarios | Counts |
 | ------ | ------------- | --------- | ------ |
 | IMAGE | 0.072 | 57 | yes |
 | REMIND | 0.071 | 46 | yes |
@@ -182,18 +182,18 @@ The default pool is AR6, Scenario Compass v2.0 and ScenarioMIP v0.1.
 | LUT-ESTM | 0.191 | 1 | no |
 
 The family-balanced share is $s = 0.072$.
-The median over all reporters is 0.072 (interquartile range 0.060 to 0.081).
+The median over all 156 scenarios is 0.072 (interquartile range 0.060 to 0.081).
 PROMETHEUS reports bunkers, and its runs end in 2050 without net zero.
 
 ??? info "Rules and checks"
 
-    - Reporters come from every source in `bunkers.scenario_sources` (default `[ar6, sci, scenariomip]`). A run carried over from another listed source counts once: Scenario Compass flags its AR6 and ScenarioMIP runs.
-    - Each reporter reaches net zero by its own net CO₂, in the AR6 convention ([Net zero](#net-zero)). The climate emulator behind a source therefore does not enter the share. ScenarioMIP uses MAGICC v7.6.0a3 and AR6 uses MAGICCv7.5.3.
-    - No historical vetting applies to the reporters. Vetting tests 2010 to 2025 totals, and the share needs the ratio within each model run.
-    - `model_families` in `src/fair_shares/conf/scenario_sources.yaml` lists every model. An unlisted reporter model is a configuration error.
-    - Fewer than `bunkers.min_reporters` (10) reporters or `bunkers.min_families` (3) families, counted after the per-family filter, raise a `ConfigurationError` that names the count per scenario source.
+    - The scenarios come from every source in `bunkers.scenario_sources` (default `[ar6, sci, scenariomip]`). A run carried over from another listed source counts once: Scenario Compass flags its AR6 and ScenarioMIP runs.
+    - Each scenario reaches net zero by its own net CO₂, in the AR6 convention ([Net zero](#net-zero)). The climate emulator behind a source therefore does not enter the share. ScenarioMIP uses MAGICC v7.6.0a3 and AR6 uses MAGICCv7.5.3.
+    - No historical vetting applies to these scenarios. Vetting tests 2010 to 2025 totals, and the share needs the ratio within each model run.
+    - `model_families` in `src/fair_shares/conf/scenario_sources.yaml` lists every model. A scenario from an unlisted model is a configuration error.
+    - Fewer than `bunkers.min_reporters` (10) scenarios or `bunkers.min_families` (3) families, counted after the per-family filter, raise a `ConfigurationError` that names the count per scenario source.
     - A source whose data file is absent is left out with a warning.
-    - Reporters of both sources enter with their own emissions and the same accounting.
+    - Scenarios of both sources enter with their own emissions and the same accounting.
     - The record lists the excluded families with their medians and counts.
 
     The function is `bunker_share()` in `src/fair_shares/library/utils/data/scenario_sets.py`.
@@ -224,7 +224,7 @@ A scenario source is an entry in `src/fair_shares/conf/scenario_sources.yaml`.
 
 The default source (`ar6`) is the reanalysis of the AR6 scenarios by Gidden et al. (2023), 914 scenarios ([Gidden 2023](https://doi.org/10.5281/zenodo.10158920)).
 It supplies net CO₂, the land-use fluxes (`AFOLU|Direct`, `AFOLU|Indirect`), the non-CO₂ pathways, the net-zero years and the warming at net zero (MAGICCv7.5.3).
-The aviation and maritime series for the AR6 bunker reporters come from the AR6 Scenarios Database ([Byers 2022](https://doi.org/10.5281/zenodo.5886911)).
+The aviation and maritime series for the AR6 scenarios that report bunkers come from the AR6 Scenarios Database ([Byers 2022](https://doi.org/10.5281/zenodo.5886911)).
 
 ### Scenario Compass {#scenario-compass}
 
@@ -235,7 +235,7 @@ Its terms and download are in [Data & licences](../user-guide/data-sources.md#sc
 v2.0 holds 1,977 scenarios: the 1,214 AR6 carry-overs, the 68 ScenarioMIP v0.1 runs and later submissions.
 524 scenarios pass the SCI 2025 historical vetting (criteria release v2026.08.03).
 The climate assessment comes in three workflows. fair-shares reads the AR6 workflow (MAGICC v7.5.3), the one behind the AR6 metadata.
-The metadata carry peak warming and warming in 2100, and no warming at net zero.
+The metadata carry only peak warming and warming in 2100 and fair-shares therefore derives warming at net zero itself.
 
 ??? info "Warming at net zero for Scenario Compass and ScenarioMIP"
 
@@ -272,6 +272,7 @@ AR6 categories map as:
 - C3 → `climate-assessment="2C"`, `quantile=0.67`
 - C4 → `climate-assessment="2C"`, `quantile=0.5`
 
+C2 stays out of the map for the reason given in [AR6 category pools](#ar6-category-pools).
 A new scenario source defines its own mapping into the same format.
 Inside notebook 104, combined labels (e.g. "1.5p50") keep C3 and C4 apart during the median step and map to the clean format at output.
 The map follows the AR6 WGIII category definitions ([AR6 category pools](#ar6-category-pools)).
@@ -298,9 +299,9 @@ Every integral-term set holds only scenarios that reach net zero by 2100: the vo
     It also writes:
 
     - `scenario_set_{source}_{label}.csv`: the members of the integral-term set, with their net-zero crossings and net CO₂ from each possible start year;
-    - `bunker_share_reporters.csv`: each reporter's cumulative bunkers and net CO₂ from every possible start year.
+    - `bunker_share_reporters.csv`: each scenario's cumulative bunkers and net CO₂ from every possible start year.
 
     The processed budget files carry `published_label`, `likelihood_scope`, `budget_metric`, `scenario_selection`, `budget_2020_gt`, the rule and size of both sets and `nz_year_median`.
-    They also carry the bunker columns: `bunker_share`, `bunker_share_pooled`, the interquartile range of the ratios, the family medians and counts (`bunker_share_families`), the reporter counts by source and the set's net CO₂ after the last observed year (`bunker_set_co2_after_mt`).
+    They also carry the bunker columns: `bunker_share`, `bunker_share_pooled`, the interquartile range of the ratios, the family medians and counts (`bunker_share_families`), the scenario counts by source and the set's net CO₂ after the last observed year (`bunker_set_co2_after_mt`).
 
 The sources cited here are on the [References](references.md) page.

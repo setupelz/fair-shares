@@ -82,10 +82,7 @@ shares = result.relative_shares_cumulative_emission["2015"]
 
 `per_capita_adjusted_budget` takes `gdp_ts=data["gdp"]` in the same way. The [Approach catalog](approach-catalog.md) lists the approaches.
 
-!!! warning "Load the output of notebook 400, not the raw file"
-
-    A raw scenario file holds only the scenario's own years. The bundled example starts in 2015, while the notebooks allocate from 1990 by default.
-    The first 25 years would then have no data, and the result would be wrong without any error.
+`load_iamc_data` stops with an error when any region lacks a value in the start year or the end year.
 
 ## 3. Export a remaining budget for your model
 

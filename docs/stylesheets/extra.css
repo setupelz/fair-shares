@@ -142,11 +142,14 @@ div.arithmatex {
 }
 
 /* ============================================================================
-   No icons: hide the palette toggle, repository icon and admonition icons
+   No icons: hide the palette toggle, repository icon, logo, navigation arrows
+   and admonition icons
    ============================================================================ */
 
 .md-header__option,
-.md-source__icon {
+.md-source__icon,
+.md-nav__icon,
+.md-logo {
     display: none;
 }
 

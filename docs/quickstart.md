@@ -87,7 +87,7 @@ uv run fair-shares fetch-data --source ipcc_ar6_climate
 
 A run reads the optional manual inputs only when its configuration selects them:
 
-- `sci-2025` and `sci-2026`: the Scenario Compass ensembles. They add bunker reporters to the bunker share. Access is on request, and their embargo terms apply until Riahi et al. is published.
+- `sci-2025` and `sci-2026`: the Scenario Compass ensembles. They add scenarios that report bunkers to the bunker share. Access is on request, and their embargo terms apply until Riahi et al. is published.
 - `scenariomip-cmip7`: the ScenarioMIP-CMIP7 scenarios, an alternative scenario source.
 - `gcb-2024`: the Global Carbon Budget 2024 national workbook, an older source of observed bunkers.
 

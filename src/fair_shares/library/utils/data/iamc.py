@@ -326,15 +326,28 @@ def _validate_iamc_data(
             f"Available regions: {sorted(available_regions)}"
         )
 
-    # Use pyam's require_data for completeness check
-    for var in required_variables:
-        missing = df.require_data(variable=var, year=[start_year, end_year])
-        if missing is not None and not missing.empty:
-            raise IAMCDataError(
-                f"Missing data for variable '{var}' at required years.\n"
-                f"Required: {start_year} to {end_year}\n"
-                f"Missing entries:\n{missing}"
-            )
+    # Every region needs its own value at both ends; annual expansion would
+    # otherwise back-fill a late-starting region from its first year.
+    data = df.data
+    present = set(zip(data["variable"], data["region"], data["year"]))
+    missing = [
+        (var, region, year)
+        for var in required_variables
+        for region in required_regions
+        for year in (start_year, end_year)
+        if (var, region, year) not in present
+    ]
+    if missing:
+        listing = "\n".join(f"  {v} | {r} | {y}" for v, r, y in missing[:20])
+        more = f"\n  ... and {len(missing) - 20} more" if len(missing) > 20 else ""
+        raise IAMCDataError(
+            f"Missing data at required years ({start_year} and {end_year}) "
+            f"for {len(missing)} variable/region/year combination(s):\n"
+            f"{listing}{more}\n"
+            "A raw scenario file holds only the scenario's own years. "
+            "Run notebook 400 to add regional history, or raise "
+            "allocation_start_year to the first year of your data."
+        )
 
 
 def _suggest_similar_variables(missing: list[str], available: set[str]) -> str:

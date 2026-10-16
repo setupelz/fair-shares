@@ -148,10 +148,10 @@ nav:
   - How-to:
       - user-guide/index.md
       - Country fair shares: user-guide/country-fair-shares.md
-      - EU budgets with the ESABCC preset: user-guide/eu-budgets.md
       - IAM model regions: user-guide/iamc-regional-fair-shares.md
       - Updating data each year: user-guide/update-data.md
       - Reproduce a published study: reproductions/index.md
+      - The ESABCC presets: user-guide/eu-budgets.md
   - Reference:
       - Approach catalog: user-guide/approach-catalog.md
       - Outputs: user-guide/output-schema.md

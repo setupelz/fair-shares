@@ -1,9 +1,9 @@
 ---
-title: EU budgets with the ESABCC preset
+title: The ESABCC presets
 description: National, EU27 and EEA remaining budgets with the allocation settings of the ESABCC 2023 advice
 ---
 
-# EU budgets with the ESABCC preset
+# The ESABCC presets
 
 This guide computes remaining budgets for EU countries, the EU27 and the EEA with the settings of the ESABCC 2023 advice ([ESABCC 2023](https://doi.org/10.2800/609405); [Pelz 2023](https://pure.iiasa.ac.at/18830)).
 The preset `esabcc_2023_allocations()` holds those settings. Several library defaults differ from them, so use the preset rather than building the runs by hand.
@@ -68,7 +68,7 @@ The first run builds the processed data and takes a few minutes.
 
 ## What the result holds
 
-`result.allocation_timeseries` has one row per country. Its index holds `iso3c` and the identifying columns listed in [Outputs](output-schema.md#annual-pathways), and its columns are the years to `pathway_end_year`. The years after `result.netting_end_year` sum to the remaining budget.
+`result.allocation_timeseries` has one row per country. Its index holds `iso3c` and the identifying columns listed in [Outputs](output-schema.md#annual-pathways). Its columns are the years to `pathway_end_year`. The years after `result.netting_end_year` sum to the remaining budget.
 `remaining` in the example is a Series of remaining budgets in Gt CO2, indexed by `iso3c`. Summing it over a list of ISO3 codes gives a group total, as the example does for the EU27 and the EEA.
 
 The library allocates to countries. The EU27 and EEA values are sums of their members.
