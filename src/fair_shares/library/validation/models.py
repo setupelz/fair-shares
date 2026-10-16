@@ -70,7 +70,8 @@ class AllocationInputs(BaseModel):
         None,
         description=(
             "GDP time series data (required for capability adjustments, used from "
-            "allocation year onwards, or at capability_reference_year when set)"
+            "allocation year onwards, or at capability_reference_year or over "
+            "capability_window when set)"
         ),
     )
     gini_s: pd.DataFrame | None = Field(
@@ -98,6 +99,10 @@ class AllocationInputs(BaseModel):
     capability_reference_year: int | None = Field(
         None,
         description="Capability snapshot year (GDP is read at this year only)",
+    )
+    capability_window: tuple[int, int] | None = Field(
+        None,
+        description="Capability window (GDP is read over these years only)",
     )
 
     model_config = {"arbitrary_types_allowed": True}
@@ -191,9 +196,13 @@ class AllocationInputs(BaseModel):
             "Population",
         )
 
-        # Check GDP at the first year only. A capability snapshot reads GDP at its
-        # reference year instead, which the allocation function checks.
-        if self.gdp_ts is not None and self.capability_reference_year is None:
+        # Check GDP at the first year only. A capability snapshot or window reads
+        # GDP at its own years instead, which the allocation function checks.
+        if (
+            self.gdp_ts is not None
+            and self.capability_reference_year is None
+            and self.capability_window is None
+        ):
             validate_year_in_data(
                 self.first_allocation_year,
                 self.gdp_ts,

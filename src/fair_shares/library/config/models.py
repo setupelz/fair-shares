@@ -51,7 +51,7 @@ class EmissionsDataParameters(BaseModel):
         None,
         description=(
             "Registry name of the international bunker data paired with this "
-            "source. Omit to use the default (gcb-2024)."
+            "source. Omit to use the default (gcb-2025)."
         ),
     )
     coverage: EmissionsCoverage | None = Field(

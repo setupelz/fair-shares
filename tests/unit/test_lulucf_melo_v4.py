@@ -1,4 +1,4 @@
-"""The opt-in LULUCF Data Hub v4.0.0 source (``melo-2026-v4``)."""
+"""The default LULUCF source, LULUCF Data Hub v4.0.0 (``melo-2026-v4``)."""
 
 from __future__ import annotations
 
@@ -21,9 +21,9 @@ def _config() -> dict:
     return raw["lulucf"][KEY]
 
 
-def test_registry_entry_is_opt_in_and_matches_config():
+def test_registry_entry_is_default_and_matches_config():
     source = load_registry()[KEY]
-    assert source.tier == "optional"
+    assert source.tier == "default"
     assert source.doi == "10.5281/zenodo.22828743"
     assert source.license == "CC-BY-4.0"
     (download,) = source.downloads

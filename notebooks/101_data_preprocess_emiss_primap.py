@@ -20,6 +20,10 @@
 # The script processes emissions data for multiple variables and categories, and outputs
 # data for either HIST-TP (third party) or HIST-CR (country-reported) based on the
 # data_parameter configuration.
+#
+# One notebook serves every PRIMAP-hist release (`primap-202609`, `primap-202503`).
+# The Snakefile passes the release as `active_emissions_source`, and the executed
+# copy keeps the per-source name `101_data_preprocess_emiss_<source>.ipynb`.
 
 # %% [markdown]
 # ## Set paths and library imports
@@ -91,7 +95,7 @@ else:
     # Interactive development configuration
     emission_category = "all-ghg-ex-co2-lulucf"
     active_sources = {
-        "emissions": "primap-202503",
+        "emissions": "primap-202609",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",

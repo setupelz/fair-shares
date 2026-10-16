@@ -62,7 +62,7 @@ project_root = here()
 #
 # All tuneable parameters in one cell. Edit here, then run everything below.
 #
-# **Datasets**: PRIMAP emissions (2025), WDI GDP (2025), UN population (2025), UNU-WIDER Gini (2025), exponential-decay pathway generator
+# **Datasets**: PRIMAP-hist v2.8 emissions, WDI GDP (2025), UN population (2025), WDI Gini (2025), LULUCF Data Hub v4.0.0, exponential-decay pathway generator
 
 # %%
 # =============================================================================
@@ -79,16 +79,16 @@ emission_category = "all-ghg"
 active_sources = {
     # Target: What climate goal to allocate
     "target": "rcb-pathways",
-    # Historical emissions from PRIMAP database (March 2025 version)
-    "emissions": "primap-202503",
+    # Historical emissions from PRIMAP-hist v2.8 (September 2026 release)
+    "emissions": "primap-202609",
     # GDP data from World Bank World Development Indicators (2025)
     "gdp": "wdi-2025",
     # Population projections from UN (2025)
     "population": "un-owid-2025",
-    # Income inequality (Gini coefficients) from UNU-WIDER (2025)
+    # Income inequality (Gini coefficients) from World Bank WDI (2025)
     "gini": "wdi-2025",
     # LULUCF data for NGHGI-consistent corrections
-    "lulucf": "melo-2026",
+    "lulucf": "melo-2026-v4",
     # Pathway generator for rcb-pathways (optional, defaults to "exponential-decay")
     "rcb_generator": "exponential-decay",
 }

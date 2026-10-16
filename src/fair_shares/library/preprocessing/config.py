@@ -25,11 +25,11 @@ def load_preprocessing_config(
     Args:
         emission_category: Emission category (e.g., "co2-ffi", "all-ghg-ex-co2-lulucf")
         active_target_source: Target source (e.g., "rcbs", "pathway")
-        active_emissions_source: Emissions source (e.g., "primap-202503")
+        active_emissions_source: Emissions source (e.g., "primap-202609")
         active_gdp_source: GDP source (e.g., "wdi-2025")
         active_population_source: Population source (e.g., "un-owid-2025")
         active_gini_source: Gini source (e.g., "wdi-2025")
-        active_lulucf_source: LULUCF source (e.g., "melo-2026")
+        active_lulucf_source: LULUCF source (e.g., "melo-2026-v4")
         output_dir: Directory holding pipeline products. Defaults to the
             resolved output directory (see :mod:`fair_shares.library.paths`).
 
@@ -66,7 +66,7 @@ def load_preprocessing_config(
         # Default interactive configuration
         emission_category = "co2-ffi"
         active_sources = {
-            "emissions": "primap-202503",
+            "emissions": "primap-202609",
             "gdp": "wdi-2025",
             "population": "un-owid-2025",
             "gini": "wdi-2025",

@@ -111,7 +111,7 @@ else:
     # Interactive development configuration
     emission_category = "all-ghg-ex-co2-lulucf"
     active_sources = {
-        "emissions": "primap-202503",
+        "emissions": "primap-202609",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",

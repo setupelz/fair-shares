@@ -45,13 +45,11 @@ def _dois_in(text: str) -> set[str]:
 class TestSourceResolution:
     def test_a_budget_run_cites_bunkers_and_budgets(self):
         names = cit.resolve_source_names(COUNTRY_RUN, emission_category="co2-ffi")
-        assert "gcb-2024" in names, "budget runs subtract bunker emissions"
+        assert "gcb-2025" in names, "budget runs subtract bunker emissions"
         assert "rcbs" in names
+        for term_source in ("ipcc_ar6_gidden", "ipcc_ar6_bunkers", "gcb-2025-global"):
+            assert term_source in names, "budget terms come from scenario sets"
         assert "regions" in names, "every run uses the region mapping"
-
-    def test_a_simple_budget_run_does_not_cite_the_scenarios(self):
-        names = cit.resolve_source_names(COUNTRY_RUN, emission_category="co2-ffi")
-        assert "ipcc_ar6_gidden" not in names
 
     def test_a_composite_budget_run_does_cite_the_scenarios(self):
         """all-ghg splits into a budget part and a scenario-derived non-CO2 part."""
@@ -63,7 +61,7 @@ class TestSourceResolution:
             {**COUNTRY_RUN, "target": "pathway"}, emission_category="co2-ffi"
         )
         assert "ipcc_ar6_gidden" in names
-        assert "gcb-2024" not in names
+        assert "gcb-2025" not in names
 
     def test_country_runs_never_cite_cmip7(self):
         """CMIP7 is only used by the IAMC workflow."""
@@ -102,6 +100,13 @@ class TestSourceResolution:
             {**COUNTRY_RUN, "gini": "wdi-2025"}, emission_category="co2-ffi"
         )
         assert "unu-wider-2025" not in dict(run.special_terms)
+
+    def test_the_default_emissions_source_flags_its_non_commercial_terms(self):
+        from fair_shares.cli import DEFAULT_ACTIVE_SOURCES
+
+        run = cit.citations(DEFAULT_ACTIVE_SOURCES, emission_category="co2-ffi")
+        assert "primap-202609" in dict(run.special_terms)
+        assert "CC-BY-NC-SA-4.0" in run.text()
 
     def test_an_unknown_source_is_an_error_not_a_silent_omission(self):
         with pytest.raises(ConfigurationError, match="not a known data source"):
@@ -167,8 +172,8 @@ class TestTextOutput:
 
     def test_special_terms_are_surfaced(self, run):
         text = run.text()
-        assert "co-authorship" in text, "the GCB request must reach the user"
         assert "non-commercial" in text.lower(), "WIID terms must reach the user"
+        assert "embargo" in cit.SPECIAL_TERMS["sci-2025"]
 
     def test_cmip7_component_note_appears_when_cmip7_is_used(self):
         run = cit.citations(

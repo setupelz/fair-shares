@@ -52,8 +52,34 @@ version: 1
 sources:
   # --- Emissions -------------------------------------------------------------
 
-  primap-202503:
+  primap-202609:
     tier: default
+    version: "v2.8 final, no rounding, 22-Sep-2026"
+    doi: "10.5281/zenodo.22876287"
+    # The Zenodo record states CC BY-NC-SA 4.0 ("Since v2.8 PRIMAP-hist is
+    # published under a non-commercial license (CC BY-NC-SA)"). The metadata
+    # YAML shipped inside the record says CC BY-NC 4.0 (rights: Creative
+    # Commons Attribution-NonCommercial 4.0 International). The stricter
+    # record-level terms are recorded here. Commercial use needs a separate
+    # licence from the dataset authors.
+    license: "CC-BY-NC-SA-4.0 (Zenodo record; the YAML inside the record says CC-BY-NC-4.0, the stricter record terms apply)"
+    redistributable: false
+    citation: >-
+      Gütschow, J., & Pflüger, M. (2026). The PRIMAP-hist national historical
+      emissions time series (1750-2025) v2.8. Zenodo.
+      https://doi.org/10.5281/zenodo.22876287
+    # Data to 2025; the latest years are partly extrapolated numerically.
+    downloads:
+      - url: "https://zenodo.org/api/records/22876287/files/Guetschow_et_al_2026-PRIMAP-hist_v2.8_final_no_rounding_22-Sep-2026.nc/content"
+        target: "emissions/primap-202609/Guetschow_et_al_2026-PRIMAP-hist_v2.8_final_no_rounding_22-Sep-2026.nc"
+        sha256: "17f6a4c6781c3bdcc374bc6b0a6f9e61dc5da1ff21d3706ed4c2ac1efc0e4c70"
+        upstream_hash: "md5:8a8eba1821a1475ae3ec0f723c2b1d38"
+        size_bytes: 75616645
+
+  # Opt-in alternative to primap-202609. CC BY 4.0, so outputs built on it can
+  # be redistributed under CC BY terms.
+  primap-202503:
+    tier: optional
     version: "v2.6.1 final, no rounding, 13-Mar-2025"
     doi: "10.5281/zenodo.15016289"
     license: "CC-BY-4.0"
@@ -101,7 +127,7 @@ sources:
         size_bytes: 161831
 
   gcb-2025:
-    tier: optional
+    tier: default
     version: "2025v15"
     doi: "10.5281/zenodo.17417124"
     license: "CC-BY-4.0"
@@ -112,8 +138,8 @@ sources:
       https://doi.org/10.5281/zenodo.17417124. Paper: Friedlingstein, P., et
       al. (2026). Global Carbon Budget 2025. Earth System Science Data, 18,
       3211-3288. https://doi.org/10.5194/essd-18-3211-2026
-    # Opt-in alternative to primap-202503, which stays the default. Fossil CO2
-    # only. The same file supplies the bunker series for gcb-2025 runs.
+    # Opt-in alternative to the default primap-202609 emissions (fossil CO2
+    # only). The same file supplies the observed bunker series of every run.
     downloads:
       - url: "https://zenodo.org/api/records/17417124/files/GCB2025v15_MtCO2_flat.csv/content"
         target: "emissions/gcb-2025/GCB2025v15_MtCO2_flat.csv"
@@ -121,10 +147,41 @@ sources:
         upstream_hash: "md5:3008e30d913af5926a83d0d0775fb72e"
         size_bytes: 3147221
 
+  gcb-2025-global:
+    tier: manual
+    version: "Global Carbon Budget 2025 v1.0 (data object of record version 1.1)"
+    doi: "10.18160/GCP-2025"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Global Carbon Project (2026). Supplemental data of Global Carbon Budget
+      2025 (Version 1.1). ICOS Carbon Portal. https://doi.org/10.18160/GCP-2025. Paper:
+      Friedlingstein, P., et al. (2026). Global Carbon Budget 2025. Earth
+      System Science Data, 18, 3211-3288. https://doi.org/10.5194/essd-18-3211-2026
+    # Observed global net CO2 (fossil minus cement carbonation plus bookkeeping
+    # land-use change) that expresses each budget from the start of 2020 for
+    # the volume-matched scenario sets. The ICOS object page asks for licence
+    # acceptance before the download.
+    manual_instructions: >-
+      The global carbon budget workbook sits behind the ICOS licence-acceptance
+      page.
+
+      1. Open https://meta.icos-cp.eu/objects/qSjPBsV1drZnYdH-yCJMmkGn
+      2. Accept the CC BY 4.0 data licence when prompted.
+      3. Download Global_Carbon_Budget_2025_v1.0.xlsx
+      4. Place it at:
+           <data_dir>/emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx
+    downloads:
+      - url: "https://meta.icos-cp.eu/objects/qSjPBsV1drZnYdH-yCJMmkGn"
+        target: "emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx"
+        sha256: "a928cf06c57576b66761d1fec8224c9a41a781eb63442afc03ba902858dd64a9"
+        size_bytes: 480363
+
   # --- LULUCF ----------------------------------------------------------------
 
+  # Opt-in alternative to melo-2026-v4, the default.
   melo-2026:
-    tier: default
+    tier: optional
     version: "3.1.1 (2025 NGHGI release)"
     doi: "10.5281/zenodo.18352395"
     license: "CC-BY-4.0"
@@ -157,7 +214,7 @@ sources:
         size_bytes: 1180037
 
   melo-2026-v4:
-    tier: optional
+    tier: default
     version: "4.0.0 (2026 NGHGI release), gap-filled"
     doi: "10.5281/zenodo.22828743"
     license: "CC-BY-4.0"
@@ -170,7 +227,7 @@ sources:
       translating global land use emissions estimates into the national GHG
       inventory framework (Version 4.0.0, 2026 NGHGI release). Zenodo.
       https://doi.org/10.5281/zenodo.22828743
-    # Opt-in alternative to melo-2026 (v3.1.1), which stays the default.
+    # The default LULUCF source. melo-2026 (v3.1.1) stays available as opt-in.
     # Upstream ships LF line endings, so the pin matches the committed bytes.
     downloads:
       - url: "https://zenodo.org/api/records/22828743/files/timeseries_NGHGI_gap-filled_4.0.0.csv/content"
@@ -367,6 +424,67 @@ sources:
           - "scenarios/ipcc_ar6_gidden/metadata_ar6_gidden.xlsx"
           - "scenarios/ipcc_ar6_gidden/ar6_gidden.zip"
 
+  ipcc_ar6_bunkers:
+    tier: manual
+    version: "AR6 Scenarios Database v1.1, retrieved 2026-10-16"
+    doi: "10.5281/zenodo.5886911"
+    license: >-
+      AR6 Scenarios Database licence (IIASA): use for scientific research and
+      science communication; redistribution of substantial parts is restricted
+    redistributable: false
+    citation: >-
+      Byers, E., Krey, V., Kriegler, E., Riahi, K., et al. (2022). AR6 Scenarios
+      Database (v1.1). Integrated Assessment Modeling Consortium & International
+      Institute for Applied Systems Analysis. https://doi.org/10.5281/zenodo.5886911
+    # World CO2 of Emissions|CO2|Energy|Demand|Transportation|Aviation and
+    # |Maritime for every scenario that reports either (155 model-scenario
+    # pairs), read anonymously from the public platform "ar6-public" with
+    # pyam 3.2.0, plus Emissions|CO2 of the same scenarios (154) for the bunker
+    # share. The database has no bunker variable; scenario_sources.yaml turns
+    # these into bunkers (aviation x 0.6 + maritime, Weber et al. 2026).
+    # The provenance file next to the CSV records the query and retrieval date.
+    manual_instructions: >-
+      Run `uv run python -c "from fair_shares.library.utils.data.scenario_sources
+      import fetch_ar6_bunkers; fetch_ar6_bunkers()"`. It reads the public AR6
+      Scenarios Database without a login and writes
+      <data_dir>/scenarios/ipcc_ar6_bunkers/ar6_bunkers_world.csv. A new
+      retrieval can differ from the pinned hash; check the provenance file.
+    downloads:
+      - target: "scenarios/ipcc_ar6_bunkers/ar6_bunkers_world.csv"
+        sha256: "1a743833a82542700c169255ab80385f604555971b5423f443fdb64293989e9a"
+
+  sci-2025:
+    tier: manual
+    version: "v1.0 (Release 1.0, February 2026)"
+    doi: "10.5281/zenodo.18598251"
+    license: >-
+      IAMC licence, copyright 2026 IIASA and contributing modeling teams. The
+      workbook states: "The data may be used for scientific research purposes.
+      However, users must strictly adhere to the applicable Nature editorial
+      policies and embargo rules until the manuscript has been formally
+      published."
+    redistributable: false
+    citation: >-
+      Huppmann, D., et al. (2026). Scenario Compass Initiative - Pathways
+      Ensemble 2025 (v1.0). Zenodo. https://doi.org/10.5281/zenodo.18598251.
+      Manuscript: Riahi, K., Clarke, L., Hasegawa, T., Huppmann, D., et al.
+      (2026). Mitigation benchmarks from the 2025 community update of global
+      emissions pathways. Research Square preprint.
+      https://doi.org/10.21203/rs.3.rs-8891091/v1
+    # Global timeseries and meta indicators of the Scenario Compass ensemble.
+    # Later releases exist (v1.1, v1.2, v2.0 at 10.5281/zenodo.23232097); the
+    # version in scenario_sources.yaml selects the file. Never committed.
+    manual_instructions: >-
+      Download the global pathways workbook of the release you use from
+      https://download.scenariocompass.org (access on request) and place it
+      at <data_dir>/scenarios/sci-2025-v1.0/SCI-2025_v1.0_pathways_ensemble_global.xlsx.
+      The terms in the workbook's README sheet apply until the manuscript is
+      published.
+    downloads:
+      - target: "scenarios/sci-2025-v1.0/SCI-2025_v1.0_pathways_ensemble_global.xlsx"
+        sha256: "7507f185ec431d64ac134c5c14d8b147fa0144197b6a2bbbc670cbbb4ed07a17"
+        size_bytes: 118929400
+
   # --- Bundled: ships in the repository, never fetched ------------------------
 
   regions:
@@ -401,7 +519,7 @@ sources:
       derived from the IPCC AR6 Scenarios Database.
     downloads:
       - target: "rcbs/rcbs.yaml"
-        sha256: "ba810a80fd83d18773bd5424e934765788d3462286db695d28e33f33169d9c06"
+        sha256: "82178ff8479d35bf291264e5a24d274c2cc552341b38b934ded8a8ef41786d6f"
       - target: "rcbs/ar6_scenario_nz_years.parquet"
         sha256: "3df82c7ecfcf7b80782d666093d117e204f75e5e74f0c5ae1f22de80336a8ffc"
 

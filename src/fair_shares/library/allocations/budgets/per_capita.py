@@ -40,7 +40,9 @@ from fair_shares.library.utils import (
     set_single_unit,
 )
 from fair_shares.library.utils.math.adjustments import (
+    calculate_capability_window_data,
     calculate_responsibility_adjustment_data,
+    resolve_capability_window,
 )
 from fair_shares.library.utils.units import convert_unit_robust
 from fair_shares.library.validation.models import AllocationInputs, AllocationOutputs
@@ -73,6 +75,7 @@ def _per_capita_budget_core(
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
     capability_reference_year: int | None = None,
+    capability_window: tuple[int, int] | None = None,
     # Gini parameters (only used if gini_s provided)
     income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
@@ -146,6 +149,13 @@ def _per_capita_budget_core(
         ``allocation_year`` may precede the first GDP year.
         Ignored if ``capability_weight == 0.0``. Emits a ``UserWarning``
         if ``capability_reference_year`` exceeds the last observed GDP year.
+    capability_window
+        **Capability.** Inclusive ``(start, end)`` years. When set,
+        capability is one value per country, ``sum(GDP) / sum(population)``
+        over the window, broadcast across the allocation window (Pelz et
+        al. 2025, PNAS SI Eq. 2). The window may precede
+        ``allocation_year``. Exclusive with ``capability_reference_year``.
+        The Gini adjustment applies to each window year before the sum.
     income_floor
         Income floor for Gini adjustment (in USD PPP per capita). Default: 0.0.
     max_gini_adjustment
@@ -191,6 +201,9 @@ def _per_capita_budget_core(
 
     # Validate weights using shared function
     validate_weight_constraints(pre_allocation_responsibility_weight, capability_weight)
+    capability_window = resolve_capability_window(
+        capability_window, capability_reference_year
+    )
 
     # Validate inputs using Pydantic model
     AllocationInputs(
@@ -204,6 +217,7 @@ def _per_capita_budget_core(
         if pre_allocation_responsibility_weight > 0
         else None,
         capability_reference_year=capability_reference_year,
+        capability_window=capability_window,
     )
 
     # Validate data requirements
@@ -302,7 +316,20 @@ def _per_capita_budget_core(
 
     # Compute raw capability metric if needed (used by both modes)
     capability_metric = None
-    if use_capability:
+    if use_capability and capability_window is not None:
+        # Cumulative-window mode: one value per country, broadcast like the snapshot.
+        window_metric = calculate_capability_window_data(
+            population_ts, gdp_ts, capability_window, capability_per_capita,
+            group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
+        )
+        window_values = window_metric.reindex(
+            population_numeric.index.get_level_values(group_level)
+        ).to_numpy()
+        capability_metric = pd.DataFrame(
+            {c: window_values for c in population_numeric.columns},
+            index=population_numeric.index,
+        )
+    elif use_capability:
         gdp_filtered = filter_time_columns(gdp_ts, allocation_year)
         gdp_single_unit = set_single_unit(gdp_filtered, unit_level, ur=ur)
         gdp_single_unit = convert_unit_robust(
@@ -580,6 +607,8 @@ def _per_capita_budget_core(
                 "capability_reference_year": capability_reference_year,
             }
         )
+        if capability_window is not None:
+            parameters["capability_window"] = "{}-{}".format(*capability_window)
     if use_gini_adjustment:
         parameters.update(
             {
@@ -734,6 +763,7 @@ def per_capita_adjusted_budget(
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
     capability_reference_year: int | None = None,
+    capability_window: tuple[int, int] | None = None,
     # Deviation constraint
     max_deviation_sigma: float | None = None,
     # Mode
@@ -815,6 +845,9 @@ def per_capita_adjusted_budget(
     ``capability_reference_year`` exceeds the last observed GDP year, the last
     observed column is used as the snapshot (forward-fill fallback, consistent
     with year-by-year default mode), and a ``UserWarning`` is emitted.
+    When ``capability_window`` is set to $(t_s, t_e)$, capability is one value
+    per country, $C(g) = \sum_{t=t_s}^{t_e} \text{GDP}(g, t) /
+    \sum_{t=t_s}^{t_e} P(g, t)$, held constant over the cumulative window.
 
     For per capita capability (:code:`capability_per_capita=True`, default):
 
@@ -899,6 +932,12 @@ def per_capita_adjusted_budget(
         after ``allocation_year``. GDP is then required at that year
         only, so ``allocation_year`` may precede the first GDP year.
         Ignored when ``capability_weight == 0``.
+    capability_window
+        **Capability.** Inclusive ``(start, end)`` years. When set,
+        capability is one value per country, ``sum(GDP) / sum(population)``
+        over the window, broadcast across the allocation window (Pelz et
+        al. 2025, PNAS SI Eq. 2). The window may precede
+        ``allocation_year``. Exclusive with ``capability_reference_year``.
     max_deviation_sigma
         **Constraint.** Maximum allowed deviation from equal per capita,
         in standard deviations. ``None`` (default) means no constraint.
@@ -973,6 +1012,7 @@ def per_capita_adjusted_budget(
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
         capability_reference_year=capability_reference_year,
+        capability_window=capability_window,
         max_deviation_sigma=max_deviation_sigma,
         preserve_allocation_year_shares=preserve_allocation_year_shares,
         historical_discount_rate=historical_discount_rate,
@@ -1005,6 +1045,7 @@ def per_capita_adjusted_gini_budget(
     capability_exponent: float = 1.0,
     capability_functional_form: str = "asinh",
     capability_reference_year: int | None = None,
+    capability_window: tuple[int, int] | None = None,
     # Gini parameters
     income_floor: float = 0.0,
     max_gini_adjustment: float = 0.8,
@@ -1105,6 +1146,9 @@ def per_capita_adjusted_gini_budget(
     C_{\text{Gini}}(g, t_{\text{ref}})$ for all $t$ in the window. The Gini
     adjustment applies to the snapshot wherever the reference year lies,
     including when ``capability_reference_year < allocation_year``.
+    Setting ``capability_window`` uses one cumulative value per country over
+    the window; the Gini adjustment applies to each window year before the
+    sum.
 
     Two allocation modes are supported based on
     :code:`preserve_allocation_year_shares`:
@@ -1172,6 +1216,13 @@ def per_capita_adjusted_gini_budget(
         snapshot in both cases. GDP is then required at that year only,
         so ``allocation_year`` may precede the first GDP year.
         Ignored when ``capability_weight == 0``.
+    capability_window
+        **Capability.** Inclusive ``(start, end)`` years. When set,
+        capability is one value per country, ``sum(GDP) / sum(population)``
+        over the window, broadcast across the allocation window (Pelz et
+        al. 2025, PNAS SI Eq. 2). The window may precede
+        ``allocation_year``. Exclusive with ``capability_reference_year``.
+        The Gini adjustment applies to each window year before the sum.
     income_floor
         **Gini.** Development threshold in USD PPP per capita. Income
         below this is excluded from capability calculations, adapted from
@@ -1254,6 +1305,7 @@ def per_capita_adjusted_gini_budget(
         capability_exponent=capability_exponent,
         capability_functional_form=capability_functional_form,
         capability_reference_year=capability_reference_year,
+        capability_window=capability_window,
         income_floor=income_floor,
         max_gini_adjustment=max_gini_adjustment,
         max_deviation_sigma=max_deviation_sigma,

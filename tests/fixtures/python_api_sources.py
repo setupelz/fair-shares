@@ -6,11 +6,11 @@ from fair_shares.library.utils.data.config import build_data_config
 
 # Must match the ``active_sources`` defaults in notebooks/601_reproduce_esabcc_2023.py.
 SOURCES = {
-    "emissions_source": "primap-202503",
+    "emissions_source": "primap-202609",
     "gdp_source": "wdi-2025",
     "population_source": "un-owid-2025",
     "gini_source": "wdi-2025",
-    "lulucf_source": "melo-2026",
+    "lulucf_source": "melo-2026-v4",
 }
 
 

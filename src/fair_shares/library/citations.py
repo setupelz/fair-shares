@@ -40,6 +40,11 @@ BUNKER_TARGETS = ("rcbs", "rcb-pathways")
 #: Registry entry for the scenario ensemble. `active_sources` names it "ar6".
 SCENARIO_SOURCES = {"ar6": "ipcc_ar6_gidden"}
 
+#: Sources behind the scenario-derived terms of every budget: the scenario
+#: sets, the AR6 bunker pathways and the observed CO2 that expresses each
+#: budget from 2020.
+BUDGET_TERM_SOURCES = ("ipcc_ar6_gidden", "ipcc_ar6_bunkers", "gcb-2025-global")
+
 #: `active_sources` values that name something other than a data source, so are
 #: not expected to appear in the registry.
 NOT_DATA_SOURCES = frozenset({"pathway", "rcbs", "rcb-pathways"})
@@ -89,16 +94,51 @@ SPECIAL_TERMS = {
         "values derived from it. Its ShareAlike licence also applies to "
         "anything you redistribute that is derived from it."
     ),
+    "primap-202609": (
+        "PRIMAP-hist v2.8 is licensed CC BY-NC-SA 4.0: non-commercial use, "
+        "with ShareAlike terms on anything you redistribute that is derived "
+        "from it, including allocation results. Commercial use needs a licence "
+        "from the dataset authors. For CC BY outputs, run with primap-202503 "
+        "or gcb-2025 instead."
+    ),
     "unu-wider-2025": (
         "WIID is licensed for non-commercial use with ShareAlike terms. Check "
         "them before redistributing anything derived from it, including a table "
         "of Gini values."
+    ),
+    "sci-2025": (
+        "The Scenario Compass ensemble may be used for scientific research. "
+        "Its README asks users to adhere strictly to the Nature editorial "
+        "policies and embargo rules until Riahi et al. is formally published. "
+        "Check those terms before sharing results that draw on it."
     ),
     "un-owid-2025": (
         "Our World in Data does not re-license the underlying UN figures. If "
         "you republish population data, check the UN's own terms of use."
     ),
 }
+
+
+def _sci_in_bunker_share() -> bool:
+    """Whether the bunker share of rcbs.yaml reads the SCI workbook on this machine."""
+    try:
+        import yaml
+
+        from fair_shares.library import paths
+        from fair_shares.library.utils.data.scenario_sources import (
+            get_scenario_source,
+            source_data_path,
+        )
+
+        rcb_yaml = yaml.safe_load((paths.data_dir() / "rcbs" / "rcbs.yaml").read_text())
+        sources = (rcb_yaml.get("bunkers") or {}).get(
+            "scenario_sources", ["ar6", "sci"]
+        )
+        return (
+            "sci" in sources and source_data_path(get_scenario_source("sci")).exists()
+        )
+    except Exception:
+        return False
 
 
 def resolve_source_names(
@@ -142,6 +182,9 @@ def resolve_source_names(
         from fair_shares.library.utils.data.config import get_bunkers_source
 
         names += ["rcbs", get_bunkers_source(active_sources.get("emissions"))]
+        names += [n for n in BUDGET_TERM_SOURCES if n not in names]
+        if _sci_in_bunker_share():
+            names.append("sci-2025")
 
     if _uses_scenarios(target, emission_category):
         scenario = active_sources.get("scenario", "ar6")
@@ -150,7 +193,8 @@ def resolve_source_names(
             raise ConfigurationError(
                 f"scenario source {scenario!r} is not in the data registry."
             )
-        names.append(resolved)
+        if resolved not in names:
+            names.append(resolved)
 
     for key, value in active_sources.items():
         if key in DATA_SOURCE_KEYS or key in {"target", "scenario"}:

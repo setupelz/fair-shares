@@ -15,14 +15,17 @@
 # ---
 
 # %% [markdown]
-# # Derive NGHGI-Consistent Emission Categories (Melo v4.0.0)
+# # Derive NGHGI-Consistent Emission Categories
 #
 # Derive a parallel set of NGHGI-consistent emission categories from the
 # active bookkeeping-model (BM) source's FFI and non-LULUCF Kyoto primitives
 # (typically PRIMAP, configurable via ``active_emissions_source``) plus the
 # Melo et al. (2026) country-reported LULUCF CO2 timeseries. Outputs live
 # alongside the BM originals under ``emiss_<category>_nghgi_timeseries.csv``.
-# 187 country coverage, NGHGI years 2000-2024.
+#
+# The LULUCF source is the ``active_lulucf_source`` parameter (a key of the
+# ``lulucf`` section of ``data_sources_unified.yaml``, e.g. ``melo-2026`` for
+# v3.1 or ``melo-2026-v4`` for v4.0.0). The Snakefile passes it in.
 #
 # ## Accounting invariant
 #
@@ -38,12 +41,13 @@
 # - `emiss_co2-ffi_timeseries.csv` — BM-source fossil CO2 (LULUCF-independent)
 # - `emiss_all-ghg-ex-co2-lulucf_timeseries.csv` — BM-source all Kyoto
 #   excluding CO2-LULUCF
-# - `timeseries_NGHGI_gap-filled_4.0.0.csv` — Melo v4.0.0 country-level NGHGI LULUCF
+# - the active LULUCF source's CSV (e.g. `timeseries_NGHGI_v3.1.csv`) —
+#   Melo country-level NGHGI LULUCF
 #
 # **Outputs** (NGHGI-consistent, ``_nghgi`` suffix):
 # - `emiss_co2-lulucf_nghgi_timeseries.csv` — Melo NGHGI (Melo years)
 # - `emiss_co2_nghgi_timeseries.csv` — co2-ffi + co2-lulucf
-# - `emiss_non-co2_nghgi_timeseries.csv` — all-ghg-ex-co2-lulucf − co2-ffi
+# - `emiss_non-co2_nghgi_timeseries.csv` — all-ghg-ex-co2-lulucf - co2-ffi
 # - `emiss_all-ghg_nghgi_timeseries.csv` — co2 + non-co2
 # - `emiss_all-ghg-ex-co2-lulucf_nghgi_timeseries.csv` — co2-ffi + non-co2
 #   (recomputed; identical to the BM version by construction)
@@ -58,6 +62,8 @@
 # ## Set paths and library imports
 
 # %%
+import re
+
 import matplotlib.pyplot as plt
 import pandas as pd
 import yaml
@@ -110,11 +116,11 @@ else:
 
     emission_category = "co2"
     active_sources = {
-        "emissions": "primap-202503",
+        "emissions": "primap-202609",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",
-        "lulucf": "melo-2026-v4",
+        "lulucf": "melo-2026-v4",  # or "melo-2026"
         "target": "rcbs",
     }
 
@@ -152,6 +158,11 @@ lulucf_params = lulucf_config["data_parameters"]
 
 # Paths
 melo_path = project_root / lulucf_path
+# Release label from the file name (timeseries_NGHGI_v3.1.csv -> v3.1).
+_version_match = re.search(r"_v?(\d+(?:\.\d+)+)\.csv$", melo_path.name)
+if _version_match is None:
+    raise ValueError(f"Cannot read a Melo release from file name: {melo_path.name}")
+melo_version = f"v{_version_match.group(1)}"
 intermediate_dir_str = f"output/{source_id}/intermediate/emissions"
 intermediate_dir = project_root / intermediate_dir_str
 intermediate_dir.mkdir(parents=True, exist_ok=True)
@@ -165,6 +176,7 @@ has_non_co2_input = "all-ghg-ex-co2-lulucf" in emissions_config[
 
 print(f"Active LULUCF source: {active_lulucf_source}")
 print(f"LULUCF data path: {melo_path}")
+print(f"Melo release: {melo_version}")
 print(f"Intermediate directory: {intermediate_dir_str}")
 print(f"Emissions world key: {emissions_world_key}")
 if not has_non_co2_input:
@@ -175,13 +187,13 @@ if not has_non_co2_input:
     )
 
 # %% [markdown]
-# ## Step 1: Load Melo v4.0.0 NGHGI LULUCF data
+# ## Step 1: Load Melo NGHGI LULUCF data
 #
 # The Melo dataset provides country-reported (NGHGI convention) LULUCF CO2 fluxes
-# for 187 countries from 2000-2024. Values are in MtCO2/yr where negative = net sink.
+# by country and year (coverage depends on the release). Values are in MtCO2/yr where negative = net sink.
 
 # %%
-print("Loading Melo v4.0.0 NGHGI LULUCF data...")
+print(f"Loading Melo {melo_version} NGHGI LULUCF data...")
 
 if not melo_path.exists():
     raise DataLoadingError(f"Melo LULUCF file not found: {melo_path}")
@@ -299,7 +311,7 @@ nghgi_metadata = {
     "nghgi_start_year": nghgi_start_year,
     "nghgi_end_year": nghgi_end_year,
     "splice_year": nghgi_end_year,
-    "source": "Melo et al. 2026, v4.0.0",
+    "source": f"Melo et al. 2026, {melo_version}",
     "n_countries": len(melo_countries_raw),
     "nghgi_emissions_files": nghgi_emissions_files,
 }
@@ -460,7 +472,7 @@ if has_non_co2_input:
 
 # %%
 # BM-vs-NGHGI LULUCF at world level. BM co2-lulucf is derived implicitly as
-# (BM co2 − co2-ffi) from the BM total CO2 file below; not every pipeline
+# (BM co2 - co2-ffi) from the BM total CO2 file below; not every pipeline
 # configuration produces a standalone BM emiss_co2-lulucf_timeseries.csv.
 bm_co2_path = intermediate_dir / "emiss_co2_timeseries.csv"
 print(f"\n=== BM ({active_emissions_source}) vs NGHGI LULUCF at world level ===")

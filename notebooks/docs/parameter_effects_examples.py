@@ -17,321 +17,373 @@
 # %% [markdown]
 # # Parameter Effects Documentation Examples
 #
-# **Purpose:** Generate real allocation examples showing how parameters affect outcomes.
+# Generates every number in `docs/science/parameter-effects.md`.
 #
-# This notebook produces tables for `docs/science/parameter-effects.md` demonstrating:
-# - `allocation_year` / `first_allocation_year` effects
-# - `pre_allocation_responsibility_weight` effects
-# - `capability_weight` effects
-# - `income_floor` effects
+# Run from the repository root:
 #
-# **Output:** Markdown tables with real numeric values for USA, India, Germany
+#     uv run python notebooks/docs/parameter_effects_examples.py
+#
+# The script prints the data sources, the fair-shares version and one markdown
+# table per page section. All examples use library defaults except the
+# parameter each table varies.
 
 # %%
-# Imports
+import warnings
 
+import numpy as np
 import pandas as pd
 from pyprojroot import here
 
+import fair_shares
 from fair_shares.library.allocations.budgets import (
     equal_per_capita_budget,
     per_capita_adjusted_budget,
     per_capita_adjusted_gini_budget,
 )
-from fair_shares.library.allocations.results import BudgetAllocationResult
+from fair_shares.library.allocations.pathways import (
+    cumulative_per_capita_convergence_adjusted,
+)
+from fair_shares.library.exceptions import AllocationError
 from fair_shares.library.utils import (
     calculate_budget_from_rcb,
     ensure_string_year_columns,
     setup_data,
 )
+from fair_shares.library.utils.math.allocation import calculate_gini_adjusted_gdp
+from fair_shares.library.utils.math.pathways import generate_rcb_pathway_scenarios
 
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 project_root = here()
 
 # %% [markdown]
-# ## Setup Data Pipeline
+# ## Data sources
 #
-# Load required datasets for allocation calculations
+# The only block to edit when the library defaults change. Keep these keys
+# equal to the defaults in `src/fair_shares/conf/data_sources/`, then rerun
+# the script and paste its tables into the page.
 
 # %%
-# Data source configuration
+# ---- DATA SOURCES (library defaults) ---------------------------------------
 active_sources = {
     "target": "rcbs",
-    "emissions": "primap-202503",
+    "emissions": "primap-202609",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
     "gini": "wdi-2025",
-    "lulucf": "melo-2026",
+    "lulucf": "melo-2026-v4",
 }
-
 emission_category = "co2-ffi"
+rcb_source, rcb_scenario = "lamboll_2023", "1.5p50"
+# -----------------------------------------------------------------------------
 
-# Setup data pipeline
-print("Setting up data pipeline...")
+# %%
 setup_info = setup_data(
     project_root=project_root,
     active_sources=active_sources,
     emission_category=emission_category,
     verbose=False,
 )
-
-# Extract paths and metadata
 processed_dir = setup_info["paths"]["processed_dir"]
-print(f"Data processed in: {processed_dir}")
 
-# Load country data
-print("Loading country data...")
-emiss_path = processed_dir / f"country_emissions_{emission_category}_timeseries.csv"
-emissions_ts = pd.read_csv(emiss_path)
-emissions_ts = emissions_ts.set_index(["iso3c", "unit", "emission-category"])
-emissions_ts = ensure_string_year_columns(emissions_ts)
 
-gdp_ts = pd.read_csv(processed_dir / "country_gdp_timeseries.csv")
-gdp_ts = gdp_ts.set_index(["iso3c", "unit"])
-gdp_ts = ensure_string_year_columns(gdp_ts)
+def load_ts(name: str, index: list[str]) -> pd.DataFrame:
+    """Load a processed timeseries CSV with string year columns."""
+    df = pd.read_csv(processed_dir / name).set_index(index)
+    return ensure_string_year_columns(df)
 
-population_ts = pd.read_csv(processed_dir / "country_population_timeseries.csv")
-population_ts = population_ts.set_index(["iso3c", "unit"])
-population_ts = ensure_string_year_columns(population_ts)
 
-gini_ts = pd.read_csv(processed_dir / "country_gini_stationary.csv")
-gini_ts = gini_ts.set_index(["iso3c", "unit"])
-
-# Load RCB data and world emissions
+emissions_ts = load_ts(
+    f"country_emissions_{emission_category}_timeseries.csv",
+    ["iso3c", "unit", "emission-category"],
+)
+gdp_ts = load_ts("country_gdp_timeseries.csv", ["iso3c", "unit"])
+population_ts = load_ts("country_population_timeseries.csv", ["iso3c", "unit"])
+gini_ts = pd.read_csv(processed_dir / "country_gini_stationary.csv").set_index(
+    ["iso3c", "unit"]
+)
+world_emissions_df = load_ts(
+    f"world_emissions_{emission_category}_timeseries.csv",
+    ["iso3c", "unit", "emission-category"],
+)
 rcbs_df = pd.read_csv(processed_dir / f"rcbs_{emission_category}.csv")
-world_emiss_path = processed_dir / f"world_emissions_{emission_category}_timeseries.csv"
-world_emissions_df = pd.read_csv(world_emiss_path)
-world_emissions_df = world_emissions_df.set_index(
-    ["iso3c", "unit", "emission-category"]
-)
-world_emissions_df = ensure_string_year_columns(world_emissions_df)
-
-# Extract RCB value for 1.5C scenario (50% probability)
 rcb_row = rcbs_df[
-    (rcbs_df["climate-assessment"] == "1.5C") & (rcbs_df["quantile"] == 0.5)
-].iloc[0]
-rcb_value = rcb_row["rcb_2020_nghgi_mt"]
+    (rcbs_df["source"] == rcb_source) & (rcbs_df["scenario"] == rcb_scenario)
+]
+rcb_value = float(rcb_row["rcb_2020_nghgi_mt"].iloc[0])
 
-# Calculate carbon budget
-budget = calculate_budget_from_rcb(
-    rcb_value=rcb_value,
-    allocation_year=2020,
-    world_scenario_emissions_ts=world_emissions_df,
-    verbose=False,
+gdp_years = [int(c) for c in gdp_ts.columns if gdp_ts[c].notna().any()]
+emiss_years = [int(c) for c in emissions_ts.columns]
+groups = set(population_ts.index.get_level_values("iso3c"))
+n_countries = len(groups - {"ROW"})
+
+print("## Provenance\n")
+print(f"- fair-shares version: {fair_shares.__version__}")
+for key, value in active_sources.items():
+    print(f"- {key}: {value}")
+print(f"- emission category: {emission_category}")
+print(f"- countries: {n_countries}, plus rest of world: {'ROW' in groups}")
+print(f"- GDP years: {min(gdp_years)}-{max(gdp_years)}")
+print(f"- emissions years: {min(emiss_years)}-{max(emiss_years)}")
+print(
+    f"- budget: {rcb_source} {rcb_scenario}, rebased to 2020: "
+    f"{rcb_value / 1e3:.1f} GtCO2"
 )
+print()
 
-print(f"RCB value (2020): {rcb_value / 1e3:.1f} GtCO2")  # values are in Mt
-print(f"Global carbon budget (2020): {budget / 1e3:.1f} GtCO2")
-print("Data loaded successfully!")
+countries = {"USA": "USA", "IND": "India", "DEU": "Germany"}
+
+
+def shares_pct(result) -> pd.Series:
+    """Cumulative allocation shares in percent, indexed by iso3c."""
+    shares = result.relative_shares_cumulative_emission.iloc[:, 0]
+    return shares.groupby(level="iso3c").sum() * 100
+
+
+def print_table(header: list[str], rows: dict[str, list[str]]) -> None:
+    """Print a markdown table with a Country column."""
+    print("| " + " | ".join(header) + " |")
+    print("|" + "|".join("---" for _ in header) + "|")
+    for name, cells in rows.items():
+        print("| " + " | ".join([name, *cells]) + " |")
+    print()
+
 
 # %% [markdown]
-# ## Example 1: allocation_year Effects
-#
-# Show how different allocation years affect remaining budgets from 2020.
-# The main effect is historical emissions subtraction, not population shifts.
-
+# ## Example 1: allocation_year (remaining budget from 2020)
 
 # %%
-def get_country_shares(
-    result: BudgetAllocationResult, countries: list[str]
-) -> dict[str, float]:
-    """Extract allocation shares for specified countries as percentages."""
-    shares = result.relative_shares_cumulative_emission
-    country_shares = {}
-    for country in countries:
-        if country in shares.index.get_level_values("iso3c"):
-            # Get share for this country (sum to 1, so multiply by 100 for percentage)
-            # Extract the scalar value from the series
-            share_value = shares.loc[country].values[0] * 100
-            country_shares[country] = float(share_value)
-        else:
-            country_shares[country] = 0.0
-    return country_shares
-
-
-# Countries to compare
-example_countries = ["USA", "IND", "DEU"]
-
-# Test different allocation years — show remaining budget from 2020
 allocation_years = [2020, 1990, 1900]
-allocation_year_remaining = {}
-
+remaining = {c: [] for c in countries}
 for year in allocation_years:
-    # Global budget from allocation_year
     year_budget = calculate_budget_from_rcb(
         rcb_value=rcb_value,
         allocation_year=year,
         world_scenario_emissions_ts=world_emissions_df,
         verbose=False,
     )
-
-    # Get population shares
-    result = equal_per_capita_budget(
-        population_ts=population_ts,
-        allocation_year=year,
-        emission_category=emission_category,
+    shares = shares_pct(
+        equal_per_capita_budget(
+            population_ts=population_ts,
+            allocation_year=year,
+            emission_category=emission_category,
+        )
     )
-    shares = result.relative_shares_cumulative_emission
+    emiss_cols = [str(y) for y in range(year, 2020)]
+    for c in countries:
+        actual = (
+            float(emissions_ts.loc[c][emiss_cols].sum(axis=1).iloc[0])
+            if emiss_cols
+            else 0.0
+        )
+        remaining[c].append((shares[c] / 100 * year_budget - actual) / 1e3)
 
-    # Remaining budget = (share × global budget) - actual emissions to 2020
-    country_remaining = {}
-    for c in example_countries:
-        share = float(shares.loc[c].values[0])
-        alloc = share * year_budget  # in Mt
-        emiss_cols = [
-            str(y) for y in range(year, 2020) if str(y) in emissions_ts.columns
-        ]
-        if c in emissions_ts.index.get_level_values("iso3c") and emiss_cols:
-            actual = float(emissions_ts.loc[c][emiss_cols].sum(axis=1).values[0])
-        else:
-            actual = 0.0
-        country_remaining[c] = (alloc - actual) / 1e3  # Mt to Gt
-    allocation_year_remaining[year] = country_remaining
-
-# Create markdown table
-print("## allocation_year Effects (Remaining Budget from 2020)\n")
-print(
-    "| Country | allocation_year=2020 | allocation_year=1990 | allocation_year=1900 |"
+print("## allocation_year\n")
+print_table(
+    ["Country", *[f"allocation_year={y}" for y in allocation_years]],
+    {
+        countries[c]: [f"{v:+.1f} GtCO2" for v in remaining[c]]
+        for c in countries
+    },
 )
-print("|---------|---------------------|---------------------|---------------------|")
-for country in example_countries:
-    country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
-    remaining = [allocation_year_remaining[year][country] for year in allocation_years]
-    print(
-        f"| {country_name} | {remaining[0]:+.1f} GtCO2 | {remaining[1]:+.1f} GtCO2 | {remaining[2]:+.1f} GtCO2 |"
-    )
-print()
 
 # %% [markdown]
-# ## Example 2: pre_allocation_responsibility_weight Effects
-#
-# Show how responsibility weighting affects shares for per-capita-adjusted-budget
+# ## Example 2: each adjustment in isolation
 
 # %%
-# Test responsibility ON vs OFF (with capability_weight=0.0).
-# When capability_weight=0.0, any non-zero pre_allocation_responsibility_weight
-# is the sole adjustment — its specific value doesn't matter (only the ratio
-# between weights affects results). So we show OFF (0.0) vs ON (1.0).
-pre_allocation_responsibility_weights = [0.0, 1.0]
-responsibility_results = {}
 
-for weight in pre_allocation_responsibility_weights:
-    result = per_capita_adjusted_budget(
-        population_ts=population_ts,
-        country_actual_emissions_ts=emissions_ts,
-        gdp_ts=gdp_ts,
-        allocation_year=2020,
-        emission_category=emission_category,
-        pre_allocation_responsibility_weight=weight,
-        capability_weight=0.0,  # Isolate responsibility effect
-        pre_allocation_responsibility_year=1990,
-    )
-    responsibility_results[weight] = get_country_shares(result, example_countries)
 
-# Create markdown table
-print("## pre_allocation_responsibility_weight Effects\n")
-print("Note: with capability_weight=0.0, any non-zero responsibility weight")
-print("is the sole adjustment — 0.5 and 1.0 produce identical results.\n")
-print("| Country | weight=0.0 (no adjustment) | weight=1.0 (responsibility only) |")
-print("|---------|---------------------------|----------------------------------|")
-for country in example_countries:
-    country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
-    shares = [
-        responsibility_results[weight][country] for weight in pre_allocation_responsibility_weights
-    ]
-    print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% |"
+def adjusted(rw: float, cw: float, **kwargs) -> pd.Series:
+    """Shares of per-capita-adjusted-budget at allocation_year=2020."""
+    return shares_pct(
+        per_capita_adjusted_budget(
+            population_ts=population_ts,
+            country_actual_emissions_ts=emissions_ts,
+            gdp_ts=gdp_ts,
+            allocation_year=2020,
+            emission_category=emission_category,
+            pre_allocation_responsibility_weight=rw,
+            capability_weight=cw,
+            pre_allocation_responsibility_year=1990,
+            **kwargs,
+        )
     )
-print()
+
+
+base = adjusted(0.0, 0.0)
+resp_abs = adjusted(1.0, 0.0)
+resp_pc = adjusted(1.0, 0.0, pre_allocation_responsibility_per_capita=True)
+cap = adjusted(0.0, 1.0)
+
+print("## Pre-allocation responsibility only\n")
+print_table(
+    [
+        "Country",
+        "No adjustment (both=0)",
+        "Responsibility only (default: absolute)",
+        "Responsibility only (per capita)",
+    ],
+    {
+        countries[c]: [f"{base[c]:.1f}%", f"{resp_abs[c]:.1f}%", f"{resp_pc[c]:.1f}%"]
+        for c in countries
+    },
+)
+
+print("## Capability only\n")
+print_table(
+    ["Country", "No adjustment (both=0)", "Capability only"],
+    {countries[c]: [f"{base[c]:.1f}%", f"{cap[c]:.1f}%"] for c in countries},
+)
 
 # %% [markdown]
-# ## Example 3: capability_weight Effects
-#
-# Show how capability weighting affects shares for per-capita-adjusted-budget
+# ## Example 3: weight ratio
 
 # %%
-# Test capability ON vs OFF (with pre_allocation_responsibility_weight=0.0).
-# When pre_allocation_responsibility_weight=0.0, any non-zero capability_weight
-# is the sole adjustment — its specific value doesn't matter (only the ratio
-# between weights affects results). So we show OFF (0.0) vs ON (1.0).
-capability_weights = [0.0, 1.0]
-capability_results = {}
-
-for weight in capability_weights:
-    result = per_capita_adjusted_budget(
-        population_ts=population_ts,
-        country_actual_emissions_ts=emissions_ts,
-        gdp_ts=gdp_ts,
-        allocation_year=2020,
-        emission_category=emission_category,
-        pre_allocation_responsibility_weight=0.0,  # Isolate capability effect
-        capability_weight=weight,
-    )
-    capability_results[weight] = get_country_shares(result, example_countries)
-
-# Create markdown table
-print("## capability_weight Effects\n")
-print("Note: with pre_allocation_responsibility_weight=0.0, any non-zero capability weight")
-print("is the sole adjustment — 0.5 and 1.0 produce identical results.\n")
-print("| Country | weight=0.0 (no adjustment) | weight=1.0 (capability only) |")
-print("|---------|---------------------------|------------------------------|")
-for country in example_countries:
-    country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
-    shares = [capability_results[weight][country] for weight in capability_weights]
-    print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% |"
-    )
-print()
+ratios = [(1.0, 0.0), (0.7, 0.3), (0.5, 0.5), (0.3, 0.7), (0.0, 1.0)]
+ratio_shares = [adjusted(rw, cw) for rw, cw in ratios]
+print("## Weight ratio (responsibility:capability)\n")
+print_table(
+    ["Country", *[f"{rw:.1f}:{cw:.1f}" for rw, cw in ratios]],
+    {countries[c]: [f"{s[c]:.1f}%" for s in ratio_shares] for c in countries},
+)
 
 # %% [markdown]
-# ## Example 4: income_floor Effects
-#
-# Show how different income floors affect shares for per-capita-adjusted-budget
+# ## Example 4: income_floor
 
 # %%
-# Test different income floors (USD per capita)
-# Note: income_floor requires the Gini-adjusted approach
 income_floors = [0, 7500, 15000]
-income_floor_results = {}
+floor_shares = [
+    shares_pct(
+        per_capita_adjusted_gini_budget(
+            population_ts=population_ts,
+            country_actual_emissions_ts=emissions_ts,
+            gdp_ts=gdp_ts,
+            gini_s=gini_ts,
+            allocation_year=2020,
+            emission_category=emission_category,
+            pre_allocation_responsibility_weight=0.0,
+            capability_weight=1.0,
+            income_floor=floor,
+        )
+    )
+    for floor in income_floors
+]
+print("## income_floor\n")
+print_table(
+    ["Country", *[f"floor={f}" for f in income_floors]],
+    {countries[c]: [f"{s[c]:.1f}%" for s in floor_shares] for c in countries},
+)
 
+# Capability per person, as share of GDP, and countries held at the
+# max_gini_adjustment cap (default 0.8: capability >= 20% of GDP), last GDP year.
+last = str(max(gdp_years))
+gdp_last = gdp_ts[last].droplevel("unit") * 1e3  # billion -> million
+pop_last = population_ts[last].droplevel("unit")
+gini_last = gini_ts["gini"].droplevel("unit")
+idx = gdp_last.dropna().index.intersection(pop_last.index).intersection(gini_last.index)
+cap_rows = {}
 for floor in income_floors:
-    result = per_capita_adjusted_gini_budget(
+    adj = calculate_gini_adjusted_gdp(
+        gdp_last[idx].to_numpy(),
+        gini_last[idx].to_numpy(),
+        floor,
+        pop_last[idx].to_numpy(),
+        0.8,
+    )
+    adj_s = pd.Series(adj, index=idx)
+    at_cap = int(np.sum(np.isclose(adj, 0.2 * gdp_last[idx].to_numpy())))
+    if floor == 0:
+        at_cap = 0
+    median_pc = (adj_s / pop_last[idx]).median()
+    india_frac = adj_s["IND"] / gdp_last["IND"]
+    india_rel = adj_s["IND"] / pop_last["IND"] / median_pc
+    cap_rows[f"floor={floor}"] = [
+        f"{india_frac:.0%}",
+        f"{median_pc:,.0f}",
+        f"{india_rel:.2f}",
+        f"{at_cap} of {len(idx)}",
+    ]
+print(f"## income_floor diagnostics ({last})\n")
+print_table(
+    [
+        "Floor",
+        "India capability as share of GDP",
+        "Median capability per person",
+        "India capability per person / median",
+        "Countries and groups held at the cap",
+    ],
+    cap_rows,
+)
+
+# %% [markdown]
+# ## Example 5: strict (convergence pathways)
+
+# %%
+strict_configs = [
+    ("1.5p50", 0.0, 0.0),
+    ("2p66", 0.5, 0.5),
+    ("1.5p50", 0.5, 0.5),
+]
+print("## strict\n")
+print(
+    "| Budget | Weights (responsibility:capability) | strict=True "
+    "| strict=False: USA | India | Germany | Countries above target "
+    "| Countries below target |"
+)
+print("|---|---|---|---|---|---|---|---|")
+for scen, rw, cw in strict_configs:
+    rcb_sel = rcbs_df[(rcbs_df["source"] == rcb_source) & (rcbs_df["scenario"] == scen)]
+    pathway = generate_rcb_pathway_scenarios(
+        rcb_sel, world_emissions_df, 2020, 2100, emission_category
+    ).droplevel(["climate-assessment", "quantile", "source"])
+    kwargs = dict(
         population_ts=population_ts,
         country_actual_emissions_ts=emissions_ts,
         gdp_ts=gdp_ts,
-        gini_s=gini_ts,
-        allocation_year=2020,
+        first_allocation_year=2020,
         emission_category=emission_category,
-        pre_allocation_responsibility_weight=0.0,
-        capability_weight=1.0,  # Capability only (sole adjustment when pre_allocation_responsibility_weight=0.0)
-        income_floor=floor,
+        world_scenario_emissions_ts=pathway,
+        pre_allocation_responsibility_weight=rw,
+        capability_weight=cw,
     )
-    income_floor_results[floor] = get_country_shares(result, example_countries)
-
-# Create markdown table
-print("## income_floor Effects\n")
-print("| Country | floor=0 | floor=7500 | floor=15000 |")
-print("|---------|---------|-----------|-----------|")
-for country in example_countries:
-    country_name = {"USA": "USA", "IND": "India", "DEU": "Germany"}[country]
-    shares = [income_floor_results[floor][country] for floor in income_floors]
+    try:
+        cumulative_per_capita_convergence_adjusted(strict=True, **kwargs)
+        strict_true = "feasible"
+    except AllocationError:
+        strict_true = "raises AllocationError"
+    result = cumulative_per_capita_convergence_adjusted(strict=False, **kwargs)
+    warns = result.country_warnings or {}
+    values = {k: float(v.split(":")[1]) for k, v in warns.items()}
+    ratio = {c: values.get(c, 1.0) for c in countries}
+    above = sum(v > 1.0 for v in values.values())
+    below = sum(v < 1.0 for v in values.values())
     print(
-        f"| {country_name} | {shares[0]:.1f}% | {shares[1]:.1f}% | {shares[2]:.1f}% |"
+        f"| {rcb_source} {scen} | {rw:.1f}:{cw:.1f} | {strict_true} | "
+        f"{ratio['USA']:.2f} | {ratio['IND']:.2f} | {ratio['DEU']:.2f} | "
+        f"{above} | {below} |"
     )
 print()
 
 # %% [markdown]
-# ## Summary
-#
-# The tables above show real allocation percentages for three representative countries:
-# - **USA**: High historical emissions, high GDP
-# - **India**: Large population, lower historical emissions per capita
-# - **Germany**: Medium population, high historical emissions and GDP
-#
-# **Key patterns:**
-# - Earlier `allocation_year` -> reduces shares for high historical emitters (USA, Germany)
-# - Enabling pre-allocation responsibility (weight > 0) -> penalizes historical emissions
-# - Enabling capability (weight > 0) -> reduces shares for wealthy countries (USA, Germany)
-# - Only the ratio between the two weights matters (they are normalized by their sum)
-# - Higher `income_floor` -> protects developing countries from capability adjustments
-#
-# Copy these tables into `docs/science/parameter-effects.md` for documentation.
+# ## Example 6: historical_discount_rate weights
+
+# %%
+print("## historical_discount_rate (allocation_year=2020, reference year 2019)\n")
+for rate in [0.005, 0.01]:
+    print(f"- rate={rate}: weight of 1850 emissions = {(1 - rate) ** (2019 - 1850):.0%}")
+print()
+
+# %% [markdown]
+# ## Sensitivity summary
+
+# %%
+print("## Largest change for USA, India, Germany (percentage points)\n")
+summary = {
+    "pre_allocation_responsibility_weight (0 to 1)": resp_abs - base,
+    "capability_weight (0 to 1)": cap - base,
+    "income_floor (0 to 7500)": floor_shares[1] - floor_shares[0],
+    "income_floor (0 to 15000)": floor_shares[2] - floor_shares[0],
+}
+for name, diff in summary.items():
+    d = diff[list(countries)]
+    print(f"- {name}: " + ", ".join(f"{countries[c]} {d[c]:+.1f}" for c in countries))
+print()

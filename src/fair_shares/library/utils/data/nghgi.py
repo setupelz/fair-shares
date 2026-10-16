@@ -14,17 +14,19 @@ Data structure notes:
 - NGHGI LULUCF file: CSV produced by notebook 107 from the active LULUCF
   source (Melo et al., v3.1.1 or v4.0.0)
 - Bunker file: CSV produced by notebook 108 from the active bunker source
-- AR6 category constants: YAML produced by notebook 104 (scenario preprocessing)
+- Scenario adjustments: rcb_scenario_adjustments.yaml produced by notebook 104
 """
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
 from fair_shares.library.exceptions import DataLoadingError, DataProcessingError
+
 
 def load_world_co2_lulucf(path: str | Path) -> tuple[pd.DataFrame, int]:
     """Load world-total NGHGI LULUCF CO2 timeseries from notebook-produced CSV.
@@ -174,26 +176,37 @@ def compute_cumulative_emissions(
 def compute_bunker_deduction(
     bunker_ts: pd.DataFrame,
     start_year: int,
-    net_zero_year: int,
+    net_zero_year: float | Sequence[float],
     historical_end_year: int | None = None,
+    scenario_pathway: pd.Series | None = None,
 ) -> float:
     """Compute cumulative international bunker fuel CO2 deduction.
 
-    Combines historical year-by-year values from the bunker timeseries with
-    extrapolation from the last observed annual rate for years beyond the
-    historical record.
+    The bunker series is observed to the last observed year and the scenario
+    bunker pathway after it; without a pathway, later years take the last
+    observed annual rate. The deduction is the cumulative of that series from
+    ``start_year`` to the net-zero crossing: full years plus the fraction of
+    the net-zero year (``rcb.integrate``).
+
+    With several net-zero years (one per scenario of a set), each is
+    integrated separately and the median is returned, as for the LULUCF terms.
+    The RCB pipeline uses ``bunker_deduction_from_share`` instead.
 
     Parameters
     ----------
     bunker_ts : pd.DataFrame
         Bunker fuel CO2 timeseries (from load_bunker_timeseries) in MtCO2/yr
     start_year : int
-        Start of integration window (inclusive)
-    net_zero_year : int
-        End of integration window (inclusive)
+        Start of integration window
+    net_zero_year : float or sequence of float
+        End of integration window, or one end per scenario
     historical_end_year : int, optional
         Last year taken from the historical timeseries (default: the last
         year with a value in ``bunker_ts``)
+    scenario_pathway : pd.Series, optional
+        Annual scenario bunker emissions in MtCO2/yr, indexed by year as a
+        string. Must hold every year after ``historical_end_year`` to the
+        year after the latest net-zero crossing.
 
     Returns
     -------
@@ -203,25 +216,77 @@ def compute_bunker_deduction(
     Raises
     ------
     DataProcessingError
-        If historical data is insufficient for the start_year
+        If historical data is insufficient for the start_year, or the
+        scenario pathway lacks a year it must cover
     """
+    from fair_shares.library.utils.data.rcb import integrate
+
+    observed = bunker_ts.iloc[0].dropna()
+    observed.index = [int(c) for c in observed.index]
     if historical_end_year is None:
-        observed = bunker_ts.iloc[0].dropna()
-        historical_end_year = max(int(c) for c in observed.index if _is_year(c))
+        historical_end_year = max(y for y in observed.index if _is_year(y))
+    observed = observed[observed.index <= historical_end_year]
+    if start_year not in observed.index:
+        raise DataProcessingError(
+            f"No observed bunker data for {start_year}. "
+            f"Available years: {list(observed.index[:5])}..."
+        )
 
-    historical_end = min(historical_end_year, net_zero_year)
-    historical_bunkers = compute_cumulative_emissions(
-        bunker_ts, start_year, historical_end
+    nz_years = (
+        [float(net_zero_year)]
+        if np.isscalar(net_zero_year)
+        else [float(y) for y in net_zero_year]
     )
+    last_needed = int(np.ceil(max(nz_years)))
+    future = list(range(historical_end_year + 1, last_needed + 1))
+    if scenario_pathway is not None:
+        lacking = [y for y in future if pd.isna(scenario_pathway.get(str(y)))]
+        if lacking:
+            raise DataProcessingError(
+                f"The scenario bunker pathway lacks {lacking[0]}-{lacking[-1]}."
+            )
+        later = pd.Series({y: float(scenario_pathway[str(y)]) for y in future})
+    else:
+        later = pd.Series(float(observed[historical_end_year]), index=future)
+    series = pd.concat([observed, later]) if future else observed
 
-    # Future component: extrapolate last observed rate beyond historical record
-    future_bunkers = 0.0
-    if net_zero_year > historical_end_year:
-        last_rate = float(bunker_ts[str(historical_end_year)].iloc[0])
-        future_years = net_zero_year - historical_end_year
-        future_bunkers = last_rate * future_years
+    totals = [integrate(series, start_year, nz) for nz in nz_years]
+    return float(np.median(totals))
 
-    return historical_bunkers + future_bunkers
+
+def bunker_deduction_from_share(
+    bunker_ts: pd.DataFrame,
+    share: float,
+    set_co2_after_mt: float,
+    start_year: int = 2020,
+) -> tuple[float, int]:
+    """Return the bunker deduction from a share of net CO2, and the last observed year.
+
+    Observed bunkers count from ``start_year`` to the last observed year. Later
+    years take ``share`` times ``set_co2_after_mt``, the median cumulative net
+    CO2 of the budget's scenario set from the year after the last observed
+    year to net zero.
+
+    Parameters
+    ----------
+    bunker_ts : pd.DataFrame
+        Observed bunker CO2 (from load_bunker_timeseries) in MtCO2/yr
+    share : float
+        Cumulative bunkers over cumulative net CO2 of the reporters
+    set_co2_after_mt : float
+        Median cumulative net CO2 of the set after the last observed year (Mt)
+    start_year : int
+        First year of the deduction (default 2020)
+
+    Returns
+    -------
+    tuple[float, int]
+        (deduction in Mt, always positive; last observed year)
+    """
+    observed = bunker_ts.iloc[0].dropna()
+    last_observed = max(int(c) for c in observed.index if _is_year(c))
+    total = compute_cumulative_emissions(bunker_ts, start_year, last_observed)
+    return total + share * set_co2_after_mt, last_observed
 
 
 def build_nghgi_world_co2_timeseries(

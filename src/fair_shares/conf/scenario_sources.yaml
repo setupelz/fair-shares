@@ -1,0 +1,89 @@
+# Scenario sources behind the scenario-derived budget terms.
+#
+# Each entry declares the world variables and metadata columns that notebook
+# 104 reads, the CO2 series whose cumulative to net zero matches a scenario to
+# a budget (co2_variables, summed), and the bunker variables. `terms` lists the
+# budget terms the source supplies. Notebook 104 processes the active source
+# for every term; the other sources enter the bunker share only.
+version: 2
+
+# Energy-model family of every model that enters the bunker share. The share
+# is the median of per-family medians, so a family with many runs counts once.
+# A family is the energy-model stem: versions and couplings (e.g. MAgPIE) drop.
+# A bunker reporter whose model is listed nowhere is a configuration error.
+model_families:
+  IMAGE: ["IMAGE 3.2", "IMAGE 3.3"]
+  REMIND: ["REMIND 2.1", "REMIND 3.0", "REMIND 3.5", "REMIND-MAgPIE 3.2-4.6"]
+  IMACLIM: ["IMACLIM 1.1", "IMACLIM 2.0"]
+  WITCH: ["WITCH 5.0"]
+  PROMETHEUS: ["PROMETHEUS V1", "PROMETHEUS 1.2"]
+  MUSE: ["MUSE 1.0"]
+  MESSAGE: ["MESSAGEix-GLOBIOM 1.0", "MESSAGEix-GLOBIOM_1.1", "MESSAGEix-GLOBIOM_GEI 1.0"]
+  AIM: ["AIM/Hub-Global 2.0"]
+  McKinsey: ["McKinsey 1.0"]
+  LUT-ESTM: ["LUT-ESTM 2.0"]
+
+sources:
+  ar6:
+    description: >-
+      IPCC AR6 scenarios in the NGHGI reanalysis of Gidden et al. (2023), with
+      the AR6 climate assessment (MAGICCv7.5.3) in the metadata file.
+    terms: [land-use, convention-gap, bunkers, non-co2]
+    variables:
+      co2: "AR6 Reanalysis|OSCARv3.2|Emissions|CO2"
+      co2_nghgi: "AR6 Reanalysis|OSCARv3.2|Emissions|CO2 - Direct and Indirect Fluxes"
+      afolu_direct: "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Direct"
+      afolu_indirect: "AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Indirect"
+      kyoto: "AR6 Reanalysis|OSCARv3.2|Emissions|Kyoto Gases"
+      kyoto_nghgi: "AR6 Reanalysis|OSCARv3.2|Emissions|Kyoto Gases - Direct and Indirect Fluxes"
+    co2_variables: ["AR6 Reanalysis|OSCARv3.2|Emissions|CO2"]
+    # AR6 climate category of each scenario (rule "ar6-category").
+    category_column: "Category"
+    # The at-net-zero warming columns hold the 2100 value for a scenario without
+    # a harmonised-infilled net-zero year, so the temperature-matched set needs one.
+    metadata_columns:
+      net_zero_year: "Year of netzero CO2 emissions (Harm-Infilled) table"
+      warming_median: "Median warming at year of netzero Emissions|CO2 (MAGICCv7.5.3)"
+      warming_p67: "P67 warming at year of netzero (MAGICCv7.5.3) (Harm-Infilled)"
+    # International bunker CO2 per scenario. The AR6 Scenarios Database has no
+    # bunker variable. Aviation covers domestic and international flights, so
+    # it is scaled by the international share (0.6, Weber et al. 2026).
+    # Maritime is taken whole as international shipping (Weber et al. 2026).
+    bunkers:
+      path: "data/scenarios/ipcc_ar6_bunkers/ar6_bunkers_world.csv"
+      registry_source: "ipcc_ar6_bunkers"
+      # The model's own net CO2, fetched with the bunker variables, for the share.
+      share_co2_variables: ["Emissions|CO2"]
+      components:
+        "Emissions|CO2|Energy|Demand|Transportation|Aviation": 0.6
+        "Emissions|CO2|Energy|Demand|Transportation|Maritime": 1.0
+
+  sci:
+    description: >-
+      Scenario Compass Initiative pathways ensemble (global workbook). Research
+      use under the embargo terms of its README sheet until Riahi et al. is
+      published. Never committed or redistributed.
+    version: "v1.0"
+    path: "data/scenarios/sci-2025-{version}/SCI-2025_{version}_pathways_ensemble_global.xlsx"
+    registry_source: "sci-2025"
+    # The metadata carry no warming at net zero (only peak, 2100 and
+    # exceedance), so the source supplies bunker reporters only.
+    terms: [bunkers]
+    # Harmonised CO2 of the SCI climate assessment, the series behind its warming.
+    co2_variables:
+      - "Climate Assessment|Harmonized|Emissions|CO2|AFOLU"
+      - "Climate Assessment|Harmonized|Emissions|CO2|Energy and Industrial Processes"
+    # Scenarios that pass the SCI 2025 vetting.
+    vetting:
+      column: "Vetting|SCI 2025"
+      keep: ["ok"]
+    # Scenarios carried over from AR6 count once when ar6 is also in the pool.
+    ar6_duplicate_column: "Scenario Ensemble|AR6"
+    # The ensemble reports international bunkers directly, so no aviation share.
+    # The total counts where reported; else both components.
+    bunkers:
+      total: "Emissions|CO2|Energy|Demand|Bunkers"
+      share_co2_variables: ["Emissions|CO2"]
+      components:
+        "Emissions|CO2|Energy|Demand|Bunkers|International Aviation": 1.0
+        "Emissions|CO2|Energy|Demand|Bunkers|International Shipping": 1.0

@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from fair_shares.library.exceptions import AllocationError
+from fair_shares.library.exceptions import AllocationError, ConfigurationError
 from fair_shares.library.utils.units import (
     convert_unit_robust,
     set_single_unit,
@@ -459,7 +459,7 @@ def calculate_capability_adjustment_data(
     **GDP window:** The cumulative sums of GDP and population are computed
     only over the intersection of years where both data are available. There
     is no forward-fill into post-observation years. With ``gdp_ts`` typically
-    ending at the last observed year (e.g. 2023 for ``wdi-2025``) and
+    ending at the last observed year (e.g. 2025 for ``wdi-2025``) and
     population running to ~2100, only the observed-GDP years contribute to
     the capability metric. Users who want post-observation GDP dynamics to
     enter the capability calculation should extend the input ``gdp_ts`` time
@@ -552,3 +552,146 @@ def calculate_capability_adjustment_data(
         )
 
     return capability_data
+
+
+def resolve_capability_window(
+    capability_window: tuple[int, int] | list[int] | None,
+    capability_reference_year: int | None,
+) -> tuple[int, int] | None:
+    """
+    Validate ``capability_window`` and return it as an ``(start, end)`` tuple.
+
+    Parameters
+    ----------
+    capability_window
+        Inclusive ``(start, end)`` years, or ``None``.
+    capability_reference_year
+        Snapshot year, or ``None``. The two capability modes are exclusive.
+
+    Returns
+    -------
+    tuple[int, int] | None
+        The validated window, or ``None`` when no window is set.
+
+    Raises
+    ------
+    ConfigurationError
+        If both parameters are set, or the window is not two years with
+        ``start <= end``.
+    """
+    if capability_window is None:
+        return None
+    if capability_reference_year is not None:
+        raise ConfigurationError(
+            "capability_window and capability_reference_year are mutually "
+            "exclusive. Set one capability mode only."
+        )
+    if (
+        isinstance(capability_window, str | bytes)
+        or not hasattr(capability_window, "__len__")
+        or len(capability_window) != 2
+    ):
+        raise ConfigurationError(
+            "capability_window must be two years (start, end), got "
+            f"{capability_window!r}."
+        )
+    start, end = (int(y) for y in capability_window)
+    if start > end:
+        raise ConfigurationError(
+            f"capability_window start ({start}) must be <= end ({end})."
+        )
+    return start, end
+
+
+def calculate_capability_window_data(
+    population_ts: TimeseriesDataFrame,
+    gdp_ts: TimeseriesDataFrame,
+    capability_window: tuple[int, int],
+    capability_per_capita: bool,
+    group_level: str,
+    unit_level: str,
+    ur: pint.facets.PlainRegistry,
+    gini_s: pd.DataFrame | None = None,
+    income_floor: float = 0.0,
+    max_gini_adjustment: float = 0.8,
+) -> pd.Series:
+    """
+    Calculate one capability value per group over a fixed year window.
+
+    The value is ``sum(GDP) / sum(population)`` over the inclusive window
+    (or ``sum(GDP)`` when ``capability_per_capita`` is False). This is the
+    capability indicator of Pelz et al. (2025, PNAS, SI Eq. 2) and Weber et
+    al. (2026, Nat. Commun., Eq. 18). The window is independent of the
+    allocation year, so it reads the unfiltered inputs.
+
+    Parameters
+    ----------
+    population_ts
+        Population timeseries data.
+    gdp_ts
+        GDP timeseries data.
+    capability_window
+        Inclusive ``(start, end)`` years.
+    capability_per_capita
+        If True, divide cumulative GDP by cumulative population.
+    group_level
+        Index level name for country/region grouping.
+    unit_level
+        Index level name for units.
+    ur
+        Pint unit registry.
+    gini_s
+        Optional Gini data. The adjustment applies to each year's GDP before
+        the window sum, as in the year-by-year mode.
+    income_floor
+        Income floor for the Gini adjustment. Default: 0.0.
+    max_gini_adjustment
+        Maximum reduction factor from the Gini adjustment. Default: 0.8.
+
+    Returns
+    -------
+    pd.Series
+        Capability metric indexed by ``group_level``.
+
+    Raises
+    ------
+    AllocationError
+        If the window start or end year is missing from GDP or population.
+    """
+    from fair_shares.library.utils.math.allocation import (
+        apply_gini_adjustment,
+        create_gini_lookup_dict,
+    )
+
+    start, end = capability_window
+    frames = {}
+    for name, ts in (("GDP", gdp_ts), ("population", population_ts)):
+        numeric = set_single_unit(ts, unit_level, ur=ur)
+        numeric = convert_unit_robust(numeric, "million", unit_level=unit_level, ur=ur)
+        numeric = numeric.droplevel(unit_level)
+        years = [int(c) for c in numeric.columns]
+        if start not in years or end not in years:
+            raise AllocationError(
+                f"capability_window=({start}, {end}) is outside the {name} "
+                f"data range [{min(years)}, {max(years)}]. Choose a window "
+                "inside the observed range."
+            )
+        frames[name] = numeric.loc[:, [start <= y <= end for y in years]]
+
+    gdp = frames["GDP"]
+    population = frames["population"]
+    common = gdp.columns.intersection(population.columns)
+    gdp = gdp[common]
+    population = population[common].reindex(gdp.index)
+
+    if gini_s is not None:
+        gdp = apply_gini_adjustment(
+            gdp, population, create_gini_lookup_dict(gini_s),
+            income_floor, max_gini_adjustment, group_level,
+        )
+
+    gdp_by_group = gdp.sum(axis=1).groupby(level=group_level).sum()
+    if not capability_per_capita:
+        return gdp_by_group
+    pop_by_group = population.sum(axis=1).groupby(level=group_level).sum()
+    return gdp_by_group / pop_by_group

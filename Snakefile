@@ -7,7 +7,7 @@
 #    Example use (run programmatically in the notebooks):
 #     snakemake --config \
 #       emission_category=co2-ffi \
-#       active_emissions_source=primap-202503 \
+#       active_emissions_source=primap-202609 \
 #       active_gdp_source=wdi-2025 \
 #       active_population_source=un-owid-2025 \
 #       active_gini_source=wdi-2025 \
@@ -56,9 +56,9 @@ if emission_category is None:
     raise ValueError(
         "Required parameter: emission_category\n"
         "Example: snakemake --config emission_category=co2-ffi "
-        "active_emissions_source=primap-202503 active_gdp_source=wdi-2025 "
+        "active_emissions_source=primap-202609 active_gdp_source=wdi-2025 "
         "active_population_source=un-owid-2025 active_gini_source=wdi-2025 "
-        "active_target_source=pathway active_lulucf_source=melo-2026\n\n"
+        "active_target_source=pathway active_lulucf_source=melo-2026-v4\n\n"
         "For custom allocations, use: notebooks/301_custom_fair_share_allocation.py"
     )
 
@@ -159,7 +159,7 @@ if _needs_lulucf and active_lulucf_source is None:
         f"Required parameter: active_lulucf_source\n"
         f"emission_category='{emission_category}' with target='{active_target_source}' "
         f"needs LULUCF preprocessing (NGHGI corrections and/or bunker data).\n"
-        f"Example: --config ... active_lulucf_source=melo-2026"
+        f"Example: --config ... active_lulucf_source=melo-2026-v4"
     )
 
 # Historical series that the scenario rule declares as input. Notebook 107
@@ -178,6 +178,14 @@ _scenario_yaml = _full_yaml.get("scenarios", {}).get(_scenario_source_key, {}) i
 
 # Scenario notebook: read from scenarios config (e.g. "104_data_preprocess_scenarios_ar6")
 _scenario_nb_stem = _scenario_yaml.get("notebook", "104_data_preprocess_scenarios_ar6")
+
+# Emissions notebook: one PRIMAP notebook serves every PRIMAP release, named by
+# the source's `notebook` key; other sources default to a per-source notebook.
+# The executed copy keeps the per-source name.
+_emiss_nb_stem = (
+    _full_yaml.get("emissions", {}).get(active_emissions_source, {}).get("notebook")
+    or f"101_data_preprocess_emiss_{active_emissions_source}"
+)
 
 # Master notebook: budget mode uses 100_rcbs, everything else uses 100_pathways.
 MASTER_NOTEBOOKS = {
@@ -343,7 +351,7 @@ rule preprocess_emiss:
     separate timeseries files needed for non-CO2 derivation.
     """
     input:
-        notebook=f"{NOTEBOOK_DIR}/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
+        notebook=f"{NOTEBOOK_DIR}/{_emiss_nb_stem}.ipynb",
         config=f"{OUTPUT_DIR}/config.yaml",
     output:
         notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
@@ -414,10 +422,11 @@ if _needs_lulucf:
 
         Runs notebook 107 after notebook 101 to produce NGHGI-consistent
         co2-lulucf, co2, non-co2, all-ghg, and all-ghg-ex-co2-lulucf.
-        Overwrites the PRIMAP BM co2-lulucf with Melo NGHGI data.
+        Overwrites the PRIMAP BM co2-lulucf with Melo NGHGI data. One notebook
+        serves every LULUCF source; active_lulucf_source is a papermill param.
         """
         input:
-            notebook=f"{NOTEBOOK_DIR}/107_derive_nghgi_categories_{active_lulucf_source}.ipynb",
+            notebook=f"{NOTEBOOK_DIR}/107_derive_nghgi_categories.ipynb",
             config=f"{OUTPUT_DIR}/config.yaml",
             emiss_notebook=f"{OUTPUT_DIR}/notebooks/101_data_preprocess_emiss_{active_emissions_source}.ipynb",
         output:
@@ -567,11 +576,12 @@ if uses_scenarios:
                     from fair_shares.library.utils.data.non_co2 import derive_non_co2_world_scenarios
                     import pandas as _pd
 
+                    # Per-budget medians: each budget's non-CO2 comes from its own scenario set.
                     _scen_dir = Path(f"{OUTPUT_DIR}/intermediate/scenarios")
                     _idx = ["climate-assessment", "quantile", "source", "iso3c", "unit", "emission-category"]
-                    _ffi = _pd.read_csv(_scen_dir / "scenarios_co2-ffi_timeseries.csv").set_index(_idx)
+                    _ffi = _pd.read_csv(_scen_dir / "scenarios_co2-ffi_by_budget_timeseries.csv").set_index(_idx)
                     _ffi = ensure_string_year_columns(_ffi)
-                    _ghg = _pd.read_csv(_scen_dir / "scenarios_all-ghg-ex-co2-lulucf_timeseries.csv").set_index(_idx)
+                    _ghg = _pd.read_csv(_scen_dir / "scenarios_all-ghg-ex-co2-lulucf_by_budget_timeseries.csv").set_index(_idx)
                     _ghg = ensure_string_year_columns(_ghg)
                     _nc = derive_non_co2_world_scenarios(_ghg, _ffi)
                     _nc.reset_index().to_csv(output.non_co2_scenarios, index=False)
@@ -609,8 +619,9 @@ if uses_scenarios:
                     [f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{_co2_comp}_timeseries.csv"]
                     if _allocation_mode == "rcb-pathway"
                     else expand(
-                        f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{{cat}}_timeseries.csv",
+                        f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_{{cat}}{{suffix}}_timeseries.csv",
                         cat=SCENARIO_CATEGORIES,
+                        suffix=["", "_by_budget"] if _allocation_mode == "budget" else [""],
                     )
                 ),
             run:
@@ -684,11 +695,14 @@ if _needs_non_co2_derivation:
     # preprocess_scenarios_for_decomposition (before 106 overwrites co2-ffi).
     if _allocation_mode != "rcb-pathway":
 
+        # A budget target pairs each budget with the non-CO2 of its own scenario set.
+        _nonco2_parent = "_by_budget" if _allocation_mode == "budget" else ""
+
         rule derive_non_co2_scenarios:
             """Derive non-CO2 scenarios by subtraction."""
             input:
-                co2_ffi=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_co2-ffi_timeseries.csv",
-                allghg_ex=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_all-ghg-ex-co2-lulucf_timeseries.csv",
+                co2_ffi=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_co2-ffi{_nonco2_parent}_timeseries.csv",
+                allghg_ex=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_all-ghg-ex-co2-lulucf{_nonco2_parent}_timeseries.csv",
             output:
                 non_co2=f"{OUTPUT_DIR}/intermediate/scenarios/scenarios_non-co2_timeseries.csv",
             run:

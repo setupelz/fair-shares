@@ -1,8 +1,14 @@
 """
 Remaining Carbon Budget (RCB) processing utilities.
 
-Functions for parsing RCB scenario strings and converting RCB values between
-different baseline years with adjustments for bunkers and LULUCF.
+Functions for parsing RCB labels, for the scenario accounting behind the
+scenario-derived budget terms, and for converting RCB values between baseline
+years with adjustments for bunkers and LULUCF.
+
+Accounting of a scenario series: the series is linear between its reported
+years, and a year's value is its flow over the whole year. The net-zero year is
+the first zero crossing of that line. Every cumulative to net zero sums the full
+years from its start and adds the fraction of the net-zero year (``integrate``).
 """
 
 from __future__ import annotations
@@ -10,6 +16,7 @@ from __future__ import annotations
 import warnings
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pandas as pd
 
 from fair_shares.library.exceptions import ConfigurationError, DataProcessingError
@@ -18,18 +25,27 @@ from fair_shares.library.utils.units import get_default_unit_registry
 if TYPE_CHECKING:
     from fair_shares.library.utils.dataframes import TimeseriesDataFrame
 
-# AR6 category behind each budget label under the "ar6-category" rule.
-AR6_CATEGORY_BY_RCB_LABEL = {"1.5p50": "C1", "2p83": "C2", "2p66": "C3"}
+# AR6 WGIII category paired with a budget label under the "ar6-category" rule
+# (AR6 WGIII Annex III: C1 holds the 1.5 C p50 budget, C3 >67% below 2 C, C4
+# >50% below 2 C).
+AR6_CATEGORY_BY_RCB_LABEL = {"1.5p50": "C1", "2p67": "C3", "2p50": "C4"}
 
-# AR6 metadata column that the "peak-warming-band" rule reads.
-PEAK_WARMING_COLUMN = "Median peak warming (MAGICCv7.5.3)"
+# Labels renamed in rcbs.yaml: these sources publish 67% budgets.
+LABEL_ALIASES = {
+    "forster_2024": {"2p66": "2p67"},
+    "ar6_2020": {"2p66": "2p67"},
+}
 
-# Scenario metadata column that holds ``net_zero_year`` of each scenario.
-NET_ZERO_YEAR_COLUMN = "net_zero_year"
-
-# A source in rcbs.yaml without a ``scenario_selection`` field uses this rule.
-DEFAULT_SCENARIO_SELECTION = "ar6-category"
-DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH = 0.05
+# Scenario selection rules. "role-matched" uses the volume-matched set for the
+# integral terms and the temperature-matched set for the non-CO2 pathway.
+DEFAULT_SCENARIO_SELECTION = "role-matched"
+SCENARIO_SELECTION_RULES = ("role-matched", "ar6-category")
+REMOVED_SELECTION_RULES = (
+    "warming-at-net-zero",
+    "peak-warming",
+    "peak-warming-band",
+    "end-of-century",
+)
 
 # Largest number of trailing rebase years that take the last observed value.
 DEFAULT_REBASE_FILL_MAX_YEARS = 1
@@ -41,12 +57,12 @@ def parse_rcb_scenario(scenario_string: str) -> tuple[str, str]:
 
     RCB scenario strings follow the format "TEMPpPROB" where TEMP is the
     temperature target (e.g., "1.5" or "2") and PROB is the probability
-    as a percentage (e.g., "50" or "66").
+    as a percentage (e.g., "50" or "67").
 
     Parameters
     ----------
     scenario_string : str
-        RCB scenario string (e.g., "1.5p50", "2p66")
+        RCB scenario string (e.g., "1.5p50", "2p67")
 
     Returns
     -------
@@ -74,52 +90,160 @@ def parse_rcb_scenario(scenario_string: str) -> tuple[str, str]:
     except ValueError:
         raise DataProcessingError(
             f"Invalid probability value in RCB scenario: {probability}. "
-            f"Expected integer percentage (e.g., '50', '66')"
+            f"Expected integer percentage (e.g., '50', '67')"
         )
 
     return climate_assessment, quantile
 
 
-def _ar6_category(source: str, label: str) -> str:
-    """Return the AR6 category mapped to a budget label, or raise."""
-    if label not in AR6_CATEGORY_BY_RCB_LABEL:
-        raise ConfigurationError(
-            f"RCB source '{source}', label '{label}': no AR6 category is mapped "
-            f"to this label (mapped labels: {list(AR6_CATEGORY_BY_RCB_LABEL)}) "
-            f"and the source does not use the peak-warming band rule. Set "
-            f"'scenario_selection: peak-warming-band' for this source in "
-            f"rcbs.yaml, or use a mapped label."
-        )
-    return AR6_CATEGORY_BY_RCB_LABEL[label]
-
-
-def net_zero_year(co2_emissions: pd.Series) -> int | None:
+def canonical_label(source: str, label: str) -> str:
     """
-    Return the first year in which total CO2 emissions are at or below zero.
+    Return the current name of a budget label, warning on a renamed one.
 
-    The deductions of a budget end in this year, and the peak-warming band
-    keeps only scenarios that have one.
+    forster_2024 and ar6_2020 publish 67% budgets, once labelled "2p66". The
+    old label reads as "2p67" with a DeprecationWarning.
+    """
+    renamed = LABEL_ALIASES.get(source, {}).get(label)
+    if renamed is None:
+        return label
+    warnings.warn(
+        f"RCB source '{source}': label '{label}' is deprecated. The source "
+        f"publishes this budget at 67%; use '{renamed}'.",
+        DeprecationWarning,
+        stacklevel=2,
+    )
+    return renamed
+
+
+def canonical_scenarios(source: str, scenarios: dict) -> dict:
+    """Return the budgets of one rcbs.yaml source under their current labels."""
+    return {canonical_label(source, label): value for label, value in scenarios.items()}
+
+
+def label_temperature(source: str, label: str) -> float:
+    """Return the temperature of a budget label, or raise for a non-numeric one."""
+    climate_assessment, _ = parse_rcb_scenario(label)
+    try:
+        return float(climate_assessment.removesuffix("C"))
+    except ValueError:
+        raise ConfigurationError(
+            f"RCB source '{source}', label '{label}': the label needs a numeric "
+            f"temperature before 'p' (e.g. '1.5p50')."
+        ) from None
+
+
+def resolve_scenario_selection(source: str, selection: str | None) -> str:
+    """
+    Return the scenario selection rule of an RCB source.
+
+    ``None`` gives "role-matched". "ar6-category" pairs the labels of
+    ``AR6_CATEGORY_BY_RCB_LABEL`` with their AR6 category; its other labels
+    use the role-matched sets.
+
+    Raises
+    ------
+    ConfigurationError
+        If the rule is unknown or removed
+    """
+    if selection is None:
+        return DEFAULT_SCENARIO_SELECTION
+    if selection in REMOVED_SELECTION_RULES:
+        raise ConfigurationError(
+            f"RCB source '{source}': scenario_selection '{selection}' was removed. "
+            f"Every budget now uses role-matched sets: a volume-matched set for "
+            f"the land-use, convention-gap and bunker terms and a "
+            f"temperature-matched set for the non-CO2 pathway. Delete the field, "
+            f"or set 'ar6-category' for an AR6 budget."
+        )
+    if selection not in SCENARIO_SELECTION_RULES:
+        raise ConfigurationError(
+            f"RCB source '{source}': unknown scenario_selection '{selection}'. "
+            f"Expected one of {list(SCENARIO_SELECTION_RULES)}."
+        )
+    return selection
+
+
+def _points(series: pd.Series) -> tuple[np.ndarray, np.ndarray]:
+    """Return the reported (year, value) points of a series, sorted by year."""
+    values = pd.to_numeric(pd.Series(series), errors="coerce").dropna()
+    years = np.array([float(y) for y in values.index])
+    order = np.argsort(years)
+    return years[order], values.to_numpy(dtype=float)[order]
+
+
+def net_zero_crossing(series: pd.Series, start: float = 2020) -> float | None:
+    """
+    Return the year in which a series first reaches zero, from ``start`` on.
+
+    The series is linear between its reported years, so the crossing lies
+    between the last positive point and the first point at or below zero.
 
     Parameters
     ----------
-    co2_emissions : pd.Series
-        Total CO2 emissions of one scenario, indexed by year in ascending order
+    series : pd.Series
+        Total CO2 emissions of one scenario, indexed by year
+    start : float, optional
+        First year considered (default: 2020)
 
     Returns
     -------
-    int or None
-        The net-zero year, or None when emissions stay above zero
+    float or None
+        The crossing year (e.g. 2051.4), or None when the series stays above zero
     """
-    for year, value in co2_emissions.items():
+    years, values = _points(series)
+    keep = years >= start
+    years, values = years[keep], values[keep]
+    for i, value in enumerate(values):
         if value <= 0:
-            return int(year)
+            if i == 0:
+                return float(years[0])
+            year_before, value_before = years[i - 1], values[i - 1]
+            step = years[i] - year_before
+            return float(year_before + value_before / (value_before - value) * step)
     return None
 
 
-def _sum_years(series: pd.Series, first_year: int, last_year: int) -> float:
-    """Sum the years from ``first_year`` to ``last_year`` that ``series`` holds."""
-    years = [str(y) for y in range(first_year, last_year + 1) if str(y) in series.index]
-    return float(series[years].sum()) if years else 0.0
+def integrate(series: pd.Series, start: int, end: float) -> float:
+    """
+    Return the cumulative of a series from the start of ``start`` to ``end``.
+
+    The series is linear between its reported years, and the value of a year
+    is the flow over that whole year. The cumulative sums the full years from
+    ``start`` to the year before ``end`` and adds the fraction of the year of
+    ``end``: the trapezoid of the line from that year to ``end``. A net-zero
+    crossing at ``end`` thus counts every year of the budget in full. An empty
+    interval (end <= start) gives 0.
+
+    Raises
+    ------
+    DataProcessingError
+        If the reported years do not cover [start, end]
+    """
+    if end <= start:
+        return 0.0
+    years, values = _points(series)
+    if len(years) == 0 or start < years[0] or end > years[-1]:
+        span = f"{years[0]:.0f}-{years[-1]:.0f}" if len(years) else "no years"
+        raise DataProcessingError(
+            f"The series covers {span}; the integral needs {start:g}-{end:g}."
+        )
+    last_full = int(np.floor(end))
+    full_years = np.arange(int(start), last_full)
+    total = float(np.interp(full_years, years, values).sum())
+    if end > last_full:
+        heights = np.interp([last_full, end], years, values)
+        total += float((heights[0] + heights[1]) / 2 * (end - last_full))
+    return total
+
+
+def cumulative_to_net_zero(
+    series: pd.Series, start: float = 2020
+) -> tuple[float | None, float | None]:
+    """Return (net-zero crossing, cumulative from ``start`` to it), or (None, None)."""
+    crossing = net_zero_crossing(series, start)
+    if crossing is None:
+        return None, None
+    return crossing, integrate(series, start, crossing)
 
 
 def convention_gap_from_baseline(
@@ -127,7 +251,7 @@ def convention_gap_from_baseline(
     bm_direct: pd.Series,
     indirect: pd.Series,
     baseline_year: int,
-    nz_year: int,
+    nz_year: float,
     splice_year: int,
 ) -> float:
     """
@@ -139,10 +263,15 @@ def convention_gap_from_baseline(
     scenario (Weber et al. 2026, Eqs. 2-3). The years before the baseline are
     not part of it; the rebase adds observed NGHGI LULUCF for those years.
 
-    - Years up to ``splice_year``: observed NGHGI LULUCF minus the scenario
-      BM LULUCF (AFOLU|Direct).
-    - Years after ``splice_year``: the scenario indirect flux (AFOLU|Indirect),
-      because the direct flux cancels in the difference.
+    The gap series is:
+
+    - years up to ``splice_year``: observed NGHGI LULUCF minus the scenario
+      BM LULUCF (AFOLU|Direct)
+    - years after ``splice_year``: the scenario indirect flux (AFOLU|Indirect),
+      because the direct flux cancels in the difference
+
+    and the gap is its cumulative from the baseline year to the net-zero
+    crossing (full years plus the fraction of the net-zero year, ``integrate``).
 
     Parameters
     ----------
@@ -154,196 +283,30 @@ def convention_gap_from_baseline(
         AFOLU|Indirect of the scenario, indexed by year as a string
     baseline_year : int
         First year of the published budget
-    nz_year : int
-        Net-zero year of the scenario (last year of the gap)
+    nz_year : float
+        Net-zero crossing of the scenario (end of the gap)
     splice_year : int
         Last observed year of ``nghgi_lulucf``
 
     Returns
     -------
     float
-        The cumulative gap from ``baseline_year`` to ``nz_year``. Zero when
-        the net-zero year is before the baseline year. A year that a series
-        does not hold adds nothing.
+        The gap from ``baseline_year`` to ``nz_year``. Zero when the net-zero
+        crossing is at or before the baseline year.
     """
-    if nz_year < baseline_year:
+    if nz_year <= baseline_year:
         return 0.0
-    observed_end = min(splice_year, nz_year)
-    observed_gap = _sum_years(nghgi_lulucf, baseline_year, observed_end) - _sum_years(
-        bm_direct, baseline_year, observed_end
-    )
-    scenario_gap = _sum_years(indirect, max(baseline_year, splice_year + 1), nz_year)
-    return observed_gap + scenario_gap
 
+    def _by_year(series: pd.Series) -> pd.Series:
+        values = pd.to_numeric(pd.Series(series), errors="coerce")
+        values.index = [int(y) for y in values.index]
+        return values
 
-def rcb_scenario_set_key(source: str, label: str, selection: str) -> str:
-    """
-    Name the scenario set behind the deductions of one budget.
-
-    The key identifies the entry in ``rcb_scenario_adjustments.yaml`` and the
-    ``lulucf_shift_median_{key}.csv`` file that notebook 104 writes.
-
-    Parameters
-    ----------
-    source : str
-        RCB source key in rcbs.yaml (e.g., "forster_2026")
-    label : str
-        Budget label (e.g., "1.7p50")
-    selection : str
-        Scenario selection rule of the source: "ar6-category" or
-        "peak-warming-band"
-
-    Returns
-    -------
-    str
-        - "ar6-category": the label itself (e.g., "1.5p50")
-        - "peak-warming-band": the temperature only (e.g., "peak-warming-1.7C"),
-          because one band serves every likelihood of its temperature
-
-    Raises
-    ------
-    ConfigurationError
-        If the rule is unknown, or the label has no AR6 category under the
-        "ar6-category" rule
-    """
-    climate_assessment, _ = parse_rcb_scenario(label)
-    if selection == "ar6-category":
-        _ar6_category(source, label)
-        return label
-    if selection == "peak-warming-band":
-        return f"peak-warming-{climate_assessment}"
-    raise ConfigurationError(
-        f"RCB source '{source}': unknown scenario_selection '{selection}'. "
-        f"Expected 'ar6-category' or 'peak-warming-band'."
-    )
-
-
-def select_rcb_scenario_set(
-    metadata: pd.DataFrame,
-    source: str,
-    label: str,
-    selection: str,
-    band_half_width: float = DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH,
-) -> pd.DataFrame:
-    """
-    Select the AR6 scenarios behind the deductions of one budget.
-
-    Parameters
-    ----------
-    metadata : pd.DataFrame
-        AR6 scenario metadata, one row per scenario, with the columns
-        "Category" and "Median peak warming (MAGICCv7.5.3)". The
-        "peak-warming-band" rule also needs "net_zero_year" (see
-        ``net_zero_year``), empty for a scenario that never reaches net zero.
-    source : str
-        RCB source key in rcbs.yaml (e.g., "forster_2026")
-    label : str
-        Budget label (e.g., "1.7p50")
-    selection : str
-        Scenario selection rule of the source:
-
-        - "ar6-category": every scenario in the AR6 category mapped to the
-          label (1.5p50 -> C1, 2p83 -> C2, 2p66 -> C3)
-        - "peak-warming-band": every scenario whose median peak warming lies
-          in [T - band_half_width, T + band_half_width), where T is the
-          budget temperature, and that reaches net-zero CO2. A remaining
-          carbon budget runs to net-zero CO2, so a scenario that never reaches
-          it is excluded. The likelihood in the label plays no role.
-    band_half_width : float, optional
-        Half-width of the peak-warming band in degrees C (default: 0.05)
-
-    Returns
-    -------
-    pd.DataFrame
-        The selected rows of ``metadata``
-
-    Raises
-    ------
-    ConfigurationError
-        If the rule is unknown, the label has no AR6 category under the
-        "ar6-category" rule, the label has no numeric temperature under the
-        "peak-warming-band" rule, or the metadata lack "net_zero_year" under it
-    DataProcessingError
-        If the rule selects no scenario
-    """
-    climate_assessment, _ = parse_rcb_scenario(label)
-    if selection == "ar6-category":
-        category = _ar6_category(source, label)
-        selected = metadata[metadata["Category"] == category]
-        criterion = f"AR6 category {category}"
-    elif selection == "peak-warming-band":
-        try:
-            temperature = float(climate_assessment.removesuffix("C"))
-        except ValueError:
-            raise ConfigurationError(
-                f"RCB source '{source}', label '{label}': the peak-warming band "
-                f"rule needs a numeric temperature before 'p' (e.g. '1.5p50')."
-            ) from None
-        # Rounding keeps the bounds exact decimals (1.7 - 0.05 gives 1.65).
-        lower = round(temperature - band_half_width, 6)
-        upper = round(temperature + band_half_width, 6)
-        if NET_ZERO_YEAR_COLUMN not in metadata.columns:
-            raise ConfigurationError(
-                f"RCB source '{source}': the peak-warming band rule needs the "
-                f"scenario metadata column '{NET_ZERO_YEAR_COLUMN}'."
-            )
-        peak_warming = metadata[PEAK_WARMING_COLUMN]
-        # A budget runs to net-zero CO2, so the band keeps scenarios that reach it.
-        selected = metadata[
-            (peak_warming >= lower)
-            & (peak_warming < upper)
-            & metadata[NET_ZERO_YEAR_COLUMN].notna()
-        ]
-        criterion = (
-            f"median peak warming in the {climate_assessment} band "
-            f"[{lower}, {upper}) and a net-zero CO2 year"
-        )
-    else:
-        raise ConfigurationError(
-            f"RCB source '{source}': unknown scenario_selection '{selection}'. "
-            f"Expected 'ar6-category' or 'peak-warming-band'."
-        )
-
-    if selected.empty:
-        raise DataProcessingError(
-            f"RCB source '{source}', label '{label}': no scenario has {criterion}."
-        )
-    return selected
-
-
-def build_rcb_scenario_sets(
-    rcb_yaml: dict, metadata: pd.DataFrame
-) -> dict[str, pd.DataFrame]:
-    """
-    Select the scenario set for every budget in a loaded rcbs.yaml.
-
-    Parameters
-    ----------
-    rcb_yaml : dict
-        Content of rcbs.yaml. Each source under ``rcb_data`` may carry a
-        ``scenario_selection`` field (default: "ar6-category"). The top-level
-        ``peak_warming_band_half_width`` sets the band half-width (default: 0.05).
-    metadata : pd.DataFrame
-        AR6 scenario metadata (see ``select_rcb_scenario_set``)
-
-    Returns
-    -------
-    dict[str, pd.DataFrame]
-        Selected metadata rows, keyed by ``rcb_scenario_set_key``
-    """
-    band_half_width = rcb_yaml.get(
-        "peak_warming_band_half_width", DEFAULT_PEAK_WARMING_BAND_HALF_WIDTH
-    )
-    scenario_sets = {}
-    for source, source_data in rcb_yaml["rcb_data"].items():
-        selection = source_data.get("scenario_selection", DEFAULT_SCENARIO_SELECTION)
-        for label in source_data["scenarios"]:
-            key = rcb_scenario_set_key(source, label, selection)
-            if key not in scenario_sets:
-                scenario_sets[key] = select_rcb_scenario_set(
-                    metadata, source, label, selection, band_half_width
-                )
-    return scenario_sets
+    observed = _by_year(nghgi_lulucf).sub(_by_year(bm_direct)).dropna()
+    observed = observed[observed.index <= splice_year]
+    after = _by_year(indirect).dropna()
+    gap = pd.concat([observed, after[after.index > splice_year]]).sort_index()
+    return integrate(gap, baseline_year, nz_year)
 
 
 def validate_rebase_fill_max_years(value: object) -> int:

@@ -68,9 +68,10 @@ def _long(rows: dict[tuple[str, str | None], dict[int, float | None]]) -> pd.Dat
     )
 
 
-def test_registry_entry_is_opt_in_and_matches_config():
+def test_registry_entry_is_default_and_matches_config():
+    """Default tier: every budget run reads its observed bunkers."""
     source = load_registry()[KEY]
-    assert source.tier == "optional"
+    assert source.tier == "default"
     assert source.doi == "10.5281/zenodo.17417124"
     assert source.license == "CC-BY-4.0"
     (download,) = source.downloads
@@ -120,8 +121,8 @@ def test_co2_is_valid_for_a_co2_ffi_only_source_with_a_lulucf_source():
 
 def test_bunkers_follow_the_emissions_source():
     assert get_bunkers_source(KEY) == KEY
-    assert get_bunkers_source("primap-202503") == "gcb-2024"
-    run = {"target": "rcbs", "emissions": KEY, "gdp": "wdi-2025"}
+    assert get_bunkers_source("primap-202503") == KEY
+    run = {"target": "rcbs", "emissions": "primap-202503", "gdp": "wdi-2025"}
     names = citations.resolve_source_names(run, emission_category="co2-ffi")
     assert KEY in names
     assert "gcb-2024" not in names

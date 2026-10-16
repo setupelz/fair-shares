@@ -193,11 +193,11 @@ def _cmd_fetch(
 #: What a standard country-level run uses, matching the configured defaults.
 DEFAULT_ACTIVE_SOURCES = {
     "target": "rcbs",
-    "emissions": "primap-202503",
+    "emissions": "primap-202609",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
     "gini": "wdi-2025",
-    "lulucf": "melo-2026",
+    "lulucf": "melo-2026-v4",
 }
 
 

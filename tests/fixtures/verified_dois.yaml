@@ -40,6 +40,16 @@ verified:
       Busch & Pflüger. DataCite rights list gives cc-by-4.0; the Zenodo API
       reports access_right open and the same licence.
 
+  - doi: "10.5281/zenodo.22876287"
+    used_by: primap-202609
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      The PRIMAP-hist national historical emissions time series (1750-2025)
+      v2.8, Gütschow & Pflüger. DataCite reports version v2.8, publicationYear
+      2026, rights cc-by-nc-sa-4.0. The Zenodo API gives the same licence and
+      an md5 for the no-rounding netCDF that matches the downloaded file.
+
   - doi: "10.5281/zenodo.18352395"
     used_by: melo-2026
     verified: 2026-08-03
@@ -114,6 +124,35 @@ verified:
       Data 17, 965-1039, 2025, CC BY 4.0. This is the correct paper DOI; see
       the known_bad entry below for the one it replaces.
 
+  - doi: "10.18160/GCP-2025"
+    used_by: gcb-2025-global
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      "Supplemental data of Global Carbon Budget 2025", Global Carbon Project,
+      2026, record version 1.1, CC BY 4.0. The ICOS object
+      qSjPBsV1drZnYdH-yCJMmkGn (Global_Carbon_Budget_2025_v1.0.xlsx) belongs
+      to it. Data DOI; the paper DOI is 10.5194/essd-18-3211-2026.
+
+  - doi: "10.5281/zenodo.18598251"
+    used_by: sci-2025
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      "Scenario Compass Initiative - Pathways Ensemble 2025", version v1.0,
+      2026, creator Huppmann, Daniel; rights "IAMC License" and "Copyright
+      2026 IIASA and contributing modeling teams". v2.0 is a separate record
+      (10.5281/zenodo.23232097).
+
+  - doi: "10.21203/rs.3.rs-8891091/v1"
+    used_by: sci-2025
+    verified: 2026-10-16
+    registrar: Crossref
+    evidence: >-
+      "Mitigation benchmarks from the 2025 community update of global
+      emissions pathways", Riahi, Clarke, Hasegawa, Huppmann et al., Research
+      Square preprint posted 2026-03-03 (Springer Science and Business Media).
+
   - doi: "10.5281/zenodo.17417124"
     used_by: gcb-2025
     verified: 2026-10-01
@@ -170,6 +209,19 @@ verified:
       Physical Science Basis", Cambridge University Press, pages 3-32. Source
       of the `ar6_wg1_2021` budgets (Table SPM.2).
 
+  - doi: "10.5281/zenodo.5886911"
+    used_by: ipcc_ar6_bunkers
+    verified: 2026-10-16
+    registrar: DataCite
+    evidence: >-
+      DataCite: "AR6 Scenarios Database", Integrated Assessment Modeling
+      Consortium & International Institute for Applied Systems Analysis, 2022,
+      creators Byers, Edward; Krey, Volker; ... (concept DOI; v1.1 is
+      10.5281/zenodo.7197970). Cited by the manual-tier source ipcc_ar6_bunkers,
+      which each user fetches from the public platform. The database licence
+      restricts redistribution of substantial parts, so nothing from it ships
+      with the package (redistributable: false, gitignored).
+
 # DOIs known to be wrong. The registry must never carry one of these.
 known_bad:
   - doi: "10.5194/essd-16-5567-2024"
@@ -179,13 +231,3 @@ known_bad:
       negotiation. It was the Global Carbon Budget DOI written in
       data/bunkers/gcb-2024/CITATION.md, and its year, volume and page range
       are all wrong too. The real one is 10.5194/essd-17-965-2025.
-
-  - doi: "10.5281/zenodo.5886911"
-    verified: 2026-08-03
-    evidence: >-
-      Resolves, but must not be cited as a source of anything shipped here.
-      This is the IPCC AR6 Scenarios Database, which is access-restricted and
-      limits redistribution of substantial parts. fair-shares reaches AR6 data
-      only through the open Gidden record above. Listed here so nobody adds it
-      as a citation and quietly implies the restricted database travels with
-      this package.

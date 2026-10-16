@@ -140,7 +140,7 @@ def get_emission_preprocessing_categories(
 
 
 # Bunker data used by every emissions source that does not name its own.
-DEFAULT_BUNKERS_SOURCE = "gcb-2024"
+DEFAULT_BUNKERS_SOURCE = "gcb-2025"
 
 
 def get_emissions_data_parameters(emissions_source: str | None) -> dict[str, Any]:
@@ -194,7 +194,7 @@ def build_source_id(
         Emission category. Available categories are defined per target in
         the packaged ``data_sources_unified.yaml`` (``src/fair_shares/conf/data_sources/``).
     lulucf : str | None, optional
-        LULUCF source identifier (e.g., "melo-2026")
+        LULUCF source identifier (e.g., "melo-2026-v4")
     rcb_generator : str | None, optional
         RCB pathway generator name (only used for target="rcb-pathways")
 
@@ -252,7 +252,7 @@ def build_data_config(
         - "all-ghg-ex-co2-lulucf": All GHGs excluding CO2 from land use
     active_sources : dict[str, str]
         Dictionary of active source names with keys:
-        - "emissions": emissions source (e.g., "primap-202503")
+        - "emissions": emissions source (e.g., "primap-202609")
         - "gdp": GDP source (e.g., "wdi-2025")
         - "population": population source (e.g., "un-owid-2025")
         - "gini": Gini source (e.g., "unu-wider-2025")
@@ -568,7 +568,7 @@ def validate_data_source_config(
     >>> result = validate_data_source_config(
     ...     emission_category="co2-ffi",
     ...     active_sources={
-    ...         "emissions": "primap-202503",
+    ...         "emissions": "primap-202609",
     ...         "gdp": "wdi-2025",
     ...         "population": "un-owid-2025",
     ...         "gini": "unu-wider-2025",

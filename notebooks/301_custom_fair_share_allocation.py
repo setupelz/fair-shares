@@ -69,9 +69,11 @@ active_sources = {
     # - "pathway": IPCC AR6 scenarios (for pathway allocations)
     "target": "rcbs",
     # Historical emissions - Required for responsibility calculations
-    # - "primap-202503": PRIMAP-hist v2.6 (March 2025), 1850-2023
+    # - "primap-202609": PRIMAP-hist v2.8 (Sept 2026), 1850-2025, the default.
+    #   CC BY-NC-SA 4.0: outputs carry non-commercial, share-alike terms.
+    # - "primap-202503": PRIMAP-hist v2.6.1 (March 2025), 1850-2023, CC BY 4.0 (opt-in)
     # - "gcb-2025": Global Carbon Budget 2025, co2-ffi only, 1850-2024 (opt-in)
-    "emissions": "primap-202503",
+    "emissions": "primap-202609",
     # GDP - Used for capability-based adjustments
     # - "wdi-2025": World Bank World Development Indicators (2025)
     "gdp": "wdi-2025",
@@ -83,9 +85,9 @@ active_sources = {
     # - "unu-wider-2025": UNU-WIDER WIID, opt-in, CC BY-NC-SA (see data-sources.md)
     "gini": "wdi-2025",
     # LULUCF - Required for NGHGI-consistent RCB corrections
-    # - "melo-2026": Melo et al. (2026) NGHGI v3.1 data, 2000-2023
-    # - "melo-2026-v4": LULUCF Data Hub v4.0.0, 2000-2024 (opt-in)
-    "lulucf": "melo-2026",
+    # - "melo-2026-v4": LULUCF Data Hub v4.0.0, 2000-2024, the default
+    # - "melo-2026": LULUCF Data Hub v3.1.1, 2000-2023 (opt-in)
+    "lulucf": "melo-2026-v4",
     # RCB pathway generator - Optional, defaults to "exponential-decay"
     # "rcb_generator": "exponential-decay",
 }

@@ -45,14 +45,15 @@
 # **Extensions beyond PRR2023:** the same approaches are run for three
 # emission categories — `co2-ffi` (the report's scope),
 # `all-ghg-ex-co2-lulucf`, and `all-ghg` (NGHGI convention). § 5 then
-# computes each country's fair-share budget left from 2024 onward, after
-# subtracting observed emissions through 2023, and § 6 spreads those
+# computes each country's fair-share budget left after the last observed
+# year (from 2026 with the current sources, which run to 2025), after
+# subtracting observed emissions, and § 6 spreads those
 # remaining budgets into annual pathways to 2100.
 #
-# **Keep in sync with the Python API:** §§ 5–6 are ported to
+# **Keep in sync with the Python API:** §§ 5-6 are ported to
 # `fair_shares.library.python_api.calculate_allocation_timeseries` so
 # downstream consumers can run allocations without executing this notebook.
-# If you change §§ 4–6 here, regenerate the reproduction fixtures
+# If you change §§ 4-6 here, regenerate the reproduction fixtures
 # (`uv run python tests/fixtures/save_python_api_fixture.py`) and check that
 # `tests/integration/test_python_api_reproduces_notebook.py` still passes —
 # that test is the guard against the two implementations drifting apart.
@@ -80,15 +81,19 @@
 #    as a budget and the non-CO2 part as an annual pathway taken from AR6
 #    scenarios of the same climate target. Their outputs appear as separate
 #    rows (`co2` or `co2-ffi`, and `non-co2`) and are also combined in § 5.
-# 5. **The all-GHG categories start in 2015 only.** The report's second
-#    allocation year (1990) is not possible for them: national-inventory
-#    land-use data begins in 2000, and the non-CO2 scenario pathways do not
-#    extend back before 2015. For `all-ghg` the historical-responsibility
-#    window also starts in 2000 (data start) instead of 1850 or 1990.
+# 5. **The all-GHG categories run from 2015 only.** For `all-ghg` the report's
+#    first allocation year (1990) is not possible: national-inventory land-use
+#    data begin in 2000, and the library raises an error for earlier years.
+#    `all-ghg-ex-co2-lulucf` has no such limit; this notebook runs it from 2015
+#    too, so the two all-GHG categories compare like for like. For `all-ghg`
+#    the historical-responsibility window starts in 2000 (data start).
 # 6. For every country and approach: remaining = allocated total minus actual
 #    emissions from the allocation year through the last year with observed
-#    data (2023 in PRIMAP-hist v2.6.1 / Melo NGHGI), so budgets are reported
-#    as remaining from 2024.
+#    data. The year is read from the data at runtime. With PRIMAP-hist v2.8
+#    it is 2025, so budgets are reported as remaining from 2026. A composite
+#    category nets all its parts through the last year that every part
+#    observes: for `all-ghg` that is 2024, the last year of the LULUCF Data
+#    Hub v4.0.0, so its budgets are reported as remaining from 2025.
 # 7. **One budget across the whole notebook.** The RCB registry holds three
 #    sources at three climate targets; this notebook filters the pipeline to
 #    the report's anchor only — IPCC AR6 500 GtCO2 from 2020 for 1.5C at 50%
@@ -115,7 +120,7 @@
 #     redress; 2100 back-loads it. The baseline converges to equal per capita
 #     by 2050. These are normative knobs — edit `DISTRIBUTION_GRID` in § 3.
 # 10. **Net-sink countries at the start year.** In the `all-ghg` CO2 part
-#     (NGHGI convention), 29 countries are net CO2 sinks in 2023. The
+#     (NGHGI convention), 33 countries are net CO2 sinks in 2024. The
 #     distribution function requires positive base-year emissions (they define
 #     starting shares only), so these are floored at 0.001 Mt. Budgets are
 #     unaffected. Per-capita target shares use the population projection in
@@ -123,12 +128,12 @@
 #     all-GHG categories the combined annual pathway = distributed CO2 + the
 #     AR6 non-CO2 pathway (Decision 4).
 # 11. **Past non-CO2 over-use: two settlement options, both computed.** The
-#     hist-2023 gap between actual and allocated non-CO2 is reported per
+#     gap between actual and allocated non-CO2 up to the netting year is reported per
 #     country in a `historical-deviation` column, and § 6 runs every
 #     configuration under two modes, selected by the `nonco2-debt-mode`
 #     column:
 #     - **`free-rider`** — no penalty. Past non-CO2 over- and under-use
-#       nearly cancel globally (§ 6.2 quantifies this at +0.6% of 2015-2023
+#       nearly cancel globally (§ 6.2 quantifies this at +1.4% of 2015-2025
 #       non-CO2), so the historical debts are simply named and left at that.
 #     - **`co2-debit`** — each country's non-CO2 over-use is subtracted from
 #       its remaining CO2 budget (AR6 GWP100 equivalence): missing a methane
@@ -291,25 +296,30 @@
 # CONFIGURATION
 # =============================================================================
 
+from fair_shares.library.presets import (
+    ESABCC_2023_RCB_ANCHOR,
+    esabcc_2023_allocations,
+)
+
 # Output subfolder name; results land in
 # output/<source-id>/allocations/<allocation_folder>/ (§ 4).
 allocation_folder = "601_esabcc_2023"
 
 active_sources = {
     "target": "rcbs",              # Remaining carbon budgets; filtered to RCB_ANCHOR below
-    "emissions": "primap-202503",  # Historical emissions (PRIMAP-hist v2.6.1) — allocation shares and § 5 netting actuals
+    "emissions": "primap-202609",  # Historical emissions (PRIMAP-hist v2.8, to 2025) — allocation shares and § 5 netting actuals
     "gdp": "wdi-2025",             # GDP per capita — capability-adjusted approaches
     "population": "un-owid-2025",  # Population — per-capita and cumulative-per-capita shares, § 6 base-year weighting
     "gini": "wdi-2025",      # Gini — required by the data-source schema; no approach run here uses it
-    "lulucf": "melo-2026",         # NGHGI LULUCF — used only for the all-ghg category
+    "lulucf": "melo-2026-v4",      # NGHGI LULUCF (LULUCF Data Hub v4.0.0) — used only for the all-ghg category
 }
 
 # Data source note: PRR2023 used GCB 2022 national fossil emissions for country
 # indicators, and added 1030 Gt (1990-2019) and 204 Gt (2015-2019) from GCB 2021
 # to the 500 Gt to get its global budgets from 1990 and 2015. This notebook uses
-# PRIMAP-hist v2.6.1 and adds the same fossil series without bunkers (857 and
-# 177 Gt), after the 35 Gt future-bunker deduction. The global budget is 1322 Gt
-# from 1990 (PRR2023: 1530) and 642 Gt from 2015 (PRR2023: 704). See § 7.3.
+# PRIMAP-hist v2.8 and adds the same fossil series without bunkers (857 and
+# 177 Gt), after the 31 Gt future-bunker deduction. The global budget is 1327 Gt
+# from 1990 (PRR2023: 1530) and 647 Gt from 2015 (PRR2023: 704). See § 7.3.
 
 desired_harmonisation_year = 2020
 # Year scenario-based pathways are harmonised to observed emissions. Applied
@@ -319,8 +329,8 @@ desired_harmonisation_year = 2020
 
 # Remaining-budget accounting (§ 5, Decision 6): budgets are netted through
 # the last year with observed emissions data. The netting year is read from
-# the data at runtime; with the current sources it is 2023, so remaining
-# budgets are reported from 2024.
+# the data at runtime; with the current sources it is 2025, so remaining
+# budgets are reported from 2026.
 
 # The single budget used across the whole notebook (Decision 7): the report's
 # anchor, filtering the pipeline to one RCB row and its matching scenario
@@ -328,7 +338,7 @@ desired_harmonisation_year = 2020
 # (`ar6_2020`, `lamboll_2023`, or `forster_2024`); `climate-assessment` and
 # `quantile` pick the temperature target and likelihood within that source.
 # Change any field to explore a different anchor and re-run.
-RCB_ANCHOR = {"source": "ar6_2020", "climate-assessment": "1.5C", "quantile": 0.5}
+RCB_ANCHOR = dict(ESABCC_2023_RCB_ANCHOR)
 
 # Time distribution of remaining budgets (§ 6, Decision 9). The grid
 # expands as a cross product; edit to explore other normative positions.
@@ -338,7 +348,8 @@ DISTRIBUTION_GRID = {
     "convergence_year": [2050],  # year the per-capita baseline converges by
 }
 PATHWAY_END_YEAR = 2100  # last year of the § 6 distributed annual pathways
-# Starting point for § 6 pathways is each country's actual 2023 emissions.
+# Starting point for § 6 pathways is each country's actual emissions in the
+# netting year (the last observed year).
 # Net CO2 sinks (negative values, possible under NGHGI land-use accounting)
 # are raised to this tiny positive floor, in Mt CO2/yr, so their pathways
 # start from ~zero. Budgets are unaffected (Decision 10).
@@ -361,181 +372,11 @@ EU27 = [
     "NLD", "POL", "PRT", "ROU", "SVK", "SVN", "SWE",
 ]
 
-# ---------------------------------------------------------------------------
-# ALLOCATION APPROACH CONFIGURATIONS
-#
-# Grid entries expand as cross-products: a dict with two-element lists in two
-# fields yields four runs. Budget approaches allocate the CO2 (or CO2-FFI)
-# budget; for the all-GHG categories, pathway approaches allocate the non-CO2
-# annual pathway and are given explicitly (Decision 4).
-# ---------------------------------------------------------------------------
-
-# --- co2-ffi: the report's own scope. Full PRR2023 matrix. -----------------
-
-allocations_co2_ffi = {
-    "equal-per-capita-budget": [
-        # EPC — PRR2023 Eq. 1-2, single-year population shares
-        {
-            "allocation_year": [1990, 2015],
-            "preserve_allocation_year_shares": [True],
-        },
-        # ECPC — PRR2023 Eq. 1-2, cumulative population to 2050
-        {
-            "allocation_year": [1990, 2015],
-            "cumulative_end_year": [2050],
-            "preserve_allocation_year_shares": [False],
-        },
-    ],
-    "per-capita-adjusted-budget": [
-        # Responsibility, EPC base, ay=1990 — window 1850-1989 (Table 18)
-        {
-            "allocation_year": [1990],
-            "pre_allocation_responsibility_weight": [1.0],
-            "pre_allocation_responsibility_year": [1850],
-            "pre_allocation_responsibility_functional_form": ["power"],
-            "pre_allocation_responsibility_exponent": [1.0, 0.5],
-            "pre_allocation_responsibility_per_capita": [True, False],
-            "preserve_allocation_year_shares": [True],
-        },
-        # Responsibility, EPC base, ay=2015 — windows 1850-2014 and 1990-2014
-        {
-            "allocation_year": [2015],
-            "pre_allocation_responsibility_weight": [1.0],
-            "pre_allocation_responsibility_year": [1850, 1990],
-            "pre_allocation_responsibility_functional_form": ["power"],
-            "pre_allocation_responsibility_exponent": [1.0, 0.5],
-            "pre_allocation_responsibility_per_capita": [True, False],
-            "preserve_allocation_year_shares": [True],
-        },
-        # Responsibility, ECPC base, ay=1990
-        {
-            "allocation_year": [1990],
-            "cumulative_end_year": [2050],
-            "preserve_allocation_year_shares": [False],
-            "pre_allocation_responsibility_weight": [1.0],
-            "pre_allocation_responsibility_year": [1850],
-            "pre_allocation_responsibility_functional_form": ["power"],
-            "pre_allocation_responsibility_exponent": [1.0, 0.5],
-            "pre_allocation_responsibility_per_capita": [True, False],
-        },
-        # Responsibility, ECPC base, ay=2015
-        {
-            "allocation_year": [2015],
-            "cumulative_end_year": [2050],
-            "preserve_allocation_year_shares": [False],
-            "pre_allocation_responsibility_weight": [1.0],
-            "pre_allocation_responsibility_year": [1850, 1990],
-            "pre_allocation_responsibility_functional_form": ["power"],
-            "pre_allocation_responsibility_exponent": [1.0, 0.5],
-            "pre_allocation_responsibility_per_capita": [True, False],
-        },
-        # Capability, EPC base — GDP-per-capita snapshot in 1990 / 2014
-        {
-            "allocation_year": [1990],
-            "capability_weight": [1.0],
-            "capability_functional_form": ["power"],
-            "capability_exponent": [1.0, 0.5],
-            "capability_per_capita": [True],
-            "capability_reference_year": [1990],
-            "preserve_allocation_year_shares": [True],
-        },
-        {
-            "allocation_year": [2015],
-            "capability_weight": [1.0],
-            "capability_functional_form": ["power"],
-            "capability_exponent": [1.0, 0.5],
-            "capability_per_capita": [True],
-            "capability_reference_year": [2014],
-            "preserve_allocation_year_shares": [True],
-        },
-        # Capability, ECPC base
-        {
-            "allocation_year": [1990],
-            "cumulative_end_year": [2050],
-            "preserve_allocation_year_shares": [False],
-            "capability_weight": [1.0],
-            "capability_functional_form": ["power"],
-            "capability_exponent": [1.0, 0.5],
-            "capability_per_capita": [True],
-            "capability_reference_year": [1990],
-        },
-        {
-            "allocation_year": [2015],
-            "cumulative_end_year": [2050],
-            "preserve_allocation_year_shares": [False],
-            "capability_weight": [1.0],
-            "capability_functional_form": ["power"],
-            "capability_exponent": [1.0, 0.5],
-            "capability_per_capita": [True],
-            "capability_reference_year": [2014],
-        },
-    ],
-}
-
-
-def _composite_allocations(responsibility_years: list[int]) -> dict:
-    """Budget grid for an all-GHG category, templated on the responsibility window.
-
-    The two composite categories share one grid shape but differ from the
-    co2-ffi grid in two ways: allocation starts in 2015 only (Decision 5),
-    and the responsibility window start is category-specific — 1850/1990
-    where the CO2 part has full fossil history, 2000 where NGHGI land-use
-    data begins (Decision 5). The library derives the non-CO2 pathway
-    configurations from these budget entries (Decision 8).
-    """
-    return {
-        "equal-per-capita-budget": [
-            {
-                "allocation_year": [2015],
-                "preserve_allocation_year_shares": [True],
-            },
-            {
-                "allocation_year": [2015],
-                "cumulative_end_year": [2050],
-                "preserve_allocation_year_shares": [False],
-            },
-        ],
-        "per-capita-adjusted-budget": [
-            {
-                "allocation_year": [2015],
-                "pre_allocation_responsibility_weight": [1.0],
-                "pre_allocation_responsibility_year": responsibility_years,
-                "pre_allocation_responsibility_functional_form": ["power"],
-                "pre_allocation_responsibility_exponent": [1.0, 0.5],
-                "pre_allocation_responsibility_per_capita": [True, False],
-                "preserve_allocation_year_shares": [True, False],
-            },
-            {
-                "allocation_year": [2015],
-                "capability_weight": [1.0],
-                "capability_functional_form": ["power"],
-                "capability_exponent": [1.0, 0.5],
-                "capability_per_capita": [True],
-                "capability_reference_year": [2014],
-                "preserve_allocation_year_shares": [True],
-            },
-            {
-                "allocation_year": [2015],
-                "cumulative_end_year": [2050],
-                "preserve_allocation_year_shares": [False],
-                "capability_weight": [1.0],
-                "capability_functional_form": ["power"],
-                "capability_exponent": [1.0, 0.5],
-                "capability_per_capita": [True],
-                "capability_reference_year": [2014],
-            },
-        ],
-    }
-
-
-# Category run matrix. co2-ffi reproduces the report; the all-GHG categories
-# extend it (Decisions 3-5). all-ghg responsibility windows start at the NGHGI
-# LULUCF data start (2000); all-ghg-ex-co2-lulucf keeps the report's windows
-# because its CO2 part is fossil-only with full history.
+# Approach grid per category from the named PRR2023 preset (Decisions 3-5, 8).
+# Print CATEGORY_ALLOCATIONS to see every run; lists expand as cross-products.
 CATEGORY_ALLOCATIONS = {
-    "co2-ffi": allocations_co2_ffi,
-    "all-ghg-ex-co2-lulucf": _composite_allocations(responsibility_years=[1850, 1990]),
-    "all-ghg": _composite_allocations(responsibility_years=[2000]),
+    category: esabcc_2023_allocations(category)
+    for category in ["co2-ffi", "all-ghg-ex-co2-lulucf", "all-ghg"]
 }
 
 # %% [markdown] tags=[]
@@ -622,6 +463,9 @@ for category, allocations in CATEGORY_ALLOCATIONS.items():
             sdf.index.get_level_values("climate-assessment")
             == RCB_ANCHOR["climate-assessment"]
         ) & (sdf.index.get_level_values("quantile") == RCB_ANCHOR["quantile"])
+        # Non-CO2 rows carry the RCB source they are paired with.
+        if "source" in sdf.index.names:
+            mask &= sdf.index.get_level_values("source") == RCB_ANCHOR["source"]
         loaded_data["scenarios_data"][cat_key] = sdf[mask]
         if loaded_data["scenarios_data"][cat_key].empty:
             raise ConfigurationError(
@@ -681,7 +525,8 @@ pd.DataFrame(
 # ## 5. Remaining budgets after the last observed emissions year
 #
 # Netting uses observed data only, through the last observed year (Decision 6
-# — currently 2023, so remaining from 2024). The two kinds of part carry
+# — currently 2025, so remaining from 2026; 2024 for `all-ghg`, whose
+# land-use CO2 ends in 2024). The two kinds of part carry
 # different semantics (Decision 11):
 #
 # - **CO2 budget parts** — remaining = allocated total minus **actual**
@@ -689,8 +534,8 @@ pd.DataFrame(
 #   a stock budget: past over-use is a real debt (remaining goes negative)
 #   and § 6 redresses it in the forward pathways.
 # - **Non-CO2 pathway part** — remaining = the **forward-window allocation**
-#   (2024-2100). The `historical-deviation` column reports actual minus
-#   allocated non-CO2 over 2015-2023: positive means the country emitted
+#   (netting year + 1 to 2100). The `historical-deviation` column reports
+#   actual minus allocated non-CO2 from 2015 through the netting year: positive means the country emitted
 #   more non-CO2 than its allocation, a debt that § 6 can charge against its
 #   CO2 budget (`co2-debit` mode, Decision 11); negative means under-use,
 #   which earns nothing (space in short-lived gases cannot be banked).
@@ -707,14 +552,17 @@ pd.DataFrame(
 
 # %% tags=[]
 def _cumulative_actuals(
-    processed_dir, part: str, start_year: int
+    processed_dir, part: str, start_year: int, end_year: int | None = None
 ) -> tuple[pd.Series, int]:
     """Actual emissions per country from start_year through the last observed
-    data year, plus that year. Observed data only — no extrapolation.
+    data year (or end_year when earlier), plus that year. Observed data only —
+    no extrapolation.
     """
     df = pd.read_csv(processed_dir / f"country_emissions_{part}_timeseries.csv")
     year_cols = sorted(c for c in df.columns if c.isdigit())
     first_year, last_observed = int(year_cols[0]), int(year_cols[-1])
+    if end_year is not None:
+        last_observed = min(last_observed, end_year)
     if start_year < first_year:
         raise ValueError(
             f"{part}: data start {first_year} is after allocation year {start_year}"
@@ -749,12 +597,11 @@ _ID_COLS = [
 
 # Canonical keys shared by a budget config and its pathway analogue: approach
 # family (strip "-budget"), allocation year, preserve flag, equity parameters.
-# "source" is excluded on purpose: budget parts carry the RCB source
-# (ar6_2020 / lamboll_2023 / forster_2024) while the non-CO2 pathway part
-# carries the scenario source ("ar6"); parts pair on climate assessment and
-# quantile, and a combined row inherits the budget part's RCB source.
+# Both parts carry the RCB source key (the non-CO2 rows are paired with one
+# budget each), so parts pair on source, climate assessment and quantile.
 _PAIR_KEYS = [
     "iso3c",
+    "source",
     "climate-assessment",
     "quantile",
     "family",
@@ -772,6 +619,20 @@ _PAIR_KEYS = [
 def _remaining_for_category(category: str, reg: dict) -> pd.DataFrame:
     ab = pd.read_parquet(reg["output_dir"] / "allocations_absolute.parquet")
     year_cols = sorted(c for c in ab.columns if c.isdigit())
+
+    # Every part nets through the last year that all parts observe, so a
+    # composite category combines its parts over one window (Decision 6).
+    netting_end = min(
+        max(
+            int(c)
+            for c in pd.read_csv(
+                reg["processed_dir"] / f"country_emissions_{part}_timeseries.csv",
+                nrows=0,
+            ).columns
+            if c.isdigit()
+        )
+        for part in ab["emission-category"].unique()
+    )
 
     frames = []
     for part, sub in ab.groupby("emission-category"):
@@ -791,7 +652,7 @@ def _remaining_for_category(category: str, reg: dict) -> pd.DataFrame:
 
         for ay, chunk in sub.groupby("year"):
             consumed, last_observed = _cumulative_actuals(
-                reg["processed_dir"], part, int(ay)
+                reg["processed_dir"], part, int(ay), netting_end
             )
             idx = chunk.index
             sub.loc[idx, "consumed-actuals"] = chunk["iso3c"].map(consumed).values
@@ -902,8 +763,8 @@ print(f"\ncombined: {len(remaining_all)} rows -> {combined_path}")
 # Units: Mt CO2e. Negative = fair share exhausted.
 
 # %% tags=[]
-# The pipeline is already anchor-filtered (Decision 7); the non-CO2 part
-# carries the scenario source label, so filter on assessment and quantile only.
+# The pipeline is already anchor-filtered (Decision 7), so assessment and
+# quantile identify the anchor rows.
 anchor = remaining_all[
     (remaining_all["climate-assessment"] == RCB_ANCHOR["climate-assessment"])
     & (remaining_all["quantile"] == RCB_ANCHOR["quantile"])
@@ -964,7 +825,7 @@ with pd.option_context("display.max_rows", 200, "display.width", 250):
 #
 # **CO2 parts** are distributed under two non-CO2 debt modes (Decision 11):
 # `free-rider` leaves the CO2 budgets as they are; `co2-debit` subtracts
-# each country's 2015-2023 non-CO2 over-use from its remaining CO2 budget
+# each country's past non-CO2 over-use (2015 to the netting year) from its remaining CO2 budget
 # (AR6 GWP100) and retires the collected debt, shrinking the global envelope
 # by the gross debt sum. Negative CO2 pathways are allowed (CO2 removal is
 # real), so debts of any size are payable. **Non-CO2 parts** are the
@@ -1007,7 +868,7 @@ def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> p
 
     - ``free-rider`` — the CO2 budget stays as it is; past non-CO2 over-use
       is reported and carries no penalty.
-    - ``co2-debit`` — each country's 2015-2023 non-CO2 over-use is subtracted
+    - ``co2-debit`` — each country's past non-CO2 over-use is subtracted
       from its remaining CO2 budget (AR6 GWP100) and the collected debt is
       retired. CO2 budgets can go negative, so debts of any size are payable.
     """
@@ -1173,8 +1034,8 @@ def _distribute_category(category: str, reg: dict, remaining: pd.DataFrame) -> p
             )
 
         # The allocated non-CO2 rows themselves (forward window), once per
-        # configuration — no mode or shape variants apply to them. Pre-2024
-        # year columns are dropped so the distributed output stays on the
+        # configuration — no mode or shape variants apply to them. Year
+        # columns up to the netting year are dropped so the distributed output stays on the
         # forward window.
         nonco2_rows = nonco2.copy()
         nonco2_rows["adjusted-target"] = nonco2_rows["nonco2-forward"]
@@ -1253,7 +1114,7 @@ plt.show()
 # (the stock budget is where debt lives — Decision 6), across every
 # shape/deviation variant and both non-CO2 debt modes:
 #
-# 1. **CO2-FFI part** — the cumulative distributed pathway (2024-2100) must
+# 1. **CO2-FFI part** — the cumulative distributed pathway (netting year + 1 to 2100) must
 #    equal its `adjusted-target` exactly (closed-form guarantee of the
 #    distribution function). Under `free-rider` that target is the § 5
 #    remaining CO2 budget; under `co2-debit` it is that budget minus the
@@ -1332,9 +1193,11 @@ dist_cat = _cat[
         & (_cat["preserve-first-allocation-year-shares"] == True)  # noqa: E712
     )
 ]
-dist_years = sorted(c for c in dist_cat.columns if c.isdigit())
-fwd_years = dist_years  # 2024-2100
-past_years = [y for y in nonco2_years_all if y not in fwd_years]  # 2015-2023
+dist_years = sorted(
+    c for c in dist_cat.columns if c.isdigit() and dist_cat[c].notna().any()
+)  # categories can differ in netting year, so drop all-empty columns
+fwd_years = dist_years  # netting year + 1 to 2100
+past_years = [y for y in nonco2_years_all if y not in fwd_years]  # 2015 to netting year
 
 # Actual non-CO2 emissions, for the global deviation statement
 nonco2_actual = pd.read_csv(
@@ -1398,7 +1261,7 @@ global_deviation = (
 )
 global_actual = nonco2_actual.loc[common, past_years].astype(float).sum().sum()
 print(
-    f"\nGlobal non-CO2 2015-2023: actual {global_actual / 1000:.1f} Gt CO2e; "
+    f"\nGlobal non-CO2 {past_years[0]}-{past_years[-1]}: actual {global_actual / 1000:.1f} Gt CO2e; "
     f"net deviation vs allocation {global_deviation / 1000:+.1f} Gt CO2e "
     f"({100 * global_deviation / global_actual:+.1f}%) — over- and under-use "
     "nearly cancel globally, which is the case for the free-rider mode; "
@@ -1516,11 +1379,13 @@ plt.show()
 # ### 7.1 Data stack
 #
 # - **Population**: `un-owid-2025` — UN historical + WPP 2024 projections to 2100
-# - **GDP**: `wdi-2025` — WDI `NY.GDP.MKTP.PP.KD` (constant 2017 international $ PPP)
-# - **Emissions**: `primap-202503` — PRIMAP-hist v2.6.1 (Gütschow et al.),
-#   territorial; observed country data through 2023
-# - **NGHGI LULUCF**: `melo-2026` — Melo et al. LULUCF Data Hub v3.1.1,
-#   2000-2023, used for the `all-ghg` category only
+# - **GDP**: `wdi-2025` — WDI `NY.GDP.MKTP.PP.KD` (constant 2021 international $ PPP)
+# - **Emissions**: `primap-202609` — PRIMAP-hist v2.8 (Gütschow and Pflüger
+#   2026), territorial; country data through 2025, the latest years partly
+#   extrapolated by the dataset authors. Licence CC BY-NC-SA 4.0, so these
+#   results carry non-commercial, share-alike terms.
+# - **NGHGI LULUCF**: `melo-2026-v4` — Melo et al. LULUCF Data Hub v4.0.0,
+#   2000-2024, used for the `all-ghg` category only
 # - **RCB anchors**: `ar6_2020` (IPCC AR6 WG1, Canadell et al. 2021) is the
 #   report anchor at 1.5C / 50%. `data/rcbs/rcbs.yaml` also holds
 #   `lamboll_2023`, `forster_2024`, `forster_2026` and `ar6_wg1_2021`
@@ -1561,12 +1426,12 @@ plt.show()
 #
 # | Aspect | fair-shares | PRR2023 |
 # |---|---|---|
-# | GDP convention | constant 2017 PPP (`NY.GDP.MKTP.PP.KD`) | same |
+# | GDP convention | constant 2021 PPP (`NY.GDP.MKTP.PP.KD`, 2025 vintage) | constant 2017 PPP (same indicator, WDI extract from 2023) |
 # | Population historical | un-owid-2025 | OWID historical CSV |
 # | Population projection | un-owid-2025 (UN WPP 2024) | IIASA WiC SSP2 v9_130115 (2013 vintage) |
-# | Emissions | PRIMAP-hist v2.6.1 (CO2-FFI) | GCB 2022 (national) |
-# | Global budget from 1990 / 2015 | 1322 / 642 Gt: 465 Gt from 2020 plus fossil CO2 without bunkers | 1530 / 704 Gt: 500 Gt plus 1030 / 204 Gt from GCB 2021 |
-# | International bunkers | 35 Gt deducted, 2020 to net zero | inside the 500 Gt |
+# | Emissions | PRIMAP-hist v2.8 (CO2-FFI) | GCB 2022 (national) |
+# | Global budget from 1990 / 2015 | 1327 / 647 Gt: 469 Gt from 2020 plus fossil CO2 without bunkers | 1530 / 704 Gt: 500 Gt plus 1030 / 204 Gt from GCB 2021 |
+# | International bunkers | 31 Gt deducted, 2020 to net zero | inside the 500 Gt |
 # | Future land-use CO2 | AR6 median removed; the net sink is capped at 0 (`precautionary_lulucf`) | not separated |
 # | RCB anchor | `ar6_2020` (+ Lamboll, Forster) | `ar6_2020` (Canadell et al. 2021) |
 # | Allocation granularity | country (ISO3c) | R11 regions |

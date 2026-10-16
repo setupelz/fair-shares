@@ -85,8 +85,7 @@ def validate_allocation_parameters(
         )
 
 
-# Default NGHGI min year — used only as a fallback when no metadata is available.
-# The actual min year should be derived from lulucf_metadata.yaml at runtime.
+# Fallback NGHGI min year; run_parameter_grid passes the first year of the loaded frame.
 _NGHGI_MIN_YEAR_DEFAULT = 2000
 
 
@@ -101,7 +100,8 @@ def _raise_nghgi_year_error(
     raise AllocationError(
         f"Configuration error for approach '{approach}':\n"
         f"  {param_name} = {year} is before {nghgi_min_year}\n\n"
-        f"For emission_category='{emission_category}' (contains LULUCF), "
+        f"For emission_category='{emission_category}' (contains LULUCF"
+        f"{'; it is also the CO2 part of all-ghg' if emission_category == 'co2' else ''}), "
         f"all allocations must be NGHGI-consistent. NGHGI-consistent LULUCF "
         f"CO2 data only starts in {nghgi_min_year} — both at country level "
         f"and world level (derived from NGHGI data).\n\n"
@@ -121,9 +121,10 @@ def validate_allocation_year_for_co2(
     """
     Enforce year parameters >= nghgi_min_year for LULUCF-containing categories.
 
-    The minimum year is derived from the NGHGI data (e.g., Melo v3.1 starts
-    at 2000). No NGHGI/BM splicing is allowed — categories containing LULUCF
-    are limited to the NGHGI data range.
+    The minimum year is the first year of the loaded NGHGI-consistent
+    country frame (2000 for both Melo releases). Categories containing
+    LULUCF stay inside the NGHGI data range, with no NGHGI/BM splice.
+    all-ghg-ex-co2-lulucf holds no LULUCF CO2 and may start earlier.
 
     This applies to budget allocations (``allocation_year``), pathway
     allocations (``first_allocation_year``), and pre-allocation-responsibility-adjusted
@@ -142,8 +143,8 @@ def validate_allocation_year_for_co2(
     emission_category : str
         Emission category (e.g. "co2-ffi", "co2", "all-ghg")
     nghgi_min_year : int or None
-        Minimum year for NGHGI-consistent allocations (derived from data).
-        If None, uses the default (currently 2000).
+        First year of the loaded NGHGI-consistent frame, passed by
+        ``run_parameter_grid``. If None, 2000.
     responsibility_min_year : int or None
         First year of the emissions frame used for pre-allocation
         responsibility. If None, ``pre_allocation_responsibility_year`` is

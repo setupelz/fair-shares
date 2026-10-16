@@ -149,10 +149,10 @@ _ID_COLS = [
 ]
 
 # Canonical keys shared by a budget config and its non-CO2 pathway analogue.
-# "source" is excluded: budget parts carry the RCB source, the non-CO2 part the
-# scenario source; parts pair on climate assessment + quantile.
+# Both parts carry the RCB source, so each budget pairs with its own scenario set.
 _PAIR_KEYS = [
     "iso3c",
+    "source",
     "climate-assessment",
     "quantile",
     "family",
@@ -172,16 +172,19 @@ def _country_emissions(processed_dir: Path, part: str) -> pd.DataFrame:
 
 
 def _cumulative_actuals(
-    processed_dir: Path, part: str, start_year: int
+    processed_dir: Path, part: str, start_year: int, end_year: int | None = None
 ) -> tuple[pd.Series, int]:
     """Actual emissions per country over the netting window, plus its last year.
 
-    From ``start_year`` through the last observed data year (inclusive).
-    Observed data only -- no extrapolation.
+    From ``start_year`` through the last observed data year (inclusive), or
+    through ``end_year`` when that is earlier. Observed data only -- no
+    extrapolation.
     """
     df = _country_emissions(processed_dir, part)
     year_cols = sorted(c for c in df.columns if c.isdigit())
     first_year, last_observed = int(year_cols[0]), int(year_cols[-1])
+    if end_year is not None:
+        last_observed = min(last_observed, end_year)
     if start_year < first_year:
         raise ValueError(
             f"{part}: data start {first_year} is after allocation year {start_year}"
@@ -191,20 +194,40 @@ def _cumulative_actuals(
     return pd.Series(consumed.values, index=df["iso3c"].values), last_observed
 
 
+def _last_observed_year(processed_dir: Path, part: str) -> int:
+    """Last year column of the processed country emissions for ``part``."""
+    df = _country_emissions(processed_dir, part)
+    return max(int(c) for c in df.columns if c.isdigit())
+
+
 def compute_remaining_budgets(
     category: str, allocations_absolute: pd.DataFrame, processed_dir: Path
 ) -> pd.DataFrame:
     """Remaining budget per country after netting observed emissions (§5).
 
     Budget parts: remaining = allocated total minus actual consumption from the
-    allocation year through the last observed year. Non-CO2 pathway parts:
+    allocation year through the netting end year. Non-CO2 pathway parts:
     remaining = the forward-window allocation, with the historical deviation
-    (actual minus allocated over the past window) reported separately. For
-    composite categories a ``combined`` row per configuration is added (CO2
-    budget part + non-CO2 pathway part), matched on the shared equity params.
+    (actual minus allocated over the past window) reported separately. Every
+    part nets through the last year that all parts observe (2024 for all-ghg).
+    For composite categories a ``combined`` row per configuration is added (CO2
+    budget part + non-CO2 pathway part), matched on the RCB source, climate
+    assessment, quantile and shared equity params.
+
+    Raises
+    ------
+    ValueError
+        If a budget row of a composite category has no non-CO2 pathway row
     """
     ab = allocations_absolute
     year_cols = sorted(c for c in ab.columns if str(c).isdigit())
+
+    # Every part nets through the last year that all parts observe, so a
+    # composite category combines its parts over one window.
+    netting_end = min(
+        _last_observed_year(processed_dir, part)
+        for part in ab["emission-category"].unique()
+    )
 
     frames = []
     for part, sub in ab.groupby("emission-category"):
@@ -222,7 +245,9 @@ def compute_remaining_budgets(
             sub["preserve"] = sub["preserve-first-allocation-year-shares"].astype(bool)
 
         for ay, chunk in sub.groupby("year"):
-            consumed, last_observed = _cumulative_actuals(processed_dir, part, int(ay))
+            consumed, last_observed = _cumulative_actuals(
+                processed_dir, part, int(ay), netting_end
+            )
             idx = chunk.index
             sub.loc[idx, "consumed-actuals"] = chunk["iso3c"].map(consumed).values
             sub.loc[idx, "netting-end-year"] = last_observed
@@ -286,11 +311,22 @@ def compute_remaining_budgets(
         combined["emission-category"] = "combined"
         combined = combined[tidy.columns]
         if len(combined) != len(budget_part):
-            logger.info(
-                "%s: paired %d/%d budget rows with a non-CO2 analogue",
-                category,
-                len(combined),
-                len(budget_part),
+            unpaired = budget_part.merge(
+                combined[pair_keys], on=pair_keys, how="left", indicator=True
+            )
+            unpaired = unpaired[unpaired["_merge"] == "left_only"]
+            labels = sorted(
+                set(
+                    zip(
+                        unpaired["source"],
+                        unpaired["climate-assessment"],
+                        unpaired["quantile"],
+                    )
+                )
+            )
+            raise ValueError(
+                f"{category}: {len(budget_part) - len(combined)} budget rows have "
+                f"no non-CO2 pathway (source, climate-assessment, quantile): {labels}"
             )
         tidy = pd.concat([tidy, combined], ignore_index=True)
 
@@ -448,6 +484,7 @@ def distribute_remaining_pathways(
         )
         pair_cols = [
             "iso3c",
+            "source",
             "family",
             "year",
             "preserve",
@@ -561,6 +598,8 @@ def _filter_to_anchor(
         mask = (
             sdf.index.get_level_values("climate-assessment") == climate_assessment
         ) & (sdf.index.get_level_values("quantile") == quantile)
+        if "source" in sdf.index.names:
+            mask &= sdf.index.get_level_values("source") == rcb_source
         loaded_data["scenarios_data"][cat_key] = sdf[mask]
         if loaded_data["scenarios_data"][cat_key].empty:
             raise ConfigurationError(f"No scenario rows match {anchor} for {cat_key}")

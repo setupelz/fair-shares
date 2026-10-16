@@ -614,9 +614,16 @@ def run_parameter_grid(
             responsibility_min_year = min(
                 get_year_columns(responsibility_emissions_ts, return_type="int")
             )
+        # LULUCF-containing frames start at the first NGHGI year of the active source.
+        nghgi_min_year = None
+        if emission_category in {"co2", "all-ghg"} and country_actual_emissions_ts is not None:
+            nghgi_min_year = min(
+                get_year_columns(country_actual_emissions_ts, return_type="int")
+            )
         validate_allocation_year_for_co2(
             allocations_config,
             emission_category,
+            nghgi_min_year=nghgi_min_year,
             responsibility_min_year=responsibility_min_year,
         )
 
@@ -693,10 +700,21 @@ def _to_list(value: Any) -> list[Any]:
     return [value]
 
 
+# Parameters whose single value is a (start, end) pair. A flat pair is one
+# value; a list of pairs expands as a grid.
+_PAIR_PARAMS: frozenset[str] = frozenset({"capability_window"})
+
+
 def _expand_parameters(params: dict[str, Any]) -> list[dict[str, Any]]:
     """Expand parameter lists into all combinations."""
-    # Convert all values to lists
-    param_lists: dict[str, list[Any]] = {k: _to_list(v) for k, v in params.items()}
+    param_lists: dict[str, list[Any]] = {}
+    for k, v in params.items():
+        is_flat_pair = (
+            k in _PAIR_PARAMS
+            and isinstance(v, list | tuple)
+            and not any(isinstance(x, list | tuple) for x in v)
+        )
+        param_lists[k] = [tuple(v)] if is_flat_pair else _to_list(v)
 
     if not param_lists:
         return [{}]

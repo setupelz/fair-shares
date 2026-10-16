@@ -4,23 +4,20 @@ Processes IPCC RCBs to 2020 baseline with NGHGI-consistent adjustments,
 following the methodology of Weber et al. (2026).
 
 Supports both co2-ffi and co2 emission categories:
-- **co2-ffi**: uses the pre-computed median-of-per-scenario-cumulatives
-  (``bm_lulucf_cumulative_median``) from notebook 104, based on scenario data
-  (e.g. AR6) in the corresponding climate category. Scenario data is
-  required because the LULUCF decomposition extends to net-zero (no
-  observational data exists for the future). Adjusted for baseline year
-  by subtracting the 2020-to-base prefix.
+- **co2-ffi**: deducts the bookkeeping (BM) land-use CO2 from the baseline
+  year to net zero, the median over the scenarios of the budget's
+  volume-matched set (``bm_lulucf_median_from``, one value per baseline year).
 - **co2**: the rebase adds observed NGHGI LULUCF for 2020 to the year before
-  the baseline, and the pre-computed convention gap (BM -> NGHGI) from
-  notebook 104 runs from the baseline year to net zero.
+  the baseline, and the convention gap (BM -> NGHGI) from notebook 104 runs
+  from the baseline year to net zero (``convention_gap_median_from``).
 
-NZ years and convention gap scalars are pre-computed by notebook 104 from
-the scenario data (currently Gidden et al. AR6 reanalysis) and saved as
-``rcb_scenario_adjustments.yaml``. Per-year BM LULUCF medians are stored
-as ``lulucf_shift_median_{key}.csv``. Both are keyed by scenario set
-(see ``rcb_scenario_set_key``): the budget label for sources under the
-AR6 category rule, the temperature band for sources under the peak-warming
-band rule.
+Notebook 104 writes, per budget (key ``source:label``):
+``rcb_scenario_adjustments.yaml`` (the scalars and the provenance of the
+scenario sets), ``scenario_set_{source}_{label}.csv`` (the members of the
+volume-matched set or AR6 category with their net-zero crossings and net CO2
+from each possible start year), and once ``bunker_share_reporters.csv`` (the
+bunker reporters behind the bunker share). See
+``fair_shares.library.utils.data.scenario_sets``.
 """
 
 from __future__ import annotations
@@ -43,16 +40,19 @@ from fair_shares.library.utils import (
     process_rcb_to_2020_baseline,
 )
 from fair_shares.library.utils.data.nghgi import (
-    compute_bunker_deduction,
+    bunker_deduction_from_share,
     load_bunker_timeseries,
 )
 from fair_shares.library.utils.data.rcb import (
     DEFAULT_REBASE_FILL_MAX_YEARS,
-    DEFAULT_SCENARIO_SELECTION,
+    canonical_scenarios,
     fill_rebase_years,
     missing_rebase_years,
-    rcb_scenario_set_key,
     validate_rebase_fill_max_years,
+)
+from fair_shares.library.utils.data.scenario_sets import (
+    bunker_share,
+    scenario_set_settings,
 )
 
 
@@ -89,10 +89,10 @@ def _load_rcb_scenario_adjustments(
     Returns
     -------
     dict[str, dict]
-        Mapping of scenario set key (e.g., "1.5p50") to adjustment dict with keys:
-        ``bm_lulucf_cumulative_median``, ``convention_gap_median_from``
-        (one median gap per RCB baseline year), ``nz_year_median``,
-        ``n_scenarios``
+        Mapping of budget key (e.g., "forster_2026:1.5p50") to adjustment dict
+        with keys ``bm_lulucf_median_from`` and ``convention_gap_median_from``
+        (one median per RCB baseline year), the set provenance and the bunker
+        pool
 
     Raises
     ------
@@ -111,152 +111,134 @@ def _load_rcb_scenario_adjustments(
 
     if verbose:
         print("  Pre-computed RCB scenario adjustments loaded:")
-        for cat, vals in sorted(adjustments.items()):
+        for key, vals in sorted(adjustments.items()):
+            terms = vals.get("terms_set") or {}
             print(
-                f"    {cat}: NZ_med={vals['nz_year_median']}, "
-                f"BM_LULUCF={vals['bm_lulucf_cumulative_median']:.0f} Mt, "
-                f"gap from baseline year (Mt)="
-                f"{vals.get('convention_gap_median_from')}, "
-                f"n={vals['n_scenarios']}"
+                f"    {key}: n={terms.get('n')}, "
+                f"NZ_med={terms.get('net_zero_year_median')}, "
+                f"BM LULUCF from baseline (Mt)={vals.get('bm_lulucf_median_from')}, "
+                f"gap from baseline (Mt)={vals.get('convention_gap_median_from')}"
             )
 
     return adjustments
 
 
+def _set_co2_after(scenarios_dir: Path, file_key: str, first_year: int) -> float:
+    """Median net CO2 of a budget's set from ``first_year`` to net zero (Mt).
+
+    Raises
+    ------
+    DataLoadingError
+        If notebook 104 has not written the set file or the column
+    """
+    members_csv = scenarios_dir / f"scenario_set_{file_key}.csv"
+    column = f"co2_from_{first_year}"
+    if not members_csv.exists():
+        raise DataLoadingError(
+            f"Scenario set file not found: {members_csv}. "
+            "Re-run notebook 104 (AR6 scenario preprocessing)."
+        )
+    members = pd.read_csv(members_csv)
+    if column not in members:
+        raise DataLoadingError(
+            f"{members_csv} lacks '{column}' (the year after the last observed "
+            "bunker year). Re-run notebook 104 (AR6 scenario preprocessing)."
+        )
+    return float(members[column].median())
+
+
+def _provenance_columns(adjustment: dict) -> dict:
+    """Columns that record how the scenario sets of a budget were chosen."""
+    terms = adjustment.get("terms_set") or {}
+    non_co2 = adjustment.get("non_co2_set") or {}
+    return {
+        "published_label": adjustment.get("published_label"),
+        "likelihood_scope": adjustment.get("likelihood_scope"),
+        "budget_metric": adjustment.get("budget_metric"),
+        "scenario_selection": adjustment.get("scenario_selection"),
+        "budget_2020_gt": adjustment.get("budget_2020_gt"),
+        "terms_set_rule": terms.get("rule"),
+        "terms_set_n": terms.get("n"),
+        "nz_year_median": terms.get("net_zero_year_median"),
+        "non_co2_set_rule": non_co2.get("rule"),
+        "non_co2_set_n": non_co2.get("n"),
+    }
+
+
 def _resolve_adjustment_scalars(
-    scenario: str,
+    budget_key: str,
     baseline_year: int,
-    net_zero_year: int,
-    bunker_ts: pd.DataFrame,
-    lulucf_shift_ts: pd.DataFrame,
     rcb_adjustments: dict[str, dict],
     emission_category: str = "co2-ffi",
     precautionary_lulucf: bool = True,
     verbose: bool = True,
 ) -> tuple[float, float]:
-    """Compute sign-ready adjustment scalars for a given scenario.
+    """Return the sign-ready LULUCF scalars of one budget.
 
-    For co2-ffi: uses the pre-computed ``bm_lulucf_cumulative_median``
-    (median of per-scenario cumulatives from 2020 to each scenario's NZ).
-    When ``baseline_year`` > 2020, the 2020-to-base prefix is subtracted
-    from the median timeseries.
-    For co2: uses the pre-computed convention gap from ``baseline_year`` to
-    NZ (``convention_gap_median_from[baseline_year]``) from notebook 104.
-
-    Returns values that can be added directly to the budget:
-    - **bunkers**: always positive (cumulative emissions); caller negates
-    - **lulucf**: sign-ready (added directly to budget)
-
-    Parameters
-    ----------
-    scenario : str
-        Scenario set key (e.g. "1.5p50" or "peak-warming-1.7C")
-    baseline_year : int
-        RCB source baseline year — the LULUCF decomposition (co2-ffi) and
-        the convention gap (co2) start here
-    net_zero_year : int
-        Category-level NZ year for bunker and LULUCF integration
-    bunker_ts : pd.DataFrame
-        Pre-loaded bunker fuel timeseries
-    lulucf_shift_ts : pd.DataFrame
-        Per-year BM LULUCF median timeseries (from notebook 104),
-        used for co2-ffi to integrate from baseline_year to NZ
-    rcb_adjustments : dict[str, dict]
-        Pre-computed RCB adjustment scalars from notebook 104,
-        keyed by scenario set (e.g., "1.5p50")
-    emission_category : str
-        Emission category (default: "co2-ffi")
-    precautionary_lulucf : bool
-        If True, BM LULUCF sinks cannot increase the fossil budget
-    verbose : bool
-        Whether to print progress
+    For co2-ffi: the median BM LULUCF from ``baseline_year`` to net zero over
+    the budget's set (``bm_lulucf_median_from[baseline_year]``), with the
+    precautionary cap. For co2: the convention gap from ``baseline_year`` to
+    net zero (``convention_gap_median_from[baseline_year]``).
 
     Returns
     -------
-    tuple[float, float, float]
-        (bunkers_mt, lulucf_future_mt, lulucf_nghgi_correction_mt).
-        Bunkers is positive; the two LULUCF scalars are sign-ready.
-        Exactly one of the LULUCF scalars is non-zero per category
-        (future_mt for co2-ffi, nghgi_correction_mt for co2).
+    tuple[float, float]
+        (lulucf_future_mt, lulucf_nghgi_correction_mt). Exactly one is
+        non-zero per category (future_mt for co2-ffi, nghgi_correction_mt for co2).
 
     Raises
     ------
     DataLoadingError
-        If ``rcb_adjustments`` has no entry for ``scenario``, or, for co2,
-        no convention gap from ``baseline_year``
+        If ``rcb_adjustments`` has no entry for the budget, or no LULUCF term
+        from ``baseline_year``
     """
-    if scenario not in rcb_adjustments:
+    if budget_key not in rcb_adjustments:
         raise DataLoadingError(
-            f"No RCB scenario adjustments for '{scenario}' "
+            f"No RCB scenario adjustments for '{budget_key}' "
             f"(available: {list(rcb_adjustments)}). "
             "Re-run notebook 104 (AR6 scenario preprocessing)."
         )
-    adj = rcb_adjustments[scenario]
+    adj = rcb_adjustments[budget_key]
+    field = (
+        "convention_gap_median_from"
+        if emission_category == "co2"
+        else "bm_lulucf_median_from"
+    )
+    values_from = adj.get(field) or {}
+    if baseline_year not in values_from:
+        what = "convention gap" if emission_category == "co2" else "BM LULUCF term"
+        raise DataLoadingError(
+            f"No {what} from baseline year {baseline_year} for '{budget_key}' "
+            f"(available baseline years: {sorted(values_from)}). "
+            "Re-run notebook 104 (AR6 scenario preprocessing)."
+        )
 
     lulucf_future_mt = 0.0
     lulucf_nghgi_correction_mt = 0.0
-
     if emission_category == "co2":
         # NGHGI-minus-BM convention gap from the baseline year to NZ (Weber
         # 2026). The rebase adds observed NGHGI LULUCF for the years before it.
-        gaps_from = adj.get("convention_gap_median_from") or {}
-        if baseline_year not in gaps_from:
-            raise DataLoadingError(
-                f"No convention gap from baseline year {baseline_year} for "
-                f"'{scenario}' (available baseline years: {sorted(gaps_from)}). "
-                "Re-run notebook 104 (AR6 scenario preprocessing)."
-            )
-        lulucf_nghgi_correction_mt = gaps_from[baseline_year]
+        lulucf_nghgi_correction_mt = values_from[baseline_year]
         if lulucf_nghgi_correction_mt == 0.0:
             warnings.warn(
-                f"The convention gap is 0.0 for scenario '{scenario}' — "
-                f"this likely means notebook 104 ran before NGHGI data was "
-                f"preprocessed. Re-run the preprocessing pipeline: "
+                f"The convention gap is 0.0 for '{budget_key}': notebook 104 "
+                f"likely ran before the NGHGI data were preprocessed. Re-run "
                 f"notebooks 105/107 first, then 104.",
                 stacklevel=2,
             )
     else:
-        # co2-ffi: subtract projected future (base→NZ) BM LULUCF to convert
-        # a published total-CO2 RCB into an FFI-only RCB.
-        bm_lulucf_mt = adj["bm_lulucf_cumulative_median"]
-
-        # Adjust for baseline year > 2020: subtract the 2020-to-base
-        # prefix using the median timeseries.  Historical BM LULUCF has
-        # negligible inter-scenario spread, so median(cmltv_i - prefix_i)
-        # ≈ median(cmltv_i) - median_prefix.
-        if baseline_year > 2020:
-            prefix_cols = [
-                str(y)
-                for y in range(2020, baseline_year)
-                if str(y) in lulucf_shift_ts.columns
-            ]
-            if prefix_cols:
-                bm_lulucf_mt -= float(
-                    lulucf_shift_ts[prefix_cols].sum(axis=1).iloc[0]
-                )
-
-        if precautionary_lulucf:
-            lulucf_future_mt = -max(0.0, bm_lulucf_mt)
-        else:
-            lulucf_future_mt = -bm_lulucf_mt
-
-    # --- Bunkers deduction from 2020 to NZ (always positive; caller negates).
-    # The rebase adds the bunkers of 2020 to baseline_year - 1. ---
-    bunkers_mt = compute_bunker_deduction(
-        bunker_ts=bunker_ts,
-        start_year=2020,
-        net_zero_year=net_zero_year,
-    )
+        # co2-ffi: subtract BM LULUCF from the baseline year to NZ.
+        bm_lulucf_mt = values_from[baseline_year]
+        lulucf_future_mt = (
+            -max(0.0, bm_lulucf_mt) if precautionary_lulucf else -bm_lulucf_mt
+        )
 
     if verbose:
         print(
-            f"    Scenario {scenario}: "
-            f"bunkers={bunkers_mt:.0f} Mt, "
-            f"lulucf_future={lulucf_future_mt:.0f} Mt, "
+            f"    Budget {budget_key}: lulucf_future={lulucf_future_mt:.0f} Mt, "
             f"lulucf_nghgi_correction={lulucf_nghgi_correction_mt:.0f} Mt"
         )
-
-    return bunkers_mt, lulucf_future_mt, lulucf_nghgi_correction_mt
+    return lulucf_future_mt, lulucf_nghgi_correction_mt
 
 
 def load_and_process_rcbs(
@@ -274,6 +256,12 @@ def load_and_process_rcbs(
 
     Processes RCBs to 2020 baseline with NGHGI-consistent bunkers and LULUCF
     adjustments, following Weber et al. (2026).
+
+    The bunker deduction is observed bunkers from 2020 to the last observed
+    year, plus the bunker share of the reporters times the median net CO2 of
+    the budget's scenario set from the next year to net zero
+    (``bunker_deduction_from_share``). The LULUCF terms are the medians over
+    the same set, read from ``rcb_scenario_adjustments.yaml``.
 
     Parameters
     ----------
@@ -303,7 +291,16 @@ def load_and_process_rcbs(
     Returns
     -------
     pd.DataFrame
-        DataFrame with processed RCB data including provenance fields
+        One row per budget with the processed RCB, each deduction, the
+        scenario-set provenance and the bunker share
+
+    Raises
+    ------
+    ConfigurationError
+        If the category is not co2-ffi or co2, or ``source_id`` is missing
+    DataLoadingError
+        If the YAML or a notebook 104 output (adjustments, scenario sets,
+        bunker reporters) is missing
     """
     # Validate emission category
     if emission_category not in ("co2-ffi", "co2"):
@@ -367,15 +364,39 @@ def load_and_process_rcbs(
         print("\nProcessing RCBs with adjustments:")
         print("  Target baseline year: 2020")
         print("  Adjustment mode: pre-computed (NGHGI-consistent, Weber et al. 2026)")
-        print("  Bunker NZ years: category-level median (from scenario adjustments)")
+        print(
+            "  Bunkers: observed, then the reporters' bunker share of the set's "
+            "net CO2 to net zero"
+        )
+
+    # Bunkers after the last observed year: a share of the set's net CO2.
+    share_csv = scenarios_dir / "bunker_share_reporters.csv"
+    if not share_csv.exists():
+        raise DataLoadingError(
+            f"Bunker share reporters not found: {share_csv}. "
+            "Re-run notebook 104 (AR6 scenario preprocessing)."
+        )
+    observed_bunkers = bunker_ts.iloc[0].dropna()
+    share_first_year = max(int(c) for c in observed_bunkers.index) + 1
+    share_settings = scenario_set_settings(rcb_data)["bunkers"]
+    share = bunker_share(
+        pd.read_csv(share_csv),
+        share_first_year,
+        share_settings["min_reporters"],
+        share_settings["min_families"],
+        share_settings["min_runs_per_family"],
+    )
+    if verbose:
+        print(
+            f"  Bunker share from {share_first_year}: {share['share']:.4f} "
+            f"(family-balanced; pooled {share['pooled']:.4f}) "
+            f"(IQR {share['q25']:.4f}-{share['q75']:.4f}, n={share['n']} "
+            f"{share['n_by_source']})"
+        )
 
     rebase_fill_max_years = validate_rebase_fill_max_years(
         rcb_data.get("rebase_fill_max_years", DEFAULT_REBASE_FILL_MAX_YEARS)
     )
-
-    # Pre-load baseline-shift LULUCF median timeseries from notebook 104 output.
-    # These are year-by-year median AFOLU|Direct CSVs, one per scenario set.
-    lulucf_shift_cache: dict[str, pd.DataFrame] = {}
 
     # Create a list to store all RCB records
     rcb_records = []
@@ -388,8 +409,8 @@ def load_and_process_rcbs(
 
         baseline_year = source_data.get("baseline_year")
         unit = source_data.get("unit", "Gt CO2")
-        scenarios = source_data.get("scenarios", {})
-        selection = source_data.get("scenario_selection", DEFAULT_SCENARIO_SELECTION)
+        scenarios = canonical_scenarios(source_key, source_data.get("scenarios", {}))
+        selection = source_data.get("scenario_selection")
 
         if baseline_year is None:
             raise ConfigurationError(
@@ -404,7 +425,7 @@ def load_and_process_rcbs(
             print(f"    Baseline year: {baseline_year}")
             print(f"    Unit: {unit}")
             print(f"    Scenarios: {len(scenarios)}")
-            print(f"    Scenario selection: {selection}")
+            print(f"    Scenario selection: {selection or 'default'}")
 
         # A series that ends up to rebase_fill_max_years before the last rebase
         # year takes its last observed value for the remaining years.
@@ -447,47 +468,26 @@ def load_and_process_rcbs(
 
         for scenario, rcb_value in scenarios.items():
             climate_assessment, quantile = parse_rcb_scenario(scenario)
-            set_key = rcb_scenario_set_key(source_key, scenario, selection)
-            if set_key not in rcb_adjustments:
+            budget_key = f"{source_key}:{scenario}"
+            if budget_key not in rcb_adjustments:
                 raise DataLoadingError(
                     f"RCB source '{source_key}', label '{scenario}': no scenario "
-                    f"adjustments for '{set_key}' in {adj_path}. "
+                    f"adjustments for '{budget_key}' in {adj_path}. "
                     "Re-run notebook 104 (AR6 scenario preprocessing)."
                 )
-
-            # Load pre-computed median LULUCF shift timeseries for baseline shift
-            if set_key not in lulucf_shift_cache:
-                shift_csv = scenarios_dir / f"lulucf_shift_median_{set_key}.csv"
-                if not shift_csv.exists():
-                    raise DataLoadingError(
-                        f"LULUCF shift median not found: {shift_csv}. "
-                        "Run notebook 104 (AR6 scenario preprocessing) first."
-                    )
-                shift_df = pd.read_csv(shift_csv).set_index("source")
-                lulucf_shift_cache[set_key] = shift_df
-                if verbose:
-                    print(
-                        f"    Loaded LULUCF shift median for {set_key} "
-                        f"from {shift_csv}"
-                    )
-            direct_median = lulucf_shift_cache[set_key]
-
-            # Scenario-level NZ year (for bunker integration)
-            nz_year = rcb_adjustments[set_key]["nz_year_median"]
-
-            # Resolve adjustment scalars from pre-computed values
-            bunkers_mt, lulucf_future_mt, lulucf_nghgi_mt = (
-                _resolve_adjustment_scalars(
-                    scenario=set_key,
-                    baseline_year=baseline_year,
-                    net_zero_year=nz_year,
-                    bunker_ts=bunker_ts,
-                    lulucf_shift_ts=direct_median,
-                    rcb_adjustments=rcb_adjustments,
-                    emission_category=emission_category,
-                    precautionary_lulucf=adjustments_config.precautionary_lulucf,
-                    verbose=verbose,
-                )
+            set_co2_after_mt = _set_co2_after(
+                scenarios_dir, f"{source_key}_{scenario}", share_first_year
+            )
+            bunkers_mt, _ = bunker_deduction_from_share(
+                bunker_ts, share["share"], set_co2_after_mt
+            )
+            lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
+                budget_key=budget_key,
+                baseline_year=baseline_year,
+                rcb_adjustments=rcb_adjustments,
+                emission_category=emission_category,
+                precautionary_lulucf=adjustments_config.precautionary_lulucf,
+                verbose=verbose,
             )
 
             # Process RCB to 2020 baseline
@@ -526,6 +526,25 @@ def load_and_process_rcbs(
                 "deduction_bunkers_mt": result["deduction_bunkers_mt"],
                 "deduction_lulucf_future_mt": result["deduction_lulucf_future_mt"],
                 "correction_lulucf_nghgi_mt": result["correction_lulucf_nghgi_mt"],
+                **_provenance_columns(rcb_adjustments[budget_key]),
+                "bunker_share": round(share["share"], 5),
+                "bunker_share_q25": round(share["q25"], 5),
+                "bunker_share_q75": round(share["q75"], 5),
+                "bunker_share_from": share_first_year,
+                "bunker_share_n": share["n"],
+                "bunker_share_by_source": ";".join(
+                    f"{k}:{v}" for k, v in share["n_by_source"].items()
+                ),
+                "bunker_share_pooled": round(share["pooled"], 5),
+                "bunker_share_families": ";".join(
+                    f"{f}:{v['median']:.4f}(n={v['n']})"
+                    for f, v in share["families"].items()
+                ),
+                "bunker_share_excluded_families": ";".join(
+                    f"{f}:{v['median']:.4f}(n={v['n']})"
+                    for f, v in share["excluded_families"].items()
+                ),
+                "bunker_set_co2_after_mt": round(set_co2_after_mt),
             }
 
             rcb_records.append(record)

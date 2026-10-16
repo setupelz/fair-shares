@@ -210,10 +210,20 @@ class TestRegistryIntegrity:
                 continue
             assert "<data_dir>" in (source.manual_instructions or ""), name
 
+    def test_default_emissions_source_carries_its_non_commercial_terms(self, registry):
+        """PRIMAP-hist v2.8 is the default; v2.6.1 stays opt-in under CC BY."""
+        v28 = registry["primap-202609"]
+        assert v28.tier == "default"
+        assert not v28.redistributable
+        assert "NC-SA" in v28.license
+        assert registry["primap-202503"].tier == "optional"
+        assert registry["primap-202503"].license == "CC-BY-4.0"
+
     def test_default_tier_covers_a_standard_run(self, registry):
         assert set(registry.names_for_tiers(("default",))) == {
-            "primap-202503",
-            "melo-2026",
+            "primap-202609",
+            "gcb-2025",
+            "melo-2026-v4",
             "wdi-2025",
             "un-owid-2025",
         }

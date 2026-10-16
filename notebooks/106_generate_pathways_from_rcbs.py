@@ -90,7 +90,7 @@ else:
     # Interactive development configuration
     emission_category = "co2-ffi"  # or "co2"
     active_sources = {
-        "emissions": "primap-202503",
+        "emissions": "primap-202609",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",
@@ -480,7 +480,9 @@ source_markers = {
 quantile_styles = {
     "0.5": {"linestyle": "-", "linewidth": 2.0, "alpha": 0.9},
     "0.66": {"linestyle": "--", "linewidth": 1.8, "alpha": 0.8},
+    "0.67": {"linestyle": "--", "linewidth": 1.8, "alpha": 0.8},
     "0.83": {"linestyle": ":", "linewidth": 1.8, "alpha": 0.7},
+    "0.9": {"linestyle": "-.", "linewidth": 1.8, "alpha": 0.7},
 }
 
 # Create figure

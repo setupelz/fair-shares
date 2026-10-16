@@ -349,11 +349,11 @@ def resolve_data_setup(
         Emission category ("all-ghg", "all-ghg-ex-co2-lulucf", "co2-ffi")
     active_sources : dict[str, str]
         Dictionary of active data sources. Must include keys:
-        - "emissions": emissions source (e.g., "primap-202503")
+        - "emissions": emissions source (e.g., "primap-202609")
         - "gdp": GDP source (e.g., "wdi-2025")
         - "population": population source (e.g., "un-owid-2025")
         - "gini": Gini source (e.g., "unu-wider-2025")
-        - "lulucf": LULUCF source (e.g., "melo-2026") — required for NGHGI corrections
+        - "lulucf": LULUCF source (e.g., "melo-2026-v4") — required for NGHGI corrections
         - "target": target source (e.g., "pathway", "rcbs")
     verbose : bool, default True
         Whether to print progress messages

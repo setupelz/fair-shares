@@ -90,3 +90,53 @@ def gcb_bunkers(raw: pd.DataFrame, first_year: int = 1850) -> pd.DataFrame:
     wide = _wide(raw, first_year)
     bunkers = (wide.loc[SHIPPING] + wide.loc[AVIATION]).rename("bunkers")
     return bunkers.to_frame().T.rename_axis("source")
+
+
+# Sheet and columns of the Global Carbon Budget workbook (GtC per year).
+GLOBAL_BUDGET_SHEET = "Global Carbon Budget"
+GLOBAL_FOSSIL = "fossil emissions excluding carbonation"
+GLOBAL_CARBONATION = "cement carbonation sink"
+GLOBAL_LAND_USE = "land-use change emissions"
+GTC_TO_GTCO2 = 3.664
+
+
+def gcb_global_net_co2(path) -> pd.Series:
+    """Return observed global net CO2 emissions in Gt CO2 per year.
+
+    Net emissions are fossil emissions minus the cement carbonation sink plus
+    bookkeeping land-use change emissions, from the "Global Carbon Budget"
+    sheet of the Global Carbon Budget workbook. The sheet reports GtC; the
+    workbook's own factor 3.664 converts to Gt CO2. Fossil emissions are
+    global, so they include international bunkers.
+
+    Parameters
+    ----------
+    path : str or Path
+        The workbook, e.g. Global_Carbon_Budget_2025_v1.0.xlsx
+
+    Returns
+    -------
+    pd.Series
+        Indexed by year (int), one value per year with all three components
+
+    Raises
+    ------
+    DataLoadingError
+        If the sheet lacks the year row or a component column
+    """
+    raw = pd.read_excel(path, sheet_name=GLOBAL_BUDGET_SHEET, header=None)
+    header_rows = raw.index[raw.iloc[:, 0].astype(str).str.strip() == "Year"]
+    if header_rows.empty:
+        raise DataLoadingError(f"{path}: no 'Year' header in '{GLOBAL_BUDGET_SHEET}'.")
+    table = raw.iloc[header_rows[0] + 1 :].copy()
+    table.columns = [str(c).strip() for c in raw.iloc[header_rows[0]]]
+    missing = {GLOBAL_FOSSIL, GLOBAL_CARBONATION, GLOBAL_LAND_USE} - set(table.columns)
+    if missing:
+        raise DataLoadingError(
+            f"{path}: '{GLOBAL_BUDGET_SHEET}' lacks {sorted(missing)}."
+        )
+    table = table[pd.to_numeric(table["Year"], errors="coerce").notna()]
+    table.index = table["Year"].astype(int)
+    values = table[[GLOBAL_FOSSIL, GLOBAL_CARBONATION, GLOBAL_LAND_USE]].astype(float)
+    net = values[GLOBAL_FOSSIL] - values[GLOBAL_CARBONATION] + values[GLOBAL_LAND_USE]
+    return (net.dropna() * GTC_TO_GTCO2).rename("net_co2_gt").rename_axis("year")

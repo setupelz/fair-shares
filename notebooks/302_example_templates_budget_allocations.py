@@ -58,11 +58,11 @@ emission_category = "all-ghg"
 # Data sources
 active_sources = {
     "target": "rcbs",
-    "emissions": "primap-202503",
+    "emissions": "primap-202609",
     "gdp": "wdi-2025",
     "population": "un-owid-2025",
     "gini": "wdi-2025",
-    "lulucf": "melo-2026",
+    "lulucf": "melo-2026-v4",
 }
 
 # Budget allocation approaches (CO2).

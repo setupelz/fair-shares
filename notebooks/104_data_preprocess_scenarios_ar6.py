@@ -49,6 +49,8 @@ from fair_shares.library.exceptions import (
     ConfigurationError,
     DataProcessingError,
 )
+from fair_shares.library.paths import resolve_source_path
+from fair_shares.library.preprocessing import emissions_path
 from fair_shares.library.utils import (
     build_source_id,
     determine_processing_categories,
@@ -59,14 +61,28 @@ from fair_shares.library.utils import (
     interpolate_scenarios_data,
     process_iamc_zip,
 )
-from fair_shares.library.preprocessing import emissions_path
+from fair_shares.library.utils.data.gcb import gcb_global_net_co2
 from fair_shares.library.utils.data.rcb import (
     AR6_CATEGORY_BY_RCB_LABEL,
-    NET_ZERO_YEAR_COLUMN,
-    PEAK_WARMING_COLUMN,
-    build_rcb_scenario_sets,
+    DEFAULT_REBASE_FILL_MAX_YEARS,
     convention_gap_from_baseline,
-    net_zero_year,
+    integrate,
+    parse_rcb_scenario,
+)
+from fair_shares.library.utils.data.scenario_sets import (
+    NET_ZERO_CROSSING,
+    SHARE_START_YEARS,
+    build_budget_sets,
+    bunker_share,
+    bunker_share_table,
+    median_pathways_by_budget,
+    scenario_accounting,
+    scenario_set_settings,
+)
+from fair_shares.library.utils.data.scenario_sources import (
+    bunker_reporter_series,
+    get_scenario_source,
+    metadata_column_names,
 )
 from fair_shares.library.utils.dataframes import normalize_metadata_column
 from fair_shares.library.utils.units import _clean_unit_string
@@ -115,7 +131,7 @@ else:
     # Interactive development configuration
     emission_category = "all-ghg-ex-co2-lulucf"
     active_sources = {
-        "emissions": "primap-202503",
+        "emissions": "primap-202609",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",
         "gini": "wdi-2025",
@@ -277,21 +293,20 @@ print(f"Final categories: {final_categories}")
 # Filter to only primary categories for the main processing loop
 timeseries_specs = primary_to_process
 
-# 1:1 mapping from AR6 category to RCB scenario label.
-# Each AR6 category corresponds to exactly one RCB scenario.
-# The scenario label encodes temperature target + probability (e.g. "1.5p50").
-# Used internally during processing; converted to clean (assessment, quantile)
-# format at output time via _SCENARIO_TO_ASSESSMENT / _SCENARIO_TO_QUANTILE.
+# AR6 category paired with each budget label (C1 1.5p50, C3 2p67, C4 2p50).
+# The category medians carry the label; the output splits it into a clean
+# climate assessment and quantile (e.g. "1.5C", 0.5) to match the RCB format.
 _AR6_TO_SCENARIO = {
     category: label for label, category in AR6_CATEGORY_BY_RCB_LABEL.items()
 }
 _AR6_CATEGORIES_TO_PROCESS = list(_AR6_TO_SCENARIO.keys())
 desired_climate_assessments = list(_AR6_TO_SCENARIO.values())
-
-# Output mappings: split scenario label into clean climate-assessment + quantile
-# to match RCB format (e.g. climate-assessment="1.5C", quantile=0.5)
-_SCENARIO_TO_ASSESSMENT = {"1.5p50": "1.5C", "2p83": "2C", "2p66": "2C"}
-_SCENARIO_TO_QUANTILE = {"1.5p50": 0.5, "2p83": 0.83, "2p66": 0.66}
+_SCENARIO_TO_ASSESSMENT = {
+    label: parse_rcb_scenario(label)[0] for label in desired_climate_assessments
+}
+_SCENARIO_TO_QUANTILE = {
+    label: float(parse_rcb_scenario(label)[1]) for label in desired_climate_assessments
+}
 
 # Print out the parameters for debugging
 print(f"Scenario source: {active_target_source}")
@@ -307,20 +322,29 @@ print(f"Desired scenarios: {desired_climate_assessments}")
 # ## Load data
 
 # %%
+# The registry entry of the scenario source declares its variables, the
+# metadata columns of the selection rules and its bunker series.
+scenario_source = get_scenario_source(_active_scenario)
+_selection_columns = metadata_column_names(scenario_source)
+
 # Process the scenario source
 print(f"Processing {active_target_source} scenarios...")
-df = process_iamc_zip(
-    project_root / scenario_path, metadata_columns=[PEAK_WARMING_COLUMN]
-)
+df = process_iamc_zip(project_root / scenario_path, metadata_columns=_selection_columns)
 
 # Scenario metadata, one row per scenario, for the RCB scenario sets.
-_peak_warming_column = normalize_metadata_column(PEAK_WARMING_COLUMN)
+_normalised = {normalize_metadata_column(c): c for c in _selection_columns}
+_normalised["Category"] = "Category"
 scenario_metadata = (
-    df[["Model", "Scenario", "Category", _peak_warming_column]]
+    df[["Model", "Scenario", *_normalised]]
     .drop_duplicates()
-    .rename(columns={_peak_warming_column: PEAK_WARMING_COLUMN})
+    .rename(columns=_normalised)
+    .set_index(["Model", "Scenario"])
 )
-df = df.drop(columns=[_peak_warming_column])
+df = df.drop(columns=[c for c in _normalised if c != "Category"])
+_set_columns = {
+    "category": scenario_source["category_column"],
+    **scenario_source["metadata_columns"],
+}
 
 # %% [markdown]
 # ## Load historical emissions for harmonisation
@@ -336,9 +360,7 @@ emissions_world_key = emissions_data_parameters.get("world_key")
 
 historical_emissions_data = {}
 for category in timeseries_specs:
-    emiss_path = emissions_path(
-        emiss_intermediate_dir, category, active_lulucf_source
-    )
+    emiss_path = emissions_path(emiss_intermediate_dir, category, active_lulucf_source)
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
@@ -429,43 +451,139 @@ print(f"Processing scenarios data from {active_target_source}")
 # Rename 'Category' to 'climate-assessment' and relabel to RCB scenario labels
 df = df.rename(columns={"Category": "climate-assessment"})
 
-# The RCB scenario sets draw on every category (peak-warming bands span categories).
+# The budget scenario sets draw on every category.
 df_all_categories = df
 
-# Filter to AR6 categories that have a corresponding RCB scenario
-print(f"Filtering to AR6 categories: {_AR6_CATEGORIES_TO_PROCESS}")
+# Shorthand for the variables that the scenario source registry declares
+_registry_variables = scenario_source["variables"]
+shorthand_variables = {
+    "CO2": _registry_variables["co2"],
+    "CO2_NGHGI": _registry_variables["co2_nghgi"],
+    "AFOLU_direct": _registry_variables["afolu_direct"],
+    "AFOLU_indirect": _registry_variables["afolu_indirect"],
+    "KYOTO": _registry_variables["kyoto"],
+    "KYOTO_NGHGI": _registry_variables["kyoto_nghgi"],
+}
+
+# %% [markdown]
+# ## Scenario sets of every budget
+#
+# Each budget in rcbs.yaml takes its scenario-derived terms from sets matched
+# to their role (`fair_shares.library.utils.data.scenario_sets`):
+#
+# - volume-matched set (land-use deduction, convention gap, bunker window):
+#   scenarios that reach net-zero CO2 and whose cumulative net CO2 from 2020
+#   to net zero lies within `volume_tolerance_gt` of the budget from 2020
+# - temperature-matched set (non-CO2 pathway): median warming at net zero
+#   within `temperature_half_width` of the budget temperature
+# - AR6 category pool under `scenario_selection: ar6-category` (C1 1.5p50,
+#   C3 2p67, C4 2p50), for every term
+#
+# Cumulatives are trapezoid integrals of the reported years to the
+# interpolated net-zero crossing. A budget from 2020 adds observed global net
+# CO2 (Global Carbon Budget) of 2020 to the year before its baseline.
+
+# %%
+# World rows of the variables behind the adjustments, for every AR6 category.
+rcb_scenario_data = {
+    var_name: df_all_categories[
+        (df_all_categories["Variable"] == shorthand_variables[var_name])
+        & (df_all_categories["Region"] == world_key)
+    ]
+    for var_name in ["CO2", "AFOLU_direct", "AFOLU_indirect"]
+}
+
+
+def _world_frame(var_df):
+    """One row per scenario, indexed by (Model, Scenario), sorted year columns."""
+    years = sorted([c for c in var_df.columns if c.isdigit()], key=int)
+    return var_df.set_index(["Model", "Scenario"])[years].astype(float)
+
+
+# Net-zero crossing and cumulative CO2 from 2020 to it, from the CO2 series of
+# the scenario source (AR6: the reanalysis total CO2).
+_co2_world = _world_frame(rcb_scenario_data["CO2"])
+scenario_accounts = scenario_accounting(_co2_world)
+scenario_metadata = scenario_metadata.join(scenario_accounts, how="left")
+
+# Select the scenario sets of every budget in the RCB file of the active target.
+# A target without an RCB file (pathway mode) needs no RCB adjustments.
+_rcb_target = config.get("active_target_source", active_target_source)
+_rcb_path = config["targets"].get(_rcb_target, {}).get("path")
+if _rcb_path:
+    with open(project_root / _rcb_path) as f:
+        _rcb_yaml = yaml.safe_load(f)
+    _set_settings = scenario_set_settings(_rcb_yaml)
+    observed_net_co2 = gcb_global_net_co2(
+        resolve_source_path(_set_settings["observed_co2_path"])
+    )
+    budget_sets = build_budget_sets(
+        _rcb_yaml,
+        scenario_metadata,
+        observed_net_co2,
+        _set_columns,
+        _rcb_yaml.get("rebase_fill_max_years", DEFAULT_REBASE_FILL_MAX_YEARS),
+    )
+    # The LULUCF terms of a budget start at the baseline year of its source.
+    rcb_baseline_years = sorted(
+        {source["baseline_year"] for source in _rcb_yaml["rcb_data"].values()}
+    )
+else:
+    _rcb_yaml = None
+    budget_sets = {}
+    rcb_baseline_years = []
+    print(f"  Target '{_rcb_target}' has no RCB file: no RCB adjustments computed.")
+
+for _key, _entry in budget_sets.items():
+    _record = _entry["record"]
+    print(
+        f"  {_key}: from 2020 {_record['budget_2020_gt']:.0f} Gt, "
+        f"terms n={_record['terms_set']['n']}, "
+        f"non-CO2 n={_record['non_co2_set']['n']}"
+    )
+
+# Scenarios of any budget set; they are harmonised with the category scenarios.
+_rcb_set_members = (
+    pd.DataFrame(
+        sorted(
+            {m for e in budget_sets.values() for m in e["terms"].union(e["non_co2"])}
+        ),
+        columns=["Model", "Scenario"],
+    )
+    .drop_duplicates()
+    .assign(_in_rcb_set=True)
+    if budget_sets
+    else pd.DataFrame(columns=["Model", "Scenario", "_in_rcb_set"])
+)
+
+# %%
+# Keep the AR6 categories paired with a budget label and the scenarios of any budget set
+print(f"Filtering to AR6 categories: {_AR6_CATEGORIES_TO_PROCESS} and budget sets")
 df_before_filter = len(df)
-df = df[df["climate-assessment"].isin(_AR6_CATEGORIES_TO_PROCESS)].copy()
+df = df.merge(_rcb_set_members, on=["Model", "Scenario"], how="left")
+df = df[
+    df["climate-assessment"].isin(_AR6_CATEGORIES_TO_PROCESS)
+    | df["_in_rcb_set"].eq(True)
+].drop(columns="_in_rcb_set")
 print(f"  Filtered from {df_before_filter} to {len(df)} rows")
 
-# Relabel AR6 categories to RCB scenario labels (e.g. C1 → 1.5p50)
-df["climate-assessment"] = df["climate-assessment"].map(_AR6_TO_SCENARIO)
-print(
-    f"  Relabelled to RCB scenario labels: {sorted(df['climate-assessment'].unique())}"
+# Relabel AR6 categories to RCB scenario labels (e.g. C1 → 1.5p50); others keep theirs
+df["climate-assessment"] = (
+    df["climate-assessment"].map(_AR6_TO_SCENARIO).fillna(df["climate-assessment"])
 )
+print(f"  RCB scenario labels: {desired_climate_assessments}")
 
 # Dictionary to store all processed timeseries
 all_timeseries = {}
+
+# Median pathway of every budget's scenario set, per timeseries
+budget_timeseries = {}
 
 # Dictionary to store harmonization comparison data for plotting
 harmonization_comparison = {}
 
 # Extract variables needed for NGHGi calculations
 print("Extracting variables for NGHGi calculations...")
-
-# Define shorthand dictionary for variables from Gidden et al. 2023
-shorthand_variables = {
-    "CO2": "AR6 Reanalysis|OSCARv3.2|Emissions|CO2",
-    "CO2_NGHGI": (
-        "AR6 Reanalysis|OSCARv3.2|Emissions|CO2 - Direct and Indirect Fluxes"
-    ),
-    "AFOLU_direct": ("AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Direct"),
-    "AFOLU_indirect": ("AR6 Reanalysis|OSCARv3.2|Emissions|CO2|AFOLU|Indirect"),
-    "KYOTO": "AR6 Reanalysis|OSCARv3.2|Emissions|Kyoto Gases",
-    "KYOTO_NGHGI": (
-        "AR6 Reanalysis|OSCARv3.2|Emissions|Kyoto Gases - Direct and Indirect Fluxes"
-    ),
-}
 
 # Extract and store variables with shorthand names
 scenario_data = {}
@@ -616,8 +734,14 @@ for timeseries_name in timeseries_specs:
 
         # Calculate median of original pathways for comparison
         groupby_cols = ["climate-assessment", "iso3c", "unit", "year"]
+
+        def _labelled(frame):
+            """Rows of the AR6 categories mapped to a budget label."""
+            return frame[frame["climate-assessment"].isin(desired_climate_assessments)]
+
         var_original_median = (
-            var_long_annual.groupby(groupby_cols)
+            _labelled(var_long_annual)
+            .groupby(groupby_cols)
             .agg({timeseries_name: "median"})
             .reset_index()
         )
@@ -670,7 +794,8 @@ for timeseries_name in timeseries_specs:
             )
 
             var_harmonized_only_median = (
-                var_long_harmonized_only.groupby(groupby_cols)
+                _labelled(var_long_harmonized_only)
+                .groupby(groupby_cols)
                 .agg({timeseries_name: "median"})
                 .reset_index()
             )
@@ -693,7 +818,8 @@ for timeseries_name in timeseries_specs:
 
             # Prepare comparison data for plotting
             var_harmonized_preserved_median = (
-                var_long_harmonized.groupby(groupby_cols)
+                _labelled(var_long_harmonized)
+                .groupby(groupby_cols)
                 .agg({timeseries_name: "median"})
                 .reset_index()
             )
@@ -712,9 +838,35 @@ for timeseries_name in timeseries_specs:
             var_long_harmonized = var_long_annual
             harmonization_comparison[timeseries_name] = None
 
+        # Median pathway of every budget's non-CO2 set, from the same harmonised pathways
+        if budget_sets:
+            _per_scenario = ensure_string_year_columns(
+                var_long_harmonized.pivot_table(
+                    index=["model", "scenario"], columns="year", values=timeseries_name
+                )
+            )
+            _by_budget = median_pathways_by_budget(_per_scenario, budget_sets)
+            _by_budget.index = pd.MultiIndex.from_tuples(
+                [
+                    (ca, q, src, world_key, target_unit, timeseries_name)
+                    for ca, q, src in _by_budget.index
+                ],
+                names=[
+                    "climate-assessment",
+                    "quantile",
+                    "source",
+                    "iso3c",
+                    "unit",
+                    "emission-category",
+                ],
+            )
+            budget_timeseries[timeseries_name] = _by_budget
+            print(f"    Median pathways for {len(_by_budget)} budgets")
+
         # Calculate median across pathways and convert to wide format
         var_grouped = (
-            var_long_harmonized.groupby(groupby_cols)
+            _labelled(var_long_harmonized)
+            .groupby(groupby_cols)
             .agg({timeseries_name: "median"})
             .reset_index()
         )
@@ -769,6 +921,9 @@ print("\nVariable processing complete")
 # These are computed from the already-harmonized median pathways:
 # - co2-lulucf (NGHGI) = co2 - co2-ffi
 # - non-co2 = all-ghg - co2
+#
+# Non-CO2 is also derived per budget, from the median pathways of the budget's
+# own scenario set.
 
 # %%
 _scenario_index_levels = [
@@ -781,21 +936,18 @@ _scenario_index_levels = [
 ]
 
 
-def _derive_category(minuend_key, subtrahend_key, new_category):
-    """Derive a new category by subtracting two existing all_timeseries entries."""
-    if minuend_key not in all_timeseries or subtrahend_key not in all_timeseries:
+def _derive_category(minuend_key, subtrahend_key, new_category, timeseries=None):
+    """Derive a new category by subtracting two existing timeseries entries."""
+    timeseries = all_timeseries if timeseries is None else timeseries
+    if minuend_key not in timeseries or subtrahend_key not in timeseries:
         print(
             f"  Cannot derive {new_category}: "
             f"missing {minuend_key} or {subtrahend_key}"
         )
         return None
 
-    a = (
-        all_timeseries[minuend_key]
-        .reset_index(level="emission-category", drop=True)
-        .copy()
-    )
-    b = all_timeseries[subtrahend_key].reset_index(level="emission-category", drop=True)
+    a = timeseries[minuend_key].reset_index(level="emission-category", drop=True).copy()
+    b = timeseries[subtrahend_key].reset_index(level="emission-category", drop=True)
 
     common_idx = a.index.intersection(b.index)
     result = a.loc[common_idx].sub(b.loc[common_idx], fill_value=0)
@@ -821,80 +973,37 @@ if "non-co2" in derived_to_process or "non-co2" in final_categories:
     if non_co2 is not None:
         all_timeseries["non-co2"] = non_co2
         print(f"  non-co2 shape: {non_co2.shape}")
+    non_co2_by_budget = _derive_category(
+        "all-ghg", "co2", "non-co2", timeseries=budget_timeseries
+    )
+    if non_co2_by_budget is not None:
+        budget_timeseries["non-co2"] = non_co2_by_budget
 
 # %% [markdown]
-# ## Pre-compute RCB adjustment scalars per scenario set
+# ## Pre-compute RCB adjustment scalars per budget
 #
-# For RCB-based allocations, the library needs adjustment scalars to convert
-# IPCC RCBs (BM convention) to NGHGI-consistent budgets. These are
-# pre-computed here from the Gidden scenario data so that the library never needs
-# to handle the Direct/Indirect AFOLU decomposition directly.
+# Scalars per budget, from the members of its volume-matched set (or AR6
+# category) that reach net zero, each integrated to its own net-zero crossing:
+# - `bm_lulucf_median_from`: one entry per RCB baseline year, the median BM
+#   LULUCF (AFOLU|Direct) from that year to net zero
+# - `convention_gap_median_from`: one entry per RCB baseline year, the median
+#   convention gap (observed NGHGI minus Direct up to the splice year,
+#   Indirect after it) from that year to net zero
+# - the provenance of the sets (`terms_set`, `non_co2_set`, `consistency`)
+# - `bunkers`: the reporters behind the bunker share, by source and model
 #
-# Each budget in rcbs.yaml has one scenario set. `build_rcb_scenario_sets`
-# selects it by the rule of the RCB source: an AR6 category (key = budget
-# label, e.g. `1.5p50`) or a peak-warming band (key = temperature, e.g.
-# `peak-warming-1.7C`).
-#
-# Scalars computed per scenario set:
-# - `bm_lulucf_cumulative_median`: median of per-scenario cumulative BM LULUCF
-#   (= AFOLU|Direct), each integrated to its own NZ year
-# - `convention_gap_median_from`: one entry per RCB baseline year. Each is the
-#   median of the per-scenario convention gap (observed NGHGI minus Direct up to
-#   the splice year, Indirect after it) from that baseline year to the
-#   scenario's own NZ year
-# - `nz_year_median`, `nz_year_min`, `nz_year_max`: net-zero year statistics
-# - `n_scenarios`: number of scenarios in the set
+# Bunker share: every scenario of `bunkers.scenario_sources` that reports
+# international aviation and shipping and reaches net zero (AR6: 0.6 x
+# Aviation plus Maritime; SCI: its international bunker variables).
+# `bunker_share_reporters.csv` holds each reporter's cumulative bunkers and net
+# CO2 from each possible start year to its net zero, and
+# `scenario_set_{source}_{label}.csv` the cumulative net CO2 of each set member.
+# The RCB step adds observed bunkers to the last observed year, then the median
+# reporter share times the median net CO2 of the set from the next year to net
+# zero. An AR6 category budget applies the same share to its category set.
 
 # %%
-print("\n--- Pre-computing RCB adjustment scalars per scenario set ---")
-
-# World rows of the variables behind the adjustments, for every AR6 category.
-rcb_scenario_data = {
-    var_name: df_all_categories[
-        (df_all_categories["Variable"] == shorthand_variables[var_name])
-        & (df_all_categories["Region"] == world_key)
-    ]
-    for var_name in ["CO2", "AFOLU_direct", "AFOLU_indirect"]
-}
-
-# Net-zero year of every scenario: the first year with total CO2 at or below
-# zero. The deductions end there, and the band rule keeps scenarios that have one.
-_co2_year_cols = sorted(
-    [col for col in rcb_scenario_data["CO2"].columns if col.isdigit()], key=int
-)
-_net_zero_years = (
-    rcb_scenario_data["CO2"]
-    .set_index(["Model", "Scenario"])[_co2_year_cols]
-    .apply(net_zero_year, axis=1)
-    .rename(NET_ZERO_YEAR_COLUMN)
-    .reset_index()
-)
-scenario_metadata = scenario_metadata.merge(
-    _net_zero_years, on=["Model", "Scenario"], how="left"
-)
-
-# Select the scenario set of every budget in the RCB file of the active target.
-# A target without an RCB file (pathway mode) needs no RCB adjustments.
-_rcb_target = config.get("active_target_source", active_target_source)
-_rcb_path = config["targets"].get(_rcb_target, {}).get("path")
-if _rcb_path:
-    with open(project_root / _rcb_path) as f:
-        _rcb_yaml = yaml.safe_load(f)
-    rcb_scenario_sets = build_rcb_scenario_sets(_rcb_yaml, scenario_metadata)
-    # The convention gap of a budget starts at the baseline year of its source.
-    rcb_baseline_years = sorted(
-        {source["baseline_year"] for source in _rcb_yaml["rcb_data"].values()}
-    )
-else:
-    rcb_scenario_sets = {}
-    rcb_baseline_years = []
-    print(f"  Target '{_rcb_target}' has no RCB file: no RCB adjustments computed.")
-
-
-def rows_of_scenario_set(var_df, scenario_set):
-    """Return the rows of var_df whose (Model, Scenario) is in the scenario set."""
-    return var_df.merge(scenario_set[["Model", "Scenario"]], on=["Model", "Scenario"])
-
+print("\n--- Pre-computing RCB adjustment scalars per budget ---")
 
 # Load NGHGI world timeseries for historical convention gap computation.
 # Only needed for co2/all-ghg (NGHGI corrections); co2-ffi uses BM LULUCF
@@ -914,95 +1023,119 @@ else:
         f"  Convention gap will be zero (fine for co2-ffi; run notebook 107 for co2/all-ghg)."
     )
 
-# Compute adjustment scalars per scenario set
+# Bunker reporters of every configured scenario source: every scenario that
+# reports bunkers, without historical vetting, with the model's own net CO2.
+share_sources = {}
+if budget_sets:
+    _bunker_sources = _set_settings["bunkers"]["scenario_sources"]
+    for _name in _bunker_sources:
+        _loaded = bunker_reporter_series(
+            _name,
+            exclude_ar6_duplicates=_name != "ar6" and "ar6" in _bunker_sources,
+        )
+        if _loaded is not None:
+            share_sources[_name] = _loaded
+    share_table = bunker_share_table(share_sources)
+    share_table.to_csv(intermediate_dir / "bunker_share_reporters.csv", index=False)
+    # The share from the first possible start year must clear the guards.
+    share_info = bunker_share(
+        share_table,
+        SHARE_START_YEARS[0],
+        _set_settings["bunkers"]["min_reporters"],
+        _set_settings["bunkers"]["min_families"],
+        _set_settings["bunkers"]["min_runs_per_family"],
+    )
+    print(
+        f"  Bunker reporters reaching net zero: {share_info['n_by_source']}, "
+        f"families {share_info['families']}"
+    )
+
+_direct_world = _world_frame(rcb_scenario_data["AFOLU_direct"])
+_indirect_world = _world_frame(rcb_scenario_data["AFOLU_indirect"])
 rcb_adjustments = {}
 
-for set_key, scenario_set in rcb_scenario_sets.items():
-    cat_direct = rows_of_scenario_set(rcb_scenario_data["AFOLU_direct"], scenario_set)
-    cat_total = rows_of_scenario_set(rcb_scenario_data["CO2"], scenario_set)
-
-    if cat_direct.empty or cat_total.empty:
+for budget_key, entry in budget_sets.items():
+    spec = entry["spec"]
+    terms = entry["terms"]
+    crossings = scenario_metadata.loc[terms, NET_ZERO_CROSSING].dropna()
+    members = crossings.index.intersection(_direct_world.index)
+    if members.empty:
         raise DataProcessingError(
-            f"RCB scenario set '{set_key}': no CO2 or AFOLU|Direct data for its "
-            f"{len(scenario_set)} scenarios"
+            f"Budget '{budget_key}': no AFOLU|Direct data for its {len(terms)} "
+            f"scenarios"
         )
 
-    sample_df = next(iter(scenario_data.values()))
-    year_cols = [col for col in sample_df.columns if col.isdigit()]
-    sorted_year_cols = sorted(year_cols, key=int)
-
-    # --- Per-scenario NZ years, from the metadata column that the band rule reads ---
-    reached_nz = scenario_set.set_index(["Model", "Scenario"])[
-        NET_ZERO_YEAR_COLUMN
-    ].loc[cat_total.set_index(["Model", "Scenario"]).index]
-    # A scenario that never reaches net zero is integrated to 2100.
-    nz_series = reached_nz.fillna(2100).astype(int)
-
-    # --- Per-scenario cumulative BM LULUCF (= Direct) ---
-    direct_indexed = cat_direct.set_index(["Model", "Scenario"])[sorted_year_cols]
-    common_scenarios = direct_indexed.index.intersection(
-        pd.MultiIndex.from_tuples(nz_series.index)
-    )
-
-    bm_lulucf_per_scenario = []
-    for sk in common_scenarios:
-        nz = nz_series[sk]
-        cols = [str(y) for y in range(2020, nz + 1) if str(y) in sorted_year_cols]
-        if cols:
-            bm_lulucf_per_scenario.append(float(direct_indexed.loc[sk, cols].sum()))
-
-    bm_median = (
-        float(pd.Series(bm_lulucf_per_scenario).median())
-        if bm_lulucf_per_scenario
-        else 0.0
-    )
-
-    # --- Per-scenario convention gap from each baseline year, then the median ---
-    gap_median_from = {year: 0.0 for year in rcb_baseline_years}
-    if nghgi_world_available:
-        cat_indirect = rows_of_scenario_set(
-            rcb_scenario_data["AFOLU_indirect"], scenario_set
+    # Per-scenario BM LULUCF and convention gap from each baseline year, then the median
+    bm_from, gap_from = {}, {}
+    for baseline_year in rcb_baseline_years:
+        bm_from[baseline_year] = float(
+            pd.Series(
+                [
+                    integrate(_direct_world.loc[k], baseline_year, crossings[k])
+                    for k in members
+                ]
+            ).median()
         )
-        indirect_indexed = cat_indirect.set_index(["Model", "Scenario"])[
-            sorted_year_cols
+        gap_from[baseline_year] = 0.0
+        if nghgi_world_available:
+            gap_members = members.intersection(_indirect_world.index)
+            gap_from[baseline_year] = float(
+                pd.Series(
+                    [
+                        convention_gap_from_baseline(
+                            nghgi_lulucf=nghgi_world_df.iloc[0],
+                            bm_direct=_direct_world.loc[k],
+                            indirect=_indirect_world.loc[k],
+                            baseline_year=baseline_year,
+                            nz_year=crossings[k],
+                            splice_year=nghgi_splice_year,
+                        )
+                        for k in gap_members
+                    ]
+                ).median()
+            )
+
+    # Members with their net-zero crossings and net CO2 from each share start year
+    _members = scenario_metadata.loc[members].copy()
+    for year in SHARE_START_YEARS:
+        _members[f"co2_from_{year}"] = [
+            integrate(_co2_world.loc[k], year, crossings[k]) for k in members
         ]
-        common_all = common_scenarios.intersection(indirect_indexed.index)
-        nghgi_lulucf = nghgi_world_df.iloc[0]
+    _members.reset_index().to_csv(
+        intermediate_dir / f"scenario_set_{spec.file_key}.csv", index=False
+    )
 
-        for baseline_year in rcb_baseline_years:
-            per_scenario_gaps = [
-                convention_gap_from_baseline(
-                    nghgi_lulucf=nghgi_lulucf,
-                    bm_direct=direct_indexed.loc[sk],
-                    indirect=indirect_indexed.loc[sk],
-                    baseline_year=baseline_year,
-                    nz_year=int(nz_series[sk]),
-                    splice_year=nghgi_splice_year,
+    rcb_adjustments[budget_key] = {
+        **entry["record"],
+        "bunkers": {
+            "rule": (
+                "share of net CO2 of the "
+                + (
+                    f"AR6 category {entry['category']}"
+                    if entry["category"]
+                    else "volume-matched"
                 )
-                for sk in common_all
-            ]
-            if per_scenario_gaps:
-                gap_median_from[baseline_year] = float(
-                    pd.Series(per_scenario_gaps).median()
-                )
-
-    # Store results
-    rcb_adjustments[set_key] = {
-        "bm_lulucf_cumulative_median": round(bm_median, 1),
-        "convention_gap_median_from": {
-            int(year): round(gap, 1) for year, gap in gap_median_from.items()
+                + " set after the last observed year"
+            ),
+            "reporters": share_info["n"],
+            "reporters_by_source": share_info["n_by_source"],
+            "families": sorted(share_info["families"]),
+            "excluded_families": share_info["excluded_families"],
+            "components": {
+                s: dict(get_scenario_source(s)["bunkers"].get("components", {}))
+                for s in share_sources
+            },
         },
-        "nz_year_median": int(nz_series.median()),
-        "nz_year_min": int(nz_series.min()),
-        "nz_year_max": int(nz_series.max()),
-        "n_scenarios": len(nz_series),
-        "n_reaching_nz": int(reached_nz.notna().sum()),
+        "bm_lulucf_median_from": {int(y): round(v, 1) for y, v in bm_from.items()},
+        "convention_gap_median_from": {
+            int(y): round(v, 1) for y, v in gap_from.items()
+        },
     }
 
-    gaps_text = ", ".join(f"{y}: {g:.0f}" for y, g in gap_median_from.items())
     print(
-        f"  {set_key}: n={len(nz_series)}, NZ_med={int(nz_series.median())}, "
-        f"BM_LULUCF={bm_median:.0f} Mt, gap from baseline year (Mt): {gaps_text}"
+        f"  {budget_key}: n={len(members)}, "
+        f"BM LULUCF from baseline (Mt): {', '.join(f'{y}: {v:.0f}' for y, v in bm_from.items())}, "
+        f"gap (Mt): {', '.join(f'{y}: {v:.0f}' for y, v in gap_from.items())}"
     )
 
 # Save RCB adjustments as YAML
@@ -1012,37 +1145,6 @@ if rcb_adjustments:
         yaml.dump(rcb_adjustments, f, default_flow_style=False, sort_keys=False)
     print(f"\nSaved RCB adjustment scalars to: {rcb_adj_path}")
 
-
-# %% [markdown]
-# ## Pre-compute baseline-shift LULUCF medians per scenario set
-#
-# For RCB baseline-year shifting, `process_rcb_to_2020_baseline()` needs the
-# year-by-year median AFOLU|Direct timeseries (BM LULUCF proxy) per scenario
-# set. Pre-computing these here avoids loading the raw Gidden Excel at
-# runtime in the library.
-
-# %%
-print("\n--- Pre-computing baseline-shift LULUCF median timeseries ---")
-
-sample_df = next(iter(scenario_data.values()))
-year_cols = sorted([col for col in sample_df.columns if col.isdigit()], key=int)
-
-for set_key, scenario_set in rcb_scenario_sets.items():
-    cat_direct = rows_of_scenario_set(rcb_scenario_data["AFOLU_direct"], scenario_set)
-
-    # Year-by-year median across scenarios
-    median_vals = cat_direct[year_cols].median(axis=0)
-
-    source_label = f"gidden_direct_{set_key}"
-    median_df = pd.DataFrame(
-        [median_vals.values],
-        columns=year_cols,
-        index=pd.Index([source_label], name="source"),
-    )
-
-    out_path = intermediate_dir / f"lulucf_shift_median_{set_key}.csv"
-    median_df.reset_index().to_csv(out_path, index=False)
-    print(f"  {set_key}: saved {len(cat_direct)} scenarios -> {out_path}")
 
 # %% [markdown]
 # ## Output
@@ -1056,6 +1158,15 @@ for timeseries_name, timeseries_df in all_timeseries.items():
         output_path = intermediate_dir / f"scenarios_{timeseries_name}_timeseries.csv"
         timeseries_df.reset_index().to_csv(output_path, index=False)
         print(f"Saved {timeseries_name} to: {output_path}")
+        # Per-budget medians feed the non-CO2 pathway paired with each budget
+        if timeseries_name in budget_timeseries:
+            budget_path = (
+                intermediate_dir
+                / f"scenarios_{timeseries_name}_by_budget_timeseries.csv"
+            )
+            budget_df = ensure_string_year_columns(budget_timeseries[timeseries_name])
+            budget_df.reset_index().to_csv(budget_path, index=False)
+            print(f"Saved {timeseries_name} per budget to: {budget_path}")
     else:
         print(f"  Skipped {timeseries_name} (not in final categories)")
 
