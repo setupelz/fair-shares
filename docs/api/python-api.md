@@ -42,8 +42,8 @@ your global budget to get absolute numbers. The dataframe needs one row per
 country, a two-level index of country code and unit, and one column per year
 labelled as a string.
 
-The full set is in [Budget Functions](https://setupelz.github.io/fair-shares/api/allocations/budgets/)
-and [Pathway Functions](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
+The full set is in [Budget Functions](allocations/budgets.md)
+and [Pathway Functions](allocations/pathways.md).
 
 ## The orchestrated timeseries API
 
@@ -52,21 +52,19 @@ remaining budget, and annual pathway — in memory and returns it as a dataclass
 so downstream consumers never have to execute a notebook or manage its output
 directories. Unlike the functions above, it loads processed data from disk.
 
-## Overview
+[`calculate_allocation_timeseries`](#calculate_allocation_timeseries) takes one remaining-carbon-budget *anchor* (a `rcb_source` / `climate_assessment` / `quantile` triple) and one emission category. It returns a [`ResultContainer`](#resultcontainer) with:
 
-Notebook `601_reproduce_esabcc_2023` computes, for one remaining-carbon-budget *anchor* (a `rcb_source` / `climate_assessment` / `quantile` triple) and one emission category:
+- budget allocations of the remaining carbon budget,
+- each country's remaining budget after netting observed emissions, and
+- an annual pathway to `pathway_end_year` that spreads that remaining budget under a normative distribution grid, plus the non-CO2 and combined parts.
 
-- budget allocations of the remaining carbon budget (§ 4),
-- each country's remaining budget after netting observed emissions (§ 5), and
-- an annual pathway to `pathway_end_year` that spreads that remaining budget under a normative distribution grid, plus the non-CO2 and combined parts (§ 6).
-
-[`calculate_allocation_timeseries`](#calculate_allocation_timeseries) performs exactly that computation and returns a [`ResultContainer`](#resultcontainer). The heavy lifting stays in the existing library functions; this module ports the notebook's § 5 / § 6 orchestration and ties it together per (anchor, category).
+The existing library functions do the computation. This module orchestrates them per anchor and category. It ports the orchestration of notebook `601_reproduce_esabcc_2023` (see [ESABCC 2023 and updates](../science/esabcc-and-updates.md)).
 
 The notebook and this module are two implementations of the same calculation. `tests/integration/test_python_api_reproduces_notebook.py` is the guard against them drifting apart: it re-runs `calculate_allocation_timeseries` against fixtures saved from the notebook. If you change either side, regenerate the fixtures with `uv run python tests/fixtures/save_python_api_fixture.py` and confirm that test still passes.
 
 !!! note "Scope"
 
-    This module computes remaining-carbon-budget allocations only (`TARGET = "rcbs"`), for a single fully-specified allocation under a single RCB anchor. Loop over allocations, distribution settings and debt modes around it to build a fuller set. To run parameter grids or pathway targets, use the notebook workflows described in the [User Guide](https://setupelz.github.io/fair-shares/user-guide/).
+    This module computes remaining-carbon-budget allocations only (`TARGET = "rcbs"`), for a single fully-specified allocation under a single RCB anchor. Loop over allocations, distribution settings and debt modes around it to build a fuller set. To run parameter grids or pathway targets, use the notebook workflows described in the [User Guide](../user-guide/index.md).
 
 !!! note "Data location"
 
@@ -178,6 +176,6 @@ separate section.
 
 ## See Also
 
-- **[Allocation Manager](https://setupelz.github.io/fair-shares/api/allocations/manager/)**: The allocation engine this module calls into
-- **[Math Utilities](https://setupelz.github.io/fair-shares/api/utils/math/)**: The convergence and pathway-distribution solvers used by § 6
-- **[Output Schema](https://setupelz.github.io/fair-shares/user-guide/output-schema/)**: Column meanings for the returned frames
+- **[Allocation Manager](allocations/manager.md)**: The allocation engine this module calls into
+- **[Math Utilities](utils/math.md)**: The convergence and pathway-distribution solvers used by the pathway step
+- **[Output Schema](../user-guide/output-schema.md)**: Column meanings for the returned frames

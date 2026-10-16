@@ -13,9 +13,9 @@ Complete bibliography for the fair-shares project. All citations are drawn from 
 
 For context on how these inform allocation approaches, see:
 
-- [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)
-- [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
-- [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)
+- [Allocation Approaches](allocations.md)
+- [From Principle to Code](principle-to-code.md)
+- [Other Operations](other-operations.md)
 
 Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyperlink to the source where possible. This page is a complete bibliography — the inline hyperlinks are the primary path to the source material.
 
@@ -43,17 +43,25 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Dooley 2021]** Kate Dooley, Christian Holz, Sivan Kartha, Sonja Klinsky, J. Timmons Roberts, Henry Shue, Harald Winkler, Tom Athanasiou, Simon Caney, Elizabeth Cripps, Navroz K. Dubash, Galen Hall, Paul G. Harris, Bård Lahn, Darrel Moellendorf, Benito Müller, Ambuj Sagar, and Peter Singer. "Ethical choices behind quantifications of fair contributions under the Paris Agreement." _Nature Climate Change_. DOI: [10.1038/s41558-021-01015-8](https://doi.org/10.1038/s41558-021-01015-8)
 
+**[ESABCC 2023]** European Scientific Advisory Board on Climate Change. "Scientific advice for the determination of an EU-wide 2040 climate target and a greenhouse gas budget for 2030-2050." Publications Office of the European Union. DOI: [10.2800/609405](https://doi.org/10.2800/609405)
+
+**[Friedlingstein 2026]** Pierre Friedlingstein, Michael O'Sullivan, Matthew W. Jones, Robbie M. Andrew, Dorothee C. E. Bakker, and others. "Global Carbon Budget 2025." _Earth System Science Data_, 18, 3211-3288. DOI: [10.5194/essd-18-3211-2026](https://doi.org/10.5194/essd-18-3211-2026). Dataset: Robbie M. Andrew and Glen P. Peters. "The Global Carbon Project's fossil CO2 emissions dataset" (2025v15). Zenodo. DOI: [10.5281/zenodo.17417124](https://doi.org/10.5281/zenodo.17417124)
+
 **[Heyward 2021]** Clare Heyward. "Is the beneficiary pays principle essential in climate justice?." _Norsk filosofisk tidsskrift_. DOI: [10.18261/issn.1504-2901-2021-02-03-07](https://doi.org/10.18261/issn.1504-2901-2021-02-03-07)
 
 **[ICJ 2025]** International Court of Justice. "Obligations of States in Respect of Climate Change (Advisory Opinion)." _ICJ Advisory Opinion_. [icj-cij.org](https://www.icj-cij.org/case/187)
 
 **[IPCC 2021]** IPCC. _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_. Cambridge University Press. DOI: [10.1017/9781009157896](https://doi.org/10.1017/9781009157896) — basis for the near-linear relationship between cumulative CO₂ emissions and global warming (TCRE) underpinning remaining carbon budgets.
 
+**[IPCC 2021 SPM]** IPCC. "Summary for Policymakers." In _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 3-32. Cambridge University Press. DOI: [10.1017/9781009157896.001](https://doi.org/10.1017/9781009157896.001). Source of the Table SPM.2 budgets in RCB source `ar6_wg1_2021`.
+
 **[Kartha 2018]** Sivan Kartha, Tom Athanasiou, Simon Caney, Elizabeth Cripps, Kate Dooley, Navroz K. Dubash, Teng Fei, Paul G. Harris, Christian Holz, Bård Lahn, Darrel Moellendorf, Benito Müller, J. Timmons Roberts, Ambuj Sagar, Henry Shue, Peter Singer, and Harald Winkler. "Cascading biases against poorer countries." _Nature Climate Change_. DOI: [10.1038/s41558-018-0152-7](https://doi.org/10.1038/s41558-018-0152-7)
 
 **[Klinsky 2018]** Sonja Klinsky and Harald Winkler. "Building equity in: strategies for integrating equity into modelling for a 1.5C world." _Philosophical Transactions of the Royal Society A_. DOI: [10.1098/rsta.2016.0461](https://doi.org/10.1098/rsta.2016.0461)
 
-**[Forster 2024]** Piers M. Forster, Christopher J. Smith, Tristram Walsh, William F. Lamb, Robin Lamboll, Bradley Hall, Mathew W. Jones, and others. "Indicators of Global Climate Change 2023: annual update of key indicators of the state of the climate system and human influence." _Earth System Science Data_, 16, 2625-2680. DOI: [10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
+**[Forster 2024]** Piers M. Forster, Christopher J. Smith, Tristram Walsh, William F. Lamb, Robin Lamboll, Bradley Hall, Mathew W. Jones, and others. "Indicators of Global Climate Change 2023: annual update of key indicators of the state of the climate system and human influence." _Earth System Science Data_, 16, 2625-2658. DOI: [10.5194/essd-16-2625-2024](https://doi.org/10.5194/essd-16-2625-2024)
+
+**[Forster 2026]** Piers M. Forster, Tristram Walsh, Chris Smith, William F. Lamb, Robin Lamboll, and others. "Indicators of Global Climate Change 2025: annual update of key indicators of the state of the climate system and human influence." _Earth System Science Data_, 18, 3889-3933. DOI: [10.5194/essd-18-3889-2026](https://doi.org/10.5194/essd-18-3889-2026). Source of the Table 8 budgets in RCB source `forster_2026`.
 
 **[Lamboll 2023]** Robin D. Lamboll, Zebedee R. J. Nicholls, Christopher J. Smith, Jarmo S. Kikstra, Edward Byers, and Joeri Rogelj. "Assessing the size and uncertainty of remaining carbon budgets." _Nature Climate Change_, 13, 1360-1367. DOI: [10.1038/s41558-023-01848-5](https://doi.org/10.1038/s41558-023-01848-5)
 
@@ -68,6 +76,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 **[Okereke 2016]** Chukwumerije Okereke and Philip Coventry. "Climate justice and the international regime: before, during, and after Paris." _WIREs Climate Change_. DOI: [10.1002/wcc.419](https://doi.org/10.1002/wcc.419)
 
 **[Pan 2003]** Jiahua Pan. "Emissions Rights and their Transferability: Equity Concerns over Climate Change Mitigation." _International Environmental Agreements: Politics, Law and Economics_.
+
+**[Pelz 2023]** Setu Pelz, Joeri Rogelj, and Keywan Riahi. "Evaluating equity in European climate change mitigation pathways for the EU Scientific Advisory Board on Climate Change." IIASA Report. International Institute for Applied Systems Analysis, Laxenburg. [pure.iiasa.ac.at/18830](https://pure.iiasa.ac.at/18830)
 
 **[Pelz 2025a]** Setu Pelz, Gaurav Ganti, Robin Lamboll, Luke Grant, Chris Smith, Shonali Pachauri, Joeri Rogelj, Keywan Riahi, Wim Thiery, and Matthew J. Gidden. "Using net-zero carbon debt to track climate overshoot responsibility." _Proceedings of the National Academy of Sciences_. DOI: [10.1073/pnas.2409316122](https://doi.org/10.1073/pnas.2409316122)
 
@@ -88,6 +98,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 **[Van Den Berg 2020]** Nicole J. van den Berg, Heleen L. van Soest, Andries F. Hof, Michel G. J. den Elzen, Detlef P. van Vuuren, and others. "Implications of various effort-sharing approaches for national carbon budgets and emission pathways." _Climatic Change_, 162, 1805-1822. DOI: [10.1007/s10584-019-02368-y](https://doi.org/10.1007/s10584-019-02368-y)
 
 **[Weber 2026]** Konstantin Weber, Cyril Brunner, and Reto Knutti. "Tracking country-level mitigation progress using NGHGI-consistent carbon budgets." _Nature Communications_. DOI: [10.1038/s41467-026-69078-9](https://doi.org/10.1038/s41467-026-69078-9)
+
+**[Weber 2026b]** Konstantin Weber, Reto Knutti, Lena Brun, and Cyril Brunner. "Limiting warming by CO2 and methane mitigation in an expanded scenario space." _Communications Earth & Environment_, 7. DOI: [10.1038/s43247-026-03832-1](https://doi.org/10.1038/s43247-026-03832-1)
 
 **[Winkler 2018]** Harald Winkler, Niklas Höhne, Guy Cunliffe, Takeshi Kuramochi, Amanda April, and Maria Jose de Villafranca Casas. "Countries start to explain how their climate contributions are fair: more rigour needed." _International Environmental Agreements: Politics, Law and Economics_, 18, 99–115. DOI: [10.1007/s10784-017-9381-x](https://doi.org/10.1007/s10784-017-9381-x)
 

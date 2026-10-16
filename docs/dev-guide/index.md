@@ -49,12 +49,19 @@ graph TB
 
 ## Key Modules
 
-| Module            | Location                               | Responsibility                 |
-| ----------------- | -------------------------------------- | ------------------------------ |
-| **Allocations**   | `src/fair_shares/library/allocations/` | Core allocation functions      |
-| **Utilities**     | `src/fair_shares/library/utils/`       | Data manipulation, adjustments |
-| **Config**        | `src/fair_shares/library/config/`      | Pydantic models                |
-| **Preprocessing** | `notebooks/1xx_*.py`                   | Data pipeline notebooks        |
+| Module            | Location                                  | Responsibility                                                    |
+| ----------------- | ----------------------------------------- | ----------------------------------------------------------------- |
+| **Allocations**   | `src/fair_shares/library/allocations/`    | Core allocation functions                                         |
+| **Utilities**     | `src/fair_shares/library/utils/`          | Data manipulation, adjustments                                    |
+| **Config**        | `src/fair_shares/library/config/`         | Pydantic models                                                   |
+| **Preprocessing** | `src/fair_shares/library/preprocessing/`  | Reusable logic for the 100-series preprocessing notebooks         |
+| **Pipeline**      | `src/fair_shares/library/pipeline/`       | Composite, RCB, pathway and non-CO2 preprocessing runners         |
+| **IAMC history**  | `src/fair_shares/library/iamc_historical/` | Back-fills IAM scenarios with IAMC-consistent historical emissions |
+| **Python API**    | `src/fair_shares/library/python_api.py`   | Computes allocation timeseries in memory, without notebooks       |
+| **Data fetch**    | `src/fair_shares/library/data_fetch.py`   | Downloads registry files and checks their checksums               |
+| **Citations**     | `src/fair_shares/library/citations.py`    | Derives and formats the citations a run needs                     |
+| **Data registry** | `src/fair_shares/library/data_registry.py` | Reads and checks `conf/data_registry.yaml` (source, licence, citation) |
+| **Notebooks**     | `notebooks/1xx_*.py`                      | Data pipeline notebooks                                           |
 
 ---
 
@@ -75,8 +82,7 @@ allocations/
 │   └── cumulative_per_capita_convergence.py
 ├── results/               # Result dataclasses
 ├── core.py               # Shared logic
-├── manager.py            # Orchestration + approach name → function registry
-└── runner.py             # Category-level allocation runner
+└── manager.py            # Orchestration + approach name → function registry
 ```
 
 ### Entry Points
@@ -199,53 +205,23 @@ uv run ruff format src/ tests/
 
 ## Documentation Workflow
 
-### Checking Documentation Consistency
-
-Use `tools/docs-sync-check.py` to validate documentation is in sync with code:
+Run these checks before you commit documentation changes:
 
 ```bash
-# Run all validation checks
-uv run python tools/docs-sync-check.py
+# Build the site; warnings fail the build (broken links, missing pages)
+uv run mkdocs build --strict
 
-# Suppress warnings (only show errors)
-uv run python tools/docs-sync-check.py --quiet
+# Run the test suite
+uv run pytest tests/
 
-# Show progress for each check
-uv run python tools/docs-sync-check.py --verbose
+# Run the pre-commit hooks (ruff, ruff-format, interrogate docstring coverage)
+uv run pre-commit run --all-files
 ```
-
-**What it checks:**
-
-| Check                     | Purpose                                                           |
-| ------------------------- | ----------------------------------------------------------------- |
-| **Registry coverage**     | All approaches in `manager.py` have API docs and catalog entries  |
-| **Example syntax**        | Python code blocks in docs parse without syntax errors            |
-| **Parameter consistency** | Parameters in code match those documented in `allocations.md`     |
-| **Cross-references**      | Internal markdown links resolve to existing files and anchors     |
-
-**Exit codes:**
-
-- `0` - No errors (warnings may be present)
-- `1` - One or more errors found
-- `2` - Invalid command-line arguments
-
-**Best practices:**
-
-- Run before committing documentation changes
-- Address errors immediately (broken links, invalid syntax)
-- Review warnings to identify documentation gaps
-
-**False positives:** The script automatically skips:
-
-- Documentation examples with GOOD/BAD or CORRECT/WRONG markers (intentionally incomplete)
-- Docstring section examples (showing docstring structure)
-- DataFrame representations and tabular data
-- Code blocks with ellipsis (`...`) or `TODO` comments
 
 ---
 
 ## See Also
 
 - **[Architecture Walkthrough](architecture-walkthrough.md)** - End-to-end code path walkthrough with worked examples
-- **[API Reference](https://setupelz.github.io/fair-shares/api/)** - Function documentation
-- **[Scientific Documentation](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations
+- **[API Reference](../api/index.md)** - Function documentation
+- **[Scientific Documentation](../science/allocations.md)** - Theoretical foundations

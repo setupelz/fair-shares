@@ -95,5 +95,5 @@ Validation functions specific to convergence pathway allocations.
 
 ## See Also
 
-- **[Math Utilities](https://setupelz.github.io/fair-shares/api/utils/math/)**: Convergence solver
-- **[Data Utilities](https://setupelz.github.io/fair-shares/api/utils/data/)**: Data processing
+- **[Math Utilities](../utils/math.md)**: Convergence solver
+- **[Data Utilities](../utils/data.md)**: Data processing

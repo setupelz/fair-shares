@@ -83,7 +83,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 **`pre_allocation_responsibility_weight`** (type: `float`, default: `0.0`)
 : Weight for relative per-capita rescaling based on emissions in [`pre_allocation_responsibility_year`, `allocation_year`). Higher relative to `capability_weight` = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early `allocation_year`. Always produces positive allocations if `allocation_year` is the present.
 
-**`capability_weight`** (type: `float`, default: `0.0`)
+**`capability_weight`** (type: `float`, default: `1.0` in `per_capita_adjusted_gini_budget`, `0.0` in every other approach)
 : Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility covers the window prior to the allocation year, while capability applies from it onwards.
 
 ### Pre-allocation Responsibility Parameters
@@ -162,7 +162,7 @@ Container for budget allocation results. Contains relative shares of a cumulativ
 
 - `get_absolute_budgets(remaining_budget)`: Multiply relative shares by a global budget to get absolute country-level budgets
 
-See: [Budget Approaches](https://setupelz.github.io/fair-shares/science/allocations/)
+See: [Budget Approaches](allocations.md)
 
 ### PathwayAllocationResult
 
@@ -179,7 +179,7 @@ Container for pathway allocation results. Contains relative shares of annual emi
 
 - `get_absolute_emissions(annual_emissions_budget)`: Multiply relative shares by global annual budgets to get absolute country-level pathways
 
-See: [Pathway Approaches](https://setupelz.github.io/fair-shares/science/allocations/)
+See: [Pathway Approaches](allocations.md)
 
 ---
 
@@ -210,7 +210,7 @@ IND    Mt CO2/yr  co2-ffi                  2500    2600    2700
 World  Mt CO2/yr  co2-ffi                 35000   34500   34000
 ```
 
-See: [Function Signature](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/#function-signature) for implementation details
+See: [Function Signature](../dev-guide/adding-approaches.md#function-signature) for implementation details
 
 ### MultiIndex
 
@@ -284,6 +284,9 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 **ECPC**
 : Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis. Cumulative population from the allocation year determines each country's share.
 
+**GCB 2025**
+: Global Carbon Budget 2025 fossil CO₂ dataset, version 2025v15 ([Friedlingstein 2026](references.md)). Opt-in emissions source `gcb-2025`, `co2-ffi` only, 1850-2024. Its world row excludes international bunkers and the 1991 Kuwaiti oil fires. The same file supplies the bunker series for `gcb-2025` runs.
+
 **GDP**
 : Gross Domestic Product. Economic output measure used for capability adjustments (from the allocation year onwards).
 
@@ -292,6 +295,9 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 
 **IAMC**
 : Integrated Assessment Modeling Consortium. Data format used for AR6 scenarios.
+
+**IGCC 2025 (`forster_2026`)**
+: Indicators of Global Climate Change 2025 ([Forster 2026](references.md)). RCB source `forster_2026` in `rcbs.yaml` takes its Table 8 budgets from the start of 2026, for seven temperature and likelihood labels. It selects scenarios with the peak-warming band.
 
 **IPCC**
 : Intergovernmental Panel on Climate Change.
@@ -303,13 +309,16 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries (v3.1). Covers 185 countries, 2000-2023. Replaces Grassi et al. (2023) with higher coverage and an additional year. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries from the LULUCF Data Hub. Two versions are configured. `melo-2026` (v3.1.1, default) covers 185 countries, 2000-2023. `melo-2026-v4` (v4.0.0, 2026 NGHGI release, opt-in) covers 187 countries, 2000-2024. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI**
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
 : The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of 90.3 GtCO₂ from 2020 to net-zero CO₂ and 65.4 GtCO₂ from 2024 (median of the AR6 C1 scenarios, PRIMAP run with `melo-2026`). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+
+**Peak-warming band**
+: Scenario selection rule `scenario_selection: peak-warming-band` in `rcbs.yaml`. It keeps every AR6 scenario whose median peak warming (MAGICCv7.5.3) lies within ±0.05 °C of the label temperature and whose CO₂ emissions reach net zero by 2100. These scenarios feed the LULUCF, convention-gap and bunker deductions. `forster_2026` and `ar6_wg1_2021` use it. The default rule, `ar6-category`, maps labels to AR6 categories.
 
 **PRIMAP-hist**
 : Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
@@ -325,3 +334,6 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 
 **UNFCCC**
 : United Nations Framework Convention on Climate Change.
+
+**WDI Gini**
+: World Bank Gini index (`SI.POV.GINI`, from the Poverty and Inequality Platform), source `wdi-2025`. It is the default Gini source. Each country takes its latest value within 2015-2023. UNU-WIDER WIID (`unu-wider-2025`) is opt-in.

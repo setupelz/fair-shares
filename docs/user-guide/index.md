@@ -28,6 +28,8 @@ Then read the guide for your column:
 - **[Fair shares for countries](country-fair-shares.md)** — the country notebooks, step by step.
 - **[Fair shares for IAM model regions](iamc-regional-fair-shares.md)** — the IAMC notebooks, including the mandatory notebook 400 step.
 
+To see every notebook and module in run order, read **[What happens where](pipeline-map.md)**.
+
 Calling the library from your own Python code instead? See
 **[Python API](../api/python-api.md)**.
 
@@ -49,7 +51,7 @@ All outputs include **full parameter provenance** for reproducibility:
 **Parquet files contain complete metadata:**
 
 - Every parameter value (weights, years, functional forms)
-- Data source identifiers (`emissions-source`, `gdp-source`, `population-source`, etc.)
+- Data source identifiers (`emissions-source`, `gdp-source`, `population-source`, `gini-source`, `target-source`, `source`). The LULUCF source has no column of its own; it appears inside `source-id`.
 - Approach names and configuration
 
 This enables exact reproduction and comparison of results. See **[Output Schema](output-schema.md)** for full column documentation.
@@ -63,10 +65,11 @@ Data sources are configured in `src/fair_shares/conf/data_sources/`.
 | Data Type  | Options                       |
 | ---------- | ----------------------------- |
 | Target     | `rcbs`, `pathway`, `rcb-pathways` |
-| Emissions  | e.g. PRIMAP-hist              |
+| Emissions  | PRIMAP-hist (`primap-202503`, default), Global Carbon Budget 2025 (`gcb-2025`, `co2-ffi` only) |
+| LULUCF     | Melo et al. v3.1.1 (`melo-2026`, default), LULUCF Data Hub v4.0.0 (`melo-2026-v4`) |
 | Population | UN/OWID                       |
 | GDP        | World Bank WDI                |
-| Gini       | UNU-WIDER                     |
+| Gini       | World Bank WDI (`wdi-2025`, default), UNU-WIDER WIID (`unu-wider-2025`) |
 
 Licences differ by source, and not all of them are permissive — the WIID
 inequality data is CC BY-NC-SA, which rules out commercial reuse and carries its
@@ -84,7 +87,7 @@ fair-shares currently supports three target sources:
 | `pathway`      | Pathway | Pathway approaches   | Allocating annual emissions following scenario pathways (e.g. AR6) | Time series of annual values                   |
 | `rcb-pathways` | Hybrid  | Pathway approaches   | Using budget data but need year-by-year pathways    | Budget to global pathway to allocated annually |
 
-**`rcb-pathways` workflow:** First converts a global remaining carbon budget into a global annual emission pathway (using exponential decay), then allocates that pathway among countries using pathway allocation functions. See [Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation) for details on pathway generation.
+**`rcb-pathways` workflow:** First converts a global remaining carbon budget into a global annual emission pathway (using exponential decay), then allocates that pathway among countries using pathway allocation functions. See [Other Operations](../science/other-operations.md#rcb-pathway-generation) for details on pathway generation.
 
 ---
 
@@ -97,6 +100,7 @@ Two questions:
 
 Then:
 
-- **[Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/)** -- all 10 approaches at a glance
-- **[Principle-to-Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)** -- how principles map to parameters
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** -- design and parameter details
+- **[Approach Catalog](approach-catalog.md)** -- all 10 approaches at a glance
+- **[Principle-to-Code](../science/principle-to-code.md)** -- how principles map to parameters
+- **[Allocation Approaches](../science/allocations.md)** -- design and parameter details
+- **[ESABCC 2023 and what changed since](../science/esabcc-and-updates.md)** -- the reproduction, its deviations, and gas coverage

@@ -27,5 +27,5 @@ Pydantic validation models and utility functions for ensuring data integrity.
 
 ## See Also
 
-- **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**: Functions that use validation
-- **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**: Functions that use validation
+- **[Budget Allocations](../allocations/budgets.md)**: Functions that use validation
+- **[Pathway Allocations](../allocations/pathways.md)**: Functions that use validation

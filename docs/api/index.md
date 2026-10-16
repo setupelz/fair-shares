@@ -12,19 +12,19 @@ Documentation generated from docstrings.
 
 | Module                                                  | Description                            |
 | ------------------------------------------------------- | -------------------------------------- |
-| **[Python API](https://setupelz.github.io/fair-shares/api/python-api/)**                         | In-memory allocation timeseries, no notebook required |
-| **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**        | Cumulative budget allocation functions |
-| **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**      | Annual pathway allocation functions    |
-| **[Allocation Manager](https://setupelz.github.io/fair-shares/api/allocations/manager/)**        | High-level batch allocation interface  |
-| **[Core Utilities](https://setupelz.github.io/fair-shares/api/utils/core/)**                     | Data manipulation functions            |
-| **[Data Utilities](https://setupelz.github.io/fair-shares/api/utils/data/)**                     | Data processing, NGHGI corrections, RCB processing |
-| **[Math Utilities](https://setupelz.github.io/fair-shares/api/utils/math/)**                     | Convergence solver and adjustments     |
-| **[Adjustments](https://setupelz.github.io/fair-shares/api/utils/adjustments/)**                 | Adjustment calculation functions       |
-| **[Validation](https://setupelz.github.io/fair-shares/api/utils/validation/)**                   | Input validation                       |
-| **[Convergence Validation](https://setupelz.github.io/fair-shares/api/validation/convergence/)** | Convergence-specific validation        |
-| **[Configuration Models](https://setupelz.github.io/fair-shares/api/config/models/)**            | Pydantic configuration models          |
+| **[Python API](python-api.md)**                         | In-memory allocation timeseries, no notebook required |
+| **[Budget Allocations](allocations/budgets.md)**        | Cumulative budget allocation functions |
+| **[Pathway Allocations](allocations/pathways.md)**      | Annual pathway allocation functions    |
+| **[Allocation Manager](allocations/manager.md)**        | High-level batch allocation interface  |
+| **[Core Utilities](utils/core.md)**                     | Data manipulation functions            |
+| **[Data Utilities](utils/data.md)**                     | Data processing, NGHGI corrections, RCB processing |
+| **[Math Utilities](utils/math.md)**                     | Convergence solver and adjustments     |
+| **[Adjustments](utils/adjustments.md)**                 | Adjustment calculation functions       |
+| **[Validation](utils/validation.md)**                   | Input validation                       |
+| **[Convergence Validation](validation/convergence.md)** | Convergence-specific validation        |
+| **[Configuration Models](config/models.md)**            | Pydantic configuration models          |
 
 ## See Also
 
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** — Design rationale
-- **[User Guide](https://setupelz.github.io/fair-shares/user-guide/)** — Workflow documentation
+- **[Allocation Approaches](../science/allocations.md)** — Design rationale
+- **[User Guide](../user-guide/index.md)** — Workflow documentation

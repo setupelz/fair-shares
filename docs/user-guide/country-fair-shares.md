@@ -51,9 +51,10 @@ graph LR
 
 | Category                | Description                           | Notes                                 |
 | ----------------------- | ------------------------------------- | ------------------------------------- |
-| `co2-ffi` **(default)** | CO₂ from fossil fuels and industry    |                                       |
+| `co2-ffi`               | CO₂ from fossil fuels and industry    |                                       |
+| `co2`                   | CO₂ from fossil fuels and industry plus LULUCF | NGHGI LULUCF; start years from 2000 |
 | `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | GWP100 AR6 values; avoids LULUCF measurement uncertainty |
-| `all-ghg`               | All greenhouse gases including LULUCF | GWP100 AR6 values                     |
+| `all-ghg` **(default in 301)** | All greenhouse gases including LULUCF | GWP100 AR6 values; start years from 2000 |
 
 ### Target Source
 
@@ -71,13 +72,14 @@ graph LR
 | `population` | Per capita calculations                              |
 | `gdp`        | Capability-based adjustments                         |
 | `gini`       | Within-country inequality adjustments                |
+| `lulucf`     | NGHGI LULUCF CO₂ for `co2` and `all-ghg`; also corrects the RCB to the NGHGI convention |
 
 Available sources are configured in `src/fair_shares/conf/data_sources/`.
 
 ---
 
 !!! note "Entry Points Framework"
-Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. See [From Principle to Code](../science/principle-to-code.md) for details.
+    Before configuring approaches and parameters, it helps to work through the five entry points for fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. See [From Principle to Code](../science/principle-to-code.md) for details.
 
 ## Step 2: Allocation Approaches
 
@@ -107,7 +109,7 @@ Before configuring approaches and parameters, it helps to work through the five 
 | `cumulative-per-capita-convergence-adjusted`      | Cumulative convergence with pre-allocation responsibility (backward-looking) and capability adjustments (from allocation year onwards)                                                              |
 | `cumulative-per-capita-convergence-gini-adjusted` | Cumulative convergence accounting for intra-national inequality                                                                                                                     |
 
-For detailed explanations, see [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/).
+For detailed explanations, see [Allocation Approaches](../science/allocations.md).
 
 ---
 
@@ -156,7 +158,7 @@ Results are saved to `output/{source_id}/allocations/{allocation_folder}/`:
 - **Absolute emissions**: Relative share × global target in physical units
 
 !!! note "Negative allocations under principled approaches"
-Under approaches like ECPC from 1990, some developed regions have already exhausted their fair share and will show negative remaining allocations. This is a feature, not a bug — it signals the need for maximum domestic ambition and active support for international cooperation to compensate for past overshoot.
+    Under approaches like ECPC from 1990, some developed regions have already exhausted their fair share and will show negative remaining allocations. This is a feature, not a bug — it signals the need for maximum domestic ambition and active support for international cooperation to compensate for past overshoot.
 
 ---
 
@@ -198,6 +200,6 @@ Both approaches run in a single pipeline execution. Results include an `approach
 
 ## See Also
 
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations
-- **[API Reference](https://setupelz.github.io/fair-shares/api/allocations/budgets/)** - Function signatures
-- **[Other Operations](https://setupelz.github.io/fair-shares/science/other-operations/)** - RCB pathway generation, net-negative handling
+- **[Allocation Approaches](../science/allocations.md)** - Theoretical foundations
+- **[API Reference](../api/allocations/budgets.md)** - Function signatures
+- **[Other Operations](../science/other-operations.md)** - RCB pathway generation, net-negative handling

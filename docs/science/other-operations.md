@@ -19,13 +19,13 @@ Aligns emission pathways with historical data at an anchor year, then converges 
 2. Linearly interpolate for anchor year < year < convergence year
 3. Use original scenario values for years ≥ convergence year
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/timeseries.py`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/timeseries.py`
 
 ### Cumulative Peak Preservation
 
 Preserves the peak cumulative emissions using time-varying scaling when `preserve_cumulative_peak=True`.
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/timeseries.py`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/timeseries.py`
 
 ### Post-Net-Zero Handling in Global Pathways
 
@@ -33,7 +33,7 @@ Some AR6 scenario pathways have the **global** emission trajectory going net-neg
 
 This is a preprocessing step applied to global scenario pathways before allocation. Pre-net-zero years are preserved unchanged.
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/dataframes.py::set_post_net_zero_emissions_to_nan`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/dataframes.py::set_post_net_zero_emissions_to_nan`
 
 ---
 
@@ -52,7 +52,7 @@ Country allocations happen **after** this step, using pathway allocation approac
 
 The default (and currently only) generator is `exponential-decay` (shifted exponential). The `generator` parameter is an extensibility point — alternative functional forms (e.g., linear, sigmoid) can be added without changing the allocation pipeline, provided they satisfy the same constraint: the discrete annual sum must exactly equal the input carbon budget by the end year (typically 2100). Note that even with a 2100 end year, individual regions may reach effective net-zero much earlier when their allocated share of the global pathway becomes negligibly small.
 
-**[API Reference →](https://setupelz.github.io/fair-shares/api/utils/math/#rcb-pathway-generation)**
+**[API Reference →](../api/utils/math.md#rcb-pathway-generation)**
 
 ---
 
@@ -62,13 +62,13 @@ The default (and currently only) generator is `exponential-decay` (shifted expon
 
 Fills missing values using linear or stepwise interpolation.
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/timeseries.py::interpolate_scenarios_data`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/timeseries.py::interpolate_scenarios_data`
 
 ### Unit Conversion
 
 Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/units.py`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/units.py`
 
 ---
 
@@ -78,13 +78,13 @@ Standardizes units (emissions: kt/Mt/Gt CO2e, population: million).
 
 Validates structure (MultiIndex format) and content (non-negative values, complete time series).
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
+**[Implementation →](../api/utils/validation.md)** | `src/fair_shares/library/validation/pipeline_validation.py`
 
 ### Cross-Dataset Validation
 
 Verifies analysis countries + ROW = world totals, and ensures temporal/spatial alignment.
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/validation/)** | `src/fair_shares/library/validation/pipeline_validation.py`
+**[Implementation →](../api/utils/validation.md)** | `src/fair_shares/library/validation/pipeline_validation.py`
 
 ---
 
@@ -92,15 +92,20 @@ Verifies analysis countries + ROW = world totals, and ensures temporal/spatial a
 
 ### Analysis Country Selection
 
-Identifies countries with complete data across all datasets and computes Rest of World totals for remaining countries.
+Selects the analysis countries and computes Rest of World (ROW) totals for the remaining countries. A country is an analysis country if it passes two tests:
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
+1. **Completeness.** Each emissions category, GDP and population hold a value for the country in every year from 1990 to the last year of that dataset.
+2. **Coverage rule (opt-in).** An emissions source can carry a `coverage` block in `data_sources_unified.yaml`. Only `gcb-2025` sets one: the country needs an emissions record before 1990 and population from 1850. A source without the block applies no extra test.
+
+Gini does not decide membership. An analysis country without a Gini value gets the analysis-country mean under the default `general.gini_missing_policy: fallback-mean`, and `country_data_coverage_summary.csv` records it as imputed. The `strict` policy stops the run instead. Countries that fail a test join ROW, whose rows are the world row minus the analysis countries.
+
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/data/completeness.py`, `src/fair_shares/library/preprocessing/coverage.py`, `src/fair_shares/library/preprocessing/gini.py`
 
 ### World Total Extraction
 
 Extracts world totals for validation. Supports keys: "EARTH", "WLD", "World".
 
-**[Implementation →](https://setupelz.github.io/fair-shares/api/utils/core/)** | `src/fair_shares/library/utils/data/completeness.py`
+**[Implementation →](../api/utils/core.md)** | `src/fair_shares/library/utils/data/completeness.py`
 
 ---
 
@@ -110,8 +115,8 @@ Remaining carbon budgets constrain **CO₂ only** — they are derived from the
 near-linear relationship between cumulative CO₂ emissions and global warming
 ([IPCC 2021](https://doi.org/10.1017/9781009157896), AR6 WG1; see also
 [Lamboll 2023](https://doi.org/10.1038/s41558-023-01848-5) on budget size and
-uncertainty). Non-CO₂ greenhouse gases (CH₄, N₂O, F-gases) pathways are an
-assumption used in deriving the remaining carbon budget quantity.
+uncertainty). Each published budget assumes a pathway for the non-CO₂
+greenhouse gases (CH₄, N₂O, F-gases). The budget itself covers CO₂ only.
 
 When users request an all-GHG allocation (e.g. `all-ghg` or `all-ghg-ex-co2-lulucf`) but use RCBs as the target source, a problem arises: RCBs constrain CO₂ only and say nothing about non-CO₂ gases. To produce all-GHG results, the system **decomposes** the problem into two components — allocating CO₂ via the budget approach and non-CO₂ via scenario pathways:
 
@@ -135,15 +140,32 @@ The CO₂ component depends on the requested emission category:
 
 ### Non-CO₂ derivation
 
-Non-CO₂ emissions are not a native category. They are derived by subtraction:
+Non-CO₂ emissions are not a native category. They are derived by subtraction.
+History and scenarios use different inputs.
+
+**Historical emissions (e.g. PRIMAP).** The pipeline subtracts country by
+country (`derive_non_co2_country_timeseries()` in
+`src/fair_shares/library/utils/data/non_co2.py`):
 
 $$
 \text{non-CO}_2 = \text{all-ghg-ex-co2-lulucf} - \text{co2-ffi}
 $$
 
-This subtraction is applied to both historical emissions (e.g. PRIMAP) and
-future scenarios (e.g. AR6), producing non-CO₂ timeseries that are used for
-pathway allocation.
+PRIMAP category `M.0.EL` excludes all LULUCF emissions: CO₂, CH₄ and N₂O.
+Agriculture (`M.AG`) stays in. So `all-ghg-ex-co2-lulucf` also excludes
+LULUCF CH₄ and N₂O. The name is kept for compatibility. The historical
+non-CO₂ series therefore holds no LULUCF CH₄ or N₂O.
+
+**AR6 scenarios.** Notebook 104 harmonises each pathway to history and takes
+the median of each category per scenario set. It then subtracts the medians:
+
+$$
+\text{non-CO}_2 = \text{median}(\text{all-ghg}) - \text{median}(\text{co2})
+$$
+
+The result is a difference of medians. The AR6 non-CO₂ series includes AFOLU
+CH₄ and N₂O. Harmonisation to the 2020 historical value removes the level
+difference to the historical series at the harmonisation year.
 
 ### Scenario labels
 
@@ -429,8 +451,8 @@ $E_{\text{fossil}}$ is the world fossil series, which excludes international bun
 
 Where LULUCF uses:
 
-- **2000 onwards**: NGHGI LULUCF (e.g. Melo v3.1, nationally aggregated inventory data)
-- **Pre-2000**: Not available in NGHGI convention. Categories including LULUCF are limited to the NGHGI data range (2000+). No NGHGI/BM splicing is performed. While earlier NGHGI LULUCF estimates may exist (e.g., via Grassi et al. or historical extensions of Melo), the official NGHGI data begins in 2000. Extending to 1990 would require splicing heterogeneous datasets, which risks introducing artefacts (the BM-to-NGHGI transition around 1990 shows a large jump). We plan to extend coverage when validated pre-2000 NGHGI LULUCF data becomes available.
+- **2000 onwards**: NGHGI LULUCF, nationally aggregated inventory data: Melo v3.1.1 (`melo-2026`, default, 2000--2023) or LULUCF Data Hub v4.0.0 (`melo-2026-v4`, opt-in, 2000--2024)
+- **Pre-2000**: Not available in NGHGI convention. Categories including LULUCF are limited to the NGHGI data range (2000+). No NGHGI/BM splicing is performed. While earlier NGHGI LULUCF estimates may exist (e.g., historical extensions of Melo), the official NGHGI data begins in 2000. Extending to 1990 would require splicing heterogeneous datasets, which risks introducing artefacts (the BM-to-NGHGI transition around 1990 shows a large jump). We plan to extend coverage when validated pre-2000 NGHGI LULUCF data becomes available.
 
 This ensures the world timeseries passed to `calculate_budget_from_rcb` is NGHGI-consistent, and that function works identically for both `co2-ffi` and `co2` categories. An allocation year before the first year of the world series raises an error that names the first available year.
 
@@ -454,14 +476,14 @@ The RCB value comes from the publication. Fossil CO₂, NGHGI LULUCF and the bun
 
 | Component          | Source                                        | Coverage                                 |
 | ------------------ | --------------------------------------------- | ---------------------------------------- |
-| Fossil CO₂         | PRIMAP-hist v2.6.1                            | 1750--present                            |
+| Fossil CO₂         | PRIMAP-hist v2.6.1 (`primap-202503`, default) or GCB 2025 fossil CO₂ (`gcb-2025`, opt-in, `co2-ffi` only) | 1850--2023 (PRIMAP, as processed); 1850--2024 (GCB) |
 | NGHGI LULUCF       | Melo et al. (2026) NGHGI LULUCF: v3.1.1 (`melo-2026`, default) or v4.0.0 (`melo-2026-v4`) | 2000--2023, 185 countries + world (v3.1.1); 2000--2024, 187 countries + world (v4.0.0) |
 | BM LULUCF proxy    | Gidden et al. AR6 reanalysis, AFOLU\|Direct   | 2015--2100, per scenario within category |
 | Passive flux       | Gidden et al. AR6 reanalysis, AFOLU\|Indirect | 2015--2100, per scenario within category |
 | Net-zero years     | Gidden et al. AR6 reanalysis, Emissions\|CO2  | Per scenario (first year total CO₂ ≤ 0)  |
 | Bunker fuels       | GCB historical + rate extrapolation           | Observed to the last year of the data, then that rate to median NZ |
 
-**[API Reference →](https://setupelz.github.io/fair-shares/api/utils/data/#nghgi-corrections)** | `src/fair_shares/library/utils/data/nghgi.py`
+**[API Reference →](../api/utils/data.md#nghgi-corrections)** | `src/fair_shares/library/utils/data/nghgi.py`
 
 ### Worked example: AR6 WG1 1.5C 50% (1.5p50)
 
@@ -507,5 +529,5 @@ The allocatable budget is the budget **from 2020 onwards**. The `allocation_year
 
 ## See Also
 
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** -- Design choices
-- **[API Reference](https://setupelz.github.io/fair-shares/api/)** -- Function documentation
+- **[Allocation Approaches](allocations.md)** -- Design choices
+- **[API Reference](../api/index.md)** -- Function documentation

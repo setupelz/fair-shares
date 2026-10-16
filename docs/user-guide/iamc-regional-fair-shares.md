@@ -41,7 +41,7 @@ instead of your scenario and raises no error. Change the path before you run it.
     Fair share quantification involves five structured decision stages [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f): (1) foundational principles, (2) allocation quantity, (3) allocation approach, (4) indicators, (5) implications for all others. The allocation approach and indicator choices made in this workflow (e.g., `allocation_year`, `capability_weight`, GDP measure) correspond to Entry Points 3 and 4. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 
 !!! info "Regions come from your data"
-The library uses **whatever regions are in your IAMC input file**. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.
+    The library uses **whatever regions are in your IAMC input file**. Whether you're using IMAGE, MESSAGEix, REMIND, or any other model's native regionalization, fair-shares adapts automatically. There are no fixed regional mappings to configure.
 
 ---
 
@@ -235,7 +235,7 @@ Do not interpret negative allocations as prescriptive about timing or mechanism 
 
 ## See Also
 
-- **[country-fair-shares](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)** - Full pipeline for country-level analysis
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Theoretical foundations
-- **[Budget Functions API](https://setupelz.github.io/fair-shares/api/allocations/budgets/)** - Function signatures
+- **[country-fair-shares](country-fair-shares.md)** - Full pipeline for country-level analysis
+- **[Allocation Approaches](../science/allocations.md)** - Theoretical foundations
+- **[Budget Functions API](../api/allocations/budgets.md)** - Function signatures
 - **[Data Sources & Licensing](data-sources.md)** - Bundled data and attribution requirements

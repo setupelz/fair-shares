@@ -37,10 +37,10 @@ Run every code example before documenting it. Verify output matches claims. Chec
 ### Build locally
 
 ```bash
-uv run mkdocs serve
+uv run mkdocs build --strict
 ```
 
-Check for broken links, missing front matter, and syntax warnings.
+The strict build fails on broken links and missing pages. Use `uv run mkdocs serve` to preview the site.
 
 ---
 

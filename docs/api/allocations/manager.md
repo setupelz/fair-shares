@@ -72,6 +72,6 @@ The `fair_shares.library.allocations.manager` module provides the high-level int
 
 ## See Also
 
-- **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**: Low-level budget allocation functions
-- **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**: Low-level pathway allocation functions
-- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Choose and configure allocations
+- **[Budget Allocations](budgets.md)**: Low-level budget allocation functions
+- **[Pathway Allocations](pathways.md)**: Low-level pathway allocation functions
+- **[Country Fair Shares guide](../../user-guide/country-fair-shares.md)**: Choose and configure allocations

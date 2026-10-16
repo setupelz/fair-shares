@@ -144,6 +144,7 @@ nav:
   - Quick Start: quickstart.md
   - User Guide:
       - user-guide/index.md
+      - What Happens Where: user-guide/pipeline-map.md
       - Approach Catalog: user-guide/approach-catalog.md
       - Fair shares for countries: user-guide/country-fair-shares.md
       - Fair shares for IAM model regions: user-guide/iamc-regional-fair-shares.md
@@ -167,6 +168,7 @@ nav:
       - Configuration: api/config/models.md
   - Scientific Documentation:
       - science/index.md
+      - ESABCC 2023 and What Changed: science/esabcc-and-updates.md
       - Allocation Approaches: science/allocations.md
       - From Principle to Code: science/principle-to-code.md
       - Parameter Effects Reference: science/parameter-effects.md

@@ -51,7 +51,7 @@ Functions for processing and transforming input datasets: convergence pathway da
 
 ## NGHGI Corrections
 
-Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et al. (2026). See [Scientific Documentation](https://setupelz.github.io/fair-shares/science/other-operations/#nghgi-consistent-rcb-corrections) for methodology.
+Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et al. (2026). See [Scientific Documentation](../../science/other-operations.md#weber-rcb-corrections) for methodology.
 
 ### load_world_co2_lulucf
 
@@ -148,6 +148,6 @@ Functions for parsing RCB scenarios and converting to allocation-ready budgets.
 
 ## See Also
 
-- **[Core Utilities](https://setupelz.github.io/fair-shares/api/utils/core/)**: General data manipulation functions
-- **[Math Utilities](https://setupelz.github.io/fair-shares/api/utils/math/)**: Convergence solver and adjustments
-- **[NGHGI Corrections (Science)](https://setupelz.github.io/fair-shares/science/other-operations/#nghgi-consistent-rcb-corrections)**: Scientific methodology
+- **[Core Utilities](core.md)**: General data manipulation functions
+- **[Math Utilities](math.md)**: Convergence solver and adjustments
+- **[NGHGI Corrections (Science)](../../science/other-operations.md#weber-rcb-corrections)**: Scientific methodology

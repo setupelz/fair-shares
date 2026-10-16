@@ -10,8 +10,7 @@ search:
 
 All allocation approaches at a glance.
 
-- **Which principles does each approach implement?** See [From Principle to Code](../science/principle-to-code.md)
-- **How do I configure an approach for specific principles?** See [Principle to Code](../science/principle-to-code.md)
+- **Which principles does each approach implement, and how do I configure it for them?** See [From Principle to Code](../science/principle-to-code.md)
 - **What's the math?** See [API Reference](../api/allocations/budgets.md)
 
 ---
@@ -88,7 +87,7 @@ See [Principle to Code](../science/principle-to-code.md) for detailed configurat
     [Data Sources & Licensing](data-sources.md).
 
 !!! tip "Entry Points Framework"
-Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
+    Approach selection is one of five structured decision stages in fair share quantification [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f). Before choosing an approach, make explicit decisions about (1) foundational principles, (2) allocation quantity, and (3) which indicators will operationalize your approach — these upstream choices constrain which approaches are normatively coherent. See [From Principle to Code](../science/principle-to-code.md) for the full framework.
 
 ---
 

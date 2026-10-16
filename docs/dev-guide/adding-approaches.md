@@ -19,7 +19,7 @@ Allocation approaches live in two directories:
 | Budget  | `allocations/budgets/`  | Single cumulative allocation    |
 | Pathway | `allocations/pathways/` | Time-varying annual allocations |
 
-Each approach is registered in `allocations/registry.py`.
+Each approach is registered in `get_allocation_functions()` in `allocations/manager.py`.
 
 ---
 
@@ -31,7 +31,7 @@ Every allocation approach operationalizes specific equity principles. Before wri
 2. What value judgments are embedded
 3. How it relates to existing approaches
 
-If unclear, read [Principle-to-Code](https://setupelz.github.io/fair-shares/science/principle-to-code/) first.
+If unclear, read [Principle-to-Code](../science/principle-to-code.md) first.
 
 !!! warning "Value neutrality"
     Do not present the approach as value-neutral — all allocation choices embed normative judgments [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7).
@@ -48,9 +48,10 @@ Use the Entry Points Framework to structure your normative documentation: (1) fo
 ```mermaid
 flowchart LR
     A[Identify Principles] --> B[Implement Function]
-    B --> C[Add Tests]
+    B --> C[Export]
     C --> D[Register]
-    D --> E[Update Docs if Needed]
+    D --> E[Add Tests]
+    E --> F[Update Docs if Needed]
 ```
 
 **Key principles:**
@@ -176,7 +177,7 @@ def my_new_budget(
 1. **Validate inputs** using `AllocationInputs` Pydantic model
 2. **Shares must sum to 1** for each group (e.g., climate-assessment, quantile)
 3. **Validate outputs** using `AllocationOutputs` model
-4. **Document thoroughly** with academic citations (see [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) for required structure)
+4. **Document thoroughly** with academic citations (see [Docstring Template](docstring-template.md) for required structure)
 
 ---
 
@@ -200,7 +201,7 @@ __all__ = [
 
 ## Step 4: Register the Approach
 
-Add to `allocations/registry.py`:
+Add the approach to `get_allocation_functions()` in `allocations/manager.py`:
 
 ```python
 from fair_shares.library.allocations.budgets import (
@@ -273,7 +274,7 @@ def test_my_new_budget_parameter_effect():
 
 ## Step 6: Document
 
-1. **Docstring** - See [Docstring Template](https://setupelz.github.io/fair-shares/dev-guide/docstring-template/) for required sections
+1. **Docstring** - See [Docstring Template](docstring-template.md) for required sections
 2. **Science docs** - Add to `docs/science/allocations.md` if introducing new principle
 3. **API docs** - Auto-generated from docstrings
 
@@ -304,7 +305,7 @@ Please consider the following:
 | `apply_deviation_constraint()`    | Limit extreme allocations                     |
 | `validate_weight_constraints()`   | Check weights sum correctly                   |
 
-See [Utils API](https://setupelz.github.io/fair-shares/api/utils/core/) for full documentation.
+See [Utils API](../api/utils/core.md) for full documentation.
 
 ---
 

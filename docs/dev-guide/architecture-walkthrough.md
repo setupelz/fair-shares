@@ -8,7 +8,9 @@ icon: material/map-marker-path
 
 This document traces the full execution path of a fair-shares allocation, from
 the notebook configuration cell to the final parquet file on disk. Use it to
-build a mental model of the codebase before making changes.
+build a mental model of the codebase before making changes. The
+[Pipeline Map](../user-guide/pipeline-map.md) holds the canonical table of
+stages, notebooks and modules.
 
 **Intended audience:** Developers who need to understand _where_ code runs and
 _why_ the layers exist, not the climate science behind the equity principles
@@ -33,7 +35,7 @@ bottom-to-top.
 
 | Layer | Module | Responsibility | Key entry point |
 |-------|--------|----------------|-----------------|
-| 0 | `notebooks/301_custom_fair_share_allocation.py` | User configuration, data pipeline trigger, visualization | Config cell (lines 57-109), execution cell (lines 240-270) |
+| 0 | `notebooks/301_custom_fair_share_allocation.py` | User configuration, data pipeline trigger, visualization | "Configuration (edit this)" and "Execution (Run All from here)" sections |
 | 1 | `src/.../notebook_helpers.py` | Extract boilerplate from notebooks; load data, run all allocations, print summary | `load_allocation_data()`, `run_all_allocations()`, `run_and_save_category_allocations()` |
 | 2 | `src/.../allocations/manager.py` | Approach registry, parameter grid expansion, single allocation dispatch, result saving, budget/pathway classification | `run_parameter_grid()`, `run_allocation()`, `get_function()`, `is_budget_approach()` |
 | 3 | `src/.../allocations/budgets/per_capita.py` | Actual math: population shares, pre-allocation responsibility/capability adjustments | `_per_capita_budget_core()`, `equal_per_capita_budget()` |
@@ -63,7 +65,7 @@ allocations = {
 }
 ```
 
-### Step 1: Data Pipeline (notebook 301, lines 146-170)
+### Step 1: Data Pipeline (notebook 301, Execution section)
 
 The notebook calls `setup_data()` from `src/.../utils/data/setup.py`. This
 function:
@@ -80,17 +82,22 @@ function:
    population, Gini, scenarios) and produces CSV files under
    `output/<source_id>/intermediate/processed/`.
 
-The Snakefile (`Snakefile`, line 208 `rule all`) chains:
-`compose_config` -> `preprocess_emiss` -> `preprocess_gdp` ->
-`preprocess_population` -> `preprocess_gini` -> `preprocess_lulucf` ->
-`master_preprocess`.
+The Snakefile's `rule all` requests the master notebook output. Its inputs
+pull in `compose_config`, `preprocess_emiss`, `preprocess_gdp`,
+`preprocess_population`, `preprocess_gini`, `preprocess_lulucf` (only for
+`co2`, `co2-lulucf` and `all-ghg`), `preprocess_bunkers` (all non-pathway
+targets) and `preprocess_scenarios`, then `master_preprocess` runs last.
 
 For `target=rcbs`, the master notebook is `100_data_preprocess_rcbs`
-(Snakefile lines 131-135). No scenario notebook runs because RCBs are
-cumulative budgets, not pathways.
+(`MASTER_NOTEBOOKS` in the Snakefile). With `active_scenario_source: ar6`
+(the default), rule `preprocess_scenarios` also runs notebook 104. It writes
+`intermediate/scenarios/scenarios_co2-ffi_timeseries.csv` and
+`intermediate/scenarios/rcb_scenario_adjustments.yaml`, which the RCB
+processing uses.
 
 **Output:** `output/<source_id>/intermediate/processed/` containing:
 
+- `country_data_coverage_summary.csv`
 - `country_emissions_co2-ffi_timeseries.csv`
 - `world_emissions_co2-ffi_timeseries.csv`
 - `rcbs_co2-ffi.csv`
@@ -98,7 +105,7 @@ cumulative budgets, not pathways.
 - `country_population_timeseries.csv`
 - `country_gini_stationary.csv`
 
-### Step 2: Load Data (notebook 301, lines 240-245)
+### Step 2: Load Data (notebook 301, Execution section)
 
 `load_allocation_data()` (`notebook_helpers.py`) reads the processed CSVs
 into DataFrames. For RCB runs, it loads:
@@ -111,7 +118,7 @@ into DataFrames. For RCB runs, it loads:
   convert RCB values to total budgets)
 - Socioeconomic DataFrames: GDP, population, Gini (with validation)
 
-### Step 3: Run Allocations (notebook 301, lines 262-270)
+### Step 3: Run Allocations (notebook 301, Execution section)
 
 `run_all_allocations()` (`notebook_helpers.py`) orchestrates the full run:
 
@@ -245,14 +252,15 @@ This logic lives in `utils/data/config.py`:
 The Snakefile detects `is_multi_category = True` and:
 
 1. Runs emissions preprocessing for all source categories (e.g. PRIMAP):
-   `co2-ffi`, `co2`, `co2-lulucf`, `all-ghg-ex-co2-lulucf` (Snakefile
-   lines 262-286).
+   `co2-ffi`, `co2`, `co2-lulucf`, `all-ghg-ex-co2-lulucf` (rule
+   `preprocess_emiss`).
 2. Runs scenario preprocessing (e.g. AR6) for derivation sources: `co2-ffi` and
-   `all-ghg-ex-co2-lulucf` (Snakefile lines 433-483).
-3. **Derives non-CO2** by subtraction (Snakefile lines 493-538):
+   `all-ghg-ex-co2-lulucf` (rule `preprocess_decomposition_scenarios`).
+3. **Derives non-CO2** by subtraction (rules `derive_non_co2_emissions` and
+   `derive_non_co2_scenarios`):
    - Historical: `non-co2 = all-ghg-ex-co2-lulucf - co2-ffi`
    - Scenarios: same subtraction on scenario data.
-4. Runs master preprocessing twice (Snakefile lines 548-597):
+4. Runs master preprocessing twice (rule `master_preprocess`):
    - CO2 pass: `100_data_preprocess_rcbs.ipynb` for `co2`
    - non-CO2 pass: `100_data_preprocess_pathways.ipynb` for `non-co2`
 
@@ -268,11 +276,10 @@ if budget_allocs and not pathway_allocs:
     pathway_allocs = derive_pathway_allocations(budget_allocs)
 ```
 
-`derive_pathway_allocations()` (`manager.py`) maps:
-
-- `equal-per-capita-budget` -> `equal-per-capita`
-- `allocation_year` -> `first_allocation_year`
-- `preserve_allocation_year_shares` -> `preserve_first_allocation_year_shares`
+`derive_pathway_allocations()` (`manager.py`) maps each budget approach to its
+pathway counterpart and renames or drops budget-only parameters. The full
+mapping is in
+[Other Operations: Auto-derivation of pathway approaches](../science/other-operations.md#auto-derivation-of-pathway-approaches).
 
 Auto-derivation only works when scenario pathway data matching the RCBs'
 climate assessments is available in the active source set.
@@ -321,17 +328,10 @@ Pathway allocations flow through `pathways/per_capita.py`
 
 ### Step 6: Scenario Labels
 
-Each scenario source's native categories are mapped to normalised
-`climate-assessment` and `quantile` fields during preprocessing
-(notebook 104). This normalisation happens once at data loading time,
-so all downstream code — including non-CO₂ pathways — works with a
-consistent schema regardless of the upstream source. New scenario
-sources define their own mapping into the same normalised format, and
-any new data processing notebook must output data in this schema.
-
-For example, AR6 categories map as: C1 → `climate-assessment="1.5C"`,
-`quantile=0.5`; C3 → `climate-assessment="2C"`, `quantile=0.66`;
-C2 → `climate-assessment="2C"`, `quantile=0.83`.
+Notebook 104 maps each scenario source's native categories to normalised
+`climate-assessment` and `quantile` fields. Downstream code, including the
+non-CO₂ pathways, reads only these fields. The mapping is in
+[Other Operations: Scenario labels](../science/other-operations.md#scenario-labels).
 
 ---
 
@@ -354,10 +354,12 @@ src/fair_shares/conf/data_sources/data_sources_unified.yaml   (source of truth f
         +---> preprocess_gdp   (102_*.ipynb)
         +---> preprocess_population (103_*.ipynb)
         +---> preprocess_gini  (105_*.ipynb)
-        +---> preprocess_lulucf (107_*.ipynb)  (NGHGI LULUCF, bunkers, metadata)
-        +---> preprocess_scenarios (104/106_*.ipynb)  (if pathway/rcb-pathways)
+        +---> preprocess_lulucf (107_*.ipynb)  (NGHGI LULUCF, metadata; co2, co2-lulucf, all-ghg)
+        +---> preprocess_bunkers (108_*.ipynb) (bunkers; all non-pathway targets)
+        +---> preprocess_scenarios (104_*.ipynb)  (if a scenario source is active)
+        +---> generate_rcb_pathways (106_*.ipynb) (rcb-pathways, after 104)
         |         |
-        +---> [derive_non_co2]                 (if decomposition)
+        +---> [derive_non_co2_*]               (if decomposition)
         |         |
         +---> master_preprocess (100_*.ipynb)  (combines all, produces final CSVs)
 ```
@@ -381,7 +383,7 @@ output/<source_id>/
   intermediate/
     emissions/                         (per-category emission CSVs)
       world_co2-lulucf_timeseries.csv  (NGHGI world LULUCF for RCB corrections)
-      bunker_timeseries.csv            (international bunker emissions)
+      bunker_timeseries.csv            (international bunker emissions, notebook 108)
       lulucf_metadata.yaml             (NGHGI start year, splice year)
     gdp/                               (GDP timeseries)
     population/                        (population timeseries)
@@ -504,10 +506,13 @@ alignment bugs.
 ### The Rest-of-World (ROW) Pattern
 
 During preprocessing, the `DataPreprocessor` (`pipeline/preprocessing.py`)
-filters datasets to countries with complete data across all sources, then
+keeps countries with complete emissions, GDP and population from 1990, then
 adds a "ROW" (Rest of World) row as the residual between the world total and
-the sum of included countries. This ensures allocations always cover 100% of
-global emissions.
+the sum of included countries. Allocations therefore cover 100% of global
+emissions. Gini does not gate membership: a country with no Gini value stays
+in and receives an imputed value under `general.gini_missing_policy`
+(default `fallback-mean`). An emissions source can add an opt-in coverage rule
+(`coverage_exclusions` in `preprocessing/coverage.py`).
 
 ---
 

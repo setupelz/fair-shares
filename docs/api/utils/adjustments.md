@@ -55,6 +55,6 @@ Functions for calculating pre-allocation responsibility, capability, and Gini ad
 
 ## See Also
 
-- **[Core Utilities](https://setupelz.github.io/fair-shares/api/utils/core/)**: Data manipulation functions
-- **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**: Functions that use these adjustments
-- **[Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**: Functions that use these adjustments
+- **[Core Utilities](core.md)**: Data manipulation functions
+- **[Budget Allocations](../allocations/budgets.md)**: Functions that use these adjustments
+- **[Pathway Allocations](../allocations/pathways.md)**: Functions that use these adjustments

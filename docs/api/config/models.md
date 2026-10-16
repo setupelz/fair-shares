@@ -61,7 +61,90 @@ These models ensure type safety and provide clear error messages when configurat
         show_source: false
         members: false
 
+### EmissionsCoverage
+
+::: fair_shares.library.config.models.EmissionsCoverage
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### LulucfSourceConfig
+
+::: fair_shares.library.config.models.LulucfSourceConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### ScenarioSourceConfig
+
+::: fair_shares.library.config.models.ScenarioSourceConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### TargetSourceConfig
+
+::: fair_shares.library.config.models.TargetSourceConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### RegionMappingConfig
+
+::: fair_shares.library.config.models.RegionMappingConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+## Pipeline Settings
+
+### GeneralConfig
+
+::: fair_shares.library.config.models.GeneralConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### AdjustmentsConfig
+
+::: fair_shares.library.config.models.AdjustmentsConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### AllGhgScenariosConfig
+
+::: fair_shares.library.config.models.AllGhgScenariosConfig
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
+### NonCO2Overrides
+
+::: fair_shares.library.config.models.NonCO2Overrides
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+        members: false
+
 ## See Also
 
-- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Choose and configure allocations
-- **[Developer Guide: Adding Data Sources](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)**: Available data sources
+- **[Country Fair Shares guide](../../user-guide/country-fair-shares.md)**: Choose and configure allocations
+- **[Developer Guide: Adding Data Sources](../../dev-guide/adding-data-sources.md)**: Available data sources

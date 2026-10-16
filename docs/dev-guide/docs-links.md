@@ -1,137 +1,37 @@
 ---
 title: Documentation Links
-description: Managing documentation URLs across the codebase
+description: How code builds links to the documentation site
 ---
 
 # Documentation Links
 
-This project uses a centralized system for managing documentation links, making it easy to update URLs when documentation moves or is reorganized.
+Code that writes a link to the documentation site builds it from one module: `src/fair_shares/library/config/urls.py`.
 
-## System Overview
+## What `urls.py` holds
 
-**Central configuration**: `src/fair_shares/library/config/urls.py`
-**Update script**: `scripts/update_docs_links.py`
-**Placeholder pattern**: `{DOCS_ROOT}/path/to/page/`
+| Name            | Purpose                                                                                                   |
+| --------------- | --------------------------------------------------------------------------------------------------------- |
+| `DOCS_BASE_URL` | Site root. Defaults to `https://setupelz.github.io/fair-shares`; set `FAIR_SHARES_DOCS_URL` to override it. |
+| `docs_url(path)` | Joins a page path to `DOCS_BASE_URL`. Drops a `.md` suffix and a leading slash, and adds a trailing slash. |
+| `DOCS_URLS`     | Prebuilt URLs for common pages, grouped as `science`, `user_guide` and `api`.                              |
 
-## Usage Patterns
-
-### In Python Code and Docstrings
-
-Use the `docs_url()` function for dynamic link generation:
+## Building a link in code
 
 ```python
-from fair_shares.library.config.urls import docs_url, DOCS_URLS
+from fair_shares.library.config.urls import DOCS_URLS, docs_url
 
-# Generate a docs URL
-url = docs_url("science/allocations")
-# Returns: "https://setupelz.github.io/fair-shares/science/allocations/"
+docs_url("science/allocations")
+# "https://setupelz.github.io/fair-shares/science/allocations/"
 
-# Use pre-defined URLs
-science_url = DOCS_URLS["science"]["allocations"]
+DOCS_URLS["user_guide"]["approach_catalog"]
 ```
 
-### In Notebooks and Markdown
+`utils/io.py` uses `docs_url("user-guide/output-schema")` to point output README files at the output schema page.
 
-Use the `{DOCS_ROOT}` placeholder pattern:
+## Links inside the docs
 
-```markdown
-See [Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/) for details.
-[IAMC guide](https://setupelz.github.io/fair-shares/user-guide/iamc-regional-fair-shares/#format)
-```
+Pages in `docs/` link to each other with relative paths to the `.md` file, for example `[Allocation Approaches](../science/allocations.md)`. `uv run mkdocs build --strict` fails on a link to a missing page.
 
-**Important**: Use trailing slashes and no `.md` extension (MkDocs convention).
+## When the site moves
 
-## Managing Links
-
-### When Documentation URL Changes
-
-1. Update `DOCS_BASE_URL` in `src/fair_shares/library/config/urls.py`
-2. All Python code automatically uses the new URL
-3. For notebooks/markdown, no changes needed (placeholders remain)
-
-### Converting Links
-
-The `scripts/update_docs_links.py` script handles bulk link conversions:
-
-```bash
-# Convert relative links to placeholders (one-time setup)
-python scripts/update_docs_links.py --to-placeholder
-
-# Expand placeholders to URLs (for distribution)
-python scripts/update_docs_links.py --expand
-
-# Collapse URLs back to placeholders (for development)
-python scripts/update_docs_links.py --collapse
-
-# Preview changes without modifying files
-python scripts/update_docs_links.py --collapse --dry-run
-```
-
-### Workflow
-
-**During development**: Keep links as `{DOCS_ROOT}` placeholders in notebooks and markdown.
-
-**Before distribution**: Optionally expand placeholders to full URLs if needed for platforms that don't support custom processing.
-
-## Environment Variable Override
-
-Override the documentation URL at runtime:
-
-```bash
-export FAIR_SHARES_DOCS_URL="https://custom-domain.com/docs"
-python scripts/update_docs_links.py --expand
-```
-
-This is useful for:
-
-- Testing documentation on staging servers
-- Custom documentation deployments
-- Local documentation preview
-
-## Link Format Guidelines
-
-### Correct
-
-```markdown
-[Page](https://setupelz.github.io/fair-shares/science/allocations/)
-[With anchor](https://setupelz.github.io/fair-shares/quickstart/#installation)
-```
-
-### Incorrect
-
-```markdown
-[Missing slash](https://setupelz.github.io/fair-shares/science/allocations)
-[Has .md](https://setupelz.github.io/fair-shares/science/allocations.md/)
-[Relative](../docs/science/allocations/)
-```
-
-## Implementation Details
-
-### Why Placeholders?
-
-1. **Maintainability**: Change URL once, affects all links
-2. **Portability**: Move docs to new domain without updating every file
-3. **Clarity**: Clear that links reference project documentation
-4. **Flexibility**: Support multiple deployment targets
-
-### Pattern Recognition
-
-The update script recognizes:
-
-- **Placeholders**: `{DOCS_ROOT}/path/`
-- **Full URLs**: `https://setupelz.github.io/fair-shares/path/`
-- **Relative**: `../docs/path/` or `docs/path/`
-
-### File Coverage
-
-The script updates:
-
-- `notebooks/*.py` - All Jupytext notebook sources
-- `src/**/*.py` - Python source code and docstrings
-- `README.md` - Project documentation
-
-Excluded:
-
-- `.ipynb` files (generated from `.py` via `make sync-ipynb`)
-- Binary files
-- The update script itself
+Change `DOCS_BASE_URL` in `urls.py`, or set `FAIR_SHARES_DOCS_URL`. Every link built through `docs_url` follows.

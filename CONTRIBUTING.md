@@ -30,14 +30,14 @@ Docstrings (numpy convention) are the authoritative behaviour description — th
 
 ## Adding approaches and data sources
 
-- [Adding an allocation approach](https://setupelz.github.io/fair-shares/dev-guide/adding-approaches/)
-- [Adding a data source](https://setupelz.github.io/fair-shares/dev-guide/adding-data-sources/)
+- [Adding an allocation approach](docs/dev-guide/adding-approaches.md)
+- [Adding a data source](docs/dev-guide/adding-data-sources.md)
 
-A new data source needs a `CITATION.md` with the full citation, DOI, and licence. Never assert a DOI or licence you have not verified upstream; no DOI → name-only credit.
+A new data source needs a registry entry, a verified DOI record and a `CITATION.md`. The full list is in [Registering the source](docs/dev-guide/adding-data-sources.md#registering-the-source).
 
 ## Getting help
 
-Open an issue. Check first: [Quick Start](https://setupelz.github.io/fair-shares/quickstart/), [Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/), [Science docs](https://setupelz.github.io/fair-shares/science/).
+Open an issue. Check first: [Quick Start](docs/quickstart.md), [Approach Catalog](docs/user-guide/approach-catalog.md), [Science docs](docs/science/index.md).
 
 ## Licence
 

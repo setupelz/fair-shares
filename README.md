@@ -71,10 +71,12 @@ regenerate their exports in place with no version identifier, so those are
 reported as vintage drift instead of failing, and the hash you actually got is
 recorded in the generated `PROVENANCE.md`.
 
-**Global Carbon Budget bunkers data must be downloaded by hand** — it sits
-behind a licence-acceptance page that cannot be automated. Run
+**The Global Carbon Budget 2024 bunkers workbook (`gcb-2024`) must be downloaded
+by hand.** It sits behind a licence-acceptance page that cannot be automated. Run
 `uv run fair-shares fetch-data --source gcb-2024` for step-by-step instructions,
-then `--verify` to confirm the file you dropped in is the right one.
+then `--verify` to confirm the file you dropped in is the right one. Runs on
+`gcb-2025` emissions take their bunkers from the `gcb-2025` file, which
+`fetch-data` downloads.
 
 Every source's licence, version and citation lives in
 `src/fair_shares/conf/data_registry.yaml` and is written into `PROVENANCE.md`
@@ -115,23 +117,27 @@ already built, or add the extra: `pip install "fair-shares[pipeline]"`.
 
 - [Quick Start](https://setupelz.github.io/fair-shares/quickstart/) -- install and run your first allocation
 - [Approach Catalog](https://setupelz.github.io/fair-shares/user-guide/approach-catalog/) -- all 10 approaches at a glance
+- [What happens where](https://setupelz.github.io/fair-shares/user-guide/pipeline-map/) -- every notebook and module in run order
+- [ESABCC 2023 and what changed since](https://setupelz.github.io/fair-shares/science/esabcc-and-updates/) -- the reproduction, its deviations, and gas coverage
 - [Science](https://setupelz.github.io/fair-shares/science/) -- equity concepts, allocation design, references
 - [Developer Guide](https://setupelz.github.io/fair-shares/dev-guide/) -- architecture, adding approaches, contributing
 
 ## Known Limitations
 
-- **Pre-2000 LULUCF data**: Allocations that include LULUCF (emission category `co2`) are currently restricted to start years of 2000 or later. NGHGI-reported LULUCF data (Melo et al. v3.1) is only available from 2000. We are working with scientific collaborators to assess the quality of pre-2000 estimates and expect to extend coverage in a future release.
+- **Pre-2000 LULUCF data**: Allocations that include LULUCF (emission categories `co2` and `all-ghg`) are currently restricted to start years of 2000 or later. Both NGHGI LULUCF sources start in 2000: Melo et al. v3.1.1 (`melo-2026`, the default) and the LULUCF Data Hub v4.0.0 (`melo-2026-v4`, 2000-2024). We are working with scientific collaborators to assess the quality of pre-2000 estimates and expect to extend coverage in a future release.
 - **Non-CO₂ pathways**: The all-GHG allocation currently derives non-CO₂ pathways from AR6 scenario medians. Custom CH₄ mitigation pathways (e.g., for different CH₄ reduction targets) are architecturally supported but not yet available as a user-facing option - this is also being actively pursued.
 
 ## Citation
 
-If you use fair-shares in academic work, policy documents, or legal proceedings, please cite it:
+If you use fair-shares in academic work, policy documents, or legal proceedings, please cite it.
+[`CITATION.cff`](CITATION.cff) is the source of truth for the software citation, and `fair-shares cite` reads it:
 
 ```bibtex
 @software{fair_shares,
   title={fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways},
   author={Pelz, Setu and Holz, Ceecee and Lamboll, Robin and Weber, Konstantin and Lewis, Jared and Nicholls, Zebedee},
-  year={2025},
+  year={2026},
+  version={0.3.0},
   url={https://github.com/setupelz/fair-shares},
   license={BSD-3-Clause}
 }

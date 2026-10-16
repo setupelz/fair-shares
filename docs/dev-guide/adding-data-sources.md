@@ -22,7 +22,7 @@ Data sources are configured in `src/fair_shares/conf/data_sources/data_sources_u
 | `gdp`        | Economic capability                  | World Bank WDI         |
 | `population` | Per capita calculations              | UN/OWID                |
 | `gini`       | Within-country inequality            | World Bank WDI (default), UNU-WIDER WIID |
-| `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026)     |
+| `lulucf`     | NGHGI-consistent LULUCF emissions    | Melo et al. (2026): `melo-2026`, `melo-2026-v4` |
 | `targets`    | Global constraints                   | AR6 scenarios, RCBs    |
 
 ---
@@ -88,20 +88,28 @@ The pipeline asks an emissions source only for the categories in `available_cate
 
 By default, an analysis country has complete emissions, GDP and population from 1990 through the last year of each dataset. A `coverage` block adds two tests, and a country that fails either one joins rest-of-world. `emissions_recorded_before` requires a value in the raw emissions file in a year before the threshold. `population_from` requires population for every year from the threshold. A source that zero-fills blank years needs the first test, because a blank and a reported zero look the same after the fill. Its notebook 101 writes `emiss_<category>_first_recorded_year.csv` (columns `iso3c`, `first_recorded_year`) for each category it provides. The rule is `coverage_exclusions` in `src/fair_shares/library/preprocessing/coverage.py`. `country_data_coverage_summary.csv` names the failed test for each country in the column `coverage_rule_failed`. A source without the block keeps the default check alone, and its coverage summary has no such column. `gcb-2025` sets both tests.
 
-Add every new source to `src/fair_shares/conf/data_registry.yaml` with its URL, checksums, licence and citation, and record each DOI in `tests/fixtures/verified_dois.yaml`. The config validates the path of every configured source, so a registered source downloads on first use.
+### Registering the source
+
+Every new source needs three things:
+
+1. **Registry entry.** Add it to `src/fair_shares/conf/data_registry.yaml` with its URL, checksum, licence and citation. `tests/unit/test_data_registry.py` fails if a source lacks a licence or citation, or if a `data/` path in the config has no registry entry. A registered source downloads on first use.
+2. **Verified DOI.** Look up each DOI the entry claims at DataCite, Crossref or doi.org. Record it in `tests/fixtures/verified_dois.yaml` with the evidence and the date. `test_data_registry.py` and `test_citations.py` fail on any DOI missing from that file. `uv run pytest -m network` re-resolves the recorded DOIs (`test_dois_resolve.py`).
+3. **`CITATION.md`.** Place one in the source's data folder with the full citation, DOI and licence, as the existing sources do.
+
+Assert only a DOI or licence you have verified upstream. A source with no DOI gets name-only credit.
 
 ---
 
 ## Step 3: Create Preprocessing Notebook
 
-Create a preprocessing notebook in the `1xx` series:
+Create a preprocessing notebook in the `1xx` series. The Snakefile builds the notebook name from the source key, so the name must follow the pattern for its data type (see [Step 5](#step-5-integrate-with-pipeline)):
 
 ```
 notebooks/
 ├── 101_data_preprocess_emiss_primap-202503.py       # Existing
 ├── 102_data_preprocess_gdp_wdi-2025.py              # Existing
 ├── 103_data_preprocess_population_un-owid-2025.py   # Existing
-├── 1xx_data_preprocess_my_source.py                 # New notebook
+├── 101_data_preprocess_emiss_my-source-2026.py      # New notebook
 ```
 
 ### Preprocessing Pattern
@@ -137,8 +145,8 @@ if "World" not in df.index.get_level_values("iso3c"):
     world_row["iso3c"] = "World"
     df = pd.concat([df, world_row.set_index("iso3c", append=True)])
 
-# Save processed data
-output_path = here() / "data/processed/my-source-2026/emissions.csv"
+# Save to the run's intermediate directory (the Snakefile sets source_id)
+output_path = here() / f"output/{source_id}/intermediate/emissions/emiss_co2-ffi_timeseries.csv"
 output_path.parent.mkdir(parents=True, exist_ok=True)
 df.to_csv(output_path)
 ```
@@ -217,12 +225,14 @@ CO2 (`co2`) and all-GHG (`all-ghg`) categories — see
 
 Notebook 107 reads the raw LULUCF source and outputs:
 
-- `emiss_co2-lulucf_timeseries.csv` — country-level NGHGI LULUCF emissions
-  (overwrites the PRIMAP BM version from notebook 101)
+- `emiss_co2-lulucf_nghgi_timeseries.csv`: country-level NGHGI LULUCF emissions
+  (the PRIMAP BM version from notebook 101 keeps its base filename)
 - `world_co2-lulucf_timeseries.csv` — world-total LULUCF for RCB corrections
-- `bunker_timeseries.csv` — international bunker fuel emissions
 - `lulucf_metadata.yaml` — NGHGI start year (enforces allocation year ≥ 2000
   for `co2` category)
+
+Notebook 108 (`108_data_preprocess_bunkers_{bunkers_source}.py`, Snakefile rule
+`preprocess_bunkers`) writes `bunker_timeseries.csv`, the international bunker fuel emissions.
 
 ### Adding a new LULUCF source
 
@@ -319,7 +329,7 @@ New data sources should:
 
 1. **Cover expected countries** - At minimum, major emitters
 2. **Include World total** - Required for validation
-3. **Use standard units** - Mt CO2e for emissions, persons for population
+3. **Use standard units** - Mt CO2e for emissions, million people for population (unit `million`)
 4. **Handle missing values** - Document any gaps
 
 ---
@@ -341,4 +351,4 @@ New data sources should:
 ## See Also
 
 - **Data Sources Config**: `src/fair_shares/conf/data_sources/data_sources_unified.yaml` in the repository
-- **[Validation Utilities](https://setupelz.github.io/fair-shares/api/utils/validation/)** - Data validation functions
+- **[Validation Utilities](../api/utils/validation.md)** - Data validation functions

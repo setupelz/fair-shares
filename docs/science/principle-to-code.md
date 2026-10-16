@@ -85,7 +85,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with data sources configured in conf/
+# Run through allocation pipeline with data sources configured in src/fair_shares/conf/
 ```
 
 **What this reflects:**
@@ -118,7 +118,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with data sources configured in conf/
+# Run through allocation pipeline with data sources configured in src/fair_shares/conf/
 ```
 
 **What this reflects:**
@@ -151,7 +151,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with data sources configured in conf/
+# Run through allocation pipeline with data sources configured in src/fair_shares/conf/
 ```
 
 **What this reflects:**
@@ -164,7 +164,7 @@ allocations = {
 
 **Underlying reasoning:** The ability-to-pay principle. Countries with greater economic resources should lead mitigation because they can afford to.
 
-**GDP window:** When the cumulative window extends past the last observed GDP year (`wdi-2025` ends at 2023), GDP per capita is forward-filled from the last observed year so that every subsequent year of the window uses the same cross-country capability ratios. To plug in projected GDP (SSP2, a custom growth assumption, or an updated WDI release), extend the input `gdp_ts` time series before calling the allocation function.
+**GDP window:** When the cumulative window extends past the last observed GDP year (`wdi-2025` ends at 2023), the per-capita budget and pathway primitives forward-fill GDP per capita from the last observed year so that every subsequent year of the window uses the same cross-country capability ratios. The cumulative-per-capita-convergence primitives compute their per-country capability scalar only over the years where both GDP and population exist, with no forward-fill. To plug in projected GDP (SSP2, a custom growth assumption, or an updated WDI release), extend the input `gdp_ts` time series before calling the allocation function.
 
 ---
 
@@ -185,7 +185,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with data sources configured in conf/
+# Run through allocation pipeline with data sources configured in src/fair_shares/conf/
 ```
 
 **What this reflects:**
@@ -218,7 +218,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with AR6 scenario data configured in conf/
+# Run through allocation pipeline with AR6 scenario data configured in src/fair_shares/conf/
 # This creates annual pathway allocations, NOT gradual convergence
 ```
 
@@ -257,7 +257,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with AR6 scenario data configured in conf/
+# Run through allocation pipeline with AR6 scenario data configured in src/fair_shares/conf/
 # Note: Use cumulative-per-capita-convergence-adjusted (not base convergence)
 # for pre-allocation responsibility/capability weighting
 ```
@@ -299,7 +299,7 @@ allocations = {
         }
     ]
 }
-# Run through allocation pipeline with data sources configured in conf/
+# Run through allocation pipeline with data sources configured in src/fair_shares/conf/
 # Gini adjustment is automatic when gini data source is configured
 ```
 
@@ -315,7 +315,7 @@ allocations = {
 
 **Underlying reasoning:** The right to development takes precedence. Wealthy countries should lead mitigation because they have the capacity. Subsistence protection ensures development needs are met before mitigation burdens are assessed. Pre-allocation responsibility plays a supporting role, not the primary one.
 
-<!-- REFERENCE: Configuration format matches AllocationManager in src/fair_shares/library/allocations/manager.py
+<!-- REFERENCE: Approach names match get_allocation_functions() in src/fair_shares/library/allocations/manager.py
      Budget approaches: src/fair_shares/library/allocations/budgets/per_capita.py
      Pathway approaches: src/fair_shares/library/allocations/pathways/cumulative_per_capita_convergence.py
      Usage example: notebooks/301_custom_fair_share_allocation.ipynb

@@ -42,8 +42,9 @@ uv run fair-shares fetch-data
 ```
 
 That fetches roughly 70 MB — everything a standard country-level run needs.
-Add `--all` for the large optional sources (the AR6 scenario ensemble, CMIP7
-historical, and the WIID inequality data), another ~90 MB. You can skip `--all`
+Add `--all` for the optional sources (the AR6 scenario ensemble, CMIP7
+historical, the WIID inequality data, Global Carbon Budget 2025 emissions
+(`gcb-2025`) and the LULUCF Data Hub v4 (`melo-2026-v4`)), another ~90 MB. You can skip `--all`
 and let those arrive on demand: the AR6 ensemble, for instance, is downloaded
 the first time a run needs it.
 
@@ -75,8 +76,8 @@ is recorded in the `PROVENANCE.md` written into your data directory.
 
 ### The one file you have to download yourself
 
-The Global Carbon Budget bunkers workbook sits behind a licence-acceptance page
-that cannot be automated. For step-by-step instructions:
+The Global Carbon Budget 2024 bunkers workbook (`gcb-2024`) sits behind a
+licence-acceptance page that cannot be automated. For step-by-step instructions:
 
 ```bash
 uv run fair-shares fetch-data --source gcb-2024
@@ -84,7 +85,8 @@ uv run fair-shares fetch-data --source gcb-2024
 
 Follow them, then run `--verify` to confirm the file you placed is the expected
 one. Only allocations that adjust remaining carbon budgets for international
-bunkers need it.
+bunkers need it. Runs on `gcb-2025` emissions take their bunkers from the
+`gcb-2025` file, which `fetch-data` downloads.
 
 ### Licences
 
@@ -188,37 +190,9 @@ uv run jupyter lab
 
 ### Which notebook do I start with?
 
-Two questions decide it.
+The [User Guide](user-guide/index.md) has a table that picks the notebook for your case.
 
-**What are you dividing up?** A *budget* is one cumulative number per country —
-how much it may emit in total from now on. A *pathway* is a value for every year
-— how much it may emit in 2030, in 2031, and so on.
-
-**Who are you dividing it between?** Individual *countries*, or the *model
-regions* used by an integrated assessment model (a handful of world regions, in
-IAMC-format files).
-
-|                       | Countries                                     | IAM model regions                                          |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------- |
-| **A budget**          | `302_example_templates_budget_allocations`    | run `400` once, then `402_example_iamc_budget_allocations`   |
-| **A pathway**         | `303_example_templates_pathway_allocations`   | run `400` once, then `403_example_iamc_pathway_allocations`  |
-| **Your own settings** | `301_custom_fair_share_allocation`            | run `400` once, then `401_custom_iamc_allocation`            |
-
-All notebooks live in `notebooks/`. The 302/303/402/403 notebooks are worked
-examples that run unchanged — start there if you are new. The 301 and 401
-notebooks are blank workspaces you configure yourself; 401 additionally exports
-a model-ready remaining budget.
-
-The country notebooks build whatever processed data they need on the first run,
-so nothing has to be run before them.
-
-!!! warning "IAM users: run notebook 400 first"
-
-    `400_data_preprocess_scenario_for_allocation` takes a raw IAMC scenario
-    file, adds the historical emissions, population and GDP that the allocation
-    needs, and writes `output/iamc/iamc_covered.xlsx`. Notebooks 401, 402 and
-    403 all read that file. Run 400 once and they will find it; skip it and they
-    fail with a missing-file error.
+IAM users start with notebook `400`. It writes `output/iamc/iamc_covered.xlsx`, which notebooks `401`, `402` and `403` read.
 
 Working from your own Python code instead of notebooks? See
 [Python API](api/python-api.md).

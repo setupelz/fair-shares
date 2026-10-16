@@ -69,12 +69,12 @@
 #    weighting the composite allocation approaches"); we follow the report.
 # 3. **Three emission categories are run:**
 #    `co2-ffi` (fossil and industry CO2 — the report's own scope),
-#    `all-ghg-ex-co2-lulucf` (all greenhouse gases except CO2 from land use),
+#    `all-ghg-ex-co2-lulucf` (all greenhouse gases without land-use emissions),
 #    and `all-ghg` (all greenhouse gases, with land-use CO2 counted the way
 #    national greenhouse gas inventories count it — the "NGHGI convention").
-#    Note the library's name for "all-ghg-ex-lulucf" is `all-ghg-ex-co2-lulucf`:
-#    only the CO2 part of land use is excluded; non-CO2 land emissions (e.g.
-#    methane from agriculture) remain included.
+#    The historical series of `all-ghg-ex-co2-lulucf` is PRIMAP-hist `M.0.EL`,
+#    which excludes all land-use emissions (CO2, CH4 and N2O). Agriculture,
+#    including its methane, stays in. The name is kept for compatibility.
 # 4. **Multi-gas budgets are split in two.** A remaining carbon budget caps CO2
 #    only, so for the two all-GHG categories the library allocates the CO2 part
 #    as a budget and the non-CO2 part as an annual pathway taken from AR6
@@ -262,8 +262,9 @@
 #   (NGHGI convention) — see Decisions 3-5.
 # - **Global RCB (report):** 500 GtCO2 from 2020 for 1.5C at 50% likelihood
 #   (IPCC AR6 WG1); the report derives ~1530 GtCO2 from 1990 and ~704 GtCO2
-#   from 2015 by adding back historical emissions. fair-shares performs the
-#   same rebasing internally from its own historical series.
+#   from 2015 by adding back historical emissions taken from GCB 2021.
+#   fair-shares adds back its own fossil series without bunkers, and deducts
+#   future bunkers from 2020 to net zero (§ 7.3).
 # - **Bunkers excluded** from historical emission attribution (both).
 # - **LULUCF CO2 excluded** from the report's history and scope; here it enters
 #   only the `all-ghg` category, in NGHGI convention (Melo et al. data).
@@ -303,12 +304,12 @@ active_sources = {
     "lulucf": "melo-2026",         # NGHGI LULUCF — used only for the all-ghg category
 }
 
-# Data source note: PRR2023 used Global Carbon Budget 2021 (Friedlingstein et al. 2022)
-# for historical CO2-FFI. This notebook uses PRIMAP-202503. The PRIMAP backcast is
-# systematically lower than GCB 2021 for cumulative CO2-FFI: at the global aggregate
-# this drives the implied RCB-from-1990 down by ~14% and RCB-from-2015 down by ~9%
-# vs PRR2023's anchors (§7). Country-level differences may be larger
-# for sparsely-reporting regions. LULUCF excluded in both cases.
+# Data source note: PRR2023 used GCB 2022 national fossil emissions for country
+# indicators, and added 1030 Gt (1990-2019) and 204 Gt (2015-2019) from GCB 2021
+# to the 500 Gt to get its global budgets from 1990 and 2015. This notebook uses
+# PRIMAP-hist v2.6.1 and adds the same fossil series without bunkers (857 and
+# 177 Gt), after the 35 Gt future-bunker deduction. The global budget is 1322 Gt
+# from 1990 (PRR2023: 1530) and 642 Gt from 2015 (PRR2023: 704). See § 7.3.
 
 desired_harmonisation_year = 2020
 # Year scenario-based pathways are harmonised to observed emissions. Applied
@@ -1520,27 +1521,27 @@ plt.show()
 #   territorial; observed country data through 2023
 # - **NGHGI LULUCF**: `melo-2026` — Melo et al. LULUCF Data Hub v3.1.1,
 #   2000-2023, used for the `all-ghg` category only
-# - **RCB anchors**: `ar6_2020` (IPCC AR6 WG1, Canadell et al. 2021),
-#   `lamboll_2023`, `forster_2024` — all computed; the report anchor is
-#   `ar6_2020` at 1.5C / 50%
+# - **RCB anchors**: `ar6_2020` (IPCC AR6 WG1, Canadell et al. 2021) is the
+#   report anchor at 1.5C / 50%. `data/rcbs/rcbs.yaml` also holds
+#   `lamboll_2023`, `forster_2024`, `forster_2026` and `ar6_wg1_2021`
 #
 # ### 7.2 Key architectural choices
 #
 # **Country-level allocation.** fair-shares computes allocation shares at ISO3c
-# level (~173 countries) and aggregates to larger groupings (EU27, R11 regions)
+# level (177 analysis countries with the default sources) and aggregates to larger groupings (EU27, R11 regions)
 # post-hoc. PRR2023 aggregates country data to 11 R11 regions first, then computes
 # shares at the regional level. For linear operations (EPC, ECPC) the two are
 # algebraically identical when summed back to the same grouping. For non-linear
 # operations (responsibility/capability-adjusted with `1/x` or `1/sqrt(x)`
 # penalty), Jensen's inequality applies: country-level and R11-level allocations
 # give different answers whenever within-region variance is material. See
-# `docs/science/allocations.md`.
+# `docs/science/esabcc-and-updates.md`.
 #
 # **Capability snapshot.** PRR2023 uses a single-year GDP-per-capita snapshot
 # (1990 for `ay=1990`, 2014 for `ay=2015`). The budget parts replicate this via
-# `capability_reference_year`. The pathway (non-CO2) parts compute capability
-# year-by-year — the snapshot kwarg does not exist for pathway approaches
-# (Decision 8).
+# `capability_reference_year`. The pathway (non-CO2) parts receive the same
+# snapshot year, because the non-CO2 configs are derived from the budget
+# configs (Decision 8).
 #
 # **Approach coverage.** All four approaches PRR2023 quantifies are configured,
 # on both the EPC and ECPC bases, for every Table 18 indicator with a data
@@ -1563,7 +1564,10 @@ plt.show()
 # | GDP convention | constant 2017 PPP (`NY.GDP.MKTP.PP.KD`) | same |
 # | Population historical | un-owid-2025 | OWID historical CSV |
 # | Population projection | un-owid-2025 (UN WPP 2024) | IIASA WiC SSP2 v9_130115 (2013 vintage) |
-# | Emissions | PRIMAP-hist v2.6.1 (CO2-FFI) | GCB 2022 |
+# | Emissions | PRIMAP-hist v2.6.1 (CO2-FFI) | GCB 2022 (national) |
+# | Global budget from 1990 / 2015 | 1322 / 642 Gt: 465 Gt from 2020 plus fossil CO2 without bunkers | 1530 / 704 Gt: 500 Gt plus 1030 / 204 Gt from GCB 2021 |
+# | International bunkers | 35 Gt deducted, 2020 to net zero | inside the 500 Gt |
+# | Future land-use CO2 | AR6 median removed; the net sink is capped at 0 (`precautionary_lulucf`) | not separated |
 # | RCB anchor | `ar6_2020` (+ Lamboll, Forster) | `ar6_2020` (Canadell et al. 2021) |
 # | Allocation granularity | country (ISO3c) | R11 regions |
 # | Capability indicator | GDP per capita (snapshot year kwarg) | GDP pc and capital stock pc |

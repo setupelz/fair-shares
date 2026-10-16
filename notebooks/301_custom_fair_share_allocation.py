@@ -43,7 +43,7 @@
 #
 # **Data sources:**
 # - **Emission categories:** `co2-ffi`, `co2-lulucf`, `co2`, `non-co2`, `all-ghg`, `all-ghg-ex-co2-lulucf`
-# - **Target types:** `rcbs` (cumulative budgets), `ar6` (IPCC AR6 pathways), `rcb-pathways` (budget-derived pathways)
+# - **Target types:** `rcbs` (cumulative budgets), `pathway` (IPCC AR6 pathways), `rcb-pathways` (budget-derived pathways)
 #
 # **Allocation approaches:**
 # - Budget (`target="rcbs"`): `equal-per-capita-budget`, `per-capita-adjusted-budget`, `per-capita-adjusted-gini-budget`
@@ -70,6 +70,7 @@ active_sources = {
     "target": "rcbs",
     # Historical emissions - Required for responsibility calculations
     # - "primap-202503": PRIMAP-hist v2.6 (March 2025), 1850-2023
+    # - "gcb-2025": Global Carbon Budget 2025, co2-ffi only, 1850-2024 (opt-in)
     "emissions": "primap-202503",
     # GDP - Used for capability-based adjustments
     # - "wdi-2025": World Bank World Development Indicators (2025)
@@ -79,10 +80,11 @@ active_sources = {
     "population": "un-owid-2025",
     # Gini coefficient - For within-country inequality adjustments
     # - "wdi-2025": World Bank WDI Gini index (SI.POV.GINI), the default
-# - "unu-wider-2025": UNU-WIDER WIID — opt-in, CC BY-NC-SA (see data-sources.md)
+    # - "unu-wider-2025": UNU-WIDER WIID, opt-in, CC BY-NC-SA (see data-sources.md)
     "gini": "wdi-2025",
     # LULUCF - Required for NGHGI-consistent RCB corrections
-    # - "melo-2026": Melo et al. (2026) NGHGI v3.1 data
+    # - "melo-2026": Melo et al. (2026) NGHGI v3.1 data, 2000-2023
+    # - "melo-2026-v4": LULUCF Data Hub v4.0.0, 2000-2024 (opt-in)
     "lulucf": "melo-2026",
     # RCB pathway generator - Optional, defaults to "exponential-decay"
     # "rcb_generator": "exponential-decay",

@@ -84,6 +84,6 @@ All pathway allocation approaches return a `PathwayAllocationResult` containing:
 
 ## See Also
 
-- **[Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/)**: Fixed cumulative budgets
-- **[Scientific Documentation: Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)**: Theoretical foundations
-- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/)**: Conceptual overview
+- **[Budget Allocations](budgets.md)**: Fixed cumulative budgets
+- **[Scientific Documentation: Allocation Approaches](../../science/allocations.md)**: Theoretical foundations
+- **[Country Fair Shares guide](../../user-guide/country-fair-shares.md)**: Conceptual overview

@@ -55,5 +55,5 @@ Core utility functions for data manipulation, unit conversion, and common operat
 
 ## See Also
 
-- **[Adjustments](https://setupelz.github.io/fair-shares/api/utils/adjustments/)**: Adjustment calculation functions
-- **[Validation](https://setupelz.github.io/fair-shares/api/utils/validation/)**: Input validation utilities
+- **[Adjustments](adjustments.md)**: Adjustment calculation functions
+- **[Validation](validation.md)**: Input validation utilities

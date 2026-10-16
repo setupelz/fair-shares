@@ -33,19 +33,23 @@ The parquet files contain the **complete** allocation results with all metadata 
 | `iso3c`              | string | Country code (e.g., 'USA', 'CHN')                   |
 | `approach`           | string | Allocation method (e.g., 'equal-per-capita-budget') |
 | `climate-assessment` | string | Normalised temperature target from the scenario source (e.g., '1.5C', '2C' for AR6) |
-| `quantile`           | string | Normalised probability percentile from the scenario source (e.g., '0.5' for AR6 C1 median) |
+| `quantile`           | float  | Normalised probability percentile from the scenario source (e.g., 0.5 for AR6 C1 median) |
 | `emission-category`  | string | Emission type (e.g., 'co2-ffi', 'all-ghg')          |
 
 ### Data Source Columns
 
 | Column              | Type   | Description                       |
 | ------------------- | ------ | --------------------------------- |
-| `source-id`         | string | Composite data source identifier  |
+| `source-id`         | string | Composite data source identifier; includes the LULUCF source when the category uses one |
+| `allocation-folder` | string | Output folder name of the run     |
 | `emissions-source`  | string | Historical emissions dataset      |
 | `gdp-source`        | string | GDP dataset                       |
 | `population-source` | string | Population dataset                |
 | `gini-source`       | string | Gini coefficient dataset          |
-| `target-source`     | string | Target type ('rcbs', 'ar6', etc.) |
+| `target-source`     | string | Target type ('rcbs', 'pathway', 'rcb-pathways') |
+| `rcb-generator`     | string | Pathway generator for `rcb-pathways`; empty otherwise |
+| `source`            | string | Specific source within the target (e.g., the RCB source 'lamboll_2023') |
+| `total-budget`      | float  | Global budget total behind the allocation |
 
 ### Parameter Columns
 
@@ -172,7 +176,7 @@ The `variable` column **encodes key metadata** in pipe-delimited format:
 **Example:**
 
 ```
-co2-ffi|rcbs|primap-hist-v2.5|1.5C|0.5|EPC-y2020
+co2-ffi|rcbs|lamboll_2023|1.5C|0.5|EPC-B-ay2020
 ```
 
 This enables filtering and pivoting in spreadsheet software.
@@ -308,6 +312,6 @@ epc <- df_relative %>%
 
 ## See Also
 
-- **[User Guide](https://setupelz.github.io/fair-shares/user-guide/)** - Workflows for running allocations
-- **[API Reference](https://setupelz.github.io/fair-shares/api/)** - Function documentation
-- **[Allocation Approaches](https://setupelz.github.io/fair-shares/science/allocations/)** - Approach descriptions and parameters
+- **[User Guide](index.md)** - Workflows for running allocations
+- **[API Reference](../api/index.md)** - Function documentation
+- **[Allocation Approaches](../science/allocations.md)** - Approach descriptions and parameters

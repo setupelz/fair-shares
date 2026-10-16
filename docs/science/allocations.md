@@ -9,7 +9,7 @@ search:
 
 Design and parameters for allocation approaches in fair-shares.
 
-For underlying principles, see [From Principle to Code](principle-to-code.md). For mathematical formulations, see the API Reference for [budgets](https://setupelz.github.io/fair-shares/api/allocations/budgets/) and [pathways](https://setupelz.github.io/fair-shares/api/allocations/pathways/).
+For underlying principles, see [From Principle to Code](principle-to-code.md). For mathematical formulations, see the API Reference for [budgets](../api/allocations/budgets.md) and [pathways](../api/allocations/pathways.md).
 
 ---
 
@@ -50,7 +50,7 @@ All allocation approaches ensure shares sum to 1 in each year and ensure complet
 
     fair-shares does not alter AR6 pathways. Instead, it sets post-net-zero emissions to NaN and reports unallocated quantities as a warning. Users must decide how to handle net-negative portions separately.
 
-    **Converting RCBs to pathways:** Use `generate_rcb_pathway_scenarios()` to convert any budget to a temporal breakdown (e.g., exponential decay over years). See [Other Operations: RCB Pathway Generation](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation).
+    **Converting RCBs to pathways:** Use `generate_rcb_pathway_scenarios()` to convert any budget to a temporal breakdown (e.g., exponential decay over years). See [Other Operations: RCB Pathway Generation](other-operations.md#rcb-pathway-generation).
 
     <!-- REFERENCE: generate_rcb_pathway_scenarios() in src/fair_shares/library/utils/math/pathways.py -->
 
@@ -87,15 +87,15 @@ The global pathway:
 
     The global pathway shape described above does not directly prescribe when individual countries reach net-zero. Country net-zero timing emerges from the allocation step: pathway allocation approaches distribute annual emissions to countries, and countries whose allocation nears zero early in the pathway are effectively at their net-zero year. For example, under a 1.5 deg C budget with strong responsibility weighting, a high-emitting developed country might receive an allocation that reaches near-zero (or a very small % of current emissions) well before 2100 -- this can be considered their implied net-zero year in policy translation.
 
-**Configuration:** Set `target: "rcb-pathways"` in your data source config. See [User Guide: Configuration](https://setupelz.github.io/fair-shares/user-guide/#rcb-pathway-generation) for setup details.
+**Configuration:** Set `target: "rcb-pathways"` in your data source config. See [Other Operations: RCB Pathway Generation](other-operations.md#rcb-pathway-generation) for setup details.
 
-**Technical details:** [RCB Pathway Generation](https://setupelz.github.io/fair-shares/science/other-operations/#rcb-pathway-generation)
+**Technical details:** [RCB Pathway Generation](other-operations.md#rcb-pathway-generation)
 
 ---
 
 ## Parameters
 
-For real-world examples showing how these parameters affect allocation outcomes for different countries, see [Parameter Effects Reference](https://setupelz.github.io/fair-shares/science/parameter-effects/).
+For real-world examples showing how these parameters affect allocation outcomes for different countries, see [Parameter Effects Reference](parameter-effects.md).
 
 ### Allocation Year
 
@@ -137,7 +137,7 @@ Reference year for calculating cumulative per capita allocations.
 
 **Capability snapshot mode (`capability_reference_year: int | None = None`):** By default, capability is computed year-by-year — `pf(GDP_per_cap(g, t))` is evaluated for each country and year in the allocation window, then combined with that year's population. Setting `capability_reference_year` to an integer freezes capability at a single reference year instead: `pf(GDP_per_cap(g, t_ref))` is computed once per country from that year's data and broadcast across the rest of the window. Available on the adjusted approaches — `per_capita_adjusted_budget`, `per_capita_adjusted_gini_budget`, `per_capita_adjusted`, and `per_capita_adjusted_gini` — with the same snapshot semantics on the budget and pathway side; not available on `equal_per_capita*` (no capability term to freeze) or the convergence family. The reference year can be before, at, or after `allocation_year`. On the budget approaches a snapshot needs GDP at the reference year only, so `allocation_year` can be earlier than the first GDP year (allocation years start at 1850). The pathway approaches still require GDP at `first_allocation_year`, even when a reference year is set. Year-by-year and snapshot modes are algebraically equivalent only when capability is constant over the window; in practice they diverge substantially for long windows spanning periods of economic change. See [capability_reference_year](parameter-effects.md#capability_reference_year) for the source-case mechanics (in-window, beyond-last-observed-year, pre-window) and the Gini interaction.
 
-The canonical example of `ref_year < allocation_year` is the PRR2023 lag-1 convention: PRR2023 defines capability as GDP per capita in the year immediately preceding the allocation decision, so `allocation_year=2015` paired with `capability_reference_year=2014` is the reproduction-faithful configuration. The nb601 notebook (PRR2023 reproduction) uses exactly this. More broadly: use `capability_reference_year=1990` with `allocation_year=1990` for ESABCC 2023 `CPCadjCAP` results.
+Notebook 601 reproduces the ESABCC 2023 capability results ([Pelz 2023](references.md)), which use GDP per capita snapshots for 1990 and 2014. It pairs the allocation year with the reference year as follows. `allocation_year=1990` uses `capability_reference_year=1990`. `allocation_year=2015` uses `capability_reference_year=2014`, one year before the allocation year. The all-GHG categories allocate from 2015 only, so they use 2014.
 
 Year-by-year integration is the more defensible forward-looking semantic — it reflects lifetime capability over the allocation window rather than a point-in-time snapshot — but snapshot is the reproduction-faithful choice for papers that defined capability as a fixed indicator at a reference instant.
 
@@ -164,7 +164,7 @@ Income distribution is modelled as log-normal, parameterised by each country's G
 
 See [From Principle to Code](principle-to-code.md) for conceptual context.
 
-**Mathematical formulations:** [GDR capability calculation](https://setupelz.github.io/fair-shares/api/utils/adjustments/#calculate_gini_adjusted_gdp) | [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_gini_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted_gini)
+**Mathematical formulations:** [GDR capability calculation](../api/utils/adjustments.md#calculate_gini_adjusted_gdp) | [Budget](../api/allocations/budgets.md#per_capita_adjusted_gini_budget) | [Pathway](../api/allocations/pathways.md#per_capita_adjusted_gini)
 
 ---
 
@@ -183,7 +183,7 @@ Use a numeric value (e.g. `2.0`) when you explicitly want to compress the distri
 
 Only relevant when applying scaling adjustments (pre-allocation responsibility, capability, or combinations). Has no effect on pure equal-per-capita approaches.
 
-**Implementation details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted)
+**Implementation details:** [Budget](../api/allocations/budgets.md#per_capita_adjusted_budget) | [Pathway](../api/allocations/pathways.md#per_capita_adjusted)
 
 ---
 
@@ -200,7 +200,7 @@ Adjusted population = Population × responsibility_metric^(-w_r) × capability_m
 
 Where `w_r` and `w_c` are the normalized pre-allocation responsibility and capability weights (divided by their sum). Only the ratio between weights affects results; `(0.3, 0.7)` and `(0.15, 0.35)` produce identical allocations because they normalize to the same values.
 
-**Mathematical specification:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#per_capita_adjusted)
+**Mathematical specification:** [Budget](../api/allocations/budgets.md#per_capita_adjusted_budget) | [Pathway](../api/allocations/pathways.md#per_capita_adjusted)
 
 ---
 
@@ -224,7 +224,7 @@ The choice between these modes is a normative judgment about whether future popu
 | Dynamic (default) | Cumulative population from allocation year | Recalculated each year based on current pop/GDP |
 | Preserved         | Population at allocation year only         | Fixed at first allocation year                  |
 
-**Mathematical specifications:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/#equal_per_capita_budget) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/#equal_per_capita)
+**Mathematical specifications:** [Budget](../api/allocations/budgets.md#equal_per_capita_budget) | [Pathway](../api/allocations/pathways.md#equal_per_capita)
 
 ---
 
@@ -239,7 +239,7 @@ fair-shares exposes two distinct mechanisms to operationalise this:
 
 These can be combined, but they are different mechanisms with different behavioral properties. See the [warning in Building Blocks](#building-blocks) for the full distinction.
 
-**Mathematical details:** [Budget](https://setupelz.github.io/fair-shares/api/allocations/budgets/) | [Pathway](https://setupelz.github.io/fair-shares/api/allocations/pathways/)
+**Mathematical details:** [Budget](../api/allocations/budgets.md) | [Pathway](../api/allocations/pathways.md)
 
 ### Historical Emissions Discounting
 
@@ -290,7 +290,7 @@ Properties:
 - Cumulative-constrained: total over horizon equals target share
 - Automatic speed: minimum speed satisfying cumulative constraints
 
-**[Mathematical derivation →](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence)**
+**[Mathematical derivation →](../api/allocations/pathways.md#cumulative_per_capita_convergence)**
 
 ### Convergence Method
 
@@ -362,7 +362,7 @@ In permissive mode, country-level warnings report the ratio of achieved-to-targe
 
     If `strict=True` raises an error, try `strict=False` first to see which countries are infeasible and by how much. Common causes: (1) very early `allocation_year` with strong pre-allocation responsibility weighting makes high-emitting countries' targets unreachable; (2) short time horizon (few years between `first_allocation_year` and end of pathway) leaves insufficient time for convergence; (3) `max_convergence_speed` is too low for the required transition.
 
-**[Implementation details →](https://setupelz.github.io/fair-shares/api/allocations/pathways/#cumulative_per_capita_convergence)**
+**[Implementation details →](../api/allocations/pathways.md#cumulative_per_capita_convergence)**
 
 ---
 
@@ -381,7 +381,7 @@ Note that this is a shape-level symmetry, not a temporal one. Pre-allocation res
 
 The functional transformation achieves the inversion and as a side effect can compress the distribution — this is where the parameters matter.
 
-These are advanced tuning parameters — the defaults are appropriate for most analyses. They are documented here for completeness; see the [API Reference](https://setupelz.github.io/fair-shares/api/allocations/budgets/#per_capita_adjusted_budget) for full mathematical details.
+These are advanced tuning parameters — the defaults are appropriate for most analyses. They are documented here for completeness; see the [API Reference](../api/allocations/budgets.md#per_capita_adjusted_budget) for full mathematical details.
 
 ### Per Capita vs Absolute Mode
 
@@ -427,7 +427,7 @@ Available on `per-capita-adjusted-gini-budget`, `per-capita-adjusted-gini`, and 
 
 The `per-capita-convergence` approach linearly blends grandfathering (current emissions) with equal per capita over time. It includes grandfathering elements, critiqued as having "no support among moral and political philosophers" [Dooley 2021](https://doi.org/10.1038/s41558-021-01015-8); see [Approaches Debated in the Literature](#approaches-debated-in-the-literature) for context and [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7) on how convergence framings embed grandfathering during the transition period.
 
-**[Formulation →](https://setupelz.github.io/fair-shares/api/allocations/pathways/)**
+**[Formulation →](../api/allocations/pathways.md)**
 
 ---
 
@@ -457,7 +457,7 @@ Arguments of the form "We only emit X% of global emissions." [Winkler 2020](http
 
 ## See Also
 
-- **[API Reference: Budget Allocations](https://setupelz.github.io/fair-shares/api/allocations/budgets/):** Budget mathematical formulations
-- **[API Reference: Pathway Allocations](https://setupelz.github.io/fair-shares/api/allocations/pathways/):** Pathway mathematical formulations
-- **[Country Fair Shares guide](https://setupelz.github.io/fair-shares/user-guide/country-fair-shares/):** When to use each approach
-- **[References](https://setupelz.github.io/fair-shares/science/references/):** Complete bibliography
+- **[API Reference: Budget Allocations](../api/allocations/budgets.md):** Budget mathematical formulations
+- **[API Reference: Pathway Allocations](../api/allocations/pathways.md):** Pathway mathematical formulations
+- **[Country Fair Shares guide](../user-guide/country-fair-shares.md):** When to use each approach
+- **[References](references.md):** Complete bibliography
