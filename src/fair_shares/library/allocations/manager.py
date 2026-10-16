@@ -24,7 +24,6 @@ from fair_shares.library.allocations.budgets.per_capita import (
     per_capita_adjusted_gini_budget,
 )
 from fair_shares.library.allocations.pathways.cumulative_per_capita_convergence import (
-    cumulative_per_capita_convergence,
     cumulative_per_capita_convergence_adjusted,
     cumulative_per_capita_convergence_adjusted_gini,
 )

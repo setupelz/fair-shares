@@ -221,7 +221,8 @@ def test_python_api_reproduces_notebook(category, allocation, shape, dev_year, m
         base_share_floor_mt=0.001,
         desired_harmonisation_year=2020,
         allocation_folder="601_esabcc_2023",
-        project_root=here(),
+        data_dir=here() / "data",
+        output_dir=here() / "output",
         **ANCHOR,
         **SOURCES,
     )

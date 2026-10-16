@@ -65,9 +65,6 @@ def process_complete_scenarios(
         ) & (category_scenarios.index.get_level_values("unit") == "Mt * CO2e")
         world_scenarios_only = category_scenarios[world_mask_all]
 
-        # Get year columns
-        year_cols = [col for col in world_scenarios_only.columns if str(col).isdigit()]
-
         # Convert to long format for net-negative handling
         df_reset = world_scenarios_only.reset_index()
 

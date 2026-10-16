@@ -281,11 +281,9 @@ from pyprojroot import here
 from fair_shares.library.exceptions import ConfigurationError
 from fair_shares.library.notebook_helpers import (
     load_allocation_data,
-    print_results_summary,
     run_all_allocations,
 )
 from fair_shares.library.utils import (
-    convert_parquet_to_wide_csv,
     setup_data,
 )
 from fair_shares.library.utils.data.config import (

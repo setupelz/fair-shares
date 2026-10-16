@@ -11,7 +11,6 @@ from __future__ import annotations
 import pandas as pd
 import pytest
 
-from fair_shares.library.allocations.budgets import per_capita_adjusted_budget
 from fair_shares.library.allocations.pathways import (
     per_capita_adjusted,
 )

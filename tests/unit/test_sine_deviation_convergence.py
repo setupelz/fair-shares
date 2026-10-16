@@ -402,7 +402,6 @@ class TestEvolveSharesSineDeviationUnit:
         sin(1/N * pi), which is small. This would not hold with raw t
         in the sine argument (sin(2021/20 * pi) gives unpredictable values).
         """
-        import math
 
         countries = ["A", "B"]
         t_a = 2020

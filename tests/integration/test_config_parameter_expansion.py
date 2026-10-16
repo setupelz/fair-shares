@@ -6,10 +6,8 @@ Integration tests for config parameter expansion pipeline for the fair-shares li
 from __future__ import annotations
 
 import itertools
-from pathlib import Path
 
 import pytest
-import yaml
 from conftest import STANDARD_EMISSION_CATEGORY, generate_simple_test_data
 
 from fair_shares.library.allocations.manager import run_allocation

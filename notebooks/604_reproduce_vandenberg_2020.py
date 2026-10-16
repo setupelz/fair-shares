@@ -282,7 +282,6 @@ from fair_shares.library.notebook_helpers import (
     run_all_allocations,
 )
 from fair_shares.library.utils import (
-    convert_parquet_to_wide_csv,
     setup_data,
 )
 from fair_shares.library.utils.data.config import (

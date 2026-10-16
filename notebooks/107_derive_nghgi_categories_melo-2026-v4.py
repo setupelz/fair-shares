@@ -483,7 +483,7 @@ else:
 
 # %%
 # Coverage and country-sum vs WRD consistency check.
-print(f"\n=== Coverage and country-sum vs WRD ===")
+print("\n=== Coverage and country-sum vs WRD ===")
 print(f"Melo countries: {len(melo_countries_raw)}")
 melo_country_data = melo_all.loc[
     melo_all.index.get_level_values("iso3c") != emissions_world_key
