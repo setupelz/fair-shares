@@ -21,7 +21,9 @@ If you are new, start from a worked example instead and change it once it runs:
 
 All three build whatever processed data they need on their first run, so there
 is no notebook you must run beforehand. The first run takes a few minutes; later
-runs reuse what was built.
+runs reuse what was built. Budget runs (`rcbs`) also read inputs that you place
+by hand once. [What happens where](pipeline-map.md#inputs-of-the-scenario-step)
+lists them.
 
 ---
 
@@ -53,7 +55,7 @@ graph LR
 | ----------------------- | ------------------------------------- | ------------------------------------- |
 | `co2-ffi`               | CO₂ from fossil fuels and industry    |                                       |
 | `co2`                   | CO₂ from fossil fuels and industry plus LULUCF | NGHGI LULUCF; start years from 2000 |
-| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | GWP100 AR6 values; avoids LULUCF measurement uncertainty |
+| `all-ghg-ex-co2-lulucf` | All GHGs excluding CO₂ from land use  | GWP100 AR6 values; avoids LULUCF measurement uncertainty. Historical PRIMAP data also exclude land-use CH₄ and N₂O |
 | `all-ghg` **(default in 301)** | All greenhouse gases including LULUCF | GWP100 AR6 values; start years from 2000 |
 
 ### Target Source
@@ -102,7 +104,7 @@ Available sources are configured in `src/fair_shares/conf/data_sources/`.
 | Approach                                          | Description                                                                                                                                                                         |
 | ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `equal-per-capita`                                | Equal share per person per year                                                                                                                                                     |
-| `per-capita-adjusted`                             | Adjusted for pre-allocation responsibility (backward-looking) and capability (from allocation year onwards)                                                                                        |
+| `per-capita-adjusted`                             | Adjusted for pre-allocation responsibility (backward-looking) and capability (year by year, a snapshot year or a cumulative window)                                                                |
 | `per-capita-adjusted-gini`                        | Further adjusted for within-country inequality                                                                                                                                      |
 | `per-capita-convergence`                          | Transition from current emissions to equal per capita (comparison only — convergence from current levels embeds implicit grandfathering during the transition period [Kartha 2018](https://doi.org/10.1038/s41558-018-0152-7)) |
 | `cumulative-per-capita-convergence`               | Budget-preserving transition from current emissions to cumulative targets                                                                                                           |

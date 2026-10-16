@@ -65,6 +65,7 @@ Individual parameter columns for each allocation approach:
 | `pre-allocation-responsibility-weight`                 | float  | Adjusted approaches       |
 | `capability-weight`                     | float  | Adjusted approaches       |
 | `capability-reference-year`             | int    | Adjusted approaches       |
+| `capability-window`                     | string | Per-capita adjusted approaches (`"start-end"`, e.g. `"1990-2019"`) |
 | `pre-allocation-responsibility-year`        | int    | Adjusted approaches       |
 | `pre-allocation-responsibility-per-capita` | bool   | Adjusted approaches       |
 | `capability-per-capita`                 | bool   | Adjusted approaches       |
@@ -163,6 +164,8 @@ The `approach-short` column **collapses all parameter columns** into a compact c
 | `capability-exponent`                   | `ce`   |
 | `pre-allocation-responsibility-functional-form` | `rff`  |
 | `capability-functional-form`            | `cff`  |
+| `capability-reference-year`             | `cref` |
+| `capability-window`                     | `cwin` |
 | `max-deviation-sigma`                   | `s`    |
 | `income-floor`                          | `if`   |
 | `max-gini-adjustment`                   | `ga`   |

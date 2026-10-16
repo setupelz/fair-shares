@@ -301,7 +301,8 @@ Please consider the following:
 | Utility                           | Purpose                                       |
 | --------------------------------- | --------------------------------------------- |
 | `filter_time_columns()`           | Extract year columns from DataFrame           |
-| `calculate_relative_adjustment()` | Compute pre-allocation responsibility (backward-looking) and capability (from allocation year onwards) adjustments |
+| `calculate_relative_adjustment()` | Turn a responsibility or capability metric into a relative adjustment (functional form, exponent, normalisation) |
+| `calculate_capability_window_data()` | One capability value per country over a cumulative window (`capability_window`) |
 | `apply_deviation_constraint()`    | Limit extreme allocations                     |
 | `validate_weight_constraints()`   | Check weights sum correctly                   |
 

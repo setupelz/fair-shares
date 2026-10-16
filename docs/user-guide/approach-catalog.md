@@ -71,7 +71,7 @@ Gradual transition from current emissions to fair share target.
 | Single target or year-by-year?                   | Budget vs Pathway           |
 | Account for history via cumulative accounting?   | Set early `allocation_year` — cumulative population from that year determines shares |
 | Account for history via pre-allocation rescaling? | Use `-adjusted` variants with `pre_allocation_responsibility_weight` — multiplicative rescaling by per-capita emissions in a historical window |
-| Account for capability?                          | Use `-adjusted` variants with `capability_weight` (applies from allocation year onwards) |
+| Account for capability?                          | Use `-adjusted` variants with `capability_weight`: year by year from the allocation year, a snapshot (`capability_reference_year`) or a cumulative window (`capability_window`) |
 | Account for within-country inequality?           | Use `-gini` variants        |
 
 See [Principle to Code](../science/principle-to-code.md) for detailed configuration.
@@ -80,9 +80,9 @@ See [Principle to Code](../science/principle-to-code.md) for detailed configurat
 
     The default Gini source is the World Bank's Gini index (`SI.POV.GINI`),
     which `fair-shares fetch-data` brings down with everything else. WIID is
-    still available with `active_gini_source=unu-wider-2025`, but it is
-    licensed CC BY-NC-SA: outputs built on it cannot be redistributed under
-    this project's CC BY 4.0 terms. The two sources give materially different
+    still available with `active_gini_source=unu-wider-2025`. It is
+    licensed CC BY-NC-SA 3.0 IGO, and those terms travel with every
+    Gini-derived output. The two sources give materially different
     capability-based allocations — see
     [Data Sources & Licensing](data-sources.md).
 

@@ -12,7 +12,7 @@ search:
 - Python 3.11+
 - Git
 - [uv](https://github.com/astral-sh/uv)
-- `make` (optional but recommended — see [Installing Make](#installing-make) below)
+- `make` (optional; see [Installing Make](#installing-make) below)
 
 ## Installation
 
@@ -22,8 +22,8 @@ cd fair-shares
 uv sync
 ```
 
-`uv sync` installs the full contributor toolchain — Snakemake, the notebook
-stack and the test runner — so the pipeline and the notebooks work with no
+`uv sync` installs the full contributor toolchain (Snakemake, the notebook
+stack and the test runner), so the pipeline and the notebooks work with no
 further configuration.
 
 Verify:
@@ -41,12 +41,12 @@ Download them from pinned URLs, with checksums enforced:
 uv run fair-shares fetch-data
 ```
 
-That fetches roughly 70 MB — everything a standard country-level run needs.
-Add `--all` for the optional sources (the AR6 scenario ensemble, CMIP7
-historical, the WIID inequality data, Global Carbon Budget 2025 emissions
-(`gcb-2025`) and the LULUCF Data Hub v4 (`melo-2026-v4`)), another ~90 MB. You can skip `--all`
-and let those arrive on demand: the AR6 ensemble, for instance, is downloaded
-the first time a run needs it.
+That fetches roughly 80 MB: everything a standard country-level run needs.
+Add `--all` for the optional sources, another ~165 MB: the AR6 scenario
+ensemble, CMIP7 historical, the WIID inequality data, PRIMAP-hist v2.6.1
+(`primap-202503`) and the LULUCF Data Hub v3.1.1 (`melo-2026`). You can skip
+`--all` and let those arrive on demand. The AR6 ensemble, for instance,
+downloads the first time a run needs it.
 
 ```bash
 uv run fair-shares fetch-data --all     # include the optional sources
@@ -74,26 +74,44 @@ regenerate their exports in place without version identifiers. Those are
 reported as **vintage drift** rather than failing, and the hash you actually got
 is recorded in the `PROVENANCE.md` written into your data directory.
 
-### The one file you have to download yourself
+### Files you place yourself
 
-The Global Carbon Budget 2024 bunkers workbook (`gcb-2024`) sits behind a
-licence-acceptance page that cannot be automated. For step-by-step instructions:
+Budget allocations need two files that `fetch-data` cannot download:
+
+- `gcb-2025-global`: the Global Carbon Budget 2025 global workbook. It sits
+  behind the ICOS licence-acceptance page. It expresses each budget from 2020.
+- `ipcc_ar6_bunkers`: the world aviation and shipping CO2 of the AR6
+  scenarios. One command reads it from the public AR6 Scenarios Database. It
+  feeds the bunker share.
+
+For step-by-step instructions:
 
 ```bash
-uv run fair-shares fetch-data --source gcb-2024
+uv run fair-shares fetch-data --source gcb-2025-global
+uv run fair-shares fetch-data --source ipcc_ar6_bunkers
 ```
 
-Follow them, then run `--verify` to confirm the file you placed is the expected
-one. Only allocations that adjust remaining carbon budgets for international
-bunkers need it. Runs on `gcb-2025` emissions take their bunkers from the
-`gcb-2025` file, which `fetch-data` downloads.
+Follow them, then run `--verify` to confirm each file. Observed bunkers come
+from the `gcb-2025` file, which `fetch-data` downloads.
+
+The Scenario Compass ensemble (`sci-2025`) is optional. It adds bunker
+reporters to the bunker share. Access is on request, and its embargo terms
+apply until Riahi et al. is published. Without it, the bunker share uses the
+AR6 reporters only. See [Data Sources & Licensing](user-guide/data-sources.md)
+and [What Happens Where](user-guide/pipeline-map.md).
 
 ### Licences
 
-Sources carry different terms — several are CC BY and require attribution in
-anything you derive from them, and some may not be redistributed at all.
+Sources carry different terms. Several are CC BY and require attribution in
+anything you derive from them. Some may not be redistributed at all.
 `--list` shows the licence and citation for each, and the generated
 `PROVENANCE.md` carries the same information alongside the data itself.
+
+The default emissions source, PRIMAP-hist v2.8 (`primap-202609`), is licensed
+CC BY-NC-SA 4.0. Results from a default run therefore carry non-commercial,
+share-alike terms. For CC BY results, set the emissions source to
+`primap-202503` or `gcb-2025`. [Data Sources & Licensing](user-guide/data-sources.md)
+lists the terms of every source.
 
 ### Installing the library on its own
 
@@ -105,8 +123,8 @@ pip install fair-shares
 ```
 
 That is all the allocation functions need. They take population and GDP as
-pandas dataframes and return a result object — no files, no data directory, no
-configuration. See [Python API](api/python-api.md) for a worked example.
+pandas dataframes and return a result object. They need no files, no data
+directory and no configuration. See [Python API](api/python-api.md) for a worked example.
 
 The higher-level entry points do read files from disk. Point them at your data
 with two environment variables (or pass `data_dir=` and `output_dir=`
@@ -162,8 +180,8 @@ jupyter lab
 
 This project uses [jupytext](https://jupytext.readthedocs.io/) to store notebooks as plain Python files (`.py`) in the `py:percent` format. This means:
 
-- **`.py` files** are the source format — version-controlled, clean diffs, easy to edit in any IDE
-- **`.ipynb` files** are generated from the `.py` files — used for interactive execution in JupyterLab
+- **`.py` files** are the source format: version-controlled, clean diffs, easy to edit in any IDE
+- **`.ipynb` files** are generated from the `.py` files and used for interactive execution in JupyterLab
 
 After cloning (or pulling new changes), sync the `.ipynb` files:
 
@@ -180,7 +198,7 @@ make sync-ipynb
 
 !!! tip
 
-    You don't _need_ `.ipynb` files — you can run the `.py` files directly with `uv run python notebooks/301_custom_fair_share_allocation.py`. The `.ipynb` format is only needed if you want the interactive JupyterLab experience.
+    The `.py` files run directly: the `.py` files directly with `uv run python notebooks/301_custom_fair_share_allocation.py`. The `.ipynb` format serves the interactive JupyterLab experience.
 
 ## Running Notebooks
 
@@ -201,7 +219,7 @@ See the [User Guide](user-guide/index.md) for detailed workflow documentation.
 
 ## Installing Make
 
-`make` is a standard build tool used to run project commands conveniently. It is optional — every `make` target has an equivalent `uv` command shown in the [Makefile](https://github.com/setupelz/fair-shares/blob/main/Makefile).
+`make` is a standard build tool used to run project commands conveniently. It is optional: every `make` target has an equivalent `uv` command shown in the [Makefile](https://github.com/setupelz/fair-shares/blob/main/Makefile).
 
 === "macOS"
 

@@ -65,15 +65,17 @@ Data sources are configured in `src/fair_shares/conf/data_sources/`.
 | Data Type  | Options                       |
 | ---------- | ----------------------------- |
 | Target     | `rcbs`, `pathway`, `rcb-pathways` |
-| Emissions  | PRIMAP-hist (`primap-202503`, default), Global Carbon Budget 2025 (`gcb-2025`, `co2-ffi` only) |
-| LULUCF     | Melo et al. v3.1.1 (`melo-2026`, default), LULUCF Data Hub v4.0.0 (`melo-2026-v4`) |
+| Emissions  | PRIMAP-hist v2.8 (`primap-202609`, default), PRIMAP-hist v2.6.1 (`primap-202503`), Global Carbon Budget 2025 (`gcb-2025`, `co2-ffi` only) |
+| LULUCF     | LULUCF Data Hub v4.0.0 (`melo-2026-v4`, default), v3.1.1 (`melo-2026`) |
 | Population | UN/OWID                       |
 | GDP        | World Bank WDI                |
 | Gini       | World Bank WDI (`wdi-2025`, default), UNU-WIDER WIID (`unu-wider-2025`) |
 
-Licences differ by source, and not all of them are permissive — the WIID
-inequality data is CC BY-NC-SA, which rules out commercial reuse and carries its
-ShareAlike terms into anything derived from it. Check
+Licences differ by source, and not all of them are permissive. The default
+emissions source, PRIMAP-hist v2.8, is CC BY-NC-SA 4.0, so results from a
+default run are for non-commercial use and carry share-alike terms. For CC BY
+results, use `primap-202503` or `gcb-2025`. The WIID inequality data is also
+CC BY-NC-SA. Check
 **[Data Sources & Licensing](data-sources.md)** before you republish or
 redistribute any of it.
 
@@ -96,7 +98,7 @@ fair-shares currently supports three target sources:
 Two questions:
 
 1. **Budget or pathway?** Do you need a single cumulative target or year-by-year emissions?
-2. **Which principles?** Equal entitlements, historical differentiation (via early `allocation_year` for cumulative accounting and/or `pre_allocation_responsibility_weight` for per-capita emissions rescaling), capability (ability to pay, from the allocation year onwards) -- or some combination? Note: "subsistence protection" as a live approach choice has diminished operational value — [Shue 2014](../science/references.md#shue-2014) later acknowledged that what the poor need is energy, not emissions rights. The more relevant operational concept is the GDR development threshold [Baer 2013](https://doi.org/10.1002/wcc.201) (note: GDR was designed for burden-sharing; fair-shares adapts its capability metric for entitlement allocation), which exempts individuals below a development income threshold from capability calculations. Baer 2013 sets it at 7,500 dollars on a 2005 PPP base (8,500 on a 2010 base); give `income_floor` in the price base of the GDP series (default: constant 2021 international dollars).
+2. **Which principles?** Equal entitlements, historical differentiation (via early `allocation_year` for cumulative accounting and/or `pre_allocation_responsibility_weight` for per-capita emissions rescaling), capability (ability to pay: year by year from the allocation year, a snapshot year via `capability_reference_year`, or a cumulative window via `capability_window`) -- or some combination? Note: "subsistence protection" as a live approach choice has diminished operational value — [Shue 2014](../science/references.md#shue-2014) later acknowledged that what the poor need is energy, not emissions rights. The more relevant operational concept is the GDR development threshold [Baer 2013](https://doi.org/10.1002/wcc.201) (note: GDR was designed for burden-sharing; fair-shares adapts its capability metric for entitlement allocation), which exempts individuals below a development income threshold from capability calculations. Baer 2013 sets it at 7,500 dollars on a 2005 PPP base (8,500 on a 2010 base); give `income_floor` in the price base of the GDP series (default: constant 2021 international dollars).
 
 Then:
 

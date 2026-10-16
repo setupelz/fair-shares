@@ -90,10 +90,13 @@ targets) and `preprocess_scenarios`, then `master_preprocess` runs last.
 
 For `target=rcbs`, the master notebook is `100_data_preprocess_rcbs`
 (`MASTER_NOTEBOOKS` in the Snakefile). With `active_scenario_source: ar6`
-(the default), rule `preprocess_scenarios` also runs notebook 104. It writes
-`intermediate/scenarios/scenarios_co2-ffi_timeseries.csv` and
-`intermediate/scenarios/rcb_scenario_adjustments.yaml`, which the RCB
-processing uses.
+(the default), rule `preprocess_scenarios` also runs notebook 104. It selects
+the scenario sets of every budget (`utils/data/scenario_sets.py`) and writes
+to `intermediate/scenarios/`: `rcb_scenario_adjustments.yaml` (the land-use
+terms and the provenance of the sets), one `scenario_set_{source}_{label}.csv`
+per budget, `bunker_share_reporters.csv`, and the scenario timeseries. The RCB
+processing reads these files. [What Happens Where](../user-guide/pipeline-map.md)
+maps every file to its notebook.
 
 **Output:** `output/<source_id>/intermediate/processed/` containing:
 
@@ -117,6 +120,9 @@ into DataFrames. For RCB runs, it loads:
 - `world_emissions_data["co2-ffi"]` -- world historical emissions (used to
   convert RCB values to total budgets)
 - Socioeconomic DataFrames: GDP, population, Gini (with validation)
+
+`rcbs_co2-ffi.csv` also records the deductions of each budget and the
+provenance of its scenario sets (rule, set size, bunker share).
 
 ### Step 3: Run Allocations (notebook 301, Execution section)
 
@@ -174,13 +180,13 @@ For each row in the RCB table (e.g., "1.5C|0.5 from IPCC AR6"):
 2. Checks the user-supplied config parameters (not the data-plumbing
    arguments) against the function's signature. Any config parameter the
    function doesn't accept raises `AllocationError` naming the approach, the
-   rejected parameter(s), and the accepted parameter names — a config can no
-   longer name a parameter the approach silently ignores.
+   rejected parameter(s), and the accepted parameter names. Every config
+   parameter therefore reaches the approach.
 3. Builds `func_args` dict with all data + parameters.
 4. Validates (`validate_function_parameters()`) and filters the
    data-plumbing arguments to only what the function accepts
-   (`filter_function_parameters()`) — user config parameters have already
-   been checked in step 2, so this pass only trims the uniformly-supplied
+   (`filter_function_parameters()`). Step 2 checked the user config
+   parameters, so this pass only trims the uniformly-supplied
    data frames.
 5. Calls the math function.
 
@@ -259,7 +265,10 @@ The Snakefile detects `is_multi_category = True` and:
 3. **Derives non-CO2** by subtraction (rules `derive_non_co2_emissions` and
    `derive_non_co2_scenarios`):
    - Historical: `non-co2 = all-ghg-ex-co2-lulucf - co2-ffi`
-   - Scenarios: same subtraction on scenario data.
+   - Scenarios: same subtraction on scenario data. In budget mode the
+     subtraction runs on `scenarios_*_by_budget_timeseries.csv`, the median
+     pathway of each budget's non-CO2 set, so non-CO2 rows carry the RCB
+     `source`.
 4. Runs master preprocessing twice (rule `master_preprocess`):
    - CO2 pass: `100_data_preprocess_rcbs.ipynb` for `co2`
    - non-CO2 pass: `100_data_preprocess_pathways.ipynb` for `non-co2`
@@ -281,8 +290,8 @@ pathway counterpart and renames or drops budget-only parameters. The full
 mapping is in
 [Other Operations: Auto-derivation of pathway approaches](../science/other-operations.md#auto-derivation-of-pathway-approaches).
 
-Auto-derivation only works when scenario pathway data matching the RCBs'
-climate assessments is available in the active source set.
+Auto-derivation needs a non-CO2 pathway for every budget. Notebook 104
+writes one per budget from its non-CO2 scenario set.
 See [Composite Category Decomposition](#composite-category-decomposition).
 
 ### Step 3: Category Loop
@@ -305,7 +314,8 @@ See [Composite Category Decomposition](#composite-category-decomposition).
 
 `_run_pathway_allocations()` (`notebook_helpers.py`):
 
-1. **Groups scenarios** by `climate-assessment` and `quantile`.
+1. **Groups scenarios** by `climate-assessment` and `quantile`, plus `source`
+   when the scenario index carries it (the per-budget non-CO2 pathways).
 2. For each group, extracts the World totals timeseries.
 3. Calls `run_parameter_grid()` with pathway approaches and the world
    scenario data.
@@ -329,8 +339,9 @@ Pathway allocations flow through `pathways/per_capita.py`
 ### Step 6: Scenario Labels
 
 Notebook 104 maps each scenario source's native categories to normalised
-`climate-assessment` and `quantile` fields. Downstream code, including the
-non-CO₂ pathways, reads only these fields. The mapping is in
+`climate-assessment` and `quantile` fields. For budget runs, the non-CO₂
+pathways also carry the RCB `source`, so each budget pairs with its own
+pathway. Downstream code reads only these fields. The mapping is in
 [Other Operations: Scenario labels](../science/other-operations.md#scenario-labels).
 
 ---
@@ -384,11 +395,13 @@ output/<source_id>/
     emissions/                         (per-category emission CSVs)
       world_co2-lulucf_timeseries.csv  (NGHGI world LULUCF for RCB corrections)
       bunker_timeseries.csv            (international bunker emissions, notebook 108)
-      lulucf_metadata.yaml             (NGHGI start year, splice year)
+      lulucf_metadata.yaml             (NGHGI year bounds, files written)
     gdp/                               (GDP timeseries)
     population/                        (population timeseries)
     gini/                              (Gini coefficients)
-    scenarios/                         (scenario timeseries, pathway mode)
+    scenarios/                         (scenario timeseries; budget mode adds
+                                        rcb_scenario_adjustments.yaml,
+                                        scenario_set_*.csv, bunker_share_reporters.csv)
     processed/                         (final analysis-ready CSVs)
       country_emissions_*.csv
       country_gdp_timeseries.csv
@@ -419,6 +432,8 @@ output/<source_id>/
 | Modify output parquet schema | `allocations/results/metadata.py` | `DATA_CONTEXT_COLUMNS`, `ALLOCATION_PARAMETER_COLUMNS` |
 | Add a new emission category | `utils/data/config.py` | `get_final_categories()`, `get_emission_preprocessing_categories()` |
 | Change how RCBs are processed | `preprocessing/rcbs.py`, `utils/data/rcb.py` | `load_and_process_rcbs()`, `calculate_budget_from_rcb()` |
+| Change the scenario sets behind budget terms | `utils/data/scenario_sets.py`, `data/rcbs/rcbs.yaml` | `build_budget_sets()`, `bunker_share()` |
+| Add a scenario source | `src/fair_shares/conf/scenario_sources.yaml`, `utils/data/scenario_sources.py` | `get_scenario_source()` |
 | Add/modify NGHGI corrections | `utils/data/nghgi.py`, `config/models.py` (`AdjustmentsConfig`) | `build_nghgi_world_co2_timeseries()` |
 | Change the notebook helpers | `notebook_helpers.py` | `load_allocation_data()`, `run_all_allocations()`, `run_and_save_category_allocations()` |
 | Change Snakemake pipeline | `Snakefile`, `utils/data/setup.py` | Rules in Snakefile, `setup_data()` |
@@ -478,11 +493,11 @@ allocate all-GHG directly because RCBs only constrain CO2. The solution:
 
 The final outputs for each sub-category can be recombined downstream.
 
-**Data dependency:** The non-CO2 leg requires scenario pathway data (e.g.
-AR6) that covers the same climate assessments as the RCBs. Adding new RCBs
-without matching scenario pathways in the active data source configuration
-will cause a `ConfigurationError` at validation time. Auto-derivation of
-pathway approaches also only works when this pathway data is available.
+**Data dependency:** The non-CO2 leg of each budget uses the median pathway
+of that budget's non-CO2 scenario set, which notebook 104 writes. A budget
+label whose set holds fewer than `min_scenarios` scenarios raises a
+`ConfigurationError` in notebook 104 that names the label. The python API
+raises a `ValueError` when a budget row has no non-CO2 pathway.
 See [Other Operations: Decomposition](../science/other-operations.md#decomposition-rules).
 
 ### Kebab-Case vs Snake-Case Convention

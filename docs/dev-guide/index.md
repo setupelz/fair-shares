@@ -58,6 +58,7 @@ graph TB
 | **Pipeline**      | `src/fair_shares/library/pipeline/`       | Composite, RCB, pathway and non-CO2 preprocessing runners         |
 | **IAMC history**  | `src/fair_shares/library/iamc_historical/` | Back-fills IAM scenarios with IAMC-consistent historical emissions |
 | **Python API**    | `src/fair_shares/library/python_api.py`   | Computes allocation timeseries in memory, without notebooks       |
+| **Presets**       | `src/fair_shares/library/presets/`        | Parameter grids of published studies (ESABCC 2023 / PRR2023)      |
 | **Data fetch**    | `src/fair_shares/library/data_fetch.py`   | Downloads registry files and checks their checksums               |
 | **Citations**     | `src/fair_shares/library/citations.py`    | Derives and formats the citations a run needs                     |
 | **Data registry** | `src/fair_shares/library/data_registry.py` | Reads and checks `conf/data_registry.yaml` (source, licence, citation) |

@@ -46,29 +46,43 @@ Control then returns to your notebook, which runs the allocations and saves the 
 | Step order and which notebook runs for which settings | [`Snakefile`](https://github.com/setupelz/fair-shares/blob/main/Snakefile) | |
 | Input file versions, checksums, licences | `src/fair_shares/conf/data_registry.yaml`; `fair-shares fetch-data` | `data/PROVENANCE.md` |
 
-The `<source-id>` folder name joins the active sources, the target and the category, for example `primap-202503_wdi-2025_un-owid-2025_wdi-2025_rcbs_co2-ffi`.
+The `<source-id>` folder name joins the active sources, the target and the category, for example `primap-202609_wdi-2025_un-owid-2025_wdi-2025_rcbs_co2-ffi`.
 Two runs with different sources therefore never overwrite each other.
 
 ### 2. Preprocessing (run by Snakemake)
 
-Notebooks with a source name in the file name come in one copy per source. The Snakefile picks the copy that matches the active source.
+Notebooks with a source name in the file name come in one copy per source. The Snakefile picks the copy that matches the active source. Notebooks without one serve every source of their kind: `101_data_preprocess_emiss_primap` reads every PRIMAP-hist release, and `107_derive_nghgi_categories` every LULUCF source. The executed copy under `output/<source-id>/notebooks/` keeps the source name.
 
 | Notebook | Snakemake rule | Runs when | Does | Writes (under `output/<source-id>/intermediate/`) |
 | --- | --- | --- | --- | --- |
-| `101_data_preprocess_emiss_<source>` | `preprocess_emiss` | always | Reads historical emissions (PRIMAP-hist or GCB 2025) and builds one series per emission category | `emissions/emiss_<category>_timeseries.csv` |
-| `102_data_preprocess_gdp_<source>` | `preprocess_gdp` | always | GDP in constant 2017 PPP dollars (World Bank WDI) | `gdp/gdp_timeseries.csv` |
+| `101_data_preprocess_emiss_primap`, `101_data_preprocess_emiss_gcb-2025` | `preprocess_emiss` | always | Reads historical emissions (PRIMAP-hist or GCB 2025) and builds one series per emission category | `emissions/emiss_<category>_timeseries.csv` |
+| `102_data_preprocess_gdp_<source>` | `preprocess_gdp` | always | GDP in constant 2021 PPP dollars (World Bank WDI) | `gdp/gdp_timeseries.csv` |
 | `103_data_preprocess_population_<source>` | `preprocess_population` | always | Population history and UN WPP 2024 projections | `population/population_timeseries.csv` |
 | `105_data_preprocess_gini_<source>` | `preprocess_gini` | always | Gini index (WDI by default, WIID opt-in) | `gini/gini_stationary.csv` |
-| `107_derive_nghgi_categories_<source>` | `preprocess_lulucf` | category `co2` or `all-ghg` | Adds national-inventory (NGHGI) land-use CO2 from the LULUCF Data Hub. Builds `co2`, `non-co2` and `all-ghg` history | `emissions/emiss_co2_timeseries.csv` and related files |
-| `108_data_preprocess_bunkers_<source>` | `preprocess_bunkers` | budget targets | International aviation and shipping CO2 from the Global Carbon Budget | `emissions/bunker_timeseries.csv` |
-| `104_data_preprocess_scenarios_ar6` | `preprocess_scenarios` and related rules | scenario-based targets, all budget runs with `active_scenario_source: ar6`, and every multi-gas run | AR6 scenario pathways, harmonised to history. Gives the future land-use and bunker terms for budget rebasing, and the non-CO2 pathways | `scenarios/scenarios_<category>_timeseries.csv`, `scenarios/rcb_scenario_adjustments.yaml` |
+| `107_derive_nghgi_categories` | `preprocess_lulucf` | category `co2` or `all-ghg` | Adds national-inventory (NGHGI) land-use CO2 from the LULUCF Data Hub. Builds `co2`, `non-co2` and `all-ghg` history | `emissions/emiss_co2_timeseries.csv` and related files |
+| `108_data_preprocess_bunkers_<source>` | `preprocess_bunkers` | budget targets | Observed international aviation and shipping CO2 from the Global Carbon Budget (`gcb-2025` by default) | `emissions/bunker_timeseries.csv` |
+| `104_data_preprocess_scenarios_ar6` | `preprocess_scenarios` and related rules | scenario-based targets, all budget runs with `active_scenario_source: ar6`, and every multi-gas run | AR6 scenario pathways, harmonised to history. Selects the scenario sets of every budget, computes the land-use terms and the bunker share, and builds the non-CO2 pathway of each budget | `scenarios/scenarios_<category>_timeseries.csv`, `scenarios/scenarios_<category>_by_budget_timeseries.csv`, `scenarios/rcb_scenario_adjustments.yaml`, `scenarios/scenario_set_<source>_<label>.csv`, `scenarios/bunker_share_reporters.csv` |
 | `106_generate_pathways_from_rcbs` | `generate_rcb_pathways` | target `rcb-pathways` | Turns a global budget into a world pathway (exponential decay by default) | `scenarios/scenarios_<category>_timeseries.csv` |
 | `100_data_preprocess_rcbs` | `master_preprocess` | budget targets | Joins all inputs, fixes the analysis-country set and rest of world, rebases each budget to 2020 | `processed/rcbs_<category>.csv`, `processed/country_*.csv`, `processed/world_*.csv`, `processed/country_data_coverage_summary.csv` |
 | `100_data_preprocess_pathways` | `master_preprocess` | pathway targets, and the non-CO2 part of multi-gas runs | The same join, for annual pathways | `processed/...` |
 
 The master step calls the library functions in `library/pipeline/preprocessing.py` (`run_rcb_preprocessing`, `run_pathway_preprocessing`, `run_non_co2_preprocessing`).
-Budget rebasing lives in `library/utils/data/rcb.py`. The analysis-country rule lives in `library/preprocessing/coverage.py`, and rest of world in `library/preprocessing/row.py`.
+Budget rebasing lives in `library/utils/data/rcb.py` and `library/preprocessing/rcbs.py`. The scenario sets and the bunker share live in `library/utils/data/scenario_sets.py`, and the scenario source registry in `library/utils/data/scenario_sources.py` with `src/fair_shares/conf/scenario_sources.yaml`. The analysis-country rule lives in `library/preprocessing/coverage.py`, and rest of world in `library/preprocessing/row.py`.
 The [Other Operations](../science/other-operations.md) page explains the rebasing, the NGHGI corrections and the multi-gas split.
+
+### Inputs of the scenario step
+
+Notebook 104 reads the scenario sources in `src/fair_shares/conf/scenario_sources.yaml` and the observed global CO2 named in `rcbs.yaml`.
+Three of these inputs are manual downloads. `fair-shares fetch-data` reports where each one goes.
+
+| Input | Registry name | How to get it | Needed for |
+| --- | --- | --- | --- |
+| AR6 reanalysis of Gidden et al. (2023) | `ipcc_ar6_gidden` | `fair-shares fetch-data` | every scenario set and non-CO2 pathway |
+| AR6 Scenarios Database aviation and maritime CO2 | `ipcc_ar6_bunkers` | `fetch_ar6_bunkers()` in `library/utils/data/scenario_sources.py` (public database, no login) | bunker share |
+| Global Carbon Budget 2025 global workbook | `gcb-2025-global` | manual, behind the ICOS licence page | budget from 2020 of the volume-matched sets |
+| Scenario Compass ensemble v1.0 | `sci-2025` | manual, on request from the Scenario Compass platform | bunker share (optional; left out with a warning when absent) |
+
+Licences and file locations are in [Data Sources & Licensing](data-sources.md#scenario-data).
 
 ### 3. Allocation (back in your notebook)
 
@@ -88,7 +102,7 @@ The column meanings are in [Output Schema](output-schema.md).
 ### 4. Remaining budgets and annual pathways (notebook 601 and the Python API)
 
 Notebook 601 goes two steps further than the allocation itself.
-Section 5 subtracts each country's observed emissions from its allocated budget, which gives the budget remaining from 2024.
+Section 5 subtracts each country's observed emissions from its allocated budget, which gives the budget remaining from the year after the last observed year. A run nets every part through the last year that all its parts observe: 2025 for `co2-ffi` on the default sources (remaining from 2026), and 2024 for `all-ghg`, whose land-use data end in 2024 (remaining from 2025).
 Section 6 spreads each remaining budget into an annual pathway to 2100.
 The same two steps are available without the notebook through `calculate_allocation_timeseries()` in `library/python_api.py` ([Python API](../api/python-api.md)).
 A test (`tests/integration/test_python_api_reproduces_notebook.py`) checks that the notebook and the API give the same numbers.

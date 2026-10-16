@@ -53,8 +53,8 @@ Most inputs are third-party datasets obtained from their original publishers
 rather than authored here. We provide a command that downloads them from pinned URLs:
 
 ```bash
-uv run fair-shares fetch-data          # everything a standard run needs (~70 MB)
-uv run fair-shares fetch-data --all    # plus the large optional sources (~90 MB more)
+uv run fair-shares fetch-data          # everything a standard run needs (~75 MB)
+uv run fair-shares fetch-data --all    # plus the large optional sources (~160 MB more)
 uv run fair-shares fetch-data --list   # every source: version, size, licence, citation
 uv run fair-shares fetch-data --verify # re-hash what is present, download nothing
 ```
@@ -71,18 +71,33 @@ regenerate their exports in place with no version identifier, so those are
 reported as vintage drift instead of failing, and the hash you actually got is
 recorded in the generated `PROVENANCE.md`.
 
-**The Global Carbon Budget 2024 bunkers workbook (`gcb-2024`) must be downloaded
-by hand.** It sits behind a licence-acceptance page that cannot be automated. Run
-`uv run fair-shares fetch-data --source gcb-2024` for step-by-step instructions,
-then `--verify` to confirm the file you dropped in is the right one. Runs on
-`gcb-2025` emissions take their bunkers from the `gcb-2025` file, which
-`fetch-data` downloads.
+**The Global Carbon Budget 2025 global workbook (`gcb-2025-global`) must be
+downloaded by hand.** It sits behind the ICOS licence-acceptance page. Budget runs
+read it to express each budget from 2020. Run
+`uv run fair-shares fetch-data --source gcb-2025-global` for step-by-step
+instructions, then `--verify` to confirm the file you dropped in is the right
+one. Observed bunkers come from the `gcb-2025` file, which `fetch-data`
+downloads. Two scenario inputs of budget runs are also manual. Write the AR6
+aviation and maritime series (`ipcc_ar6_bunkers`) with
+`uv run python -c "from fair_shares.library.utils.data.scenario_sources import fetch_ar6_bunkers; fetch_ar6_bunkers()"`.
+The Scenario Compass ensemble (`sci-2025`) is optional and available on request
+from the Scenario Compass platform. [What happens where](https://setupelz.github.io/fair-shares/user-guide/pipeline-map/)
+lists every manual input.
 
 Every source's licence, version and citation lives in
 `src/fair_shares/conf/data_registry.yaml` and is written into `PROVENANCE.md`
 after a fetch. Several inputs are CC BY and require attribution in anything
 derived from them; some are not redistributable at all. Check `--list` before
 republishing any of it.
+
+**Licence of outputs from the default sources.** The default emissions source is
+PRIMAP-hist v2.8 (`primap-202609`, data to 2025). Its licence is CC BY-NC-SA 4.0:
+non-commercial use, and share-alike terms on anything you redistribute that is
+derived from it. Allocation results from a default run include these data, so
+they carry the same terms. For outputs under CC BY terms, set the emissions
+source to `primap-202503` (PRIMAP-hist v2.6.1, data to 2023) or `gcb-2025`
+(fossil CO2 only). Both are CC BY 4.0. `fair-shares cite` lists the terms for
+the sources of your run.
 
 ### Using the library without the notebooks
 
@@ -124,8 +139,8 @@ already built, or add the extra: `pip install "fair-shares[pipeline]"`.
 
 ## Known Limitations
 
-- **Pre-2000 LULUCF data**: Allocations that include LULUCF (emission categories `co2` and `all-ghg`) are currently restricted to start years of 2000 or later. Both NGHGI LULUCF sources start in 2000: Melo et al. v3.1.1 (`melo-2026`, the default) and the LULUCF Data Hub v4.0.0 (`melo-2026-v4`, 2000-2024). We are working with scientific collaborators to assess the quality of pre-2000 estimates and expect to extend coverage in a future release.
-- **Non-CO₂ pathways**: The all-GHG allocation currently derives non-CO₂ pathways from AR6 scenario medians. Custom CH₄ mitigation pathways (e.g., for different CH₄ reduction targets) are architecturally supported but not yet available as a user-facing option - this is also being actively pursued.
+- **Pre-2000 LULUCF data**: Allocations that include LULUCF (emission categories `co2` and `all-ghg`) start in 2000 or later. `all-ghg-ex-co2-lulucf` holds no land-use CO2 and can start earlier. Both NGHGI LULUCF sources start in 2000: the LULUCF Data Hub v4.0.0 (`melo-2026-v4`, the default, 2000-2024) and v3.1.1 (`melo-2026`, 2000-2023). We are working with scientific collaborators to assess the quality of pre-2000 estimates and expect to extend coverage in a future release.
+- **Non-CO₂ pathways**: The all-GHG allocation takes the non-CO₂ pathway of each budget from the median of its temperature-matched AR6 scenario set. Custom CH₄ mitigation pathways (e.g., for different CH₄ reduction targets) need a matching remaining carbon budget ([Weber et al. 2026](https://doi.org/10.1038/s43247-026-03832-1)). The architecture supports them, and a user-facing option is planned.
 
 ## Citation
 

@@ -24,7 +24,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Population-proportional allocation. Historical accountability via `allocation_year` only.
 
 **`per-capita-adjusted-budget`**
-: Adds `pre_allocation_responsibility_weight` (covers the window prior to allocation year) and `capability_weight` (from allocation year onwards) adjustments. CBDR-RC.
+: Adds `pre_allocation_responsibility_weight` (covers the window prior to allocation year) and `capability_weight` (by default from allocation year onwards) adjustments. CBDR-RC.
 
 **`per-capita-adjusted-gini-budget`**
 : Adds Gini adjustment for within-country inequality. Subsistence protection.
@@ -35,7 +35,7 @@ All approach names use `kebab-case` notation. For complete details, see the [App
 : Annual population-proportional shares. Historical accountability via `first_allocation_year`.
 
 **`per-capita-adjusted`**
-: Annual shares with pre-allocation responsibility (backward-looking) and capability (from allocation year onwards) adjustments. CBDR-RC.
+: Annual shares with pre-allocation responsibility (backward-looking) and capability (by default from allocation year onwards) adjustments. CBDR-RC.
 
 **`per-capita-adjusted-gini`**
 : Annual shares with Gini adjustment. Subsistence protection.
@@ -84,7 +84,7 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 : Weight for relative per-capita rescaling based on emissions in [`pre_allocation_responsibility_year`, `allocation_year`). Higher relative to `capability_weight` = more reduction for countries with high per-capita emissions in that window. Separate from the cumulative accounting done by early `allocation_year`. Always produces positive allocations if `allocation_year` is the present.
 
 **`capability_weight`** (type: `float`, default: `1.0` in `per_capita_adjusted_gini_budget`, `0.0` in every other approach)
-: Weight for GDP-based adjustment (applies from allocation year onwards). Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. Note the temporal asymmetry: pre-allocation responsibility covers the window prior to the allocation year, while capability applies from it onwards.
+: Weight for GDP-based adjustment. Higher relative to `pre_allocation_responsibility_weight` = more reduction for wealthy countries. By default capability is computed year by year from the allocation year onwards, while pre-allocation responsibility covers the window before it. `capability_reference_year` and `capability_window` move capability to a fixed year or a past window.
 
 ### Pre-allocation Responsibility Parameters
 
@@ -106,10 +106,16 @@ Only the **ratio** between the two weights matters -- they are normalized by the
 : Per capita (True) or absolute (False) GDP for capability calculation.
 
 **`capability_exponent`** (type: `float`, default: `1.0`)
-: Exponent for capability adjustment (applies from allocation year onwards). >1.0 increases non-linearity.
+: Exponent for capability adjustment. >1.0 increases non-linearity.
 
 **`capability_functional_form`** (type: `str`, default: `"asinh"`)
 : Functional form: `"asinh"` or `"power"`.
+
+**`capability_reference_year`** (type: `int | None`, default: `None`)
+: Snapshot year. When set, capability is GDP (per capita) in this one year, held constant over the allocation window. The year may precede the allocation year. Exclusive with `capability_window`. See [Allocations](allocations.md#building-blocks).
+
+**`capability_window`** (type: `tuple[int, int] | None`, default: `None`)
+: Inclusive `(start, end)` years. When set, capability is one value per country, cumulative GDP over cumulative population for the window, held constant over the allocation window. Exclusive with `capability_reference_year`. Available in the per-capita adjusted budget and pathway approaches and their Gini variants. In a grid config, `[1990, 2019]` is one window and `[[1990, 2019], [2000, 2019]]` is two. See [Allocations](allocations.md#building-blocks).
 
 ### Inequality Parameters
 
@@ -272,6 +278,9 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 **AR6**
 : IPCC Sixth Assessment Report (2021-2023). Source of global emissions scenarios used in fair-shares.
 
+**Budget label (`TpL`)**
+: The key of a budget in `rcbs.yaml`, for example `1.7p67`. $T$ is the warming when CO₂ reaches net zero; $L$ is the likelihood of staying below it. Each source records what $L$ covers (`likelihood_scope`) and what $T$ measures (`budget_metric`). See: [What a budget label means](other-operations.md#what-a-budget-label-means)
+
 **BAU**
 : Business As Usual. Baseline emissions scenario without climate policy. Note: framing deviation from BAU as a "cost" or "sacrifice" has been critiqued as inconsistent with CBDR-RC — fair shares must be assessed relative to other parties, not against a country's own BAU ([Winkler 2018](https://doi.org/10.1007/s10784-017-9381-x); [Rajamani 2021](https://doi.org/10.1080/14693062.2021.1970504); [Pelz 2025b](https://doi.org/10.1088/1748-9326/ada45f)).
 
@@ -279,16 +288,19 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : LULUCF accounting method that estimates only direct human-caused land-use fluxes (deforestation, afforestation, land management). Used by IPCC for RCBs. Contrast with NGHGI, which additionally includes indirect effects. See: [NGHGI-Consistent RCB Corrections](other-operations.md#why-two-lulucf-conventions-matter)
 
 **Bunker fuels**
-: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9).
+: CO₂ emissions from international aviation and shipping. Included in global emission totals but excluded from national inventories (no country claims responsibility). Must be subtracted when converting global RCBs to country-allocatable budgets [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). The deduction counts observed bunkers to the last observed year, then a bunker share of the net CO₂ of the budget's scenario set. See: [Bunker term](other-operations.md#bunker-term)
 
 **ECPC**
 : Equal Cumulative Per Capita. An allocation approach that distributes a carbon budget equally on a cumulative per-capita basis. Cumulative population from the allocation year determines each country's share.
 
 **GCB 2025**
-: Global Carbon Budget 2025 fossil CO₂ dataset, version 2025v15 ([Friedlingstein 2026](references.md)). Opt-in emissions source `gcb-2025`, `co2-ffi` only, 1850-2024. Its world row excludes international bunkers and the 1991 Kuwaiti oil fires. The same file supplies the bunker series for `gcb-2025` runs.
+: Global Carbon Budget 2025 fossil CO₂ dataset, version 2025v15 ([Friedlingstein 2026](references.md)). Opt-in emissions source `gcb-2025`, `co2-ffi` only, 1850-2024. Its world row excludes international bunkers and the 1991 Kuwaiti oil fires. The same file supplies the observed bunker series of every run (`bunkers_source: gcb-2025`, the default).
+
+**GCB 2025 global workbook**
+: The Global Carbon Budget 2025 global workbook (`gcb-2025-global`, manual download). It supplies observed global net CO₂, which expresses each budget from the start of 2020 for its volume-matched scenario set. See: [RCB sources and scenario sets](other-operations.md#rcb-sources-and-scenario-sets)
 
 **GDP**
-: Gross Domestic Product. Economic output measure used for capability adjustments (from the allocation year onwards).
+: Gross Domestic Product. Economic output measure used for capability adjustments.
 
 **GHG**
 : Greenhouse Gas (e.g., CO2, CH4, N2O). "Kyoto GHG" refers to the basket of gases covered by the Kyoto Protocol.
@@ -297,7 +309,7 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : Integrated Assessment Modeling Consortium. Data format used for AR6 scenarios.
 
 **IGCC 2025 (`forster_2026`)**
-: Indicators of Global Climate Change 2025 ([Forster 2026](references.md)). RCB source `forster_2026` in `rcbs.yaml` takes its Table 8 budgets from the start of 2026, for seven temperature and likelihood labels. It selects scenarios with the peak-warming band.
+: Indicators of Global Climate Change 2025 ([Forster 2026](references.md)). RCB source `forster_2026` in `rcbs.yaml` takes its Table 8 budgets from the start of 2026, for eight temperature and likelihood labels in the defaults. Its scenario-derived terms use the role-matched scenario sets.
 
 **IPCC**
 : Intergovernmental Panel on Climate Change.
@@ -309,22 +321,31 @@ Brief definitions. For detailed explanations and operationalization, see [Alloca
 : Megatonnes of CO2 per year. Common unit for annual emissions.
 
 **Melo et al. (2026)**
-: Country-reported NGHGI LULUCF CO₂ timeseries from the LULUCF Data Hub. Two versions are configured. `melo-2026` (v3.1.1, default) covers 185 countries, 2000-2023. `melo-2026-v4` (v4.0.0, 2026 NGHGI release, opt-in) covers 187 countries, 2000-2024. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+: Country-reported NGHGI LULUCF CO₂ timeseries from the LULUCF Data Hub. Two versions are configured. `melo-2026-v4` (v4.0.0, 2026 NGHGI release, default) covers 187 countries, 2000-2024. `melo-2026` (v3.1.1, opt-in) covers 185 countries, 2000-2023. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI**
 : National Greenhouse Gas Inventory. Country-level emissions reporting under UNFCCC. Includes passive carbon fluxes (CO₂ fertilization, climate feedbacks) in LULUCF estimates, unlike bookkeeping models. See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
 
 **NGHGI-BM convention gap**
-: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of 90.3 GtCO₂ from 2020 to net-zero CO₂ and 65.4 GtCO₂ from 2024 (median of the AR6 C1 scenarios, PRIMAP run with `melo-2026`). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
+: The systematic difference between NGHGI and bookkeeping (BM) LULUCF CO₂ estimates. NGHGI includes indirect effects (CO₂ fertilization of managed forests) that BM excludes, making NGHGI a larger net sink. This package computes a cumulative gap of -91.4 GtCO₂ from 2020 to net-zero CO₂ and -65.6 GtCO₂ from 2024 (median of the AR6 C1 scenarios, `melo-2026-v4`; the gap does not depend on the emissions source). [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) reports that in 2024 the adjustment "reduces the global RCB by 63 (41–121) GtCO2 for 1.5 °C (50%)" (Results, "The global NGHGI-consistent RCB"). See: [NGHGI-Consistent RCB Corrections](other-operations.md#correction-for-total-co2-budgets-co2)
 
-**Peak-warming band**
-: Scenario selection rule `scenario_selection: peak-warming-band` in `rcbs.yaml`. It keeps every AR6 scenario whose median peak warming (MAGICCv7.5.3) lies within ±0.05 °C of the label temperature and whose CO₂ emissions reach net zero by 2100. These scenarios feed the LULUCF, convention-gap and bunker deductions. `forster_2026` and `ar6_wg1_2021` use it. The default rule, `ar6-category`, maps labels to AR6 categories.
+**Scenario selection rule**
+: The rule in `rcbs.yaml` (`scenario_selection`) that picks the scenarios behind the scenario-derived terms of a budget. The default, `role-matched`, takes the LULUCF, convention-gap and bunker-window terms from a volume-matched set (cumulative net CO₂ from 2020 to net zero within 50 Gt of the budget from 2020) and the non-CO₂ pathway from a temperature-matched set (median warming at net zero within ±0.05 °C of the budget temperature). `ar6-category` pairs `1.5p50` with AR6 C1, `2p67` with C3 and `2p50` with C4. See: [RCB sources and scenario sets](other-operations.md#rcb-sources-and-scenario-sets)
 
 **PRIMAP-hist**
-: Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research).
+: Historical emissions dataset from PIK (Potsdam Institute for Climate Impact Research). v2.8 (`primap-202609`, data to 2025, CC BY-NC-SA 4.0) is the default emissions source. v2.6.1 (`primap-202503`, data to 2023, CC BY 4.0) is opt-in. See: [Data Sources & Licensing](../user-guide/data-sources.md)
+
+**Presets**
+: Named parameter grids that reproduce a published study (`fair_shares.library.presets`). `esabcc_2023_allocations()` returns the ESABCC 2023 / PRR2023 grid that notebook 601 runs. See: [Python API](../api/python-api.md)
 
 **RCB**
 : Remaining Carbon Budget. The amount of CO2 that can still be emitted while staying within a temperature target (e.g., 1.5°C). IPCC RCBs use bookkeeping LULUCF and include bunker fuels — conversion to NGHGI-consistent values requires corrections [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9). See: [NGHGI-Consistent RCB Corrections](other-operations.md#weber-rcb-corrections)
+
+**Scenario Compass (SCI)**
+: The Scenario Compass Initiative pathways ensemble (`sci-2025`, v1.0, manual download). Research use under the embargo terms of its workbook until Riahi et al. is published. fair-shares reads it for bunker reporters only. See: [Scenario Compass](other-operations.md#scenario-compass)
+
+**Scenario sets (volume-matched, temperature-matched)**
+: The volume-matched set of a budget holds the scenarios whose cumulative net CO₂ from 2020 to net zero lies within 50 Gt of the budget from 2020. It supplies the land-use, convention-gap and bunker terms. The temperature-matched set holds the scenarios whose median warming at net zero lies within ±0.05 °C of the budget temperature. It supplies the non-CO₂ pathway. See: [Role-matched scenario sets](other-operations.md#role-matched-scenario-sets)
 
 **SSP**
 : Shared Socioeconomic Pathway. Scenarios combining socioeconomic projections with climate mitigation levels (e.g., SSP1-1.9, SSP2-4.5).

@@ -43,6 +43,22 @@ Mathematical functions for allocation calculations.
         heading_level: 4
         show_source: false
 
+### resolve_capability_window
+
+::: fair_shares.library.utils.math.adjustments.resolve_capability_window
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
+### calculate_capability_window_data
+
+::: fair_shares.library.utils.math.adjustments.calculate_capability_window_data
+    options:
+        show_root_heading: true
+        heading_level: 4
+        show_source: false
+
 ## RCB Pathway Generation
 
 ### calculate_exponential_decay_pathway

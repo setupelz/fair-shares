@@ -31,6 +31,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Budolfson 2021]** Mark B. Budolfson, David Anthoff, Francis Dennig, Frank Errickson, Kevin Kuruc, Dean Spears, and Navroz K. Dubash. "Utilitarian benchmarks for emissions and pledges promote equity, climate and development." _Nature Climate Change_. DOI: [10.1038/s41558-021-01130-6](https://doi.org/10.1038/s41558-021-01130-6)
 
+**[Byers 2022]** Edward Byers, Volker Krey, Elmar Kriegler, Keywan Riahi, and others. "AR6 Scenarios Database" (v1.1). Integrated Assessment Modeling Consortium and International Institute for Applied Systems Analysis. Zenodo. DOI: [10.5281/zenodo.5886911](https://doi.org/10.5281/zenodo.5886911). Source of the aviation and maritime CO₂ series behind the AR6 bunker reporters (`ipcc_ar6_bunkers`).
+
 **[Caney 2009]** Simon Caney. "Justice and the distribution of greenhouse gas emissions." _Journal of Global Ethics_. DOI: [10.1080/17449620903110300](https://doi.org/10.1080/17449620903110300)
 
 **[Caney 2010]** Simon Caney. "Climate change and the duties of the advantaged." _Critical Review of International Social and Political Philosophy_. DOI: [10.1080/13698230903326331](https://doi.org/10.1080/13698230903326331)
@@ -47,13 +49,21 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 
 **[Friedlingstein 2026]** Pierre Friedlingstein, Michael O'Sullivan, Matthew W. Jones, Robbie M. Andrew, Dorothee C. E. Bakker, and others. "Global Carbon Budget 2025." _Earth System Science Data_, 18, 3211-3288. DOI: [10.5194/essd-18-3211-2026](https://doi.org/10.5194/essd-18-3211-2026). Dataset: Robbie M. Andrew and Glen P. Peters. "The Global Carbon Project's fossil CO2 emissions dataset" (2025v15). Zenodo. DOI: [10.5281/zenodo.17417124](https://doi.org/10.5281/zenodo.17417124)
 
+**[GCP 2026]** Global Carbon Project. "Supplemental data of Global Carbon Budget 2025" (Version 1.1). ICOS Carbon Portal. DOI: [10.18160/GCP-2025](https://doi.org/10.18160/GCP-2025). Global workbook behind the observed global net CO₂ that expresses each budget from 2020 (`gcb-2025-global`).
+
+**[Gidden 2023]** Matthew J. Gidden, Thomas Gasser, Giacomo Grassi, Nicklas Forsell, Iris Janssens, William F. Lamb, Jan Minx, Zebedee Nicholls, and others. "Dataset for Gidden et al. 2023 Updated AR6 Mitigation Benchmarks using National Emissions Inventories" (v2). Zenodo. DOI: [10.5281/zenodo.10158920](https://doi.org/10.5281/zenodo.10158920). Source of the AR6 scenario reanalysis (`ipcc_ar6_gidden`).
+
 **[Heyward 2021]** Clare Heyward. "Is the beneficiary pays principle essential in climate justice?." _Norsk filosofisk tidsskrift_. DOI: [10.18261/issn.1504-2901-2021-02-03-07](https://doi.org/10.18261/issn.1504-2901-2021-02-03-07)
+
+**[Huppmann 2026]** Daniel Huppmann and others. "Scenario Compass Initiative - Pathways Ensemble 2025" (v1.0). Zenodo. DOI: [10.5281/zenodo.18598251](https://doi.org/10.5281/zenodo.18598251). Read by fair-shares for bunker reporters (`sci-2025`). Later releases include v2.0, "Scenario Compass Initiative - Pathways Ensemble 2026", DOI: [10.5281/zenodo.23232097](https://doi.org/10.5281/zenodo.23232097), which fair-shares does not read.
 
 **[ICJ 2025]** International Court of Justice. "Obligations of States in Respect of Climate Change (Advisory Opinion)." _ICJ Advisory Opinion_. [icj-cij.org](https://www.icj-cij.org/case/187)
 
 **[IPCC 2021]** IPCC. _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_. Cambridge University Press. DOI: [10.1017/9781009157896](https://doi.org/10.1017/9781009157896) — basis for the near-linear relationship between cumulative CO₂ emissions and global warming (TCRE) underpinning remaining carbon budgets.
 
 **[IPCC 2021 SPM]** IPCC. "Summary for Policymakers." In _Climate Change 2021: The Physical Science Basis. Contribution of Working Group I to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 3-32. Cambridge University Press. DOI: [10.1017/9781009157896.001](https://doi.org/10.1017/9781009157896.001). Source of the Table SPM.2 budgets in RCB source `ar6_wg1_2021`.
+
+**[IPCC 2022 Annex III]** IPCC. "Annex III: Scenarios and Modelling Methods." In _Climate Change 2022: Mitigation of Climate Change. Contribution of Working Group III to the Sixth Assessment Report of the Intergovernmental Panel on Climate Change_, 1841-1908. Cambridge University Press. DOI: [10.1017/9781009157926.022](https://doi.org/10.1017/9781009157926.022). Source of the AR6 category definitions behind the `ar6-category` rule.
 
 **[Kartha 2018]** Sivan Kartha, Tom Athanasiou, Simon Caney, Elizabeth Cripps, Kate Dooley, Navroz K. Dubash, Teng Fei, Paul G. Harris, Christian Holz, Bård Lahn, Darrel Moellendorf, Benito Müller, J. Timmons Roberts, Ambuj Sagar, Henry Shue, Peter Singer, and Harald Winkler. "Cascading biases against poorer countries." _Nature Climate Change_. DOI: [10.1038/s41558-018-0152-7](https://doi.org/10.1038/s41558-018-0152-7)
 
@@ -88,6 +98,8 @@ Inline citations in `docs/science/` use `[Author YYYY]` format with a direct hyp
 **[Rajamani 2021]** Lavanya Rajamani, Louise Jeffery, Niklas Höhne, Frederic Hans, Alyssa Glass, Gaurav Ganti, and Andreas Geiges. "National 'fair shares' in reducing greenhouse gas emissions within the principled framework of international environmental law." _Climate Policy_. DOI: [10.1080/14693062.2021.1970504](https://doi.org/10.1080/14693062.2021.1970504)
 
 **[Rajamani 2024]** Lavanya Rajamani. "Interpreting the Paris Agreement in its Normative Environment." _Current Legal Problems_. DOI: [10.1093/clp/cuae011](https://doi.org/10.1093/clp/cuae011)
+
+**[Riahi 2026]** Keywan Riahi, Leon Clarke, Tomoko Hasegawa, Daniel Huppmann, and others. "Mitigation benchmarks from the 2025 community update of global emissions pathways." Research Square preprint. DOI: [10.21203/rs.3.rs-8891091/v1](https://doi.org/10.21203/rs.3.rs-8891091/v1). The manuscript behind the Scenario Compass ensemble.
 
 <a id="shue-2014"></a>**[Shue 2014]** Henry Shue. "Climate Justice: Vulnerability and Protection." _Oxford University Press_ (Book). ISBN: 9780198713500 — no DOI registered; this bibliography entry serves as the anchor for inline citations.
 
