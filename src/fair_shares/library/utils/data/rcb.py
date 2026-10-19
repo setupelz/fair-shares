@@ -545,11 +545,11 @@ def process_rcb_to_2020_baseline(
     rcb_baseline_year: int,
     emission_category: str,
     world_co2_ffi_emissions: pd.DataFrame,
-    world_nghgi_lulucf_emissions: pd.DataFrame | None = None,
+    world_lulucf_emissions: pd.DataFrame | None = None,
     world_bunker_emissions: pd.DataFrame | None = None,
     bunkers_deduction_mt: float = 0.0,
     lulucf_future_deduction_mt: float = 0.0,
-    lulucf_nghgi_correction_mt: float = 0.0,
+    lulucf_convention_correction_mt: float = 0.0,
     target_baseline_year: int = 2020,
     source_name: str = "",
     scenario: str = "",
@@ -575,9 +575,9 @@ def process_rcb_to_2020_baseline(
       cancels algebraically with the LULUCF decomposition term.
       ``lulucf_future_deduction_mt`` subtracts expected future (base→NZ) BM
       LULUCF, converting the published total-CO2 RCB to an FFI-only RCB.
-      ``lulucf_nghgi_correction_mt`` is not used for this category.
+      ``lulucf_convention_correction_mt`` is not used for this category.
     - **co2**: Rebase uses fossil CO2 + observed LULUCF in the national-
-      inventory (NGHGI) convention. ``lulucf_nghgi_correction_mt`` applies
+      inventory (NGHGI) convention. ``lulucf_convention_correction_mt`` applies
       the NGHGI-vs-BM convention gap from the baseline year to net zero
       (Weber et al. 2026), which re-expresses the published budget against
       national-inventory accounting. ``lulucf_future_deduction_mt`` is not
@@ -597,7 +597,7 @@ def process_rcb_to_2020_baseline(
       For co2-ffi: negated BM LULUCF → positive if LULUCF is a net source
       (increases fossil budget), capped at 0 if caller applies a
       precautionary rule. Zero for co2.
-    - lulucf_nghgi_correction_mt: sign-ready from caller (added directly).
+    - lulucf_convention_correction_mt: sign-ready from caller (added directly).
       For co2: the NGHGI-vs-BM convention gap from the baseline year to
       net zero (Weber et al. 2026), typically negative. Zero for co2-ffi.
 
@@ -615,7 +615,7 @@ def process_rcb_to_2020_baseline(
     world_co2_ffi_emissions : pd.DataFrame
         World-level CO2-FFI emissions timeseries with year columns (in Mt * CO2e).
         Excludes international bunkers.
-    world_nghgi_lulucf_emissions : pd.DataFrame or None, optional
+    world_lulucf_emissions : pd.DataFrame or None, optional
         Observed world LULUCF CO2 emissions in the national-inventory (NGHGI)
         convention (e.g. the Melo et al. world row), with year columns
         (in Mt * CO2e). Used ONLY for the co2 rebase (default: None).
@@ -630,7 +630,7 @@ def process_rcb_to_2020_baseline(
         Projected future (2020/base → NZ) BM LULUCF adjustment in Mt * CO2e,
         sign-ready (default: 0.0). Non-zero for co2-ffi only, where it
         subtracts LULUCF to convert a total-CO2 RCB to FFI-only.
-    lulucf_nghgi_correction_mt : float, optional
+    lulucf_convention_correction_mt : float, optional
         NGHGI-vs-BM convention gap from the baseline year to net zero in
         Mt * CO2e, sign-ready (default: 0.0). Non-zero for co2 only, where it
         re-expresses the budget from bookkeeping-model to NGHGI accounting.
@@ -647,7 +647,7 @@ def process_rcb_to_2020_baseline(
     -------
     dict
         Dictionary containing:
-        - 'rcb_2020_nghgi_mt': RCB adjusted to 2020 baseline in Mt * CO2e
+        - 'rcb_2020_mt': RCB adjusted to 2020 baseline in Mt * CO2e
         - 'rcb_original_value': Original RCB value (in source units)
         - 'rcb_original_unit': Original RCB unit
         - 'baseline_year': Original baseline year
@@ -662,7 +662,7 @@ def process_rcb_to_2020_baseline(
         - 'deduction_bunkers_mt': Bunker fuel deduction (negative, Mt * CO2e)
         - 'deduction_lulucf_future_mt': projected-LULUCF deduction applied
           to convert total-CO2 → FFI-only. Non-zero for co2-ffi, zero for co2.
-        - 'correction_lulucf_nghgi_mt': NGHGI-vs-BM convention correction.
+        - 'correction_lulucf_convention_mt': NGHGI-vs-BM convention correction.
           Non-zero for co2, zero for co2-ffi.
         - 'net_adjustment_mt': Total change from original to 2020 baseline
           (rebase + deductions + correction, Mt * CO2e)
@@ -739,17 +739,17 @@ def process_rcb_to_2020_baseline(
         # For co2-ffi, LULUCF is omitted because it cancels with the LULUCF
         # decomposition
         rebase_lulucf_mt = 0.0
-        if emission_category == "co2" and world_nghgi_lulucf_emissions is None:
+        if emission_category == "co2" and world_lulucf_emissions is None:
             raise DataProcessingError(
                 f"RCB source '{source_name}' has baseline year {rcb_baseline_year}. "
                 f"Rebasing a co2 budget to {target_baseline_year} needs the "
                 f"observed inventory (NGHGI) LULUCF emissions for "
                 f"{target_baseline_year}-{rcb_baseline_year - 1}: pass "
-                f"world_nghgi_lulucf_emissions."
+                f"world_lulucf_emissions."
             )
         if emission_category == "co2":
             missing_years = missing_rebase_years(
-                rcb_baseline_year, world_nghgi_lulucf_emissions, target_baseline_year
+                rcb_baseline_year, world_lulucf_emissions, target_baseline_year
             )
             if missing_years:
                 raise DataProcessingError(
@@ -759,9 +759,7 @@ def process_rcb_to_2020_baseline(
                     f"{target_baseline_year}-{rcb_baseline_year - 1}, but the "
                     f"emissions data lack {missing_years}."
                 )
-            rebase_lulucf_mt = (
-                world_nghgi_lulucf_emissions[year_cols].sum(axis=1).iloc[0]
-            )
+            rebase_lulucf_mt = world_lulucf_emissions[year_cols].sum(axis=1).iloc[0]
 
         rebase_total_mt = rebase_fossil_mt + rebase_bunkers_mt + rebase_lulucf_mt
 
@@ -807,13 +805,13 @@ def process_rcb_to_2020_baseline(
     # co2 uses nghgi_correction), but carry both fields always so the
     # schema is category-agnostic.
     deduction_lulucf_future_mt = lulucf_future_deduction_mt
-    correction_lulucf_nghgi_mt = lulucf_nghgi_correction_mt
+    correction_lulucf_convention_mt = lulucf_convention_correction_mt
 
-    rcb_2020_nghgi_mt = (
+    rcb_2020_mt = (
         rcb_adjusted_mt
         - bunkers_deduction_mt
         + deduction_lulucf_future_mt
-        + correction_lulucf_nghgi_mt
+        + correction_lulucf_convention_mt
     )
 
     # Net adjustment = total change from original to 2020 baseline
@@ -821,7 +819,7 @@ def process_rcb_to_2020_baseline(
         rebase_total_mt
         + deduction_bunkers_mt
         + deduction_lulucf_future_mt
-        + correction_lulucf_nghgi_mt
+        + correction_lulucf_convention_mt
     )
 
     if verbose:
@@ -835,18 +833,18 @@ def process_rcb_to_2020_baseline(
                 f"      LULUCF future deduction (2020-NZ): "
                 f"{deduction_lulucf_future_mt:.1f} Mt * CO2e"
             )
-        if correction_lulucf_nghgi_mt != 0:
+        if correction_lulucf_convention_mt != 0:
             print(
                 f"      LULUCF NGHGI correction ({rcb_baseline_year}-NZ): "
-                f"{correction_lulucf_nghgi_mt:.1f} Mt * CO2e"
+                f"{correction_lulucf_convention_mt:.1f} Mt * CO2e"
             )
         print(
             f"      Final RCB ({target_baseline_year} baseline): "
-            f"{rcb_2020_nghgi_mt:.1f} Mt * CO2e"
+            f"{rcb_2020_mt:.1f} Mt * CO2e"
         )
 
     return {
-        "rcb_2020_nghgi_mt": round(rcb_2020_nghgi_mt),
+        "rcb_2020_mt": round(rcb_2020_mt),
         "rcb_original_value": rcb_value,
         "rcb_original_unit": rcb_unit,
         "baseline_year": rcb_baseline_year,
@@ -856,6 +854,6 @@ def process_rcb_to_2020_baseline(
         "rebase_lulucf_mt": round(rebase_lulucf_mt),
         "deduction_bunkers_mt": round(deduction_bunkers_mt),
         "deduction_lulucf_future_mt": round(deduction_lulucf_future_mt),
-        "correction_lulucf_nghgi_mt": round(correction_lulucf_nghgi_mt),
+        "correction_lulucf_convention_mt": round(correction_lulucf_convention_mt),
         "net_adjustment_mt": round(net_adjustment_mt),
     }

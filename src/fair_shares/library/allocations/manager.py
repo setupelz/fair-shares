@@ -689,18 +689,18 @@ def run_parameter_grid(
                 get_year_columns(responsibility_emissions_ts, return_type="int")
             )
         # LULUCF-containing frames start at the first NGHGI year of the active source.
-        nghgi_min_year = None
+        lulucf_min_year = None
         if (
             emission_category in {"co2", "all-ghg"}
             and country_actual_emissions_ts is not None
         ):
-            nghgi_min_year = min(
+            lulucf_min_year = min(
                 get_year_columns(country_actual_emissions_ts, return_type="int")
             )
         validate_allocation_year_for_co2(
             allocations_config,
             emission_category,
-            nghgi_min_year=nghgi_min_year,
+            lulucf_min_year=lulucf_min_year,
             responsibility_min_year=responsibility_min_year,
         )
 

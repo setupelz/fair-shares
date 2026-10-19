@@ -17,7 +17,7 @@ def load_emissions_data(
     """Load emissions data for specified categories.
 
     When ``active_lulucf_source`` is set, NGHGI-consistent variants
-    (``emiss_<cat>_nghgi_timeseries.csv``) are loaded for LULUCF-affected
+    (``emiss_<cat>_lu_timeseries.csv``) are loaded for LULUCF-affected
     categories; see :mod:`fair_shares.library.preprocessing.paths`.
 
     Args:

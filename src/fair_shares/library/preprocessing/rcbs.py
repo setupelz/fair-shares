@@ -157,6 +157,7 @@ def _provenance_columns(adjustment: dict) -> dict:
         "budget_metric": adjustment.get("budget_metric"),
         "scenario_selection": adjustment.get("scenario_selection"),
         "budget_2020_gt": adjustment.get("budget_2020_gt"),
+        "lulucf_basis": adjustment.get("lulucf_basis"),
         "terms_set_rule": terms.get("rule"),
         "terms_set_n": terms.get("n"),
         "nz_year_median": terms.get("net_zero_year_median"),
@@ -183,7 +184,7 @@ def _resolve_adjustment_scalars(
     Returns
     -------
     tuple[float, float]
-        (lulucf_future_mt, lulucf_nghgi_correction_mt). Exactly one is
+        (lulucf_future_mt, lulucf_convention_correction_mt). Exactly one is
         non-zero per category (future_mt for co2-ffi, nghgi_correction_mt for co2).
 
     Raises
@@ -214,12 +215,14 @@ def _resolve_adjustment_scalars(
         )
 
     lulucf_future_mt = 0.0
-    lulucf_nghgi_correction_mt = 0.0
+    lulucf_convention_correction_mt = 0.0
     if emission_category == "co2":
         # NGHGI-minus-BM convention gap from the baseline year to NZ (Weber
-        # 2026). The rebase adds observed NGHGI LULUCF for the years before it.
-        lulucf_nghgi_correction_mt = values_from[baseline_year]
-        if lulucf_nghgi_correction_mt == 0.0:
+        # 2026); zero on the bookkeeping basis. The rebase adds the active
+        # source's observed world LULUCF for the years before the baseline.
+        lulucf_convention_correction_mt = values_from[baseline_year]
+        bookkeeping = adj.get("lulucf_basis") == "bookkeeping"
+        if lulucf_convention_correction_mt == 0.0 and not bookkeeping:
             warnings.warn(
                 f"The convention gap is 0.0 for '{budget_key}': notebook 104 "
                 f"likely ran before the NGHGI data were preprocessed. Re-run "
@@ -236,9 +239,9 @@ def _resolve_adjustment_scalars(
     if verbose:
         print(
             f"    Budget {budget_key}: lulucf_future={lulucf_future_mt:.0f} Mt, "
-            f"lulucf_nghgi_correction={lulucf_nghgi_correction_mt:.0f} Mt"
+            f"lulucf_convention_correction={lulucf_convention_correction_mt:.0f} Mt"
         )
-    return lulucf_future_mt, lulucf_nghgi_correction_mt
+    return lulucf_future_mt, lulucf_convention_correction_mt
 
 
 def load_and_process_rcbs(
@@ -248,7 +251,7 @@ def load_and_process_rcbs(
     adjustments_config: AdjustmentsConfig,
     data_dir: Path | str | None = None,
     source_id: str | None = None,
-    world_nghgi_lulucf_emissions: pd.DataFrame | None = None,
+    world_lulucf_emissions: pd.DataFrame | None = None,
     verbose: bool = True,
     output_dir: Path | str | None = None,
 ) -> pd.DataFrame:
@@ -278,7 +281,7 @@ def load_and_process_rcbs(
         Directory holding input data. Defaults to the resolved data directory.
     source_id : str or None, optional
         Source ID for resolving intermediate paths with {source_id} template.
-    world_nghgi_lulucf_emissions : pd.DataFrame or None, optional
+    world_lulucf_emissions : pd.DataFrame or None, optional
         Observed world LULUCF CO2 emissions in the national-inventory (NGHGI)
         convention, for the co2 rebase. Required when emission_category is
         "co2".
@@ -443,10 +446,10 @@ def load_and_process_rcbs(
             "international bunker emissions",
             source_key,
         )
-        rebase_lulucf = world_nghgi_lulucf_emissions
-        if emission_category == "co2" and world_nghgi_lulucf_emissions is not None:
+        rebase_lulucf = world_lulucf_emissions
+        if emission_category == "co2" and world_lulucf_emissions is not None:
             rebase_lulucf = fill_rebase_years(
-                world_nghgi_lulucf_emissions,
+                world_lulucf_emissions,
                 baseline_year,
                 rebase_fill_max_years,
                 "world NGHGI LULUCF CO2 emissions",
@@ -481,7 +484,7 @@ def load_and_process_rcbs(
             bunkers_mt, _ = bunker_deduction_from_share(
                 bunker_ts, share["share"], set_co2_after_mt
             )
-            lulucf_future_mt, lulucf_nghgi_mt = _resolve_adjustment_scalars(
+            lulucf_future_mt, lulucf_convention_mt = _resolve_adjustment_scalars(
                 budget_key=budget_key,
                 baseline_year=baseline_year,
                 rcb_adjustments=rcb_adjustments,
@@ -500,8 +503,8 @@ def load_and_process_rcbs(
                 world_bunker_emissions=rebase_bunkers,
                 bunkers_deduction_mt=bunkers_mt,
                 lulucf_future_deduction_mt=lulucf_future_mt,
-                lulucf_nghgi_correction_mt=lulucf_nghgi_mt,
-                world_nghgi_lulucf_emissions=rebase_lulucf,
+                lulucf_convention_correction_mt=lulucf_convention_mt,
+                world_lulucf_emissions=rebase_lulucf,
                 target_baseline_year=2020,
                 source_name=source_key,
                 scenario=scenario,
@@ -517,7 +520,7 @@ def load_and_process_rcbs(
                 "baseline_year": baseline_year,
                 "rcb_original_value": result["rcb_original_value"],
                 "rcb_original_unit": result["rcb_original_unit"],
-                "rcb_2020_nghgi_mt": result["rcb_2020_nghgi_mt"],
+                "rcb_2020_mt": result["rcb_2020_mt"],
                 "net_adjustment_mt": result["net_adjustment_mt"],
                 "rebase_total_mt": result["rebase_total_mt"],
                 "rebase_fossil_mt": result["rebase_fossil_mt"],
@@ -525,7 +528,9 @@ def load_and_process_rcbs(
                 "rebase_lulucf_mt": result["rebase_lulucf_mt"],
                 "deduction_bunkers_mt": result["deduction_bunkers_mt"],
                 "deduction_lulucf_future_mt": result["deduction_lulucf_future_mt"],
-                "correction_lulucf_nghgi_mt": result["correction_lulucf_nghgi_mt"],
+                "correction_lulucf_convention_mt": result[
+                    "correction_lulucf_convention_mt"
+                ],
                 **_provenance_columns(rcb_adjustments[budget_key]),
                 "bunker_share": round(share["share"], 5),
                 "bunker_share_q25": round(share["q25"], 5),

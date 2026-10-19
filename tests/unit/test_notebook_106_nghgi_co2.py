@@ -2,7 +2,7 @@
 Tests for the NGHGI-consistent world CO2 in notebook 106.
 
 Verifies that when emission_category=co2, notebook 106 constructs the world
-emissions timeseries with build_nghgi_world_co2_timeseries() from nghgi.py:
+emissions timeseries with build_world_co2_timeseries() from nghgi.py:
 fossil CO2 (which excludes international bunkers) plus NGHGI LULUCF.
 
 These tests use synthetic data to validate the notebook's NGHGI loading logic
@@ -41,7 +41,7 @@ def _make_nghgi_ts(year_values: dict[int, float]) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# Test: build_nghgi_world_co2_timeseries is used for co2 category
+# Test: build_world_co2_timeseries is used for co2 category
 # ---------------------------------------------------------------------------
 
 
@@ -51,18 +51,18 @@ class TestNotebook106NghgiCo2:
     def test_co2_is_fossil_plus_nghgi_lulucf(self):
         """World CO2 = fossil + LULUCF(NGHGI). The fossil series excludes bunkers."""
         from fair_shares.library.utils.data.nghgi import (
-            build_nghgi_world_co2_timeseries,
+            build_world_co2_timeseries,
         )
 
         # Set up synthetic data
         fossil_ts = _make_world_emissions(
             {1990: 6000.0, 2000: 7000.0, 2020: 9000.0}, "co2-ffi"
         )
-        nghgi_ts = _make_nghgi_ts({1990: -400.0, 2000: -500.0, 2020: -600.0})
+        lulucf_ts = _make_nghgi_ts({1990: -400.0, 2000: -500.0, 2020: -600.0})
 
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
 
         # 1990: 6000 + (-400) = 5600
@@ -75,15 +75,15 @@ class TestNotebook106NghgiCo2:
     def test_co2_result_category_label_is_co2(self):
         """The result emission-category label should be 'co2'."""
         from fair_shares.library.utils.data.nghgi import (
-            build_nghgi_world_co2_timeseries,
+            build_world_co2_timeseries,
         )
 
         fossil_ts = _make_world_emissions({2020: 9000.0}, "co2-ffi")
-        nghgi_ts = _make_nghgi_ts({2020: -600.0})
+        lulucf_ts = _make_nghgi_ts({2020: -600.0})
 
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
 
         # Result should have co2 as emission-category
@@ -91,12 +91,12 @@ class TestNotebook106NghgiCo2:
 
     def test_co2_ffi_does_not_use_build_nghgi(self):
         """When emission_category=co2-ffi, the notebook should load emissions
-        directly without calling build_nghgi_world_co2_timeseries.
+        directly without calling build_world_co2_timeseries.
 
         This is a structural test: co2-ffi does not involve LULUCF or bunkers.
         """
         # For co2-ffi, the notebook loads emiss_co2-ffi_timeseries.csv directly
-        # and does NOT call build_nghgi_world_co2_timeseries.
+        # and does NOT call build_world_co2_timeseries.
         # We verify by checking the notebook source code.
 
         notebook_path = (
@@ -106,8 +106,8 @@ class TestNotebook106NghgiCo2:
         )
         source = notebook_path.read_text()
 
-        # The co2 branch should call build_nghgi_world_co2_timeseries
-        assert "build_nghgi_world_co2_timeseries" in source
+        # The co2 branch should call build_world_co2_timeseries
+        assert "build_world_co2_timeseries" in source
 
         # The branching logic: co2 branch constructs NGHGI, co2-ffi loads directly
         assert 'emission_category == "co2"' in source

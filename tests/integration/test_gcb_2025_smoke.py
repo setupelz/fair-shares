@@ -56,9 +56,9 @@ def test_shares_sum_to_one_and_budgets_sum_to_the_adjusted_total(rcb_source):
 
     # Adjusted total = world emissions 1990-2019 + the budget rebased to 2020.
     total = calculate_budget_from_rcb(
-        row["rcb_2020_nghgi_mt"].iloc[0], ALLOCATION_YEAR, world, verbose=False
+        row["rcb_2020_mt"].iloc[0], ALLOCATION_YEAR, world, verbose=False
     )
     budget = pd.DataFrame({str(ALLOCATION_YEAR): [total]}, index=world.index)
     absolute = result.get_absolute_budgets(budget)[str(ALLOCATION_YEAR)]
     assert absolute.sum() == pytest.approx(total, rel=1e-9)
-    assert total > row["rcb_2020_nghgi_mt"].iloc[0] > 0
+    assert total > row["rcb_2020_mt"].iloc[0] > 0

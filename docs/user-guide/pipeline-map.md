@@ -57,7 +57,7 @@ Two runs with different sources therefore never overwrite each other.
 
 ### 2. Preprocessing (run by Snakemake)
 
-Notebooks with a source name in the file name come in one copy per source. The Snakefile picks the copy that matches the active source. Notebooks without one serve every source of their kind: `101_data_preprocess_emiss_primap` reads every PRIMAP-hist release, and `107_derive_nghgi_categories` every LULUCF source. The executed copy under `output/<source-id>/notebooks/` keeps the source name.
+Notebooks with a source name in the file name come in one copy per source. The Snakefile picks the copy that matches the active source. Notebooks without one serve every source of their kind: `101_data_preprocess_emiss_primap` reads every PRIMAP-hist release, and `107_derive_lulucf_categories` every LULUCF source. The executed copy under `output/<source-id>/notebooks/` keeps the source name.
 
 | Notebook | Snakemake rule | Runs when | Does | Writes (under `output/<source-id>/intermediate/`) |
 | --- | --- | --- | --- | --- |
@@ -65,7 +65,7 @@ Notebooks with a source name in the file name come in one copy per source. The S
 | `102_data_preprocess_gdp_<source>` | `preprocess_gdp` | always | GDP in constant 2021 PPP dollars (World Bank WDI) | `gdp/gdp_timeseries.csv` |
 | `103_data_preprocess_population_<source>` | `preprocess_population` | always | Population history and UN WPP 2024 projections | `population/population_timeseries.csv` |
 | `105_data_preprocess_gini_<source>` | `preprocess_gini` | always | Gini index (WDI by default, WIID opt-in) | `gini/gini_stationary.csv` |
-| `107_derive_nghgi_categories` | `preprocess_lulucf` | category `co2` or `all-ghg` | Adds national-inventory (NGHGI) land-use CO2 from the LULUCF Data Hub. Builds `co2`, `non-co2` and `all-ghg` history | `emissions/emiss_co2_timeseries.csv` and related files |
+| `107_derive_lulucf_categories` | `preprocess_lulucf` | category `co2` or `all-ghg` | Adds national-inventory (NGHGI) land-use CO2 from the LULUCF Data Hub. Builds `co2`, `non-co2` and `all-ghg` history | `emissions/emiss_co2_timeseries.csv` and related files |
 | `108_data_preprocess_bunkers_<source>` | `preprocess_bunkers` | budget targets | Observed international aviation and shipping CO2 from the Global Carbon Budget (`gcb-2025` by default) | `emissions/bunker_timeseries.csv` |
 | `104_data_preprocess_scenarios_ar6` | `preprocess_scenarios` and related rules | scenario-based targets, all budget runs with `active_scenario_source: ar6`, and every multi-gas run | AR6 scenario pathways, harmonised to history. Selects the scenario sets of every budget, computes the land-use terms and the bunker share, and builds the non-CO2 pathway of each budget | `scenarios/scenarios_<category>_timeseries.csv`, `scenarios/scenarios_<category>_by_budget_timeseries.csv`, `scenarios/rcb_scenario_adjustments.yaml`, `scenarios/scenario_set_<source>_<label>.csv`, `scenarios/bunker_share_reporters.csv` |
 | `106_generate_pathways_from_rcbs` | `generate_rcb_pathways` | target `rcb-pathways` | Turns a global budget into a world pathway (exponential decay by default) | `scenarios/scenarios_<category>_timeseries.csv` |
@@ -121,9 +121,10 @@ A test (`tests/integration/test_python_api_reproduces_notebook.py`) checks that 
 | `400_data_preprocess_scenario_for_allocation` | Reads a raw IAMC scenario file, adds regional history for emissions, population and GDP, builds `Emissions|Covered` | `output/iamc/iamc_covered.xlsx` |
 | `401_custom_iamc_allocation` | Your own IAM-region allocation; also exports a model-ready budget | `output/iamc/...` |
 | `402_example_iamc_budget_allocations`, `403_example_iamc_pathway_allocations` | Worked examples | `output/iamc/...` |
+| `405_one_region_remaining_budget` | Fair-share targets for one region of countries (such as EU27), for a model without rest-of-world data: a CO2 budget and, for all-GHG, an annual non-CO2 pathway, in the model's variable names. Allocates between countries and sums the members | `output/405_<label>/` (tidy CSV, IAMC xlsx) |
 
 The history back-fill lives in `library/iamc_historical/`.
-These notebooks run outside Snakemake. Run 400 first.
+These notebooks run outside Snakemake. Run 400 before 401 to 403; 405 needs no IAMC input.
 
 ## Reproductions of published studies (600 series)
 

@@ -4,6 +4,19 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+## [0.5.0] — 2026-10-19
+
+### Added
+
+- LULUCF source `gcb-2025-luc`: Global Carbon Budget 2025 national land-use change emissions v1.0 (ICOS, CC BY 4.0, doi:10.18160/GCP-2025), per country 1850-2024, the mean of the bookkeeping models BLUE, OSCAR and LUCE (Tg C converted to Mt CO2). Manual tier: the file sits behind the ICOS licence page; `fair-shares fetch-data` prints the steps.
+- A LULUCF source now declares its accounting `basis` (`nghgi` or `bookkeeping`) in `data_parameters`, and the run follows it. With `gcb-2025-luc` (bookkeeping), `co2` and `all-ghg` are on the model basis: country history uses bookkeeping land use, the global budget takes no NGHGI convention-gap correction and is rebased with the workbook's global bookkeeping land use, and the AR6 scenario CO2 and Kyoto gases are used as reported rather than NGHGI-adjusted. Budget rows record `lulucf_basis`. Loaders in `utils/data/lulucf.py`.
+- Notebook `405_one_region_remaining_budget`: fair-share targets for one region of countries (EU27 preset), for a model that covers that region only. It allocates the global budget between countries for one RCB source and a list of (warming level, likelihood) pairs and sums the member countries. Settings in three cells (your model; budget and region; advanced). The user chooses `co2` (default) or `all-ghg`, the land-use basis (`model`, default, or `inventory`), their model's variable names, and their first model time step and period length; the CO2 budget is given from the first year of that period. Output: a cumulative CO2 budget and, for `all-ghg`, an annual non-CO2 pathway (AR6 GWP100) per non-CO2 debt mode, also as model-period averages, as a tidy CSV and IAMC files.
+- `filter_to_anchors()`, `regional_remaining_budgets()`, `regional_targets()`, `regional_observed_emissions()`, `shift_to_period_start()` and `period_means()` in `python_api`. Region sums stop when a member has no row, was moved into rest of world, or when two configurations share every column that `compute_remaining_budgets()` keeps (a grid varying `cumulative_end_year`, a functional form or `capability_reference_year`), which would otherwise be summed together. Under `co2-debit`, a region's non-CO2 over-use is summed over the members that over-used. `shift_to_period_start()` adds back observed emissions inside the model's first period, or subtracts the years before it, holding unobserved years at the last observed value and recording them.
+
+### Changed
+
+- Names that said NGHGI but hold the active LULUCF source's data are basis-neutral: `emiss_<category>_nghgi_timeseries.csv` is `emiss_<category>_lu_timeseries.csv`; the adjustments key `lulucf_nghgi` is `lulucf_world`; RCB columns `rcb_2020_nghgi_mt` and `correction_lulucf_nghgi_mt` are `rcb_2020_mt` and `correction_lulucf_convention_mt`; `build_nghgi_world_co2_timeseries` is `build_world_co2_timeseries`; `NGHGI_CORRECTED_CATEGORIES` is `LULUCF_CATEGORIES`; notebook 107 is `107_derive_lulucf_categories`; `lulucf_metadata.yaml` keys `nghgi_*` are `lulucf_*` and it records `basis`. Output folders rebuild once.
+
 ## [0.4.0] — 2026-10-16
 
 ### Added

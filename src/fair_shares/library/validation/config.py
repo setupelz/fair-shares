@@ -86,27 +86,27 @@ def validate_allocation_parameters(
 
 
 # Fallback NGHGI min year; run_parameter_grid passes the first year of the loaded frame.
-_NGHGI_MIN_YEAR_DEFAULT = 2000
+_LULUCF_MIN_YEAR_DEFAULT = 2000
 
 
-def _raise_nghgi_year_error(
+def _raise_lulucf_year_error(
     approach: str,
     param_name: str,
     year: int,
     emission_category: str,
-    nghgi_min_year: int,
+    lulucf_min_year: int,
 ) -> None:
-    """Raise AllocationError for year < nghgi_min_year in LULUCF-containing categories."""
+    """Raise AllocationError for year < lulucf_min_year in LULUCF-containing categories."""
     raise AllocationError(
         f"Configuration error for approach '{approach}':\n"
-        f"  {param_name} = {year} is before {nghgi_min_year}\n\n"
+        f"  {param_name} = {year} is before {lulucf_min_year}\n\n"
         f"For emission_category='{emission_category}' (contains LULUCF"
         f"{'; it is also the CO2 part of all-ghg' if emission_category == 'co2' else ''}), "
         f"all allocations must be NGHGI-consistent. NGHGI-consistent LULUCF "
-        f"CO2 data only starts in {nghgi_min_year} — both at country level "
+        f"CO2 data only starts in {lulucf_min_year} — both at country level "
         f"and world level (derived from NGHGI data).\n\n"
         f"Options:\n"
-        f"  1. Set {param_name} >= {nghgi_min_year}\n"
+        f"  1. Set {param_name} >= {lulucf_min_year}\n"
         f"  2. Use emission_category='co2-ffi' or 'all-ghg-ex-co2-lulucf' "
         f"(no LULUCF data dependency)"
     )
@@ -115,11 +115,11 @@ def _raise_nghgi_year_error(
 def validate_allocation_year_for_co2(
     allocations_config: dict[str, list[dict[str, Any]]],
     emission_category: str,
-    nghgi_min_year: int | None = None,
+    lulucf_min_year: int | None = None,
     responsibility_min_year: int | None = None,
 ) -> None:
     """
-    Enforce year parameters >= nghgi_min_year for LULUCF-containing categories.
+    Enforce year parameters >= lulucf_min_year for LULUCF-containing categories.
 
     The minimum year is the first year of the loaded NGHGI-consistent
     country frame (2000 for both Melo releases). Categories containing
@@ -142,7 +142,7 @@ def validate_allocation_year_for_co2(
         Configuration dict with approach names as keys
     emission_category : str
         Emission category (e.g. "co2-ffi", "co2", "all-ghg")
-    nghgi_min_year : int or None
+    lulucf_min_year : int or None
         First year of the loaded NGHGI-consistent frame, passed by
         ``run_parameter_grid``. If None, 2000.
     responsibility_min_year : int or None
@@ -153,13 +153,15 @@ def validate_allocation_year_for_co2(
     Raises
     ------
     AllocationError
-        If allocation start year < nghgi_min_year, or
+        If allocation start year < lulucf_min_year, or
         pre_allocation_responsibility_year is before the first year of its
-        emissions frame (nghgi_min_year when ``responsibility_min_year`` is
+        emissions frame (lulucf_min_year when ``responsibility_min_year`` is
         None), for LULUCF-containing emission categories ("co2", "all-ghg")
     """
     # Resolve NGHGI min year
-    min_year = nghgi_min_year if nghgi_min_year is not None else _NGHGI_MIN_YEAR_DEFAULT
+    min_year = (
+        lulucf_min_year if lulucf_min_year is not None else _LULUCF_MIN_YEAR_DEFAULT
+    )
 
     # Categories containing LULUCF: "co2" (= co2-ffi + co2-lulucf) and
     # "all-ghg" (= co2 + non-co2, where co2 includes LULUCF).
@@ -179,7 +181,7 @@ def validate_allocation_year_for_co2(
 
             for year in years:
                 if year < min_year:
-                    _raise_nghgi_year_error(
+                    _raise_lulucf_year_error(
                         approach, year_param, year, emission_category, min_year
                     )
 
@@ -200,7 +202,7 @@ def validate_allocation_year_for_co2(
                                 f"responsibility."
                             )
                     elif hy < min_year:
-                        _raise_nghgi_year_error(
+                        _raise_lulucf_year_error(
                             approach,
                             "pre_allocation_responsibility_year",
                             hy,

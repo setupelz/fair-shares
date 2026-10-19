@@ -203,7 +203,15 @@ def validate_path_exists(path_str: str, file_type: str = "data file") -> str:
     Raises
     ------
     ConfigurationError: If the path does not exist
+
+    With ``FAIR_SHARES_TRUST_CACHE=1`` the check is skipped: cached outputs are
+    reused as they are, so raw inputs are neither read nor fetched.
     """
+    # Imported here: provenance sits below utils in the import graph.
+    from fair_shares.library.utils.data.provenance import trust_cache_enabled
+
+    if trust_cache_enabled():
+        return path_str
     if path_str.startswith("/") or ":" in path_str:  # Absolute path
         path = Path(path_str)
     else:

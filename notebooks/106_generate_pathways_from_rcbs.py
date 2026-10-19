@@ -162,7 +162,7 @@ rcb_adjustments_raw = rcb_data_parameters.get("adjustments", {})
 adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
 print("\nRCB adjustments (NGHGI-consistent, Weber et al. 2026):")
-print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
+print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_world.path}")
 print(f"  Bunkers source: {adjustments_config.bunkers.path}")
 print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 
@@ -222,7 +222,7 @@ if rcb_data["rcb_data"]:
 # %%
 # For co2-ffi: load emissions directly from emiss_co2-ffi_timeseries.csv
 # For co2: load co2-ffi and co2-lulucf components, then construct
-# NGHGI-consistent world CO2 using build_nghgi_world_co2_timeseries(),
+# NGHGI-consistent world CO2 using build_world_co2_timeseries(),
 # mirroring run_rcb_preprocessing() in the orchestrator.
 
 
@@ -277,7 +277,7 @@ if emission_category == "co2":
     # as in run_rcb_preprocessing()
     from fair_shares.library.preprocessing.rcbs import _resolve_template_path
     from fair_shares.library.utils.data.nghgi import (
-        build_nghgi_world_co2_timeseries,
+        build_world_co2_timeseries,
         load_world_co2_lulucf,
     )
 
@@ -290,16 +290,16 @@ if emission_category == "co2":
     )
 
     # Load NGHGI LULUCF world timeseries
-    nghgi_ts, splice_year = load_world_co2_lulucf(
+    lulucf_ts, splice_year = load_world_co2_lulucf(
         _resolve_template_path(
-            adjustments_config.lulucf_nghgi.path, source_id, project_root
+            adjustments_config.lulucf_world.path, source_id, project_root
         )
     )
 
     # Build NGHGI-consistent world CO2 timeseries
-    world_emissions_df = build_nghgi_world_co2_timeseries(
+    world_emissions_df = build_world_co2_timeseries(
         fossil_ts=world_co2_ffi_df,
-        nghgi_ts=nghgi_ts,
+        lulucf_ts=lulucf_ts,
     )
 
     print("\nNGHGI-consistent world CO2 timeseries constructed:")
@@ -336,10 +336,10 @@ from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 # for total CO2, also pass observed NGHGI LULUCF for the rebase
 if emission_category == "co2":
     _fossil_for_rcb = world_co2_ffi_df
-    _nghgi_lulucf_for_rcb = world_co2_lulucf_df
+    _lulucf_for_rcb = world_co2_lulucf_df
 else:
     _fossil_for_rcb = world_emissions_df  # already co2-ffi
-    _nghgi_lulucf_for_rcb = None
+    _lulucf_for_rcb = None
 
 rcbs_df = load_and_process_rcbs(
     rcb_yaml_path=rcb_yaml_path,
@@ -347,13 +347,13 @@ rcbs_df = load_and_process_rcbs(
     emission_category=emission_category,
     adjustments_config=adjustments_config,
     source_id=source_id,
-    world_nghgi_lulucf_emissions=_nghgi_lulucf_for_rcb,
+    world_lulucf_emissions=_lulucf_for_rcb,
     verbose=True,
 )
 
 print(f"\nProcessed {len(rcbs_df)} RCB records")
 print("\nRCB scenarios:")
-print(rcbs_df[["source", "climate-assessment", "quantile", "rcb_2020_nghgi_mt"]].to_string())
+print(rcbs_df[["source", "climate-assessment", "quantile", "rcb_2020_mt"]].to_string())
 
 # %% [markdown]
 # ## Generate pathways from RCBs
@@ -384,7 +384,7 @@ print("\nPathway validation (budget conservation):")
 
 # Get expected budgets from RCBs (including source)
 expected_budgets = rcbs_df.set_index(["climate-assessment", "quantile", "source"])[
-    "rcb_2020_nghgi_mt"
+    "rcb_2020_mt"
 ]
 
 for idx in scenarios_df.index:
@@ -572,7 +572,7 @@ print("\nNote: Each RCB source generates a separate pathway (not averaged)")
 rcb_summary = rcbs_df.pivot_table(
     index=["climate-assessment", "quantile"],
     columns="source",
-    values="rcb_2020_nghgi_mt",
+    values="rcb_2020_mt",
     aggfunc="first",
 )
 
@@ -583,7 +583,7 @@ print(rcb_summary.to_string())
 print("\n--- RCB Statistics by Temperature/Probability ---")
 print("(Statistics show variation across different RCB sources)")
 for (ca, q), group in rcbs_df.groupby(["climate-assessment", "quantile"]):
-    values = group["rcb_2020_nghgi_mt"].values
+    values = group["rcb_2020_mt"].values
     mean_val = values.mean()
     std_val = values.std()
     min_val = values.min()
@@ -592,7 +592,7 @@ for (ca, q), group in rcbs_df.groupby(["climate-assessment", "quantile"]):
 
     print(f"\n{ca} (q={q}): {n_sources} separate pathways generated")
     print("  RCB values:")
-    for source, rcb in zip(group["source"], group["rcb_2020_nghgi_mt"]):
+    for source, rcb in zip(group["source"], group["rcb_2020_mt"]):
         print(f"    - {source}: {rcb:,.0f} Mt CO2")
     print(f"  Mean:   {mean_val:,.0f} Mt CO2")
     print(f"  Std Dev: {std_val:,.0f} Mt CO2")

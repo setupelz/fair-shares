@@ -77,6 +77,10 @@ Its processing rules, its coverage rule and the resulting country sets are in [G
 
 ## Land-use CO2
 
+A land-use source carries an accounting basis, and categories with land use (`co2`, `all-ghg`) follow it end to end.
+
+### National inventories (NGHGI basis)
+
 Melo, J., et al. (2026). The LULUCF Data Hub: translating global land use emissions estimates into the national GHG inventory framework. Zenodo. Both releases are [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 
 | Release | Key | DOI | Coverage | Location |
@@ -84,7 +88,17 @@ Melo, J., et al. (2026). The LULUCF Data Hub: translating global land use emissi
 | v4.0.0, 2026 NGHGI release (default) | `melo-2026-v4` | [10.5281/zenodo.22828743](https://doi.org/10.5281/zenodo.22828743) | Gap-filled, 187 countries, 2000 to 2024 | `data/lulucf/melo-2026-v4/` |
 | v3.1.1, 2025 NGHGI release (opt-in) | `melo-2026` | [10.5281/zenodo.18352395](https://doi.org/10.5281/zenodo.18352395) | 185 countries, 2000 to 2023 | `data/lulucf/melo-2026/` |
 
-Every category with land use (`co2`, `all-ghg`) reads the active release ([Convention gap](../science/remaining-carbon-budgets.md#convention-gap)).
+On this basis the global budget is corrected for the gap between inventory and model land-use accounting ([Convention gap](../science/remaining-carbon-budgets.md#convention-gap)).
+
+### Bookkeeping models (model basis)
+
+Global Carbon Project (2026). Supplemental data of Global Carbon Budget 2025: National Land Use Change Carbon Emissions 2025 v1.0. ICOS Carbon Portal. [10.18160/GCP-2025](https://doi.org/10.18160/GCP-2025). Paper: Friedlingstein et al. (2026), [10.5194/essd-18-3211-2026](https://doi.org/10.5194/essd-18-3211-2026). Cite the bookkeeping-model papers named in each sheet too.
+
+- **Key:** `gcb-2025-luc`. **Location:** `data/lulucf/gcb-2025-luc/`.
+- **Provides:** net land-use change CO2 by country, 1850 to 2024, the mean of the bookkeeping models BLUE, OSCAR and LUCE; the world row is the workbook's `Global` column. This is how integrated assessment and energy-system models count land-use CO2.
+- **On this basis:** no convention-gap correction of the global budget; the rebase to 2020 uses bookkeeping land use; AR6 scenario CO2 and Kyoto gases are used as reported.
+- **Licence:** [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) (ICOS data licence). ICOS asks you to cite the exact DOI or PID, to point your users to ICOS for updates, and to tell the data providers about publications that use the data; the workbook adds that co-authorship may need to be considered when the data are essential to the work.
+- **Download (manual):** open the [ICOS record](https://meta.icos-cp.eu/objects/milTbWkl0G-MSpdYG3IBIfzy), click Download, tick the licence confirmation and download. Extract the zip into `data/lulucf/gcb-2025-luc/`.
 
 ---
 

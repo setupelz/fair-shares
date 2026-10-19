@@ -533,7 +533,7 @@ def test_existing_sources_match_golden_master(tmp_path, emission_category):
     rcb_yaml.write_text(yaml.safe_dump({"rcb_data": sources}, sort_keys=False))
     adjustments_config = AdjustmentsConfig.model_validate(
         {
-            "lulucf_nghgi": {
+            "lulucf_world": {
                 "path": "output/{source_id}/intermediate/emissions/"
                 "world_co2-lulucf_timeseries.csv"
             },
@@ -552,7 +552,7 @@ def test_existing_sources_match_golden_master(tmp_path, emission_category):
             adjustments_config=adjustments_config,
             data_dir=tmp_path,
             source_id="golden",
-            world_nghgi_lulucf_emissions=_world_row(
+            world_lulucf_emissions=_world_row(
                 inputs["world_co2_lulucf_mt"], "co2-lulucf"
             ),
             verbose=False,
@@ -573,7 +573,7 @@ def test_existing_sources_match_golden_master(tmp_path, emission_category):
         )
         if emission_category == "co2":
             gaps = inputs["scenario_adjustments"][GOLDEN_SET[label]]
-            assert actual["correction_lulucf_nghgi_mt"][row] == round(
+            assert actual["correction_lulucf_convention_mt"][row] == round(
                 gaps["convention_gap_median_from"][baseline_year]
             )
 
@@ -638,7 +638,7 @@ def test_rebase_counts_each_bunker_year_once(baseline_year):
     assert result["rebase_fossil_mt"] == {2020: 0, 2024: 400}[baseline_year]
     assert result["rebase_bunkers_mt"] == {2020: 0, 2024: 40}[baseline_year]
     assert result["deduction_bunkers_mt"] == -100
-    assert result["rcb_2020_nghgi_mt"] == 1000
+    assert result["rcb_2020_mt"] == 1000
 
 
 def test_rebase_with_a_bunker_deduction_needs_the_bunker_series():
@@ -665,14 +665,14 @@ def test_co2_rebase_needs_the_inventory_lulucf_series():
         "world_co2_ffi_emissions": fossil,
         "verbose": False,
     }
-    with pytest.raises(DataProcessingError, match="pass world_nghgi_lulucf_emissions"):
+    with pytest.raises(DataProcessingError, match="pass world_lulucf_emissions"):
         process_rcb_to_2020_baseline(rcb_value=660.0, rcb_baseline_year=2024, **kwargs)
 
     result = process_rcb_to_2020_baseline(
         rcb_value=1000.0, rcb_baseline_year=2020, **kwargs
     )
     assert result["rebase_lulucf_mt"] == 0
-    assert result["rcb_2020_nghgi_mt"] == 1000
+    assert result["rcb_2020_mt"] == 1000
 
 
 def test_rebase_fill_holds_the_last_observed_value():
@@ -712,7 +712,7 @@ def test_rebase_fill_holds_the_last_observed_value():
     assert result["rebase_fossil_mt"] == 600
     assert result["rebase_bunkers_mt"] == 60
     assert result["deduction_bunkers_mt"] == -100
-    assert result["rcb_2020_nghgi_mt"] == 1000
+    assert result["rcb_2020_mt"] == 1000
 
 
 def test_rebase_fill_stops_at_the_limit():

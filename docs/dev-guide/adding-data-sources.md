@@ -121,7 +121,7 @@ These notebooks are good models:
 | `103_data_preprocess_population_un-owid-2025.py` | Population | Combining historical and projected data |
 | `105_data_preprocess_gini_wdi-2025.py` | Gini | Latest value in a window, filtering aggregates |
 | `105_data_preprocess_gini_unu-wider-2025.py` | Gini | Quality filtering, stationary output |
-| `107_derive_nghgi_categories.py` | Land use | National-inventory corrections, metadata, world totals |
+| `107_derive_lulucf_categories.py` | Land use | National-inventory corrections, metadata, world totals |
 
 ---
 
@@ -131,7 +131,7 @@ National-inventory land-use CO₂ replaces the bookkeeping estimates in PRIMAP. 
 
 Notebook 107 serves every land-use source and receives `active_lulucf_source` as a papermill parameter. It writes:
 
-- `emiss_co2-lulucf_nghgi_timeseries.csv`: country land-use CO₂ (the PRIMAP bookkeeping version from notebook 101 keeps its base filename);
+- `emiss_co2-lulucf_lu_timeseries.csv`: country land-use CO₂ (the PRIMAP bookkeeping version from notebook 101 keeps its base filename);
 - `world_co2-lulucf_timeseries.csv`: the world total for the budget corrections;
 - `lulucf_metadata.yaml`: the year bounds and the files written.
 

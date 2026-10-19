@@ -65,7 +65,7 @@ def test_shares_sum_to_one_and_budgets_sum_to_the_adjusted_total(rcb_source):
     assert shares.sum() == pytest.approx(1.0, abs=1e-9)
 
     # Adjusted total = world co2 2000-2019 + the budget rebased to 2020.
-    budget_2020 = row["rcb_2020_nghgi_mt"].iloc[0]
+    budget_2020 = row["rcb_2020_mt"].iloc[0]
     total = calculate_budget_from_rcb(
         budget_2020, ALLOCATION_YEAR, world, verbose=False
     )

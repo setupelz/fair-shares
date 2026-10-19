@@ -193,7 +193,7 @@ rcb_adjustments_raw = rcb_data_parameters.get("adjustments", {})
 adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
 print("RCB adjustments (NGHGI-consistent, Weber et al. 2026):")
-print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_nghgi.path}")
+print(f"  LULUCF NGHGI source: {adjustments_config.lulucf_world.path}")
 print(f"  Bunkers source: {adjustments_config.bunkers.path}")
 print(f"  Precautionary LULUCF cap: {adjustments_config.precautionary_lulucf}")
 print("  Gidden AR6 reanalysis: data/scenarios/ipcc_ar6_gidden/ar6_gidden.xlsx")
@@ -634,7 +634,7 @@ from fair_shares.library.preprocessing.rcbs import load_and_process_rcbs
 # Always pass fossil (co2-ffi) as world emissions;
 # for total CO2, also pass observed NGHGI LULUCF for the rebase
 world_fossil_emissions = ensure_string_year_columns(world_emiss["co2-ffi"])
-world_nghgi_lulucf = (
+world_lulucf = (
     ensure_string_year_columns(world_emiss["co2-lulucf"])
     if "co2-lulucf" in world_emiss
     else None
@@ -648,7 +648,7 @@ rcb_df = load_and_process_rcbs(
     data_dir=project_root / "data",
     output_dir=project_root / "output",
     source_id=source_id,
-    world_nghgi_lulucf_emissions=world_nghgi_lulucf,
+    world_lulucf_emissions=world_lulucf,
     verbose=True,
 )
 

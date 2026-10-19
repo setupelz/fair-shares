@@ -47,7 +47,7 @@ def load_world_co2_lulucf(path: str | Path) -> tuple[pd.DataFrame, int]:
     Returns
     -------
     tuple[pd.DataFrame, int]
-        (nghgi_ts, splice_year) where nghgi_ts is a single-row DataFrame
+        (lulucf_ts, splice_year) where lulucf_ts is a single-row DataFrame
         indexed by ["source"] with string year columns, and splice_year is
         the last year of NGHGI data coverage.
 
@@ -289,9 +289,9 @@ def bunker_deduction_from_share(
     return total + share * set_co2_after_mt, last_observed
 
 
-def build_nghgi_world_co2_timeseries(
+def build_world_co2_timeseries(
     fossil_ts: pd.DataFrame,
-    nghgi_ts: pd.DataFrame,
+    lulucf_ts: pd.DataFrame,
 ) -> pd.DataFrame:
     """Construct NGHGI-consistent world total CO2 timeseries.
 
@@ -310,7 +310,7 @@ def build_nghgi_world_co2_timeseries(
         World CO2-FFI emissions timeseries (e.g. PRIMAP) in Mt CO2/yr,
         excluding international bunkers. Must have string year columns and a
         MultiIndex with (iso3c, unit, emission-category).
-    nghgi_ts : pd.DataFrame
+    lulucf_ts : pd.DataFrame
         NGHGI LULUCF historical timeseries (from load_world_co2_lulucf)
         in MtCO2/yr. Single-row DataFrame with string year columns.
 
@@ -331,8 +331,8 @@ def build_nghgi_world_co2_timeseries(
     # Build LULUCF timeseries: NGHGI where available, NaN otherwise
     lulucf_vals = pd.Series(np.nan, index=year_cols, dtype=float)
     for y in year_cols:
-        if y in nghgi_ts.columns:
-            lulucf_vals[y] = nghgi_ts[y].iloc[0]
+        if y in lulucf_ts.columns:
+            lulucf_vals[y] = lulucf_ts[y].iloc[0]
 
     # NGHGI-consistent total CO2 = fossil (excluding bunkers) + LULUCF
     total_co2 = fossil_vals + lulucf_vals

@@ -29,6 +29,7 @@ A *budget* is one cumulative number per country. A *pathway* is a value for ever
 | **A budget**          | `302_example_templates_budget_allocations`   | run `400` once, then `402_example_iamc_budget_allocations`  |
 | **A pathway**         | `303_example_templates_pathway_allocations`  | run `400` once, then `403_example_iamc_pathway_allocations` |
 | **Your own settings** | `301_custom_fair_share_allocation`           | run `400` once, then `401_custom_iamc_allocation`          |
+| **One region, model has no rest-of-world data** | | `405_one_region_remaining_budget` (no IAMC input needed) |
 | **Reproduce a published study** | `601` to `605` (see [Reproductions](https://setupelz.github.io/fair-shares/reproductions/)) | |
 
 Notebooks 401, 402 and 403 read the file that notebook 400 writes.
@@ -55,7 +56,7 @@ If you use fair-shares in academic work, policy documents or legal proceedings, 
   title={fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways},
   author={Pelz, Setu and Holz, Ceecee and Lamboll, Robin and Weber, Konstantin and Lewis, Jared and Nicholls, Zebedee},
   year={2026},
-  version={0.4.0},
+  version={0.5.0},
   url={https://github.com/setupelz/fair-shares},
   license={BSD-3-Clause}
 }

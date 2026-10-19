@@ -182,20 +182,63 @@ class GiniSourceConfig(BaseModel):
 
 
 class LulucfDataParameters(BaseModel):
-    """Parameters for LULUCF data source."""
+    """Parameters for a LULUCF data source.
 
-    world_key: str = Field(..., description="Key identifier for world/global data")
-    format: str = Field(..., description="Data format (e.g. 'long')")
-    category_filter: str = Field(
-        ..., description="Category to filter on (e.g. 'LULUCF')"
+    ``basis`` names the accounting of the land-use CO2: ``nghgi`` (national
+    inventories, long-format Melo file) or ``bookkeeping`` (bookkeeping
+    models, GCB national land-use change workbook). The NGHGI basis needs the
+    long-format columns and filters; the bookkeeping basis needs ``models``.
+    """
+
+    basis: Literal["nghgi", "bookkeeping"] = Field(
+        "nghgi", description="Accounting basis of the land-use CO2"
     )
-    gas_filter: str = Field(..., description="Gas to filter on (e.g. 'CO2')")
+    world_key: str = Field(..., description="Key identifier for world/global data")
+    format: str = Field(..., description="Data format: 'long' (Melo) or 'gcb-luc'")
+    category_filter: str | None = Field(
+        None, description="Category to filter on (e.g. 'LULUCF'); NGHGI basis"
+    )
+    gas_filter: str | None = Field(
+        None, description="Gas to filter on (e.g. 'CO2'); NGHGI basis"
+    )
     exclude_regions: list[str] = Field(
         default_factory=list, description="Regions to exclude (e.g. ['EU27'])"
     )
-    value_column: str = Field(..., description="Column containing flux values")
-    iso3_column: str = Field(..., description="Column containing ISO3 country codes")
-    year_column: str = Field(..., description="Column containing year values")
+    value_column: str | None = Field(
+        None, description="Column containing flux values; NGHGI basis"
+    )
+    iso3_column: str | None = Field(
+        None, description="Column containing ISO3 country codes; NGHGI basis"
+    )
+    year_column: str | None = Field(
+        None, description="Column containing year values; NGHGI basis"
+    )
+    models: list[str] | None = Field(
+        None,
+        description="Bookkeeping-model sheets averaged into one series; "
+        "bookkeeping basis",
+    )
+
+    @model_validator(mode="after")
+    def check_basis_fields(self) -> LulucfDataParameters:
+        """Require the fields the basis's loader reads."""
+        if self.basis == "nghgi":
+            lacking = [
+                name
+                for name in (
+                    "category_filter",
+                    "gas_filter",
+                    "value_column",
+                    "iso3_column",
+                    "year_column",
+                )
+                if getattr(self, name) is None
+            ]
+            if lacking:
+                raise ValueError(f"NGHGI LULUCF source lacks {lacking}")
+        elif not self.models:
+            raise ValueError("Bookkeeping LULUCF source needs a list of models")
+        return self
 
 
 class LulucfSourceConfig(BaseModel):
@@ -222,7 +265,7 @@ class DataSourceRef(BaseModel):
 class AdjustmentsConfig(BaseModel):
     """RCB adjustment configuration — timeseries-based (NGHGI-consistent)."""
 
-    lulucf_nghgi: DataSourceRef = Field(
+    lulucf_world: DataSourceRef = Field(
         ...,
         description="NGHGI-reported LULUCF CO2 world timeseries (notebook 105 output)",
     )

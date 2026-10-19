@@ -553,7 +553,7 @@ def _run_budget_allocations(
         rcb_source = rcb_row["source"]
         climate_assessment = rcb_row["climate-assessment"]
         quantile = rcb_row["quantile"]
-        rcb_value = rcb_row["rcb_2020_nghgi_mt"]
+        rcb_value = rcb_row["rcb_2020_mt"]
 
         for result in results:
             allocation_year = result.parameters.get("allocation_year")

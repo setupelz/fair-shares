@@ -236,6 +236,48 @@ sources:
         upstream_hash: "md5:4dc0776f52dfefe1df76538794ab2bef"
         size_bytes: 1220236
 
+  # Land-use CO2 on the bookkeeping (model) basis, by country. With this
+  # source active, `co2` is on the model basis: no NGHGI convention-gap
+  # correction, and the rebase uses bookkeeping land use.
+  gcb-2025-luc:
+    tier: manual
+    version: "Global Carbon Budget 2025, national land-use change emissions v1.0"
+    doi: "10.18160/GCP-2025"
+    license: "CC-BY-4.0"
+    redistributable: true
+    citation: >-
+      Global Carbon Project (2026). Supplemental data of Global Carbon Budget
+      2025: National Land Use Change Carbon Emissions 2025 v1.0. ICOS Carbon
+      Portal. https://doi.org/10.18160/GCP-2025 (PID
+      11676/milTbWkl0G-MSpdYG3IBIfzy). Paper: Friedlingstein, P., et al.
+      (2026). Global Carbon Budget 2025. Earth System Science Data, 18,
+      3211-3288. https://doi.org/10.5194/essd-18-3211-2026. Bookkeeping models:
+      BLUE (Hansis et al. 2015), OSCAR (Gasser et al. 2020), LUCE (Qin et al.
+      2024); cite the model papers named at the top of each sheet.
+    # CC BY 4.0. The ICOS licence page also asks users to cite the exact
+    # DOI/PID, to point their users to ICOS for updates, and to inform the
+    # data providers of publications; the workbook's Summary sheet adds that
+    # co-authorship may need to be considered when the data are essential to
+    # the work. These are requests, not added contractual conditions.
+    manual_instructions: >-
+      The national land-use change workbook sits behind the ICOS
+      licence-acceptance page and downloads as a zip.
+
+      1. Open https://meta.icos-cp.eu/objects/milTbWkl0G-MSpdYG3IBIfzy
+      2. Click Download. On the licence page, read the CC BY 4.0 summary and
+         the fair-use notes, tick the confirmation box, and click Download.
+      3. The browser saves National_LandUseChange_Carbon_Emissions_2025_v1.0.zip,
+         holding the workbook, !LICENCE.pdf and !TOC.csv.
+      4. Extract the zip into:
+           <data_dir>/lulucf/gcb-2025-luc/
+         so the workbook is at
+           <data_dir>/lulucf/gcb-2025-luc/National_LandUseChange_Carbon_Emissions_2025_v1.0.xlsx
+    downloads:
+      - url: "https://meta.icos-cp.eu/objects/milTbWkl0G-MSpdYG3IBIfzy"
+        target: "lulucf/gcb-2025-luc/National_LandUseChange_Carbon_Emissions_2025_v1.0.xlsx"
+        sha256: "9a29536d6925d06f8c4a97581b720121fcf219732c240e970bc24167d74e38d1"
+        size_bytes: 1271678
+
   # --- GDP -------------------------------------------------------------------
 
   wdi-2025:

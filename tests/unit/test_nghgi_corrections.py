@@ -21,7 +21,7 @@ import pytest
 from fair_shares.library.exceptions import DataLoadingError, DataProcessingError
 from fair_shares.library.preprocessing.rcbs import _resolve_adjustment_scalars
 from fair_shares.library.utils.data.nghgi import (
-    build_nghgi_world_co2_timeseries,
+    build_world_co2_timeseries,
     compute_bunker_deduction,
     compute_cumulative_emissions,
     load_bunker_timeseries,
@@ -336,7 +336,7 @@ class TestProcessRcbTo2020BaselineRegression:
         assert result["rebase_fossil_mt"] == 0
         assert result["rebase_lulucf_mt"] == 0
         # 400 Gt = 400,000 Mt
-        assert result["rcb_2020_nghgi_mt"] == 400_000
+        assert result["rcb_2020_mt"] == 400_000
 
     def test_baseline_2023_fossil_shift_co2ffi(self, ffi_emissions):
         """Baseline at 2023 with co2-ffi: rebase equals fossil-only component."""
@@ -384,7 +384,7 @@ class TestProcessRcbTo2020BaselineRegression:
             verbose=False,
         )
         assert result["deduction_lulucf_future_mt"] == 20_000
-        assert result["correction_lulucf_nghgi_mt"] == 0
+        assert result["correction_lulucf_convention_mt"] == 0
 
     def test_net_adjustment_matches_components(self, ffi_emissions):
         """net_adjustment_mt = rebase + bunkers + future + nghgi_correction."""
@@ -407,7 +407,7 @@ class TestProcessRcbTo2020BaselineRegression:
             result["rebase_total_mt"]
             + result["deduction_bunkers_mt"]
             + result["deduction_lulucf_future_mt"]
-            + result["correction_lulucf_nghgi_mt"]
+            + result["correction_lulucf_convention_mt"]
         )
         assert result["net_adjustment_mt"] == expected_total
 
@@ -422,7 +422,7 @@ class TestProcessRcbTo2020BaselineRegression:
             verbose=False,
         )
         required_keys = {
-            "rcb_2020_nghgi_mt",
+            "rcb_2020_mt",
             "rcb_original_value",
             "rcb_original_unit",
             "baseline_year",
@@ -432,7 +432,7 @@ class TestProcessRcbTo2020BaselineRegression:
             "rebase_lulucf_mt",
             "deduction_bunkers_mt",
             "deduction_lulucf_future_mt",
-            "correction_lulucf_nghgi_mt",
+            "correction_lulucf_convention_mt",
             "net_adjustment_mt",
         }
         assert required_keys.issubset(result.keys())
@@ -468,7 +468,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_nghgi_lulucf_emissions=nghgi_lulucf,
+            world_lulucf_emissions=nghgi_lulucf,
             bunkers_deduction_mt=0.0,
             lulucf_future_deduction_mt=0.0,
             verbose=False,
@@ -489,7 +489,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2-ffi",
             world_co2_ffi_emissions=ffi_emissions,
-            world_nghgi_lulucf_emissions=nghgi_lulucf,
+            world_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert result_ffi["rebase_lulucf_mt"] == 0
@@ -498,7 +498,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
         assert result_ffi["rebase_total_mt"] == round(expected_fossil)
 
     def test_co2_rebase_larger_than_ffi_only(self, ffi_emissions, nghgi_lulucf):
-        """co2 rebase (fossil + LULUCF) produces larger rcb_2020_nghgi_mt than co2-ffi."""
+        """co2 rebase (fossil + LULUCF) produces larger rcb_2020_mt than co2-ffi."""
         result_ffi = process_rcb_to_2020_baseline(
             rcb_value=400.0,
             rcb_unit="Gt * CO2",
@@ -513,10 +513,10 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_nghgi_lulucf_emissions=nghgi_lulucf,
+            world_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
-        assert result_co2["rcb_2020_nghgi_mt"] > result_ffi["rcb_2020_nghgi_mt"]
+        assert result_co2["rcb_2020_mt"] > result_ffi["rcb_2020_mt"]
 
     def test_baseline_2020_no_rebase_regardless_of_category(
         self, ffi_emissions, nghgi_lulucf
@@ -528,7 +528,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2020,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_nghgi_lulucf_emissions=nghgi_lulucf,
+            world_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert result["rebase_fossil_mt"] == 0
@@ -543,7 +543,7 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
             rcb_baseline_year=2023,
             emission_category="co2",
             world_co2_ffi_emissions=ffi_emissions,
-            world_nghgi_lulucf_emissions=nghgi_lulucf,
+            world_lulucf_emissions=nghgi_lulucf,
             verbose=False,
         )
         assert "rebase_fossil_mt" in result
@@ -551,12 +551,12 @@ class TestProcessRcbTo2020BaselineWithCo2Rebase:
 
 
 # ---------------------------------------------------------------------------
-# build_nghgi_world_co2_timeseries
+# build_world_co2_timeseries
 # ---------------------------------------------------------------------------
 
 
 class TestBuildNghgiWorldCo2Timeseries:
-    """Tests for build_nghgi_world_co2_timeseries."""
+    """Tests for build_world_co2_timeseries."""
 
     def _make_world_ts(
         self, year_values: dict[int, float], category: str
@@ -576,26 +576,26 @@ class TestBuildNghgiWorldCo2Timeseries:
         )
 
     @pytest.fixture
-    def nghgi_ts(self) -> pd.DataFrame:
+    def lulucf_ts(self) -> pd.DataFrame:
         """NGHGI available from 1990 only."""
         return _make_timeseries(
             {1990: -400.0, 2000: -500.0, 2020: -600.0}, row_label="nghgi_lulucf"
         )
 
-    def test_pre_nghgi_years_are_nan(self, fossil_ts, nghgi_ts):
+    def test_pre_nghgi_years_are_nan(self, fossil_ts, lulucf_ts):
         """Years outside NGHGI coverage should be NaN (no BM fallback)."""
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
         # 1980: no NGHGI data -> NaN
         assert pd.isna(result["1980"].iloc[0])
 
-    def test_world_co2_is_fossil_plus_nghgi_lulucf(self, fossil_ts, nghgi_ts):
+    def test_world_co2_is_fossil_plus_nghgi_lulucf(self, fossil_ts, lulucf_ts):
         """World CO2 = fossil + NGHGI LULUCF. The fossil series excludes bunkers."""
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
         # 1990: fossil(6000) + NGHGI(-400) = 5600
         assert result["1990"].iloc[0] == pytest.approx(5600.0)
@@ -604,19 +604,19 @@ class TestBuildNghgiWorldCo2Timeseries:
         # 2020: fossil(9000) + NGHGI(-600) = 8400
         assert result["2020"].iloc[0] == pytest.approx(8400.0)
 
-    def test_emission_category_label_is_co2(self, fossil_ts, nghgi_ts):
+    def test_emission_category_label_is_co2(self, fossil_ts, lulucf_ts):
         """Output emission-category label should be 'co2'."""
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
         assert result.index.get_level_values("emission-category")[0] == "co2"
 
-    def test_index_structure_matches_fossil_ts(self, fossil_ts, nghgi_ts):
+    def test_index_structure_matches_fossil_ts(self, fossil_ts, lulucf_ts):
         """Output index structure matches fossil_ts (same names, same iso3c/unit)."""
-        result = build_nghgi_world_co2_timeseries(
+        result = build_world_co2_timeseries(
             fossil_ts=fossil_ts,
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
         assert result.index.names == fossil_ts.index.names
         assert result.index.get_level_values("iso3c")[0] == "World"

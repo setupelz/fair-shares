@@ -238,7 +238,7 @@ The convention gap covers the years of the published budget, from the baseline y
 [Weber 2026](https://doi.org/10.1038/s41467-026-69078-9) (Methods, Eqs. 2 and 3) uses the same split: the correction starts at the reference year of the budget, and earlier years take observed NGHGI land-use CO₂.
 The gap is negative, so it reduces the allocatable budget.
 Notebook 104 stores one median per baseline year in `convention_gap_median_from`.
-The output column is `correction_lulucf_nghgi_mt`.
+The output column is `correction_lulucf_convention_mt`.
 
 ??? note "How the gap is computed per scenario"
 
@@ -304,7 +304,7 @@ NGHGI land-use data start in 2000: LULUCF Data Hub v4.0.0 (`melo-2026-v4`, defau
 Categories with land-use CO₂ therefore start in 2000 or later ([Start-year limits](greenhouse-gases.md#start-year-limits)).
 An allocation year before the first year of the world series raises an error that names the first available year.
 `calculate_budget_from_rcb` then works the same way for `co2-ffi` and `co2`.
-`build_nghgi_world_co2_timeseries()` and the preprocessing notebooks build the same series.
+`build_world_co2_timeseries()` and the preprocessing notebooks build the same series.
 
 ??? info "Why land-use CO₂ starts in 2000"
 

@@ -487,7 +487,7 @@ def run_rcb_preprocessing(
         from ..config.models import AdjustmentsConfig
         from ..preprocessing.rcbs import _resolve_template_path
         from ..utils.data.nghgi import (
-            build_nghgi_world_co2_timeseries,
+            build_world_co2_timeseries,
             load_world_co2_lulucf,
         )
 
@@ -496,18 +496,18 @@ def run_rcb_preprocessing(
         rcb_adjustments_raw = rcb_data_params.get("adjustments", {})
         adjustments_config = AdjustmentsConfig.model_validate(rcb_adjustments_raw)
 
-        nghgi_ts, _ = load_world_co2_lulucf(
+        lulucf_ts, _ = load_world_co2_lulucf(
             _resolve_template_path(
-                adjustments_config.lulucf_nghgi.path,
+                adjustments_config.lulucf_world.path,
                 source_id,
                 orch.data_dir,
                 orch.output_dir,
             )
         )
 
-        world_emiss["co2"] = build_nghgi_world_co2_timeseries(
+        world_emiss["co2"] = build_world_co2_timeseries(
             fossil_ts=world_emiss["co2-ffi"],
-            nghgi_ts=nghgi_ts,
+            lulucf_ts=lulucf_ts,
         )
 
     # Save processed data
@@ -525,7 +525,7 @@ def run_rcb_preprocessing(
         orch,
         config,
         world_fossil_emissions=world_emiss["co2-ffi"],
-        world_nghgi_lulucf_emissions=world_emiss.get("co2-lulucf"),
+        world_lulucf_emissions=world_emiss.get("co2-lulucf"),
     )
 
 
@@ -576,7 +576,7 @@ def _process_and_save_rcbs(
     orch: DataPreprocessor,
     config: dict[str, Any],
     world_fossil_emissions: pd.DataFrame,
-    world_nghgi_lulucf_emissions: pd.DataFrame | None = None,
+    world_lulucf_emissions: pd.DataFrame | None = None,
 ) -> None:
     """Process RCB data and save to CSV.
 
@@ -587,7 +587,7 @@ def _process_and_save_rcbs(
         orch: Orchestrator instance
         config: Configuration dict
         world_fossil_emissions: Fossil world emissions, co2-ffi (e.g. PRIMAP)
-        world_nghgi_lulucf_emissions: Observed NGHGI LULUCF world emissions
+        world_lulucf_emissions: Observed NGHGI LULUCF world emissions
             for the co2 rebase
     """
     from ..config.models import AdjustmentsConfig
@@ -611,7 +611,7 @@ def _process_and_save_rcbs(
         adjustments_config=adjustments_config,
         data_dir=orch.data_dir,
         source_id=orch.source_id,
-        world_nghgi_lulucf_emissions=world_nghgi_lulucf_emissions,
+        world_lulucf_emissions=world_lulucf_emissions,
         verbose=False,
         output_dir=orch.output_dir,
     )

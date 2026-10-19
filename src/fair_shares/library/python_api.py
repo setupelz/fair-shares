@@ -684,28 +684,402 @@ def _filter_to_anchor(
 
     Filters ``loaded_data`` in place (mirrors notebook 601 §4, Decision 7).
     """
-    anchor = {
-        "source": rcb_source,
-        "climate-assessment": climate_assessment,
-        "quantile": quantile,
-    }
+    filter_to_anchors(loaded_data, rcb_source, [(climate_assessment, quantile)])
+
+
+def filter_to_anchors(
+    loaded_data: dict[str, Any],
+    rcb_source: str,
+    anchors: Sequence[tuple[str, float]],
+) -> None:
+    """Restrict the loaded RCB rows + scenario pathways to several anchors.
+
+    Each anchor is a ``(climate_assessment, quantile)`` pair of ``rcb_source``,
+    e.g. ``("1.7C", 0.67)``. Filters ``loaded_data`` in place.
+
+    Raises
+    ------
+    ConfigurationError
+        If an anchor has no RCB row, or no scenario rows, for a category part
+    """
     for cat_key, rdf in loaded_data["rcbs_data"].items():
-        loaded_data["rcbs_data"][cat_key] = rdf[
-            (rdf["source"] == rcb_source)
-            & (rdf["climate-assessment"] == climate_assessment)
-            & (rdf["quantile"] == quantile)
-        ].reset_index(drop=True)
-        if loaded_data["rcbs_data"][cat_key].empty:
-            raise ConfigurationError(f"No RCB row matches {anchor} for {cat_key}")
+        keep = pd.Series(False, index=rdf.index)
+        for climate_assessment, quantile in anchors:
+            hit = (
+                (rdf["source"] == rcb_source)
+                & (rdf["climate-assessment"] == climate_assessment)
+                & (rdf["quantile"] == quantile)
+            )
+            if not hit.any():
+                available = sorted(
+                    zip(
+                        rdf.loc[rdf["source"] == rcb_source, "climate-assessment"],
+                        rdf.loc[rdf["source"] == rcb_source, "quantile"],
+                    )
+                )
+                raise ConfigurationError(
+                    f"No RCB row matches source={rcb_source!r}, "
+                    f"climate-assessment={climate_assessment!r}, "
+                    f"quantile={quantile!r} for {cat_key}. "
+                    f"{rcb_source} has: {available}"
+                )
+            keep |= hit
+        loaded_data["rcbs_data"][cat_key] = rdf[keep].reset_index(drop=True)
     for cat_key, sdf in loaded_data["scenarios_data"].items():
-        mask = (
-            sdf.index.get_level_values("climate-assessment") == climate_assessment
-        ) & (sdf.index.get_level_values("quantile") == quantile)
-        if "source" in sdf.index.names:
-            mask &= sdf.index.get_level_values("source") == rcb_source
-        loaded_data["scenarios_data"][cat_key] = sdf[mask]
-        if loaded_data["scenarios_data"][cat_key].empty:
-            raise ConfigurationError(f"No scenario rows match {anchor} for {cat_key}")
+        ca = sdf.index.get_level_values("climate-assessment")
+        q = sdf.index.get_level_values("quantile")
+        keep = pd.Series(False, index=range(len(sdf))).to_numpy()
+        for climate_assessment, quantile in anchors:
+            hit = (ca == climate_assessment) & (q == quantile)
+            if "source" in sdf.index.names:
+                hit &= sdf.index.get_level_values("source") == rcb_source
+            if not hit.any():
+                raise ConfigurationError(
+                    f"No scenario rows match source={rcb_source!r}, "
+                    f"climate-assessment={climate_assessment!r}, "
+                    f"quantile={quantile!r} for {cat_key}"
+                )
+            keep |= hit
+        loaded_data["scenarios_data"][cat_key] = sdf[keep]
+
+
+# ---------------------------------------------------------------------------
+# One region of countries (notebook 405)
+# ---------------------------------------------------------------------------
+
+_REMAINING_VALUE_COLS = [
+    "allocated-total",
+    "consumed-actuals",
+    "remaining-budget",
+    "historical-deviation",
+]
+
+
+def _sum_members(
+    df: pd.DataFrame,
+    countries: Sequence[str],
+    region: str,
+    group_cols: list[str],
+    value_cols: list[str],
+) -> pd.DataFrame:
+    """Sum ``value_cols`` over the member rows of ``df``, per ``group_cols``.
+
+    Raises
+    ------
+    ValueError
+        If a member has no row, a member was moved into the rest of world (ROW)
+        for some configuration, two rows of one member share every grouping
+        column, or a configuration lacks some members
+    """
+    countries = list(dict.fromkeys(countries))
+    present = set(df["iso3c"])
+    missing = [c for c in countries if c not in present]
+    if missing:
+        raise ValueError(
+            f"{region}: no allocation rows for {missing}. Check the ISO3 codes; "
+            "a country without data is aggregated into ROW."
+        )
+    if "moved-to-row" in df.columns:
+        moved = set()
+        for entry in df["moved-to-row"].dropna():
+            if isinstance(entry, str) and entry:
+                moved.update(entry.split(";"))
+        clash = sorted(moved.intersection(countries))
+        if clash:
+            raise ValueError(
+                f"{region}: {clash} were moved into ROW for some configuration, "
+                "so their allocation is not in their own row."
+            )
+
+    members = df[df["iso3c"].isin(countries)]
+    # compute_remaining_budgets keeps a fixed set of identifying columns, so
+    # two configurations that differ only in a parameter outside it (e.g.
+    # cumulative_end_year, a functional form) share every column here and
+    # would be summed together.
+    dupes = members.duplicated([*group_cols, "iso3c"], keep=False)
+    if dupes.any():
+        raise ValueError(
+            f"{region}: {int(dupes.sum())} rows share every identifying column "
+            "with another row. The allocation grid varies a parameter that "
+            "compute_remaining_budgets does not keep (e.g. cumulative_end_year, "
+            "a functional form, capability_reference_year); run one value of "
+            "that parameter at a time."
+        )
+    grouped = members.groupby(group_cols, dropna=False)
+    out = grouped[value_cols].sum(min_count=1)
+    out["n-countries"] = grouped["iso3c"].nunique()
+    out = out.reset_index()
+    incomplete = out[out["n-countries"] != len(countries)]
+    if not incomplete.empty:
+        raise ValueError(
+            f"{region}: {len(incomplete)} configurations lack some members' rows"
+        )
+    out.insert(out.columns.get_loc(group_cols[0]) + 1, "iso3c", region)
+    return out
+
+
+def regional_remaining_budgets(
+    remaining: pd.DataFrame, countries: Sequence[str], region: str
+) -> pd.DataFrame:
+    """Sum the remaining budgets of ``countries`` into one ``region`` row.
+
+    ``remaining`` is the output of :func:`compute_remaining_budgets`. One row
+    is returned per configuration (anchor, approach, parameters, emission
+    part), with ``iso3c`` set to ``region`` and ``n-countries`` the number of
+    members summed.
+
+    Raises
+    ------
+    ValueError
+        As :func:`_sum_members`; a member moved into ROW has its allocation
+        inside ROW, so the region sum would miss it
+    """
+    value_cols = [c for c in _REMAINING_VALUE_COLS if c in remaining.columns]
+    group_cols = [
+        c for c in remaining.columns if c not in (*value_cols, "iso3c", "moved-to-row")
+    ]
+    return _sum_members(remaining, countries, region, group_cols, value_cols)
+
+
+def _pair_frame(df: pd.DataFrame, *, budget: bool) -> pd.DataFrame:
+    """Add the columns that pair a CO2 budget with its non-CO2 pathway.
+
+    The columns are ``family``, ``year`` and ``preserve``.
+    """
+    if budget:
+        return df.assign(
+            family=df["approach"].str.replace("-budget", "", regex=False),
+            year=df["allocation-year"].astype(int),
+            preserve=df["preserve-allocation-year-shares"].astype(bool),
+        )
+    return df.assign(
+        family=df["approach"],
+        year=df["first-allocation-year"].astype(int),
+        preserve=df["preserve-first-allocation-year-shares"].astype(bool),
+    )
+
+
+def regional_targets(
+    remaining: pd.DataFrame,
+    allocations_absolute: pd.DataFrame,
+    countries: Sequence[str],
+    region: str,
+    nonco2_debt_modes: Sequence[str] = NONCO2_DEBT_MODES,
+) -> pd.DataFrame:
+    """Return the CO2 budget and non-CO2 pathway of one region, per configuration.
+
+    One row per configuration (and, for composite categories, per non-CO2 debt
+    mode). ``remaining-budget`` is the region's CO2 budget after observed
+    emissions (the CO2 part of :func:`compute_remaining_budgets`, summed over
+    ``countries``). For composite categories the row also carries:
+
+    * ``nonco2-overuse``: the members' past non-CO2 over-use, summed over the
+      members that over-used (under-use earns nothing, as in
+      :func:`distribute_remaining_pathways`);
+    * ``nonco2-debt-mode`` and ``nonco2-debt-paid``: ``co2-debit`` charges the
+      over-use against ``co2-budget``; ``report-only`` charges nothing;
+    * year columns: the region's annual non-CO2 allocation (the members' sum),
+      for every allocated year; :func:`shift_to_period_start` trims them to
+      the model's first period.
+
+    ``co2-budget`` is ``remaining-budget`` minus ``nonco2-debt-paid``.
+
+    Raises
+    ------
+    ValueError
+        As :func:`regional_remaining_budgets`, or if a CO2 configuration has no
+        single non-CO2 pathway
+    """
+    co2 = remaining[~remaining["emission-category"].isin(["non-co2", "combined"])]
+    budgets = regional_remaining_budgets(co2, countries, region)
+    if not (remaining["emission-category"] == "combined").any():
+        budgets["nonco2-debt-mode"] = None
+        budgets["nonco2-debt-paid"] = 0.0
+        budgets["co2-budget"] = budgets["remaining-budget"]
+        return budgets
+
+    # Over-use per member: the combined rows carry each member's non-CO2
+    # deviation, clipped before summing so one member's under-use does not
+    # offset another's over-use.
+    combined = remaining[remaining["emission-category"] == "combined"].copy()
+    combined["historical-deviation"] = combined["historical-deviation"].clip(lower=0)
+    overuse = regional_remaining_budgets(combined, countries, region)
+    key = [
+        c
+        for c in budgets.columns
+        if c not in (*_REMAINING_VALUE_COLS, "n-countries", "emission-category")
+    ]
+    budgets = budgets.drop(columns="historical-deviation").merge(
+        overuse[[*key, "historical-deviation"]].rename(
+            columns={"historical-deviation": "nonco2-overuse"}
+        ),
+        on=key,
+        how="left",
+        validate="one_to_one",
+    )
+
+    # Region's non-CO2 pathway per configuration, paired to its CO2 budget.
+    nonco2 = allocations_absolute[
+        allocations_absolute["emission-category"] == "non-co2"
+    ]
+    year_cols = [c for c in nonco2.columns if str(c).isdigit()]
+    id_cols = [c for c in _ID_COLS if c in nonco2.columns and c != "iso3c"]
+    nonco2_region = _sum_members(nonco2, countries, region, id_cols, year_cols)
+    budgets_p = _pair_frame(budgets, budget=True)
+    nonco2_p = _pair_frame(nonco2_region, budget=False)
+    pair_keys = [
+        k
+        for k in _PAIR_KEYS
+        if k != "iso3c" and k in budgets_p.columns and k in nonco2_p.columns
+    ]
+    paired = budgets_p.merge(
+        nonco2_p[[*pair_keys, *year_cols]],
+        on=pair_keys,
+        how="left",
+        validate="one_to_one",
+    )
+    if paired[year_cols].isna().all(axis=1).any():
+        raise ValueError(f"{region}: a CO2 configuration has no non-CO2 pathway")
+    keep_years = list(year_cols)
+    paired = paired.drop(columns=["family", "year", "preserve"])
+
+    frames = []
+    for mode in nonco2_debt_modes:
+        mode = normalise_nonco2_debt_mode(mode)
+        block = paired.copy()
+        block["nonco2-debt-mode"] = mode
+        block["nonco2-debt-paid"] = (
+            block["nonco2-overuse"] if mode == "co2-debit" else 0.0
+        )
+        frames.append(block)
+    out = pd.concat(frames, ignore_index=True)
+    out["co2-budget"] = out["remaining-budget"] - out["nonco2-debt-paid"]
+    lead = [c for c in out.columns if not str(c).isdigit()]
+    return out[[*lead, *keep_years]]
+
+
+def regional_observed_emissions(
+    processed_dir: Path, part: str, countries: Sequence[str]
+) -> pd.Series:
+    """Observed emissions of ``part`` summed over ``countries``, by year.
+
+    Read from the processed country emissions of the run (Mt per year).
+
+    Raises
+    ------
+    ValueError
+        If a member has no row
+    """
+    df = _country_emissions(processed_dir, part).set_index("iso3c")
+    missing = [c for c in countries if c not in df.index]
+    if missing:
+        raise ValueError(f"No observed {part} emissions for {missing}")
+    years = [c for c in df.columns if str(c).isdigit()]
+    series = df.loc[list(countries), years].astype(float).sum(min_count=1)
+    series.index = series.index.astype(int)
+    return series.dropna()
+
+
+def shift_to_period_start(
+    regional: pd.DataFrame,
+    period_start: int,
+    observed: pd.Series,
+) -> pd.DataFrame:
+    """Express a region's CO2 budget from the first year of a model period.
+
+    :func:`compute_remaining_budgets` nets observed emissions through the last
+    observed year, so the budget runs from the year after it
+    (``remaining-from-year``). A model's first period may start elsewhere:
+
+    * earlier: the region's observed emissions from ``period_start`` up to
+      ``remaining-from-year`` fall inside the model's first period, so they are
+      added back;
+    * later: the region's emissions from ``remaining-from-year`` up to
+      ``period_start`` fall before the model, so they are subtracted. They are
+      not observed; each takes the last observed year's value.
+
+    ``observed`` is the region's emissions of the budget's part by year
+    (:func:`regional_observed_emissions`). The change applies to
+    ``remaining-budget`` and, when present, ``co2-budget``, and is recorded in
+    ``start-adjustment`` (Mt, positive = added) and
+    ``start-adjustment-estimated-years`` (the years held at the last observed
+    value). Year columns (a non-CO2 pathway) before ``period_start`` are
+    dropped. ``remaining-from-year`` becomes ``period_start``.
+
+    Raises
+    ------
+    ValueError
+        If ``observed`` lacks a year that must be added back
+    """
+    out = regional.copy()
+    budget_cols = [c for c in ("remaining-budget", "co2-budget") if c in out.columns]
+    observed = observed.copy()
+    observed.index = observed.index.astype(int)
+    last_year = int(observed.index.max())
+    out["start-adjustment"] = 0.0
+    out["start-adjustment-estimated-years"] = ""
+    for from_year, idx in out.groupby("remaining-from-year").groups.items():
+        from_year = int(from_year)
+        if period_start < from_year:
+            years = list(range(period_start, from_year))
+            lacking = [y for y in years if y not in observed.index]
+            if lacking:
+                raise ValueError(f"No observed regional emissions for {lacking}")
+            adjustment = float(observed.loc[years].sum())
+            estimated = []
+        else:
+            years = list(range(from_year, period_start))
+            estimated = [y for y in years if y > last_year]
+            values = [
+                observed.loc[y] if y <= last_year else observed.loc[last_year]
+                for y in years
+            ]
+            adjustment = -float(sum(values))
+        out.loc[idx, "start-adjustment"] = adjustment
+        out.loc[idx, "start-adjustment-estimated-years"] = ";".join(
+            str(y) for y in estimated
+        )
+        for col in budget_cols:
+            out.loc[idx, col] = out.loc[idx, col] + adjustment
+        out.loc[idx, "remaining-from-year"] = period_start
+    early = [c for c in out.columns if str(c).isdigit() and int(c) < period_start]
+    return out.drop(columns=early)
+
+
+def period_means(
+    annual: pd.DataFrame, model_years: Sequence[int], first_year: int
+) -> pd.DataFrame:
+    """Average annual year columns over a model's periods.
+
+    Each period is labelled by its last year, as IAM timesteps are: label
+    ``model_years[i]`` covers the years after ``model_years[i-1]`` through
+    itself, and the first label covers ``first_year`` through itself. Columns
+    that are not years are kept.
+
+    Raises
+    ------
+    ValueError
+        If the labels are not increasing, the first label is before
+        ``first_year``, or a period year has no column
+    """
+    model_years = [int(y) for y in model_years]
+    if model_years != sorted(set(model_years)):
+        raise ValueError(f"model_years must be increasing: {model_years}")
+    if model_years[0] < first_year:
+        raise ValueError(
+            f"First model year {model_years[0]} is before the pathway start "
+            f"{first_year}"
+        )
+    lead = [c for c in annual.columns if not str(c).isdigit()]
+    out = annual[lead].copy()
+    starts = [first_year, *[y + 1 for y in model_years[:-1]]]
+    for start, label in zip(starts, model_years):
+        cols = [str(y) for y in range(start, label + 1)]
+        lacking = [c for c in cols if c not in annual.columns]
+        if lacking:
+            raise ValueError(f"Period ending {label} lacks years {lacking}")
+        out[str(label)] = annual[cols].mean(axis=1)
+    return out
 
 
 def calculate_allocation_timeseries(

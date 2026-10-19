@@ -57,7 +57,7 @@ The processed CSVs land in `output/<source_id>/intermediate/processed/`.
 `load_allocation_data()` reads the processed CSVs:
 
 - `emissions_data["co2-ffi"]`: country emissions indexed by `iso3c`, `unit`, `emission-category`;
-- `rcbs_data["co2-ffi"]`: one row per budget with `source`, `climate-assessment`, `quantile` and `rcb_2020_nghgi_mt`, plus each budget's deductions and the provenance of its scenario sets;
+- `rcbs_data["co2-ffi"]`: one row per budget with `source`, `climate-assessment`, `quantile` and `rcb_2020_mt`, plus each budget's deductions and the provenance of its scenario sets;
 - `world_emissions_data["co2-ffi"]`: world history, which converts a budget from 2020 to a budget from the allocation year;
 - GDP, population and Gini, validated.
 
@@ -161,7 +161,7 @@ output/<source_id>/
 | Change budget processing | `preprocessing/rcbs.py`, `utils/data/rcb.py` | `load_and_process_rcbs()`, `calculate_budget_from_rcb()` |
 | Change the scenario sets behind budget terms | `utils/data/scenario_sets.py`, `data/rcbs/rcbs.yaml` | `build_budget_sets()`, `bunker_share()` |
 | Add a scenario source | `conf/scenario_sources.yaml`, `utils/data/scenario_sources.py` | `get_scenario_source()` |
-| Change the NGHGI corrections | `utils/data/nghgi.py`, `config/models.py` (`AdjustmentsConfig`) | `build_nghgi_world_co2_timeseries()` |
+| Change the NGHGI corrections | `utils/data/nghgi.py`, `config/models.py` (`AdjustmentsConfig`) | `build_world_co2_timeseries()` |
 | Change the notebook helpers | `notebook_helpers.py` | `load_allocation_data()`, `run_all_allocations()`, `run_and_save_category_allocations()` |
 | Change the Snakemake pipeline | `Snakefile`, `utils/data/setup.py` | Snakefile rules, `setup_data()` |
 | Add a plot | `visualization/` | `plot_allocation_comparison()`, `plot_decomposition_summary()` |

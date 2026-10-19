@@ -32,7 +32,8 @@
 # ### Emission category formulas:
 # - co2-ffi = CO2 - AFOLU_direct
 # - all-ghg-ex-co2-lulucf = KYOTO - AFOLU_direct
-# - all-ghg = KYOTO_NGHGI
+# - co2 = CO2_NGHGI (NGHGI LULUCF basis) or CO2 (bookkeeping basis)
+# - all-ghg = KYOTO_NGHGI (NGHGI LULUCF basis) or KYOTO (bookkeeping basis)
 
 # %% [markdown]
 # ## Set paths and library imports
@@ -164,6 +165,18 @@ else:
 # %%
 project_root = here()
 print(f"Project root: {project_root}")
+
+# Accounting basis of land-use CO2, from the active LULUCF source
+# (``data_parameters.basis``): "nghgi" uses the NGHGI-adjusted scenario
+# variables and the convention gap; "bookkeeping" uses the scenarios' own CO2
+# and Kyoto gases, which are on the model (bookkeeping) basis already.
+_lulucf_cfg = (config.get("lulucf") or {}).get(active_lulucf_source or "", {})
+lulucf_basis = (
+    _lulucf_cfg.get("data_parameters", {}).get("basis", "nghgi")
+    if active_lulucf_source
+    else None
+)
+print(f"LULUCF basis: {lulucf_basis}")
 
 
 # Get scenario configuration from the scenarios section.
@@ -662,10 +675,11 @@ for timeseries_name in timeseries_specs:
             print(f"    Successfully calculated co2-ffi with {len(var_df)} scenarios")
 
         elif timeseries_name == "co2":
-            print("  co2 = CO2_NGHGI")
-            var_df = scenario_data["CO2_NGHGI"].copy()
+            co2_var = "CO2" if lulucf_basis == "bookkeeping" else "CO2_NGHGI"
+            print(f"  co2 = {co2_var} ({lulucf_basis} basis)")
+            var_df = scenario_data[co2_var].copy()
             var_df["Variable"] = timeseries_name
-            var_df["Unit"] = scenario_data["CO2_NGHGI"]["Unit"].iloc[0]
+            var_df["Unit"] = scenario_data[co2_var]["Unit"].iloc[0]
             print(f"    Successfully extracted co2 with {len(var_df)} scenarios")
 
         elif timeseries_name == "all-ghg-ex-co2-lulucf":
@@ -687,8 +701,9 @@ for timeseries_name in timeseries_specs:
             )
 
         elif timeseries_name == "all-ghg":
-            print("  all-ghg = KYOTO_NGHGI")
-            var_df = scenario_data["KYOTO_NGHGI"].copy()
+            kyoto_var = "KYOTO" if lulucf_basis == "bookkeeping" else "KYOTO_NGHGI"
+            print(f"  all-ghg = {kyoto_var} ({lulucf_basis} basis)")
+            var_df = scenario_data[kyoto_var].copy()
             var_df["Variable"] = timeseries_name
             print(f"    Successfully extracted All-GHG with {len(var_df)} scenarios")
 
@@ -1089,22 +1104,28 @@ if "non-co2" in derived_to_process or "non-co2" in final_categories:
 # %%
 print("\n--- Pre-computing RCB adjustment scalars per budget ---")
 
-# Load NGHGI world timeseries for historical convention gap computation.
-# Only needed for co2/all-ghg (NGHGI corrections); co2-ffi uses BM LULUCF
-# from scenario data (AFOLU_direct) which is convention-independent.
-nghgi_world_path = (
+# Load the NGHGI world LULUCF for the historical convention gap. Only the
+# NGHGI basis has a gap (co2/all-ghg); on the bookkeeping basis the budget and
+# the land-use history share the models' accounting, so the gap is zero.
+# co2-ffi uses BM LULUCF from scenario data (AFOLU_direct) on either basis.
+lulucf_world_path = (
     intermediate_dir.parent / "emissions" / "world_co2-lulucf_timeseries.csv"
 )
-nghgi_world_available = nghgi_world_path.exists()
+lulucf_world_available = lulucf_world_path.exists() and lulucf_basis == "nghgi"
 
-if nghgi_world_available:
-    nghgi_world_df = pd.read_csv(nghgi_world_path).set_index("source")
-    nghgi_splice_year = max(int(c) for c in nghgi_world_df.columns if c.isdigit())
-    print(f"  Loaded NGHGI world LULUCF (splice year: {nghgi_splice_year})")
+if lulucf_world_available:
+    lulucf_world_df = pd.read_csv(lulucf_world_path).set_index("source")
+    lulucf_splice_year = max(int(c) for c in lulucf_world_df.columns if c.isdigit())
+    print(f"  Loaded NGHGI world LULUCF (splice year: {lulucf_splice_year})")
 else:
+    reason = (
+        "bookkeeping LULUCF basis"
+        if lulucf_basis == "bookkeeping"
+        else f"no NGHGI world LULUCF at {lulucf_world_path}"
+    )
     print(
-        f"  NGHGI world LULUCF not found at: {nghgi_world_path}\n"
-        f"  Convention gap will be zero (fine for co2-ffi; run notebook 107 for co2/all-ghg)."
+        f"  Convention gap is zero ({reason}; fine for co2-ffi, and for "
+        "co2/all-ghg on the bookkeeping basis)."
     )
 
 # Bunker reporters of every configured scenario source: every scenario that
@@ -1158,18 +1179,18 @@ for budget_key, entry in budget_sets.items():
             ).median()
         )
         gap_from[baseline_year] = 0.0
-        if nghgi_world_available:
+        if lulucf_world_available:
             gap_members = members.intersection(_indirect_world.index)
             gap_from[baseline_year] = float(
                 pd.Series(
                     [
                         convention_gap_from_baseline(
-                            nghgi_lulucf=nghgi_world_df.iloc[0],
+                            nghgi_lulucf=lulucf_world_df.iloc[0],
                             bm_direct=_direct_world.loc[k],
                             indirect=_indirect_world.loc[k],
                             baseline_year=baseline_year,
                             nz_year=crossings[k],
-                            splice_year=nghgi_splice_year,
+                            splice_year=lulucf_splice_year,
                         )
                         for k in gap_members
                     ]
@@ -1207,6 +1228,7 @@ for budget_key, entry in budget_sets.items():
                 for s in share_sources
             },
         },
+        "lulucf_basis": lulucf_basis,
         "bm_lulucf_median_from": {int(y): round(v, 1) for y, v in bm_from.items()},
         "convention_gap_median_from": {
             int(y): round(v, 1) for y, v in gap_from.items()

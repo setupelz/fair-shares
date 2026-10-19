@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, Literal
 
 import yaml
 
+from fair_shares.library.error_messages import suggest_similar
 from fair_shares.library.exceptions import (
     ConfigurationError,
     DataLoadingError,
@@ -214,7 +215,7 @@ def build_source_id(
     # LULUCF only affects categories whose content depends on the LULUCF
     # source: co2-lulucf (IS LULUCF), co2 (FFI + LULUCF), all-ghg (includes
     # LULUCF).  all-ghg-ex-co2-lulucf and non-co2 are LULUCF-independent.
-    # Kept in sync with ``NGHGI_CORRECTED_CATEGORIES`` in
+    # Kept in sync with ``LULUCF_CATEGORIES`` in
     # ``fair_shares.library.preprocessing.paths`` and Snakefile's
     # ``_needs_lulucf``.
     _LULUCF_DEPENDENT = {"co2", "co2-lulucf", "all-ghg"}
@@ -421,6 +422,16 @@ def build_data_config(
         else:
             _alloc_mode = "budget"
 
+    active_lulucf = active_sources.get("lulucf")
+    all_lulucf = full_config.get("lulucf", {})
+    if active_lulucf and active_lulucf not in all_lulucf:
+        valid_options = list(all_lulucf)
+        raise ConfigurationError(
+            f"LULUCF source '{active_lulucf}' not recognized.\n\n"
+            f"{suggest_similar(active_lulucf, valid_options)}\n\n"
+            f"Available LULUCF sources: {', '.join(valid_options)}"
+        )
+
     # Build filtered config dict
     filtered_config = {
         "emission_category": emission_category,
@@ -428,7 +439,9 @@ def build_data_config(
         "gdp": full_config.get("gdp", {}),
         "population": full_config.get("population", {}),
         "gini": full_config.get("gini", {}),
-        "lulucf": full_config.get("lulucf", {}),
+        # Only the active LULUCF source: the others need not be present (a
+        # manual-tier source such as gcb-2025-luc would otherwise be required).
+        "lulucf": {k: v for k, v in all_lulucf.items() if k == active_lulucf},
         "scenarios": filtered_scenarios,
         "targets": selected_target,
         "general": full_config.get("general", {}),

@@ -26,7 +26,7 @@ from fair_shares.library.preprocessing.loaders import (
     load_scenarios_data,
 )
 from fair_shares.library.preprocessing.paths import (
-    NGHGI_CORRECTED_CATEGORIES,
+    LULUCF_CATEGORIES,
     emissions_filename,
     emissions_path,
 )
@@ -38,7 +38,7 @@ __all__ = [
     "DEFAULT_GINI_MISSING_POLICY",
     "FIRST_RECORDED_YEAR_FILENAME",
     "GINI_MISSING_POLICIES",
-    "NGHGI_CORRECTED_CATEGORIES",
+    "LULUCF_CATEGORIES",
     "add_row_to_datasets",
     "complete_gini",
     "compute_analysis_countries",

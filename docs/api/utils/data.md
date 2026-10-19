@@ -85,9 +85,9 @@ Functions for converting IPCC RCBs to NGHGI-consistent values following Weber et
         heading_level: 4
         show_source: false
 
-### build_nghgi_world_co2_timeseries
+### build_world_co2_timeseries
 
-::: fair_shares.library.utils.data.nghgi.build_nghgi_world_co2_timeseries
+::: fair_shares.library.utils.data.nghgi.build_world_co2_timeseries
     options:
         show_root_heading: true
         heading_level: 4
