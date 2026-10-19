@@ -4,6 +4,10 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ## [Unreleased]
 
+### Changed
+
+- Notebook 405 defaults: the responsibility and capability approaches allocate from 2020 and count responsibility for emissions from 2015 (was: allocated from 2015, responsibility from 1990), so they hold a region accountable from the same year as equal cumulative per capita from 2015.
+
 ## [0.5.0] — 2026-10-19
 
 ### Added

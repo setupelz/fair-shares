@@ -125,7 +125,8 @@ TIMESTEP_LENGTH = 5  # years per period
 # ── B. BUDGET AND REGION — CHECK ─────────────────────────────────────────────
 
 RCB_SOURCE = "forster_2026"
-TEMPERATURE_LIKELIHOOD = [(1.7, 0.5), (2, 0.9)]  # 748 and 848 Gt CO2 from 2020 (model basis, incl. bunkers)
+# 748 and 848 Gt CO2 from 2020 (model basis, incl. bunkers)
+TEMPERATURE_LIKELIHOOD = [(1.7, 0.5), (2, 0.9)]
 
 REGION_NAME = "EU27"
 # fmt: off
@@ -140,7 +141,10 @@ REGION_COUNTRIES = [
 # ### C. Allocation approaches and data sources
 #
 # The allocation approaches are equity choices: the defaults cover three
-# principles (equal per capita, responsibility since 1990, capability). Change
+# principles. Equal cumulative per capita allocates from 2015 (ECPC 2015); the
+# responsibility and capability approaches allocate from 2020 and count
+# responsibility for emissions from 2015, so all three hold a region
+# accountable from the same year. Change
 # them to test other principles; see
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/).
 # The form is that of notebook 301: lists expand as cross-products. Vary one of
@@ -156,21 +160,21 @@ REGION_COUNTRIES = [
 # ── C. ALLOCATION APPROACHES AND DATA SOURCES ───────────────────────────────────
 
 ALLOCATIONS = {
-    # Equal per capita from 2015
+    # Equal cumulative per capita from 2015 (ECPC 2015)
     "equal-per-capita-budget": [
         {"allocation_year": [2015], "preserve_allocation_year_shares": [False]},
     ],
     "per-capita-adjusted-budget": [
-        # Responsibility for emissions since 1990
+        # Responsibility for emissions since 2015, allocated from 2020
         {
-            "allocation_year": [2015],
+            "allocation_year": [2020],
             "pre_allocation_responsibility_weight": [1.0],
-            "pre_allocation_responsibility_year": [1990],
+            "pre_allocation_responsibility_year": [2015],
             "preserve_allocation_year_shares": [False],
         },
-        # Capability (GDP per capita)
+        # Capability (GDP per capita), allocated from 2020
         {
-            "allocation_year": [2015],
+            "allocation_year": [2020],
             "capability_weight": [1.0],
             "preserve_allocation_year_shares": [False],
         },
