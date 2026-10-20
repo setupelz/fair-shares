@@ -173,4 +173,6 @@ In `output/<OUTPUT_LABEL>/`:
 - `<REGION_NAME>_targets_iamc.xlsx`: one scenario per budget, approach and debt mode; the region under `IAMC_REGION`, each member under its ISO3 code. The CO2 row has unit `Gt CO2` (no `/yr`) and sits at the first year of the model's first period; the non-CO2 rows are annual, `Mt CO2e/yr`. The meta sheet records the land-use basis, the first model period, the parameters and the member countries.
 - `<REGION_NAME>_targets_iamc_model_periods.xlsx`, for `all-ghg`: the same with the non-CO2 pathway as averages over the model's periods, labelled by their last year.
 
+- `columns.csv`: the meaning and unit of every column of the CSV files; each IAMC file has the same in a `columns` sheet ([Output columns](output-columns.md)).
+
 A member without data in the country sets is aggregated into rest of world; the run then stops and names it.

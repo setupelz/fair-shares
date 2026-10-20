@@ -1,0 +1,243 @@
+# Column dictionary of the fair-shares outputs.
+#
+# One entry per column name: what it holds and, where it has one, its unit.
+# Every output that writes a columns.csv reads this file, and so does the
+# docs page docs/user-guide/output-columns.md (regenerated with
+# `python -m fair_shares.library.utils.output_columns`). A column an output
+# writes but this file lacks stops the write.
+#
+# "<year>" stands for every year column ("2020", "2030", ...).
+
+sections:
+  Identifiers:
+    iso3c:
+      meaning: Country code (ISO 3166-1 alpha-3); in notebook 405 also the region name for the region row
+    region:
+      meaning: Region of the row in the IAMC files, the region name or a member's ISO3 code
+    approach:
+      meaning: Allocation approach, for example equal-per-capita-budget
+    climate-assessment:
+      meaning: Warming level of the budget or scenario set, for example 1.7C
+    quantile:
+      meaning: Likelihood of staying below the warming level, for example 0.5
+    category:
+      meaning: Emission category of the run, for example all-ghg
+    emission-category:
+      meaning: Part of the category the row holds, the CO2 part, non-co2, or combined for their sum
+    unit:
+      meaning: Unit of the values in the row
+    "<year>":
+      meaning: Value for that year, stored as a string column name; the unit is in the row or the file description
+
+  Data sources:
+    source-id:
+      meaning: Composite identifier of the run's data sources; includes the land-use source when the category uses one
+    allocation-folder:
+      meaning: Output folder name of the run
+    source:
+      meaning: Source within the target, for example the budget source forster_2026
+    target-source:
+      meaning: Target type, rcbs, pathway or rcb-pathways
+    rcb-generator:
+      meaning: Pathway generator for rcb-pathways; empty otherwise
+    emissions-source:
+      meaning: Historical emissions dataset
+    gdp-source:
+      meaning: GDP dataset
+    population-source:
+      meaning: Population dataset
+    gini-source:
+      meaning: Gini coefficient dataset
+    lulucf-source:
+      meaning: Land-use CO2 dataset, which sets the land-use basis
+    total-budget:
+      meaning: Global budget total behind the allocation
+      unit: Mt CO2e
+
+  Parameters:
+    allocation-year:
+      meaning: Budget approaches, the year the budget is allocated from
+    first-allocation-year:
+      meaning: Pathway approaches, the first year allocated
+    preserve-allocation-year-shares:
+      meaning: Budget approaches, whether population shares are frozen at the allocation year
+    preserve-first-allocation-year-shares:
+      meaning: Pathway approaches, whether population shares are frozen at the first allocation year
+    cumulative-end-year:
+      meaning: Budget approaches, last year of the cumulative population window
+    pre-allocation-responsibility-weight:
+      meaning: Weight of responsibility for emissions before the allocation year
+    pre-allocation-responsibility-year:
+      meaning: First year whose emissions count towards responsibility
+    pre-allocation-responsibility-per-capita:
+      meaning: Whether responsibility uses emissions per person (true) or a country's total emissions (false)
+    pre-allocation-responsibility-exponent:
+      meaning: Exponent of the responsibility adjustment
+    pre-allocation-responsibility-functional-form:
+      meaning: Functional form of the responsibility adjustment, asinh or power
+    capability-weight:
+      meaning: Weight of capability (GDP-based) in the adjustment
+    capability-per-capita:
+      meaning: Whether capability uses GDP per person (true) or total GDP (false)
+    capability-exponent:
+      meaning: Exponent of the capability adjustment
+    capability-functional-form:
+      meaning: Functional form of the capability adjustment, asinh or power
+    capability-reference-year:
+      meaning: Year whose GDP per capita is held across the window; empty when capability is computed year by year
+    capability-window:
+      meaning: Inclusive years of cumulative GDP over cumulative population, as start-end
+    max-deviation-sigma:
+      meaning: Cap on how far an adjusted allocation can move from equal per capita, in standard deviations
+    income-floor:
+      meaning: Gini-adjusted approaches, development threshold below which income does not count towards capability
+      unit: dollars per person
+    max-gini-adjustment:
+      meaning: Gini-adjusted approaches, largest share of GDP the income floor can remove from capability
+    convergence-year:
+      meaning: Convergence approaches and pathway distribution, the year the convergence completes
+    convergence-speed:
+      meaning: Convergence approaches, the share of the remaining distance to the long-run target closed per year
+
+  Quality:
+    warnings:
+      meaning: Quality warnings, if any
+    moved-to-row:
+      meaning: Analysis countries placed in rest of world for this allocation only, separated by ;
+    missing-net-negative-mtco2e:
+      meaning: Net-negative emissions the allocation needs but could not place
+      unit: Mt CO2e
+
+  Remaining budgets:
+    netting-end-year:
+      meaning: Last year of observed emissions subtracted from the allocation, the last year every part of the category covers
+    remaining-from-year:
+      meaning: First year of the remaining budget, netting-end-year + 1; in notebook 405 the first year of the model's first period
+    allocated-total:
+      meaning: Allocation from the allocation year
+      unit: Mt CO2e
+    consumed-actuals:
+      meaning: Observed emissions from the allocation year to netting-end-year
+      unit: Mt CO2e
+    remaining-budget:
+      meaning: allocated-total minus consumed-actuals; for a non-CO2 pathway part, its allocation after netting-end-year. Can be negative
+      unit: Mt CO2e
+    historical-deviation:
+      meaning: Non-CO2 parts only, observed minus allocated emissions up to netting-end-year
+      unit: Mt CO2e
+
+  Annual pathways:
+    adjusted-target:
+      meaning: Total the pathway sums to, the remaining budget less any non-CO2 debt in co2-debit mode
+      unit: Mt CO2e
+    shape:
+      meaning: Distribution setting, the shape of the pathway
+    deviation-end-year:
+      meaning: Distribution setting, the year the deviation from the baseline ends
+    nonco2-debt-mode:
+      meaning: Composite categories only, how past non-CO2 over-use is settled, report-only or co2-debit
+    nonco2-debt-paid:
+      meaning: Composite categories only, the non-CO2 over-use subtracted from the CO2 budget
+      unit: Mt CO2e
+
+  One region (notebook 405):
+    n-countries:
+      meaning: Number of member countries summed into the row
+    nonco2-overuse:
+      meaning: Composite categories only, the members' past non-CO2 over-use, summed over the members that over-used
+      unit: Mt CO2e
+    co2-budget:
+      meaning: CO2 budget of the area, cumulative from remaining-from-year to global net-zero CO2, after any non-CO2 debit
+      unit: Mt CO2
+    start-adjustment:
+      meaning: Change that moved the budget to the model's first period, the observed emissions added back (positive) or the years before the period subtracted (negative)
+      unit: Mt CO2
+    start-adjustment-estimated-years:
+      meaning: Years in start-adjustment without observed data, held at the last observed value, separated by ;
+    budget:
+      meaning: Label of the global budget, source, warming level and likelihood
+    allocation:
+      meaning: Label of the approach and its parameters (ay allocation year, rw responsibility weight, hr responsibility year, cw capability weight, re and ce exponents, rpc per-capita responsibility)
+    scenario:
+      meaning: IAMC scenario name, prefix|budget|allocation, plus the debt mode for composite categories
+    countries:
+      meaning: Member countries of the region, separated by ;
+    regions:
+      meaning: Regions in the IAMC files, the region name and each member's ISO3 code
+    co2-budget-definition:
+      meaning: What the CO2 row of the IAMC files holds, its variable, unit and years
+    co2-accounting:
+      meaning: Which CO2 the budget covers and how land use is counted
+    land-use-condition:
+      meaning: co2-ffi only, the condition on land-use CO2 under which the fossil budget is a fair share
+    first-model-period:
+      meaning: The model's first period, first-last year
+    non-co2-pathway:
+      meaning: Composite categories only, what the non-CO2 rows of the IAMC files hold
+
+  Land-use condition (notebook 405, co2-ffi):
+    land-term-removed-mt:
+      meaning: Global land-use CO2 (bookkeeping basis) the fossil budget removed, from land-from-year to land-to-year; 0 when the precautionary cap counts a projected sink as zero
+      unit: Mt CO2
+    land-share:
+      meaning: The area's share of the global allocation
+    land-allowance-mt:
+      meaning: Land-use CO2 (bookkeeping basis) the area may emit net from land-from-year to land-to-year, land-share times land-term-removed-mt; a net source above it comes off the fossil budget
+      unit: Mt CO2
+    land-allowance-mt-per-yr:
+      meaning: land-allowance-mt per year of the window
+      unit: Mt CO2/yr
+    land-from-year:
+      meaning: First year of the land-use window, the budget's baseline year
+    land-to-year:
+      meaning: Last year of the land-use window, the median net-zero year of the budget's scenario set
+    land-observed-years:
+      meaning: Years of the observed land-use CO2 columns, first-last
+    bookkeeping-observed-median:
+      meaning: Observed land-use CO2 of the area, bookkeeping basis (Global Carbon Budget), median over land-observed-years
+      unit: Mt CO2/yr
+    bookkeeping-observed-min:
+      meaning: As bookkeeping-observed-median, the lowest year
+      unit: Mt CO2/yr
+    bookkeeping-observed-max:
+      meaning: As bookkeeping-observed-median, the highest year
+      unit: Mt CO2/yr
+    inventory-observed-median:
+      meaning: Observed land-use CO2 of the area, inventory basis (LULUCF Data Hub), median over land-observed-years
+      unit: Mt CO2/yr
+    inventory-observed-min:
+      meaning: As inventory-observed-median, the lowest year
+      unit: Mt CO2/yr
+    inventory-observed-max:
+      meaning: As inventory-observed-median, the highest year
+      unit: Mt CO2/yr
+    indirect-gap-median:
+      meaning: Inventory minus bookkeeping land-use CO2 per year, mostly indirect uptake the global budget counts as climate response; median over land-observed-years
+      unit: Mt CO2/yr
+    indirect-gap-min:
+      meaning: As indirect-gap-median, the lowest year
+      unit: Mt CO2/yr
+    indirect-gap-max:
+      meaning: As indirect-gap-median, the highest year
+      unit: Mt CO2/yr
+    inventory-equivalent-median:
+      meaning: Inventory land-use CO2 that meets the allowance, land-allowance-mt-per-yr plus indirect-gap-median
+      unit: Mt CO2/yr
+    inventory-equivalent-min:
+      meaning: As inventory-equivalent-median, with indirect-gap-min
+      unit: Mt CO2/yr
+    inventory-equivalent-max:
+      meaning: As inventory-equivalent-median, with indirect-gap-max
+      unit: Mt CO2/yr
+
+  IAMC files:
+    Model:
+      meaning: Model name
+    Scenario:
+      meaning: Scenario name
+    Region:
+      meaning: Region name
+    Variable:
+      meaning: Variable name, in the model's naming
+    Unit:
+      meaning: Unit of the values

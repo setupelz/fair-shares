@@ -2,6 +2,16 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [SemVer](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- Column dictionary `conf/output_columns.yaml`: the meaning and unit of every output column. Allocation runs and notebook 405 write `columns.csv` beside their outputs, and the 405 IAMC files carry a `columns` sheet; a column without an entry stops the write. The docs page `Output columns` is generated from the same file (`python -m fair_shares.library.utils.output_columns`), and a test keeps the two equal.
+
+### Changed
+
+- Notebook 405 IAMC meta: the text column `co2-budget` is `co2-budget-definition`, so it no longer shares a name with the numeric `co2-budget` of the CSV.
+
 ## [0.6.0] — 2026-10-20
 
 ### Added

@@ -253,6 +253,10 @@ from fair_shares.library.utils.data.config import (
     is_composite_category,
     validate_data_source_config,
 )
+from fair_shares.library.utils.output_columns import (
+    describe_columns,
+    write_column_dictionary,
+)
 
 project_root = here()
 composite = is_composite_category(EMISSION_CATEGORY)
@@ -746,7 +750,7 @@ def _iamc(values: pd.DataFrame) -> pyam.IamDataFrame:
     meta.index = pd.MultiIndex.from_arrays(
         [[IAMC_MODEL] * len(targets), targets["scenario"]], names=["model", "scenario"]
     )
-    meta["co2-budget"] = (
+    meta["co2-budget-definition"] = (
         f"{CO2_VARIABLE}: cumulative {co2_unit} from the start of {from_year} to "
         "net-zero CO2"
     )
@@ -770,8 +774,17 @@ def _iamc(values: pd.DataFrame) -> pyam.IamDataFrame:
     return df
 
 
+def _to_excel(df: pyam.IamDataFrame, path) -> None:
+    """IAMC file with a columns sheet describing its data and meta columns."""
+    df.to_excel(path)
+    data_columns = [str(c).capitalize() for c in df.timeseries().reset_index().columns]
+    described = describe_columns([*data_columns, *df.meta.columns])
+    with pd.ExcelWriter(path, mode="a", engine="openpyxl") as writer:
+        described.to_excel(writer, sheet_name="columns", index=False)
+
+
 annual_path = out_dir / f"{REGION_NAME}_targets_iamc.xlsx"
-_iamc(all_targets).to_excel(annual_path)
+_to_excel(_iamc(all_targets), annual_path)
 print(f"Budget options:      {budget_options_path}")
 print(f"Tidy table:          {csv_path}")
 if land is not None:
@@ -785,8 +798,21 @@ if composite:
         from_year,
     )
     period_path = out_dir / f"{REGION_NAME}_targets_iamc_model_periods.xlsx"
-    _iamc(periods).to_excel(period_path)
+    _to_excel(_iamc(periods), period_path)
     print(f"IAMC, model periods: {period_path}")
+
+columns_path = write_column_dictionary(
+    {
+        csv_path.name: all_targets.drop(columns=["co2-budget-out"]).columns,
+        **(
+            {land_path.name: land.drop(columns=["co2-budget-out"]).columns}
+            if land is not None
+            else {}
+        ),
+    },
+    out_dir / "columns.csv",
+)
+print(f"Column dictionary:   {columns_path}")
 
 print(
     f"\nThe CO2 row ({co2_unit}, no '/yr') is cumulative from the start of "

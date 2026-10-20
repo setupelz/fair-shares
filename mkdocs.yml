@@ -155,6 +155,7 @@ nav:
   - Reference:
       - Approach catalog: user-guide/approach-catalog.md
       - Outputs: user-guide/output-schema.md
+      - Output columns: user-guide/output-columns.md
       - Data & licences: user-guide/data-sources.md
       - Pipeline map: user-guide/pipeline-map.md
       - Python API: api/python-api.md

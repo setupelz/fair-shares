@@ -14,6 +14,7 @@ An allocation run writes to `output/<source-id>/allocations/<allocation_folder>/
 | `allocations_relative.parquet` | Shares summing to 1, every column below |
 | `allocations_absolute.parquet` | Share × global target in Mt CO₂e, every column below |
 | `param_manifest.csv` | Every parameter combination of the run |
+| `columns.csv` | Meaning and unit of every column of the parquet files |
 | `README_relative.txt`, `README_absolute.txt` | A short description of the folder |
 | `CITATIONS.md` | The software and every data source the run used |
 | `allocations_wide.csv` | Wide format for spreadsheets. The notebooks write it with `convert_parquet_to_wide_csv()` |
@@ -27,76 +28,10 @@ Notebook 601 adds two products to the same folder:
 
 ## Allocation columns
 
-The parquet files hold every result with its metadata and parameters.
-
-### Identifier Columns
-
-| Column               | Type   | Description                                         |
-| -------------------- | ------ | --------------------------------------------------- |
-| `iso3c`              | string | Country code (e.g., 'USA', 'CHN')                   |
-| `approach`           | string | Allocation method (e.g., 'equal-per-capita-budget') |
-| `climate-assessment` | string | Normalised temperature target from the scenario source (e.g., '1.5C', '2C' for AR6) |
-| `quantile`           | float  | Normalised probability percentile from the scenario source (e.g., 0.5 for AR6 C1 median) |
-| `emission-category`  | string | Emission type (e.g., 'co2-ffi', 'all-ghg')          |
-
-### Data Source Columns
-
-| Column              | Type   | Description                       |
-| ------------------- | ------ | --------------------------------- |
-| `source-id`         | string | Composite data source identifier; includes the LULUCF source when the category uses one |
-| `allocation-folder` | string | Output folder name of the run     |
-| `emissions-source`  | string | Historical emissions dataset      |
-| `gdp-source`        | string | GDP dataset                       |
-| `population-source` | string | Population dataset                |
-| `gini-source`       | string | Gini coefficient dataset          |
-| `target-source`     | string | Target type ('rcbs', 'pathway', 'rcb-pathways') |
-| `rcb-generator`     | string | Pathway generator for `rcb-pathways`; empty otherwise |
-| `source`            | string | Specific source within the target (e.g., the RCB source 'lamboll_2023') |
-| `total-budget`      | float  | Global budget total behind the allocation |
-
-### Parameter Columns
-
-Individual parameter columns for each allocation approach:
-
-| Column                                  | Type   | Used By                   |
-| --------------------------------------- | ------ | ------------------------- |
-| `allocation-year`                       | int    | Budget approaches         |
-| `first-allocation-year`                 | int    | Pathway approaches        |
-| `preserve-allocation-year-shares`       | bool   | Budget approaches         |
-| `preserve-first-allocation-year-shares` | bool   | Pathway approaches        |
-| `cumulative-end-year`                   | int    | Budget approaches         |
-| `pre-allocation-responsibility-weight`                 | float  | Adjusted approaches       |
-| `capability-weight`                     | float  | Adjusted approaches       |
-| `capability-reference-year`             | int    | Adjusted approaches       |
-| `capability-window`                     | string | Per-capita adjusted approaches (`"start-end"`, e.g. `"1990-2019"`) |
-| `pre-allocation-responsibility-year`        | int    | Adjusted approaches       |
-| `pre-allocation-responsibility-per-capita` | bool   | Adjusted approaches       |
-| `capability-per-capita`                 | bool   | Adjusted approaches       |
-| `pre-allocation-responsibility-exponent` | float  | Adjusted approaches       |
-| `capability-exponent`                   | float  | Adjusted approaches       |
-| `pre-allocation-responsibility-functional-form` | string | Adjusted approaches       |
-| `capability-functional-form`            | string | Adjusted approaches       |
-| `max-deviation-sigma`                   | float  | All approaches (optional) |
-| `income-floor`                          | float  | Gini-adjusted approaches  |
-| `max-gini-adjustment`                   | float  | Gini-adjusted approaches  |
-| `convergence-year`                      | int    | Convergence approaches    |
-| `convergence-speed`                     | float  | Convergence approaches    |
-
-### Year Columns
-
-| Column Pattern | Type  | Description                               |
-| -------------- | ----- | ----------------------------------------- |
-| `"2020"` etc.  | float | Allocation values for each year (strings) |
+The parquet files hold every result with its identifiers, data sources, parameters, year columns and quality flags.
+[Output columns](output-columns.md) gives the meaning and unit of every column, and each output folder holds `columns.csv` with the entries of its own columns.
 
 **Note:** Year columns are stored as **strings**, not integers. Always use `"2020"`, not `2020`.
-
-### Quality Columns
-
-| Column                        | Type   | Description                    |
-| ----------------------------- | ------ | ------------------------------ |
-| `warnings`                    | string | Quality warnings (if any)      |
-| `moved-to-row`                | string | Analysis countries placed in rest of world for this allocation only, `;`-separated ([Analysis countries](../science/other-operations.md#analysis-countries)) |
-| `missing-net-negative-mtco2e` | float  | Missing net-negative emissions |
 
 ---
 
@@ -166,18 +101,7 @@ Format: `{emission-category}|{target-source}|{source}|{climate-assessment}|{quan
 ## Remaining budgets
 
 `remaining_budgets_from_<year>.csv` has one row per country and configuration.
-It keeps the identifier and parameter columns above and adds:
-
-| Column | Meaning |
-| --- | --- |
-| `category` | The emission category of the run, for example `all-ghg` |
-| `emission-category` | The part of that category: the CO₂ part, `non-co2`, or `combined` for their sum |
-| `netting-end-year` | The last observed year that every part of the category covers |
-| `remaining-from-year` | `netting-end-year` + 1 |
-| `allocated-total` | The allocation from the allocation year |
-| `consumed-actuals` | Observed emissions from the allocation year to `netting-end-year` |
-| `remaining-budget` | `allocated-total` minus `consumed-actuals`. For a non-CO₂ pathway part: its allocation after `netting-end-year` |
-| `historical-deviation` | Non-CO₂ parts only: observed minus allocated emissions up to `netting-end-year` |
+It keeps the identifier and parameter columns above and adds the [remaining-budget columns](output-columns.md#remaining-budgets).
 
 A remaining budget can be negative.
 [`compute_remaining_budgets`](../api/python-api.md#compute_remaining_budgets) computes this table.
@@ -185,14 +109,7 @@ A remaining budget can be negative.
 ## Annual pathways
 
 `distributed_remaining_pathways` has one row per country, configuration and distribution setting, with one column per year to the pathway end year.
-Each country's pathway sums to its remaining budget. It adds:
-
-| Column | Meaning |
-| --- | --- |
-| `adjusted-target` | The total the pathway sums to: the remaining budget, less any non-CO₂ debt in `co2-debit` mode |
-| `shape`, `deviation-end-year`, `convergence-year` | The distribution setting |
-| `nonco2-debt-mode` | Composite categories only: `report-only` or `co2-debit` |
-| `nonco2-debt-paid` | Composite categories only: the non-CO₂ over-use subtracted from the CO₂ budget |
+Each country's pathway sums to its remaining budget. It adds the [annual-pathway columns](output-columns.md#annual-pathways).
 
 [`distribute_remaining_pathways`](../api/python-api.md#distribute_remaining_pathways) computes this table. [Greenhouse gases](../science/greenhouse-gases.md) explains the two debt modes.
 

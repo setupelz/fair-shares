@@ -15,6 +15,7 @@ import pandas as pd
 
 from fair_shares.library.exceptions import DataLoadingError
 from fair_shares.library.utils.dataframes import get_year_columns
+from fair_shares.library.utils.output_columns import write_column_dictionary
 
 
 def generate_parquet_readme(
@@ -262,9 +263,11 @@ def generate_readme(output_dir: Path, data_context: dict | None = None) -> None:
     print(f"Found {len(parquet_files)} parquet files: {parquet_names}")
 
     # Generate README for each parquet file
+    file_columns = {}
     for parquet_file in parquet_files:
         try:
             df = pd.read_parquet(parquet_file)
+            file_columns[parquet_file.name] = df.columns
 
             # Determine if this is relative or absolute based on filename
             if "relative" in parquet_file.name:
@@ -290,6 +293,10 @@ def generate_readme(output_dir: Path, data_context: dict | None = None) -> None:
 
         except Exception as e:
             print(f"Error generating README for {parquet_file.name}: {e}")
+
+    # Outside the try: an undocumented column stops the run
+    write_column_dictionary(file_columns, output_dir / "columns.csv")
+    print("Generated columns.csv")
 
 
 def create_param_manifest(
