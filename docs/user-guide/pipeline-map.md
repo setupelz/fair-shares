@@ -121,7 +121,7 @@ A test (`tests/integration/test_python_api_reproduces_notebook.py`) checks that 
 | `400_data_preprocess_scenario_for_allocation` | Reads a raw IAMC scenario file, adds regional history for emissions, population and GDP, builds `Emissions|Covered` | `output/iamc/iamc_covered.xlsx` |
 | `401_custom_iamc_allocation` | Your own IAM-region allocation; also exports a model-ready budget | `output/iamc/...` |
 | `402_example_iamc_budget_allocations`, `403_example_iamc_pathway_allocations` | Worked examples | `output/iamc/...` |
-| `405_one_region_remaining_budget` | Fair-share targets for one region of countries (such as EU27), for a model without rest-of-world data: a CO2 budget and, for all-GHG, an annual non-CO2 pathway, in the model's variable names. Allocates between countries and sums the members | `output/405_<label>/` (tidy CSV, IAMC xlsx) |
+| `405_one_region_remaining_budget` | Fair-share targets for one region of countries (such as EU27), for a model without rest-of-world data: a CO2 budget (total or fossil only, with its land-use condition) and, for all-GHG, an annual non-CO2 pathway, in the model's variable names, for the region and each member. Allocates between countries and sums the members | `output/405_<label>/` (tidy CSV, IAMC xlsx) |
 
 The history back-fill lives in `library/iamc_historical/`.
 These notebooks run outside Snakemake. Run 400 before 401 to 403; 405 needs no IAMC input.

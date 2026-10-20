@@ -6,6 +6,8 @@ import pytest
 from fair_shares.library.exceptions import ConfigurationError
 from fair_shares.library.python_api import (
     filter_to_anchors,
+    land_use_condition,
+    member_targets,
     period_means,
     regional_remaining_budgets,
     regional_targets,
@@ -263,3 +265,134 @@ def test_period_means_reject_label_before_start():
     annual = pd.DataFrame({str(y): [1.0] for y in range(2025, 2031)})
     with pytest.raises(ValueError, match="before the pathway start"):
         period_means(annual, [2025, 2030], first_year=2026)
+
+
+# --- member_targets and land_use_condition -----------------------------------
+
+
+def _write_country_series(directory, part, values):
+    """Processed country series of ``part``: ``values`` maps ISO3 to {year: Mt}."""
+    directory.mkdir(parents=True, exist_ok=True)
+    rows = [
+        {"iso3c": iso, **{str(y): v for y, v in s.items()}} for iso, s in values.items()
+    ]
+    pd.DataFrame(rows).to_csv(
+        directory / f"country_emissions_{part}_timeseries.csv", index=False
+    )
+
+
+def test_members_sum_to_region_from_the_period_start(remaining, tmp_path):
+    flat = {y: 5.0 for y in range(2015, 2025)}
+    _write_country_series(tmp_path, "co2", {"AAA": flat, "BBB": flat})
+    region = shift_to_period_start(
+        regional_targets(remaining, pd.DataFrame(), ["AAA", "BBB"], "REG"),
+        2020,
+        pd.Series({y: 10.0 for y in range(2015, 2025)}),
+    )
+    members = member_targets(
+        remaining, pd.DataFrame(), ["AAA", "BBB"], tmp_path, "co2", 2020
+    )
+    assert sorted(members["iso3c"].unique()) == ["AAA", "BBB"]
+    # Each member adds back its own 2020-2024 emissions (25)
+    assert (members["start-adjustment"] == 25.0).all()
+    summed = members.groupby("allocation-year")["co2-budget"].sum()
+    assert summed.tolist() == region.set_index("allocation-year")["co2-budget"].tolist()
+
+
+_RCBS = pd.DataFrame(
+    {
+        "source": ["forster_2026"],
+        "climate-assessment": ["1.7C"],
+        "quantile": [0.67],
+        "baseline_year": [2026],
+        "nz_year_median": [2061.0],
+        "deduction_lulucf_future_mt": [-1050.0],
+    }
+)
+
+
+@pytest.fixture
+def land_dirs(tmp_path):
+    years = range(2020, 2025)
+    bookkeeping = {
+        "AAA": {y: v for y, v in zip(years, [1.0, 2.0, 3.0, 4.0, 5.0])},
+        "BBB": {y: 0.0 for y in years},
+    }
+    inventory = {
+        "AAA": {y: v for y, v in zip(years, [-9.0, -8.0, -7.0, -6.0, -5.0])},
+        "BBB": {y: -10.0 for y in years},
+    }
+    _write_country_series(tmp_path / "bm", "co2-lulucf", bookkeeping)
+    _write_country_series(tmp_path / "inv", "co2-lulucf", inventory)
+    return tmp_path / "bm", tmp_path / "inv"
+
+
+def _condition(remaining, land_dirs, rcbs=_RCBS):
+    region = regional_targets(remaining, pd.DataFrame(), ["AAA", "BBB"], "REG")
+    member = regional_targets(remaining, pd.DataFrame(), ["AAA"], "AAA")
+    return land_use_condition(
+        pd.concat([region, member], ignore_index=True),
+        remaining,
+        rcbs,
+        {"REG": ["AAA", "BBB"], "AAA": ["AAA"]},
+        bookkeeping_dir=land_dirs[0],
+        inventory_dir=land_dirs[1],
+    ).set_index(["iso3c", "allocation-year"])
+
+
+def test_land_allowance_is_the_share_of_the_removed_global_term(remaining, land_dirs):
+    out = _condition(remaining, land_dirs)
+    # World allocation 1050; the region holds 150, AAA 100
+    assert out.loc[("REG", 2015), "land-allowance-mt"] == pytest.approx(150.0)
+    assert out.loc[("AAA", 2015), "land-allowance-mt"] == pytest.approx(100.0)
+    assert out.loc[("REG", 2015), "land-allowance-mt-per-yr"] == pytest.approx(
+        150.0 / 35
+    )
+    assert out.loc[("REG", 2015), "land-from-year"] == 2026
+
+
+def test_land_allowance_is_zero_when_the_cap_removes_nothing(remaining, land_dirs):
+    capped = _RCBS.assign(deduction_lulucf_future_mt=-0.0)
+    out = _condition(remaining, land_dirs, capped)
+    assert (out["land-allowance-mt"] == 0).all()
+    # The inventory equivalent is then the indirect gap alone
+    pd.testing.assert_series_equal(
+        out["inventory-equivalent-median"],
+        out["indirect-gap-median"],
+        check_names=False,
+    )
+
+
+def test_land_observed_stats_and_indirect_gap_per_area(remaining, land_dirs):
+    out = _condition(remaining, land_dirs).xs(2015, level="allocation-year")
+    assert out.loc["AAA", "bookkeeping-observed-median"] == 3.0
+    assert out.loc["AAA", "bookkeeping-observed-min"] == 1.0
+    assert out.loc["AAA", "bookkeeping-observed-max"] == 5.0
+    # Region: bookkeeping 1..5, inventory -19..-15; gap -20 every year
+    assert out.loc["REG", "indirect-gap-median"] == -20.0
+    assert out.loc["REG", "indirect-gap-min"] == -20.0
+    assert out.loc["REG", "inventory-observed-median"] == -17.0
+
+
+def test_land_condition_needs_every_observed_year(remaining, land_dirs, tmp_path):
+    short = {"AAA": {2020: 1.0}, "BBB": {2020: 0.0}}
+    _write_country_series(tmp_path / "short", "co2-lulucf", short)
+    with pytest.raises(ValueError, match="bookkeeping land-use CO2 for REG"):
+        _condition(remaining, (tmp_path / "short", land_dirs[1]))
+
+
+def test_land_condition_matches_targets_shifted_to_a_period_start(remaining, land_dirs):
+    region = shift_to_period_start(
+        regional_targets(remaining, pd.DataFrame(), ["AAA", "BBB"], "REG"),
+        2020,
+        _OBSERVED,
+    )
+    out = land_use_condition(
+        region,
+        remaining,
+        _RCBS,
+        {"REG": ["AAA", "BBB"]},
+        bookkeeping_dir=land_dirs[0],
+        inventory_dir=land_dirs[1],
+    )
+    assert out["land-allowance-mt"].tolist() == pytest.approx([150.0, 150.0])

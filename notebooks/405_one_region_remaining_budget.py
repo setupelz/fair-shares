@@ -30,12 +30,15 @@
 #    in your region (cell B),
 # 3. the allocation approaches and data sources (cell C).
 #
-# You get, per budget and approach, in your model's variable names:
+# You get, per budget and approach, in your model's variable names, for the
+# region and for each of its member countries:
 #
 # - a **CO2 budget**: one cumulative number, from the first year after the last
 #   observed emissions (or your model's first year) to net-zero CO2;
 # - with `"all-ghg"`, also a **non-CO2 pathway**: annual emissions of the
-#   non-CO2 Kyoto gases, in CO2-equivalent with AR6 GWP100, to 2100.
+#   non-CO2 Kyoto gases, in CO2-equivalent with AR6 GWP100, to 2100;
+# - with `"co2-ffi"`, also a **land-use condition**: the land-use CO2 under
+#   which the fossil-only budget is a fair share.
 #
 # Every allocation approach is a choice between equity principles. See
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/)
@@ -61,7 +64,11 @@
 # | `EMISSION_CATEGORY` | You get |
 # | --- | --- |
 # | `"co2"` (default) | a CO2 budget: fossil, industry and land-use CO2, cumulative to net zero |
+# | `"co2-ffi"` | a CO2 budget of fossil and industry CO2 only, plus the land-use condition it rests on (see "Land-use condition" below) |
 # | `"all-ghg"` | the CO2 budget plus an annual non-CO2 pathway (CH4, N2O, F-gases; CO2-equivalent with AR6 GWP100) |
+#
+# Use `"co2-ffi"` for a model without land use, such as an energy-system model.
+# Its `CO2_VARIABLE` is then the model's energy and industry CO2.
 #
 # `LAND_USE_BASIS` picks how land-use CO2 is counted. Models and national
 # greenhouse gas inventories (NGHGI) count it differently: inventories count
@@ -74,6 +81,7 @@
 #
 # The whole run follows the choice: country history, the global budget (no
 # inventory correction on the model basis) and the scenario data behind it.
+# A `"co2-ffi"` budget holds no land use, so the choice does not change it.
 #
 # `FIRST_MODEL_TIMESTEP` and `TIMESTEP_LENGTH` describe your model's first
 # period, labelled by its last year: 2030 with 5-year steps covers 2026-2030.
@@ -141,10 +149,13 @@ REGION_COUNTRIES = [
 # ### C. Allocation approaches and data sources
 #
 # The allocation approaches are equity choices: the defaults cover three
-# principles. Equal cumulative per capita allocates from 2015 (ECPC 2015); the
-# responsibility and capability approaches allocate from 2020 and count
-# responsibility for emissions from 2015, so all three hold a region
-# accountable from the same year. Change
+# principles and one combination. Equal cumulative per capita allocates from
+# 2015 (ECPC 2015); the responsibility and capability approaches allocate from
+# 2020 and count responsibility for emissions from 2015, so all four hold a
+# region accountable from the same year. Responsibility is per capita
+# (emissions per person since 2015): absolute responsibility divides by a
+# country's total emissions, which favours small countries for their size and
+# makes a region's total depend on how it splits into countries. Change
 # them to test other principles; see
 # [From Principle to Code](https://setupelz.github.io/fair-shares/science/principle-to-code/).
 # The form is that of notebook 301: lists expand as cross-products. Vary one of
@@ -170,12 +181,27 @@ ALLOCATIONS = {
             "allocation_year": [2020],
             "pre_allocation_responsibility_weight": [1.0],
             "pre_allocation_responsibility_year": [2015],
+            "pre_allocation_responsibility_per_capita": [True],
             "preserve_allocation_year_shares": [False],
         },
         # Capability (GDP per capita), allocated from 2020
         {
             "allocation_year": [2020],
             "capability_weight": [1.0],
+            "preserve_allocation_year_shares": [False],
+        },
+    ],
+    # Responsibility (0.4, per capita since 2015) and capability (0.6, income
+    # above a development threshold of 7,500 dollars per person), from 2020
+    "per-capita-adjusted-gini-budget": [
+        {
+            "allocation_year": [2020],
+            "pre_allocation_responsibility_weight": [0.4],
+            "pre_allocation_responsibility_year": [2015],
+            "pre_allocation_responsibility_per_capita": [True],
+            "capability_weight": [0.6],
+            "income_floor": [7500],
+            "max_gini_adjustment": [0.8],
             "preserve_allocation_year_shares": [False],
         },
     ],
@@ -215,6 +241,8 @@ from fair_shares.library.notebook_helpers import (
 from fair_shares.library.python_api import (
     compute_remaining_budgets,
     filter_to_anchors,
+    land_use_condition,
+    member_targets,
     period_means,
     regional_observed_emissions,
     regional_targets,
@@ -233,9 +261,12 @@ composite = is_composite_category(EMISSION_CATEGORY)
 NON_CO2_VARIABLE = globals().get("NON_CO2_VARIABLE")
 NONCO2_DEBT_MODES = globals().get("NONCO2_DEBT_MODES", [])
 
-if EMISSION_CATEGORY not in ("co2", "all-ghg"):
+fossil_only = EMISSION_CATEGORY == "co2-ffi"
+
+if EMISSION_CATEGORY not in ("co2", "co2-ffi", "all-ghg"):
     raise ConfigurationError(
-        f'EMISSION_CATEGORY must be "co2" or "all-ghg", got {EMISSION_CATEGORY!r}'
+        'EMISSION_CATEGORY must be "co2", "co2-ffi" or "all-ghg", '
+        f"got {EMISSION_CATEGORY!r}"
     )
 if LAND_USE_BASIS not in LULUCF_SOURCES:
     raise ConfigurationError(
@@ -248,6 +279,11 @@ ACCOUNTING_BASIS = {
     "inventory": "fossil, industry and land-use CO2; land use as national "
     "inventories count it (NGHGI basis, LULUCF Data Hub v4)",
 }[LAND_USE_BASIS]
+if fossil_only:
+    ACCOUNTING_BASIS = (
+        "fossil and industry CO2 only; land-use CO2 is outside the budget, "
+        "under the land-use condition"
+    )
 
 PERIOD_START = FIRST_MODEL_TIMESTEP - TIMESTEP_LENGTH + 1
 MODEL_YEARS = list(range(FIRST_MODEL_TIMESTEP, 2101, TIMESTEP_LENGTH))
@@ -301,7 +337,11 @@ loaded_data = load_allocation_data(
 #   basis.
 all_budgets = next(iter(loaded_data["rcbs_data"].values()))
 GLOBAL_COL = "global from 2020, model basis, incl. bunkers (Gt)"
-ALLOCATED_COL = f"allocated to countries from 2020, {LAND_USE_BASIS} basis (Gt)"
+ALLOCATED_COL = (
+    "allocated to countries from 2020, fossil only (Gt)"
+    if fossil_only
+    else f"allocated to countries from 2020, {LAND_USE_BASIS} basis (Gt)"
+)
 budget_options = pd.DataFrame(
     {
         "source": all_budgets["source"],
@@ -374,6 +414,15 @@ targets = regional_targets(
 )
 observed = regional_observed_emissions(processed_dir, co2_part, REGION_COUNTRIES)
 targets = shift_to_period_start(targets, PERIOD_START, observed)
+members = member_targets(
+    remaining,
+    allocations_absolute,
+    REGION_COUNTRIES,
+    processed_dir,
+    co2_part,
+    PERIOD_START,
+    nonco2_debt_modes=NONCO2_DEBT_MODES if composite else (),
+)
 from_year = int(targets["remaining-from-year"].iloc[0])
 adjustment = targets["start-adjustment"].iloc[0]
 estimated = targets["start-adjustment-estimated-years"].iloc[0]
@@ -418,21 +467,34 @@ def _approach_label(row):
         for col, prefix in PARAM_PREFIXES.items()
         if col in row and pd.notna(row[col]) and row[col] != 0
     ]
+    per_capita = row.get("pre-allocation-responsibility-per-capita")
+    if pd.notna(per_capita) and bool(per_capita):
+        params.append("rpc")
     return " ".join([row["approach"].removesuffix("-budget"), *params])
 
 
-targets["budget"] = targets.apply(_budget_label, axis=1)
-targets["allocation"] = targets.apply(_approach_label, axis=1)
-targets["scenario"] = [
-    "|".join([IAMC_SCENARIO_PREFIX, b, a, *([m] if composite else [])])
-    for b, a, m in zip(
-        targets["budget"], targets["allocation"], targets["nonco2-debt-mode"]
-    )
-]
-
 co2_scale = {"Gt": 1e-3, "Mt": 1.0}[CO2_MAGNITUDE]
 co2_unit = f"{CO2_MAGNITUDE} CO2"
-targets["co2-budget-out"] = targets["co2-budget"] * co2_scale
+
+
+def _label(df):
+    df = df.copy()
+    df["budget"] = df.apply(_budget_label, axis=1)
+    df["allocation"] = df.apply(_approach_label, axis=1)
+    df["scenario"] = [
+        "|".join([IAMC_SCENARIO_PREFIX, b, a, *([m] if composite else [])])
+        for b, a, m in zip(df["budget"], df["allocation"], df["nonco2-debt-mode"])
+    ]
+    df["co2-budget-out"] = df["co2-budget"] * co2_scale
+    return df
+
+
+targets = _label(targets)
+members = _label(members)
+member_sum = members.groupby("scenario")["co2-budget"].sum()
+mismatch = (member_sum - targets.set_index("scenario")["co2-budget"]).abs().max()
+if mismatch > 1e-6:
+    raise ValueError(f"Members do not sum to {REGION_NAME}: off by {mismatch} Mt")
 
 columns = ["budget", "nonco2-debt-mode"] if composite else "budget"
 print(
@@ -446,6 +508,20 @@ print(
     .round(1 if CO2_MAGNITUDE == "Gt" else 0)
     .to_string()
 )
+for budget, rows in members.groupby("budget"):
+    if composite:
+        rows = rows[rows["nonco2-debt-mode"] == rows["nonco2-debt-mode"].iloc[0]]
+    print(f"\nMember states, CO2 budget from {from_year}, {co2_unit}, {budget}:\n")
+    print(
+        rows.pivot_table(
+            index="iso3c",
+            columns="allocation",
+            values="co2-budget-out",
+            aggfunc="first",
+        )
+        .round(2 if CO2_MAGNITUDE == "Gt" else 0)
+        .to_string()
+    )
 if composite:
     one_mode = targets[
         targets["nonco2-debt-mode"] == targets["nonco2-debt-mode"].iloc[0]
@@ -489,6 +565,118 @@ if composite:
     plt.tight_layout()
     plt.show()
 
+# %% [markdown]
+# ### Land-use condition (`"co2-ffi"` only)
+#
+# A published budget covers all CO2, land use included. The fossil-only budget
+# removes the projected global land-use CO2 from the budget's first year to
+# net zero, counted as bookkeeping models count it. When the scenarios project
+# a net sink, the precautionary cap counts it as zero, so the world's fossil
+# budget takes no credit for future land sinks.
+#
+# The fossil budget of a region or member is therefore a fair share only if
+# its own land-use CO2, on the bookkeeping basis, nets to at most its
+# **allowance** over those years: its share of the global allocation times the
+# removed term, so zero under the cap. A net source above the allowance must
+# come off the fossil budget; a sink beyond it is not counted.
+#
+# The condition asks for a real net sink in four cases:
+#
+# 1. **Inventory accounting.** National inventories also count indirect uptake
+#    on managed land, mostly CO2 fertilisation, which the global budget counts
+#    as part of the climate response. Meeting the allowance on the bookkeeping
+#    basis means holding an inventory sink of about the indirect gap (column
+#    "inventory equivalent"). An inventory sink is not spare fossil budget.
+# 2. **Residual fossil CO2 at net zero.** The budget runs to net-zero CO2. A
+#    model whose energy and industry CO2 stays above zero at that point, netted
+#    against land, needs a bookkeeping land sink of that size on top.
+# 3. **No precautionary cap.** With the cap off, the global fossil budget gains
+#    the projected sink, and each area's allowance becomes its share of that
+#    sink: a negative allowance, a net sink the area must deliver.
+# 4. **A fair share already used up.** When the budget is negative, keeping to
+#    it needs net-negative emissions. On a fossil-only budget a land sink
+#    cannot supply them; use `"co2"`, where land use counts.
+#
+# Members' sources and sinks offset each other in the region's total, so check
+# the members as well as the region. Observed land-use CO2 on both bases comes
+# from the two `"co2"` runs (Global Carbon Budget 2025 bookkeeping, LULUCF Data
+# Hub v4 inventories).
+
+# %%
+# Land-use condition of the fossil-only budget, per region and member
+land = None
+if fossil_only:
+    land_dirs = {
+        basis: setup_data(
+            project_root=project_root,
+            emission_category="co2",
+            active_sources={**active_sources, "lulucf": LULUCF_SOURCES[basis]},
+            verbose=False,
+        )["paths"]["processed_dir"]
+        for basis in ("model", "inventory")
+    }
+    areas = {REGION_NAME: REGION_COUNTRIES, **{c: [c] for c in REGION_COUNTRIES}}
+    land = land_use_condition(
+        pd.concat([targets, members], ignore_index=True),
+        remaining,
+        next(iter(loaded_data["rcbs_data"].values())),
+        areas,
+        bookkeeping_dir=land_dirs["model"],
+        inventory_dir=land_dirs["inventory"],
+    )
+
+    def _range(row, stat):
+        return (
+            f"{row[f'{stat}-median']:,.0f} ({row[f'{stat}-min']:,.0f} to "
+            f"{row[f'{stat}-max']:,.0f})"
+        )
+
+    for budget, rows in land.groupby("budget"):
+        first = rows.iloc[0]
+        print(
+            f"\n{budget}: global land-use CO2 removed from the budget, "
+            f"{first['land-from-year']}-{first['land-to-year']:.0f}: "
+            f"{first['land-term-removed-mt'] / 1000:,.1f} Gt"
+            + (
+                " (the scenarios project a net sink; the precautionary cap "
+                "counts it as zero)"
+                if first["land-term-removed-mt"] == 0
+                else ""
+            )
+        )
+        allowance = rows.pivot_table(
+            index="iso3c",
+            columns="allocation",
+            values="land-allowance-mt-per-yr",
+            aggfunc="first",
+        ).reindex(list(areas))
+        if (allowance == 0).all().all():
+            print("Allowance: 0 Mt/yr for every area and approach.")
+        else:
+            print("Allowance, bookkeeping land-use CO2, Mt/yr:\n")
+            print(allowance.round(0).to_string())
+    observed_table = (
+        land.drop_duplicates("iso3c")
+        .set_index("iso3c")
+        .reindex(list(areas))
+        .apply(
+            lambda row: pd.Series(
+                {
+                    "bookkeeping": _range(row, "bookkeeping-observed"),
+                    "inventory": _range(row, "inventory-observed"),
+                    "indirect gap": _range(row, "indirect-gap"),
+                }
+            ),
+            axis=1,
+        )
+    )
+    print(
+        f"\nObserved land-use CO2, {land['land-observed-years'].iloc[0]}, Mt/yr, "
+        "median (min to max). Inventory equivalent of the allowance = "
+        "allowance + indirect gap:\n"
+    )
+    print(observed_table.to_string())
+
 # %%
 # Export: tidy CSV with every column, IAMC files in your model's names
 import pyam
@@ -499,34 +687,41 @@ out_dir.mkdir(parents=True, exist_ok=True)
 budget_options_path = out_dir / "budget_options_from_2020.csv"
 budget_options.to_csv(budget_options_path, index=False)
 
+# The region under IAMC_REGION, each member under its ISO3 code
+all_targets = pd.concat(
+    [targets.assign(region=IAMC_REGION), members.assign(region=members["iso3c"])],
+    ignore_index=True,
+)
 csv_path = out_dir / f"{REGION_NAME}_targets.csv"
-targets.drop(columns=["co2-budget-out"]).to_csv(csv_path, index=False)
+all_targets.drop(columns=["co2-budget-out"]).to_csv(csv_path, index=False)
+if land is not None:
+    land_path = out_dir / f"{REGION_NAME}_land_use_condition.csv"
+    land.drop(columns=["co2-budget-out"]).to_csv(land_path, index=False)
 
 
-def _iamc(nonco2_values: pd.DataFrame) -> pyam.IamDataFrame:
-    """CO2 budget rows plus non-CO2 rows (year columns of ``nonco2_values``)."""
+def _iamc(values: pd.DataFrame) -> pyam.IamDataFrame:
+    """CO2 budget rows plus non-CO2 rows (year columns of ``values``)."""
     co2_rows = pd.DataFrame(
         {
             "model": IAMC_MODEL,
-            "scenario": targets["scenario"],
-            "region": IAMC_REGION,
+            "scenario": values["scenario"],
+            "region": values["region"],
             "variable": CO2_VARIABLE,
             "unit": co2_unit,
             "year": from_year,
-            "value": targets["co2-budget-out"],
+            "value": values["co2-budget-out"],
         }
     )
     frames = [co2_rows]
-    nonco2_years = [c for c in nonco2_values.columns if str(c).isdigit()]
+    nonco2_years = [c for c in values.columns if str(c).isdigit()]
     if composite:
-        long = nonco2_values[["scenario", *nonco2_years]].melt(
-            id_vars="scenario", var_name="year", value_name="value"
+        long = values[["scenario", "region", *nonco2_years]].melt(
+            id_vars=["scenario", "region"], var_name="year", value_name="value"
         )
         long["year"] = long["year"].astype(int)
         frames.append(
             long.assign(
                 model=IAMC_MODEL,
-                region=IAMC_REGION,
                 variable=NON_CO2_VARIABLE,
                 unit="Mt CO2e/yr",
             )
@@ -556,6 +751,13 @@ def _iamc(nonco2_values: pd.DataFrame) -> pyam.IamDataFrame:
         "net-zero CO2"
     )
     meta["co2-accounting"] = ACCOUNTING_BASIS
+    if fossil_only:
+        meta["land-use-condition"] = (
+            "each area's bookkeeping land-use CO2 nets to at most its allowance "
+            f"(see {REGION_NAME}_land_use_condition.csv); a net source above it "
+            "comes off the fossil budget"
+        )
+    meta["regions"] = f"{IAMC_REGION} and its members by ISO3 code"
     meta["first-model-period"] = f"{PERIOD_START}-{FIRST_MODEL_TIMESTEP}"
     if composite:
         meta["non-co2-pathway"] = f"{NON_CO2_VARIABLE}: annual Mt CO2e/yr (AR6 GWP100)"
@@ -569,13 +771,19 @@ def _iamc(nonco2_values: pd.DataFrame) -> pyam.IamDataFrame:
 
 
 annual_path = out_dir / f"{REGION_NAME}_targets_iamc.xlsx"
-_iamc(targets).to_excel(annual_path)
+_iamc(all_targets).to_excel(annual_path)
 print(f"Budget options:      {budget_options_path}")
 print(f"Tidy table:          {csv_path}")
+if land is not None:
+    print(f"Land-use condition:  {land_path}")
 print(f"IAMC, annual:        {annual_path}")
 
 if composite:
-    periods = period_means(targets[["scenario", *year_cols]], MODEL_YEARS, from_year)
+    periods = period_means(
+        all_targets[["scenario", "region", "co2-budget-out", *year_cols]],
+        MODEL_YEARS,
+        from_year,
+    )
     period_path = out_dir / f"{REGION_NAME}_targets_iamc_model_periods.xlsx"
     _iamc(periods).to_excel(period_path)
     print(f"IAMC, model periods: {period_path}")

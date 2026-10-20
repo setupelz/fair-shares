@@ -2,10 +2,18 @@
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.6.0] — 2026-10-20
+
+### Added
+
+- Notebook 405: `EMISSION_CATEGORY = "co2-ffi"`, a fossil and industry CO2 budget for a model without land use, with its land-use condition: per area, budget and approach, the bookkeeping land-use CO2 allowance (the area's share of the global allocation times the land-use term the budget removed; zero when the precautionary cap counts a projected sink as zero) and observed land-use CO2 for 2020 to 2024 on the bookkeeping and inventory bases, with the indirect gap. Written to `<REGION>_land_use_condition.csv`; a markdown cell sets out when a net sink is needed.
+- Notebook 405 reports each member country as well as the region, in the printed tables, the tidy CSV and the IAMC files (members under their ISO3 code); the run stops if the members do not sum to the region.
+- `member_targets()` and `land_use_condition()` in `python_api`.
 
 ### Changed
 
+- Notebook 405 defaults: responsibility is per capita (`pre_allocation_responsibility_per_capita=True`), emissions per person since 2015. Absolute responsibility, the library default, divides by a country's total emissions, which favoured small countries for their size (Malta 656 t CO2 per person against Germany's 15 under 1.7°C 50%) and made a region's total depend on how it splits into countries. EU27 budget from 2020, total CO2, 1.7°C 50% and 2°C 90%: responsibility 3.7 and 4.1 Gt (was 10.9 and 12.3 Gt with absolute responsibility). Approach labels end in `rpc`.
+- Notebook 405 defaults add responsibility (0.4, per capita since 2015) and capability (0.6, development threshold 7,500 dollars per person) combined, from 2020: 2.5 and 2.8 Gt for the EU27 (was 4.1 and 4.6 Gt with absolute responsibility).
 - Notebook 405 defaults: the responsibility and capability approaches allocate from 2020 and count responsibility for emissions from 2015 (was: allocated from 2015, responsibility from 1990), so they hold a region accountable from the same year as equal cumulative per capita from 2015.
 
 ## [0.5.0] — 2026-10-19

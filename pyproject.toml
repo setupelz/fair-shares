@@ -1,6 +1,6 @@
 [project]
 name = "fair-shares"
-version = "0.5.0"
+version = "0.6.0"
 description = "Python package for calculating fair shares of global climate mitigation effort."
 authors = [
     { name = "Setu Pelz" },

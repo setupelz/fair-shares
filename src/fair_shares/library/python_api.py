@@ -1082,6 +1082,161 @@ def period_means(
     return out
 
 
+def member_targets(
+    remaining: pd.DataFrame,
+    allocations_absolute: pd.DataFrame,
+    countries: Sequence[str],
+    processed_dir: Path,
+    part: str,
+    period_start: int,
+    nonco2_debt_modes: Sequence[str] = NONCO2_DEBT_MODES,
+) -> pd.DataFrame:
+    """Return the targets of each member of a region, from ``period_start``.
+
+    Each member is a region of one country: :func:`regional_targets` and
+    :func:`shift_to_period_start` run per member, with the member's own
+    observed emissions of ``part``, so the members sum to the region. ``iso3c``
+    is the member's code.
+
+    Raises
+    ------
+    ValueError
+        As :func:`regional_targets` and :func:`shift_to_period_start`
+    """
+    frames = []
+    for iso in countries:
+        targets = regional_targets(
+            remaining, allocations_absolute, [iso], iso, nonco2_debt_modes
+        )
+        observed = regional_observed_emissions(processed_dir, part, [iso])
+        frames.append(shift_to_period_start(targets, period_start, observed))
+    return pd.concat(frames, ignore_index=True)
+
+
+LAND_USE_OBSERVED_YEARS: tuple[int, int] = (2020, 2024)
+"""First and last year of the observed land-use CO2 in :func:`land_use_condition`."""
+
+
+def _observed_stats(series: pd.Series, prefix: str) -> dict[str, float]:
+    return {
+        f"{prefix}-median": float(series.median()),
+        f"{prefix}-min": float(series.min()),
+        f"{prefix}-max": float(series.max()),
+    }
+
+
+def land_use_condition(
+    targets: pd.DataFrame,
+    remaining: pd.DataFrame,
+    rcbs: pd.DataFrame,
+    areas: dict[str, Sequence[str]],
+    bookkeeping_dir: Path,
+    inventory_dir: Path,
+    observed_years: tuple[int, int] = LAND_USE_OBSERVED_YEARS,
+) -> pd.DataFrame:
+    """Return the land-use CO2 under which a fossil-only budget is a fair share.
+
+    A ``co2-ffi`` budget removes the projected global land-use CO2 from the
+    budget's baseline year to net zero (bookkeeping basis; 0 when the
+    precautionary cap sets a projected sink to zero). An area's fossil budget
+    holds only if its own land-use CO2 over those years nets to at most its
+    share of that term (``land-allowance-mt``): its share of the global
+    allocation times the term. A net source above the allowance comes off the
+    fossil budget; a sink beyond it is not counted.
+
+    One row per row of ``targets`` (``iso3c`` names the area, a key of
+    ``areas``). Columns:
+
+    * ``land-term-removed-mt``: the global term the budget removed (Mt);
+    * ``land-share`` and ``land-allowance-mt``: the area's share of the global
+      allocation and its allowance, cumulative from ``land-from-year`` to
+      ``land-to-year`` (the set's median net-zero year), and per year;
+    * observed land-use CO2 over ``observed_years`` (Mt/yr, median, min, max)
+      on the bookkeeping basis (``bookkeeping_dir``), the inventory basis
+      (``inventory_dir``), and their difference ``indirect-gap`` (inventory
+      minus bookkeeping: mostly indirect uptake, which the global budget
+      counts as part of the climate response);
+    * ``inventory-equivalent``: the allowance per year plus the indirect gap,
+      the inventory land-use CO2 (Mt/yr) that meets the allowance.
+
+    ``bookkeeping_dir`` and ``inventory_dir`` are processed directories of two
+    ``co2`` runs, with country ``co2-lulucf`` series on each basis.
+
+    Raises
+    ------
+    ValueError
+        If a budget of ``targets`` has no row in ``rcbs``, a configuration has
+        no global allocation, or a member has no observed land-use CO2 in a
+        year of ``observed_years``
+    """
+    co2 = remaining[~remaining["emission-category"].isin(["non-co2", "combined"])]
+    value_cols = [c for c in _REMAINING_VALUE_COLS if c in co2.columns]
+    # remaining-from-year is left out: shift_to_period_start rewrites it
+    group_cols = [
+        c
+        for c in co2.columns
+        if c not in (*value_cols, "iso3c", "moved-to-row", "remaining-from-year")
+        and c in targets.columns
+    ]
+    world = (
+        co2.groupby(group_cols, dropna=False)["allocated-total"]
+        .sum()
+        .rename("world-allocated-total")
+        .reset_index()
+    )
+    out = targets.merge(world, on=group_cols, how="left", validate="many_to_one")
+    if out["world-allocated-total"].isna().any():
+        raise ValueError("A configuration of targets has no global allocation")
+
+    budget_keys = ["source", "climate-assessment", "quantile"]
+    budget_terms = rcbs[[*budget_keys, "baseline_year", "nz_year_median"]].assign(
+        **{"land-term-removed-mt": -rcbs["deduction_lulucf_future_mt"]}
+    )
+    out = out.merge(budget_terms, on=budget_keys, how="left", validate="many_to_one")
+    if out["baseline_year"].isna().any():
+        raise ValueError("A budget of targets has no row in rcbs")
+
+    out["land-share"] = out["allocated-total"] / out["world-allocated-total"]
+    out["land-allowance-mt"] = out["land-share"] * out["land-term-removed-mt"]
+    out["land-from-year"] = out["baseline_year"].astype(int)
+    out["land-to-year"] = out["nz_year_median"]
+    years = out["land-to-year"] - out["land-from-year"]
+    out["land-allowance-mt-per-yr"] = out["land-allowance-mt"] / years
+
+    first, last = observed_years
+    window = list(range(first, last + 1))
+    stats = {}
+    for area, countries in areas.items():
+        bases = {}
+        for name, processed_dir in (
+            ("bookkeeping", bookkeeping_dir),
+            ("inventory", inventory_dir),
+        ):
+            series = regional_observed_emissions(processed_dir, "co2-lulucf", countries)
+            lacking = [y for y in window if y not in series.index]
+            if lacking:
+                raise ValueError(
+                    f"No observed {name} land-use CO2 for {area} in {lacking}"
+                )
+            bases[name] = series.loc[window]
+        gap = bases["inventory"] - bases["bookkeeping"]
+        stats[area] = {
+            **_observed_stats(bases["bookkeeping"], "bookkeeping-observed"),
+            **_observed_stats(bases["inventory"], "inventory-observed"),
+            **_observed_stats(gap, "indirect-gap"),
+        }
+    observed = pd.DataFrame.from_dict(stats, orient="index")
+    out = out.join(observed, on="iso3c")
+    for stat in ("median", "min", "max"):
+        out[f"inventory-equivalent-{stat}"] = (
+            out["land-allowance-mt-per-yr"] + out[f"indirect-gap-{stat}"]
+        )
+    out["land-observed-years"] = f"{first}-{last}"
+    return out.drop(
+        columns=["world-allocated-total", "baseline_year", "nz_year_median"]
+    )
+
+
 def calculate_allocation_timeseries(
     *,
     emission_category: str,

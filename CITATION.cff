@@ -1,8 +1,8 @@
 cff-version: 1.2.0
 message: "If you use this software, please cite it as below."
 title: "fair-shares: Python package for calculating fair shares of remaining carbon budgets and emission pathways"
-version: 0.5.0
-date-released: "2026-10-19"
+version: 0.6.0
+date-released: "2026-10-20"
 url: "https://github.com/setupelz/fair-shares"
 repository-code: "https://github.com/setupelz/fair-shares"
 license: BSD-3-Clause

@@ -116,6 +116,7 @@ Notebooks 400 to 403 divide a budget between the regions of an IAMC file, so the
 A model of one region, such as an EU-only energy model, has no data for the rest of the world.
 `405_one_region_remaining_budget` serves that case and needs no IAMC input.
 It allocates the global budget between countries with the country datasets, then sums the countries of your region.
+It reports the region and each member country.
 
 The settings are in three cells: **A. Your model** (everyone edits), **B. Budget and region** (check), **C. Advanced** (usually left as is).
 
@@ -124,7 +125,7 @@ The settings are in three cells: **A. Your model** (everyone edits), **B. Budget
 | Setting | What to give |
 | --- | --- |
 | `IAMC_MODEL`, `IAMC_REGION` | Your model's name and region name, as in its IAMC files. |
-| `EMISSION_CATEGORY` | `co2` (default): a CO2 budget, cumulative to net-zero CO2, covering fossil, industry and land-use CO2. `all-ghg`: the same CO2 budget plus an annual non-CO2 pathway (CH4, N2O, F-gases; CO2-equivalent with AR6 GWP100). |
+| `EMISSION_CATEGORY` | `co2` (default): a CO2 budget, cumulative to net-zero CO2, covering fossil, industry and land-use CO2. `co2-ffi`: a budget of fossil and industry CO2 only, for a model without land use, plus the land-use condition it rests on (below). `all-ghg`: the same CO2 budget plus an annual non-CO2 pathway (CH4, N2O, F-gases; CO2-equivalent with AR6 GWP100). |
 | `CO2_VARIABLE` | Your model's variable for the CO2 the budget bounds, for example `Emissions|CO2`. |
 | `LAND_USE_BASIS` | `model` (default) or `inventory`; see below. |
 | `FIRST_MODEL_TIMESTEP`, `TIMESTEP_LENGTH` | Your model's first period, labelled by its last year: `2030` with `5` covers 2026-2030. The budget is given from the first year of that period. |
@@ -139,6 +140,13 @@ The settings are in three cells: **A. Your model** (everyone edits), **B. Budget
 
 `gcb-2025-luc` is a manual download; `fair-shares fetch-data` prints the steps.
 
+**Land-use condition (`co2-ffi`).** The fossil-only budget removes the projected global land-use CO2 from the budget's first year to net zero, on the bookkeeping basis. A projected net sink counts as zero (the precautionary cap), so the world's fossil budget takes no credit for future land sinks ([Land-use term for fossil CO₂](../science/remaining-carbon-budgets.md#land-use-term)).
+A region's or member's fossil budget is then a fair share only if its own bookkeeping land-use CO2 over those years nets to at most its allowance: its share of the global allocation times the removed term, zero under the cap.
+A net source above the allowance comes off the fossil budget; a sink beyond it is not counted.
+The run prints, per area, the allowance and observed land-use CO2 for 2020 to 2024 on both bases, with the indirect gap (inventory minus bookkeeping).
+In inventory terms the allowance means holding an inventory sink of about the indirect gap: for the EU27, -214 to -241 Mt CO2 per year over 2020 to 2024.
+A net sink is also needed when the model nets residual fossil CO2 against land at net zero, when the cap is turned off, and when the fair share is already used up; for the last, use `co2`, where land use counts.
+
 **First model period.** The budget is first netted with observed emissions through the last observed year. If the model's first period starts earlier, the region's observed emissions in the period are added back. If it starts later, the region's emissions in the years before it are subtracted; years without observed data take the last observed year's value, and the run and the output name those years.
 
 ### B. Budget and region
@@ -152,7 +160,7 @@ The settings are in three cells: **A. Your model** (everyone edits), **B. Budget
 
 | Setting | What to give |
 | --- | --- |
-| `ALLOCATIONS` | Approaches and parameter grids, as in notebook 301. The non-CO2 pathway follows the same approach. The defaults cover equal per capita, responsibility since 1990, and capability. |
+| `ALLOCATIONS` | Approaches and parameter grids, as in notebook 301. The non-CO2 pathway follows the same approach. The defaults: equal cumulative per capita from 2015; from 2020, responsibility for emissions per person since 2015, capability, and the two combined (0.4 and 0.6, with a development threshold of 7,500 dollars per person). Responsibility is per capita: absolute responsibility divides by a country's total emissions, which favours small countries for their size and makes a region's total depend on how it splits into countries. |
 | `IAMC_SCENARIO_PREFIX`, `CO2_MAGNITUDE`, `OUTPUT_LABEL` | Scenario names, the CO2 budget in Gt or Mt, the output folder. |
 | `active_sources` | The fair-shares default data sources. The land-use source follows `LAND_USE_BASIS`. |
 
@@ -160,8 +168,9 @@ The settings are in three cells: **A. Your model** (everyone edits), **B. Budget
 
 In `output/<OUTPUT_LABEL>/`:
 
-- `<REGION_NAME>_targets.csv`: every configuration column, the CO2 budget before and after the non-CO2 debit, the first-period adjustment, and the annual non-CO2 pathway.
-- `<REGION_NAME>_targets_iamc.xlsx`: one scenario per budget, approach and debt mode. The CO2 row has unit `Gt CO2` (no `/yr`) and sits at the first year of the model's first period; the non-CO2 rows are annual, `Mt CO2e/yr`. The meta sheet records the land-use basis, the first model period, the parameters and the member countries.
+- `<REGION_NAME>_targets.csv`: one row per configuration for the region and for each member (`iso3c`), with every configuration column, the CO2 budget before and after the non-CO2 debit, the first-period adjustment, and the annual non-CO2 pathway.
+- `<REGION_NAME>_land_use_condition.csv`, for `co2-ffi`: the allowance and observed land-use CO2 per area, budget and approach.
+- `<REGION_NAME>_targets_iamc.xlsx`: one scenario per budget, approach and debt mode; the region under `IAMC_REGION`, each member under its ISO3 code. The CO2 row has unit `Gt CO2` (no `/yr`) and sits at the first year of the model's first period; the non-CO2 rows are annual, `Mt CO2e/yr`. The meta sheet records the land-use basis, the first model period, the parameters and the member countries.
 - `<REGION_NAME>_targets_iamc_model_periods.xlsx`, for `all-ghg`: the same with the non-CO2 pathway as averages over the model's periods, labelled by their last year.
 
 A member without data in the country sets is aggregated into rest of world; the run then stops and names it.
