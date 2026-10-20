@@ -67,7 +67,7 @@ Gradual transition from current emissions to fair share target.
 | ------------------------------------------------ | --------------------------- |
 | Single target or year-by-year?                   | Budget vs Pathway           |
 | Account for history via cumulative accounting?   | Set early `allocation_year`: cumulative population from that year determines shares |
-| Account for history via pre-allocation rescaling? | Use `-adjusted` variants with `pre_allocation_responsibility_weight`: multiplicative rescaling by emissions in a historical window (absolute by default) |
+| Account for history via pre-allocation rescaling? | Use `-adjusted` variants with `pre_allocation_responsibility_weight`: multiplicative rescaling by emissions in a historical window (per capita by default) |
 | Account for capability?                          | Use `-adjusted` variants with `capability_weight`: year by year from the allocation year, a snapshot (`capability_reference_year`) or a cumulative window (`capability_window`) |
 | Account for within-country inequality?           | Use `-gini` variants        |
 

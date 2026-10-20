@@ -10,6 +10,7 @@ Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions: [Sem
 
 ### Changed
 
+- **Breaking.** `pre_allocation_responsibility_per_capita` defaults to `True` in every adjusted budget and pathway approach: responsibility uses cumulative emissions per person. With total emissions (the old default) the factor scaled with country size, so small countries gained for being small and a region's total depended on how it split into countries. Runs that set the parameter, including the ESABCC 2023 preset, are unchanged; set `False` for the old behaviour.
 - Notebook 405 IAMC meta: the text column `co2-budget` is `co2-budget-definition`, so it no longer shares a name with the numeric `co2-budget` of the CSV.
 
 ## [0.6.0] — 2026-10-20

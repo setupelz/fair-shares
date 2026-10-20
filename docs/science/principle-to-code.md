@@ -146,7 +146,7 @@ allocations = {
 ```
 
 This is a pathway approach, not a convergence approach.
-Responsibility uses each country's total cumulative emissions from 1990 (the default `pre_allocation_responsibility_year`) to 2024, absolute by default. Capability uses GDP per capita year by year from 2025. This split between past and present is inherent to CBDR-RC.
+Responsibility uses each country's cumulative emissions per person from 1990 (the default `pre_allocation_responsibility_year`) to 2024, per capita by default. Capability uses GDP per capita year by year from 2025. This split between past and present is inherent to CBDR-RC.
 High-GDP, high-emission countries receive allocations below their current emissions from 2025, and low-income countries above. Shares track population and GDP year by year.
 Annual allocations reflect responsibility and capacity from the first year, with no transition from current emissions.
 
@@ -169,7 +169,7 @@ allocations = {
 ```
 
 Countries move from current emissions toward cumulative per capita targets, and the cumulative totals match the budget.
-Responsibility uses each country's total cumulative emissions from 1990 to 2024, and capability GDP per capita from 2025.
+Responsibility uses each country's cumulative emissions per person from 1990 to 2024, and capability GDP per capita from 2025.
 Only the ratio of the two weights matters: `(0.5, 0.5)` equals `(0.3, 0.3)`. Their sum may not exceed 1.0.
 `strict=False` accepts approximate solutions and reports each country's deviation as a warning ([Convergence](allocations.md#convergence-mechanism-pathways-only)).
 Starting from current emissions gives high emitters more in the near term. Unlike `per-capita-convergence`, the totals are budget-preserving.
@@ -194,7 +194,7 @@ allocations = {
 }
 ```
 
-Cumulative population from 1990 sets the shares. Each country's total cumulative emissions from 1950 to 1989 rescale them with a small weight (absolute, because `pre_allocation_responsibility_per_capita` defaults to `False`). Gini-adjusted GDP per capita from 1990 onwards rescales them with a large weight.
+Cumulative population from 1990 sets the shares. Each country's cumulative emissions per person from 1950 to 1989 rescale them with a small weight (`pre_allocation_responsibility_per_capita` defaults to `True`). Gini-adjusted GDP per capita from 1990 onwards rescales them with a large weight.
 The floor of 10,000 is above the GDR threshold of 7,500 dollars on a 2005 price base, a broader subsistence definition. The Gini source configured for the run adds inequality within countries.
 At this floor the default `max_gini_adjustment=0.8` holds 54 of 178 rows (177 countries and rest-of-world) at 20% of GDP, so the cap shapes the result as much as the floor does.
 Least developed countries keep most of their allocation. High-income countries lose budget to accounting since 1990 and to capability.

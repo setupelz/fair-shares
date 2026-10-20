@@ -68,7 +68,7 @@ def _per_capita_budget_core(
     capability_weight: float = 0.0,
     # Pre-allocation responsibility parameters
     pre_allocation_responsibility_year: int = 1990,
-    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_per_capita: bool = True,
     pre_allocation_responsibility_exponent: float = 1.0,
     pre_allocation_responsibility_functional_form: str = "asinh",
     # Capability parameters
@@ -124,7 +124,7 @@ def _per_capita_budget_core(
     pre_allocation_responsibility_year
         Start year for pre-allocation responsibility calculation. Default: 1990.
     pre_allocation_responsibility_per_capita
-        If True, use per capita emissions; if False, use absolute emissions.
+        If True (default), use per capita emissions; if False, use absolute emissions.
     pre_allocation_responsibility_exponent
         Exponent for the pre-allocation responsibility adjustment function.
     pre_allocation_responsibility_functional_form
@@ -778,7 +778,7 @@ def per_capita_adjusted_budget(
     capability_weight: float = 0.0,
     # Pre-allocation responsibility parameters
     pre_allocation_responsibility_year: int = 1990,
-    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_per_capita: bool = True,
     pre_allocation_responsibility_exponent: float = 1.0,
     pre_allocation_responsibility_functional_form: str = "asinh",
     # Capability parameters
@@ -833,7 +833,7 @@ def per_capita_adjusted_budget(
 
     Historical emissions reduce future allocation rights.
 
-    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`):
+    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`, default):
 
     $$
     R(g) = \left(\frac{\sum_{t=t_h}^{t_a-1} E(g, t)}{\sum_{t=t_h}^{t_a-1} P(g, t)}\right)^{-w_r \times e_r}
@@ -848,7 +848,7 @@ def per_capita_adjusted_budget(
     - $w_r$: Normalized pre-allocation responsibility weight
     - $e_r$: Pre-allocation responsibility exponent
 
-    For absolute pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=False`, default):
+    For absolute pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=False`):
 
     $$
     R(g) = \left(\sum_{t=t_h}^{t_a-1} E(g, t)\right)^{-w_r \times e_r}
@@ -931,8 +931,8 @@ def per_capita_adjusted_budget(
         window ``[pre_allocation_responsibility_year,
         allocation_year)``. Default: 1990.
     pre_allocation_responsibility_per_capita
-        **Pre-allocation responsibility.** If ``True``, uses per-capita
-        cumulative emissions. If ``False`` (default), uses absolute
+        **Pre-allocation responsibility.** If ``True`` (default), uses per-capita
+        cumulative emissions. If ``False``, uses absolute
         cumulative emissions.
     pre_allocation_responsibility_exponent
         **Pre-allocation responsibility.** Exponent applied to the
@@ -1060,7 +1060,7 @@ def per_capita_adjusted_gini_budget(
     capability_weight: float = 1.0,
     # Pre-allocation responsibility parameters
     pre_allocation_responsibility_year: int = 1990,
-    pre_allocation_responsibility_per_capita: bool = False,
+    pre_allocation_responsibility_per_capita: bool = True,
     pre_allocation_responsibility_exponent: float = 1.0,
     pre_allocation_responsibility_functional_form: str = "asinh",
     # Capability parameters
@@ -1130,7 +1130,7 @@ def per_capita_adjusted_gini_budget(
 
     Identical to per capita adjusted budget (see that function for details).
 
-    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`):
+    For per capita pre-allocation responsibility (:code:`pre_allocation_responsibility_per_capita=True`, default):
 
     $$
     R(g) = \left(\frac{\sum_{t=t_h}^{t_a-1} E(g, t)}{\sum_{t=t_h}^{t_a-1} P(g, t)}\right)^{-w_r \times e_r}
@@ -1212,8 +1212,8 @@ def per_capita_adjusted_gini_budget(
         **Pre-allocation responsibility.** Start year of the historical
         window. Default: 1990.
     pre_allocation_responsibility_per_capita
-        **Pre-allocation responsibility.** If ``True``, uses per-capita
-        cumulative emissions. If ``False`` (default), uses absolute
+        **Pre-allocation responsibility.** If ``True`` (default), uses per-capita
+        cumulative emissions. If ``False``, uses absolute
         cumulative emissions.
     pre_allocation_responsibility_exponent
         **Pre-allocation responsibility.** Exponent applied to the

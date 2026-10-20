@@ -46,7 +46,7 @@ The allocation year is the most consequential normative choice in the library.
 The two weights set the responsibility and capability adjustments. Only their ratio matters: `(0.5, 0.5)` equals `(0.3, 0.3)`. Their sum may not exceed 1.0, or the allocation raises an error.
 When one weight is 0, the other is the sole adjustment whatever its value. When both are 0, the result is equal per capita ([Combining the adjustments](allocations.md#weight-normalization)).
 
-The responsibility weight rescales shares by emissions in [`pre_allocation_responsibility_year`, `allocation_year`). The metric is absolute cumulative emissions by default; `pre_allocation_responsibility_per_capita=True` divides them by cumulative population.
+The responsibility weight rescales shares by emissions in [`pre_allocation_responsibility_year`, `allocation_year`). The metric is cumulative emissions per person by default (`pre_allocation_responsibility_per_capita=True`); `False` uses each country's total cumulative emissions.
 This rescaling is multiplicative, whereas an early allocation year can produce negative allocations ([the two mechanisms](allocations.md#building-blocks); [comparison table](#if-you-want-x-set-y-guide)).
 The capability weight rescales shares by GDP per capita, year by year from the allocation year unless a snapshot or window is set ([Capability timing](allocations.md#capability-timing)).
 
@@ -54,8 +54,8 @@ The capability weight rescales shares by GDP per capita, year by year from the a
 
 **Responsibility only** (`per-capita-adjusted-budget`, `capability_weight=0.0`, `allocation_year=2020`, `pre_allocation_responsibility_year=1990`):
 
-| Country | No adjustment | Responsibility, absolute (default) | Responsibility, per capita |
-| ------- | ------------- | ---------------------------------- | -------------------------- |
+| Country | No adjustment | Responsibility, absolute | Responsibility, per capita (default) |
+| ------- | ------------- | ------------------------ | ------------------------------------ |
 | USA     | 4.0%          | 0.5%                               | 0.3%                       |
 | India   | 16.7%         | 2.7%                               | 6.4%                       |
 | Germany | 0.8%          | 0.1%                               | 0.1%                       |
@@ -238,6 +238,6 @@ Responsibility alone gives a polluter-pays framing. Capability alone gives commo
 From the examples above (USA, India, Germany, `allocation_year=2020`):
 
 1. **`allocation_year`**: moves remaining budgets by hundreds of GtCO2 and turns them negative (USA: +13.5 to -324.6 GtCO2).
-2. **`pre_allocation_responsibility_weight`**: switching it on changes shares by 0.7 to 14.0 percentage points (Germany -0.7, USA -3.5, India -14.0). The absolute or per-capita metric decides how much India loses.
+2. **`pre_allocation_responsibility_weight`**: switching it on changes shares by 0.7 to 10.3 percentage points (Germany -0.7, USA -3.7, India -10.3). With absolute responsibility India loses 14.0: the metric decides how much India loses.
 3. **`capability_weight`**: switching it on changes shares by 0.6 to 4.1 percentage points (Germany -0.6, USA -3.2, India -4.1).
 4. **`income_floor`**: up to 6.5 percentage points (India -6.5 at 2,500, +1.4 at 10,000). The direction depends on `max_gini_adjustment`.

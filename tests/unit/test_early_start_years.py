@@ -221,6 +221,7 @@ PINNED = {
             capability_reference_year=2000,
             pre_allocation_responsibility_weight=0.5,
             pre_allocation_responsibility_year=1850,
+            pre_allocation_responsibility_per_capita=False,
         ),
         [
             0.5054500871798192,
