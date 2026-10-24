@@ -1,0 +1,2511 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Every notebook and library module in run order, with what each reads and writes">
+      
+      
+        <meta name="author" content="The fair-shares Contributors">
+      
+      
+        <link rel="canonical" href="https://setupelz.github.io/fair-shares/user-guide/pipeline-map/">
+      
+      
+        <link rel="prev" href="../data-sources/">
+      
+      
+        <link rel="next" href="../../api/python-api/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Pipeline map - fair-shares</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config",""),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#pipeline-map" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="fair-shares" class="md-header__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            fair-shares
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Pipeline map
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  How-to
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../approach-catalog/" class="md-tabs__link">
+          
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../science/" class="md-tabs__link">
+          
+  
+    
+  
+  Science
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev-guide/" class="md-tabs__link">
+          
+  
+    
+  
+  Develop
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="fair-shares" class="md-nav__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    fair-shares
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Get started
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Get started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Install & data
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    How-to
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            How-to
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../country-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Country fair shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../iamc-regional-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IAM model regions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../update-data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating data each year
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reproductions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reproduce a published study
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../eu-budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    The ESABCC presets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../approach-catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Approach catalog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Outputs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../output-columns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output columns
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../data-sources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data & licences
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Pipeline map
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Pipeline map
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-in-one-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      The run in one picture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step by step
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step by step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-preprocessing-run-by-snakemake" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Preprocessing (run by Snakemake)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-of-the-scenario-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inputs of the scenario step
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-allocation-back-in-your-notebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Allocation (back in your notebook)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Remaining budgets and annual pathways (notebook 601 and the Python API)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-iam-region-route-400-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      The IAM-region route (400 series)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproductions-of-published-studies-600-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproductions of published studies (600 series)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Python API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+          
+          
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_7" id="__nav_3_7_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_2" id="__nav_3_7_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Allocations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            Allocations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Budget Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/pathways/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pathway Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation Manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_3" id="__nav_3_7_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Utilities
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/core/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Processing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/math/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Math
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/adjustments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adjustments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/validation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_4" id="__nav_3_7_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            Validation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/validation/convergence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Convergence
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../science/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Science
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Science
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/remaining-carbon-budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remaining carbon budgets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/greenhouse-gases/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Greenhouse gases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/allocations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/principle-to-code/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    From principle to code
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/parameter-effects/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter effects
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/scenario-sets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Scenario sets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/other-operations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data processing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/glossary/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Glossary
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../science/references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../dev-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Develop
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Develop
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/docs-conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docs conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/architecture-walkthrough/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-approaches/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-data-sources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding data sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#the-run-in-one-picture" class="md-nav__link">
+    <span class="md-ellipsis">
+      The run in one picture
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-by-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Step by step
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Step by step">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      1. Configuration
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-preprocessing-run-by-snakemake" class="md-nav__link">
+    <span class="md-ellipsis">
+      2. Preprocessing (run by Snakemake)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#inputs-of-the-scenario-step" class="md-nav__link">
+    <span class="md-ellipsis">
+      Inputs of the scenario step
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-allocation-back-in-your-notebook" class="md-nav__link">
+    <span class="md-ellipsis">
+      3. Allocation (back in your notebook)
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api" class="md-nav__link">
+    <span class="md-ellipsis">
+      4. Remaining budgets and annual pathways (notebook 601 and the Python API)
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-iam-region-route-400-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      The IAM-region route (400 series)
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reproductions-of-published-studies-600-series" class="md-nav__link">
+    <span class="md-ellipsis">
+      Reproductions of published studies (600 series)
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="pipeline-map">Pipeline map<a class="headerlink" href="#pipeline-map" title="Permanent link">&para;</a></h1>
+<p>This page follows one allocation run from raw input files to saved results.
+Each row names the notebook that does the work, the library code behind it, and the files it writes.
+Use it to find where a number comes from, or where to change a step.</p>
+<h2 id="the-run-in-one-picture">The run in one picture<a class="headerlink" href="#the-run-in-one-picture" title="Permanent link">&para;</a></h2>
+<pre class="mermaid"><code>flowchart TD
+    U["Your notebook: 301 / 302 / 303 / 601&lt;br/&gt;set sources, category, approaches"] --&gt; S["setup_data()&lt;br/&gt;writes output/&amp;lt;source-id&amp;gt;/config.yaml"]
+    S --&gt; SM["Snakemake (Snakefile)&lt;br/&gt;reruns everything when the provenance stamp differs"]
+    SM --&gt; P1["101 emissions"]
+    SM --&gt; P2["102 GDP"]
+    SM --&gt; P3["103 population"]
+    SM --&gt; P4["105 Gini"]
+    SM --&gt; P5["107 NGHGI LULUCF&lt;br/&gt;(co2, all-ghg)"]
+    SM --&gt; P6["108 bunkers&lt;br/&gt;(budget runs)"]
+    P1 --&gt; P5
+    P5 --&gt; P7["104 AR6 scenarios&lt;br/&gt;(scenario adjustments, non-CO2)"]
+    P7 -. "rcb-pathways only" .-&gt; P8["106 budget to world pathway"]
+    P1 &amp; P2 &amp; P3 &amp; P4 &amp; P5 &amp; P6 &amp; P7 &amp; P8 --&gt; M["100 master step&lt;br/&gt;100_rcbs (budgets) or 100_pathways"]
+    M --&gt; A["Back in your notebook:&lt;br/&gt;run_all_allocations()"]
+    A --&gt; O["output/&amp;lt;source-id&amp;gt;/allocations/&amp;lt;folder&amp;gt;/&lt;br/&gt;parquet + CSV + CITATIONS.md"]</code></pre>
+<p>You run one notebook. That notebook calls <code>setup_data()</code>, which writes a run configuration and calls Snakemake.
+Snakemake runs the preprocessing notebooks in the order their inputs require.
+Control then returns to your notebook, which runs the allocations and saves the results.</p>
+<p><code>setup_data()</code> reuses an existing <code>output/&lt;source-id&gt;/</code> folder only when its provenance stamp matches.
+The stamp is <code>output/&lt;source-id&gt;/.provenance_stamp.json</code>.
+It hashes the package version, the run config, the preprocessing notebooks, the <code>Snakefile</code>, the preprocessing library code, the packaged config files, <code>data/rcbs/rcbs.yaml</code> and the registry checksums of the input files.
+When any of these change, <code>setup_data()</code> reruns all preprocessing for the folder and logs which components changed.
+Set <code>FAIR_SHARES_TRUST_CACHE=1</code> or pass <code>trust_cache=True</code> to reuse the folder without the check.</p>
+<h2 id="step-by-step">Step by step<a class="headerlink" href="#step-by-step" title="Permanent link">&para;</a></h2>
+<h3 id="1-configuration">1. Configuration<a class="headerlink" href="#1-configuration" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Where</th>
+<th>Writes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Choose sources, emission category, target, approaches</td>
+<td>Top cells of notebook 301, 302, 303 or 601</td>
+<td>(in memory)</td>
+</tr>
+<tr>
+<td>Validate the choices, compose the run config</td>
+<td><code>setup_data()</code> in <code>library/utils/data/setup.py</code>; rule <code>compose_config</code></td>
+<td><code>output/&lt;source-id&gt;/config.yaml</code></td>
+</tr>
+<tr>
+<td>Source definitions and defaults</td>
+<td><code>src/fair_shares/conf/data_sources/data_sources_unified.yaml</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Budget sources and rebase settings</td>
+<td><code>data/rcbs/rcbs.yaml</code></td>
+<td></td>
+</tr>
+<tr>
+<td>Step order and which notebook runs for which settings</td>
+<td><a href="https://github.com/setupelz/fair-shares/blob/main/Snakefile"><code>Snakefile</code></a></td>
+<td></td>
+</tr>
+<tr>
+<td>Input file versions, checksums, licences</td>
+<td><code>src/fair_shares/conf/data_registry.yaml</code>; <code>fair-shares fetch-data</code></td>
+<td><code>data/PROVENANCE.md</code></td>
+</tr>
+</tbody>
+</table>
+<p>The <code>&lt;source-id&gt;</code> folder name joins the active sources, the target and the category, for example <code>primap-202609_wdi-2025_un-owid-2025_wdi-2025_rcbs_co2-ffi</code>.
+Two runs with different sources therefore never overwrite each other.</p>
+<h3 id="2-preprocessing-run-by-snakemake">2. Preprocessing (run by Snakemake)<a class="headerlink" href="#2-preprocessing-run-by-snakemake" title="Permanent link">&para;</a></h3>
+<p>Notebooks with a source name in the file name come in one copy per source. The Snakefile picks the copy that matches the active source. Notebooks without one serve every source of their kind: <code>101_data_preprocess_emiss_primap</code> reads every PRIMAP-hist release, and <code>107_derive_lulucf_categories</code> every LULUCF source. The executed copy under <code>output/&lt;source-id&gt;/notebooks/</code> keeps the source name.</p>
+<table>
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Snakemake rule</th>
+<th>Runs when</th>
+<th>Does</th>
+<th>Writes (under <code>output/&lt;source-id&gt;/intermediate/</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>101_data_preprocess_emiss_primap</code>, <code>101_data_preprocess_emiss_gcb-2025</code></td>
+<td><code>preprocess_emiss</code></td>
+<td>always</td>
+<td>Reads historical emissions (PRIMAP-hist or GCB 2025) and builds one series per emission category</td>
+<td><code>emissions/emiss_&lt;category&gt;_timeseries.csv</code></td>
+</tr>
+<tr>
+<td><code>102_data_preprocess_gdp_&lt;source&gt;</code></td>
+<td><code>preprocess_gdp</code></td>
+<td>always</td>
+<td>GDP in constant 2021 PPP dollars (World Bank WDI)</td>
+<td><code>gdp/gdp_timeseries.csv</code></td>
+</tr>
+<tr>
+<td><code>103_data_preprocess_population_&lt;source&gt;</code></td>
+<td><code>preprocess_population</code></td>
+<td>always</td>
+<td>Population history and UN WPP 2024 projections</td>
+<td><code>population/population_timeseries.csv</code></td>
+</tr>
+<tr>
+<td><code>105_data_preprocess_gini_&lt;source&gt;</code></td>
+<td><code>preprocess_gini</code></td>
+<td>always</td>
+<td>Gini index (WDI by default, WIID opt-in)</td>
+<td><code>gini/gini_stationary.csv</code></td>
+</tr>
+<tr>
+<td><code>107_derive_lulucf_categories</code></td>
+<td><code>preprocess_lulucf</code></td>
+<td>category <code>co2</code> or <code>all-ghg</code></td>
+<td>Adds national-inventory (NGHGI) land-use CO2 from the LULUCF Data Hub. Builds <code>co2</code>, <code>non-co2</code> and <code>all-ghg</code> history</td>
+<td><code>emissions/emiss_co2_timeseries.csv</code> and related files</td>
+</tr>
+<tr>
+<td><code>108_data_preprocess_bunkers_&lt;source&gt;</code></td>
+<td><code>preprocess_bunkers</code></td>
+<td>budget targets</td>
+<td>Observed international aviation and shipping CO2 from the Global Carbon Budget (<code>gcb-2025</code> by default)</td>
+<td><code>emissions/bunker_timeseries.csv</code></td>
+</tr>
+<tr>
+<td><code>104_data_preprocess_scenarios_ar6</code></td>
+<td><code>preprocess_scenarios</code> and related rules</td>
+<td>scenario-based targets, all budget runs with <code>active_scenario_source: ar6</code>, and every multi-gas run</td>
+<td>AR6 scenario pathways, harmonised to history. Selects the scenario sets of every budget, computes the land-use terms and the bunker share, and builds the non-CO2 pathway of each budget</td>
+<td><code>scenarios/scenarios_&lt;category&gt;_timeseries.csv</code>, <code>scenarios/scenarios_&lt;category&gt;_by_budget_timeseries.csv</code>, <code>scenarios/rcb_scenario_adjustments.yaml</code>, <code>scenarios/scenario_set_&lt;source&gt;_&lt;label&gt;.csv</code>, <code>scenarios/bunker_share_reporters.csv</code></td>
+</tr>
+<tr>
+<td><code>106_generate_pathways_from_rcbs</code></td>
+<td><code>generate_rcb_pathways</code></td>
+<td>target <code>rcb-pathways</code></td>
+<td>Turns a global budget into a world pathway (exponential decay by default)</td>
+<td><code>scenarios/scenarios_&lt;category&gt;_timeseries.csv</code></td>
+</tr>
+<tr>
+<td><code>100_data_preprocess_rcbs</code></td>
+<td><code>master_preprocess</code></td>
+<td>budget targets</td>
+<td>Joins all inputs, fixes the analysis-country set and rest of world, rebases each budget to 2020</td>
+<td><code>processed/rcbs_&lt;category&gt;.csv</code>, <code>processed/country_*.csv</code>, <code>processed/world_*.csv</code>, <code>processed/country_data_coverage_summary.csv</code></td>
+</tr>
+<tr>
+<td><code>100_data_preprocess_pathways</code></td>
+<td><code>master_preprocess</code></td>
+<td>pathway targets, and the non-CO2 part of multi-gas runs</td>
+<td>The same join, for annual pathways</td>
+<td><code>processed/...</code></td>
+</tr>
+</tbody>
+</table>
+<p>The master step calls the library functions in <code>library/pipeline/preprocessing.py</code> (<code>run_rcb_preprocessing</code>, <code>run_pathway_preprocessing</code>, <code>run_non_co2_preprocessing</code>).
+Budget rebasing lives in <code>library/utils/data/rcb.py</code> and <code>library/preprocessing/rcbs.py</code>. The scenario sets and the bunker share live in <code>library/utils/data/scenario_sets.py</code>, and the scenario source registry in <code>library/utils/data/scenario_sources.py</code> with <code>src/fair_shares/conf/scenario_sources.yaml</code>. The analysis-country rule lives in <code>library/preprocessing/coverage.py</code>, and rest of world in <code>library/preprocessing/row.py</code>.
+<a href="../../science/remaining-carbon-budgets/">Remaining carbon budgets</a> explains the rebasing and the NGHGI corrections, and <a href="../../science/greenhouse-gases/">Greenhouse gases</a> the multi-gas split.</p>
+<h3 id="inputs-of-the-scenario-step">Inputs of the scenario step<a class="headerlink" href="#inputs-of-the-scenario-step" title="Permanent link">&para;</a></h3>
+<p>Notebook 104 reads the scenario sources in <code>src/fair_shares/conf/scenario_sources.yaml</code> and the observed global CO2 named in <code>rcbs.yaml</code>.
+Four of these inputs are manual. <code>fair-shares fetch-data --source &lt;name&gt;</code> gives the steps for each one. <a href="../../quickstart/#files-you-place-yourself">Files you place yourself</a> lists every manual input.</p>
+<table>
+<thead>
+<tr>
+<th>Input</th>
+<th>Registry name</th>
+<th>How to get it</th>
+<th>Needed for</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>AR6 reanalysis of Gidden et al. (2023)</td>
+<td><code>ipcc_ar6_gidden</code></td>
+<td><code>fair-shares fetch-data</code></td>
+<td>every scenario set and non-CO2 pathway</td>
+</tr>
+<tr>
+<td>AR6 Scenarios Database aviation and maritime CO2</td>
+<td><code>ipcc_ar6_bunkers</code></td>
+<td>manual, one command from the public database (no login)</td>
+<td>bunker share</td>
+</tr>
+<tr>
+<td>AR6 Scenarios Database CO2 and warming series</td>
+<td><code>ipcc_ar6_climate</code></td>
+<td>manual, one command from the public database (no login)</td>
+<td>net-zero year and warming at net zero of each scenario</td>
+</tr>
+<tr>
+<td>Global Carbon Budget 2025 global workbook</td>
+<td><code>gcb-2025-global</code></td>
+<td>manual, behind the ICOS licence page</td>
+<td>budget from 2020 of the volume-matched sets</td>
+</tr>
+<tr>
+<td>Scenario Compass ensemble v2.0 (v1.0 selectable)</td>
+<td><code>sci-2026</code> (<code>sci-2025</code>)</td>
+<td>manual, with a login at the Scenario Compass platform</td>
+<td>bunker share (optional; left out with a warning when absent)</td>
+</tr>
+</tbody>
+</table>
+<p>Licences and file locations are in <a href="../data-sources/#scenario-data">Data Sources &amp; Licensing</a>.</p>
+<h3 id="3-allocation-back-in-your-notebook">3. Allocation (back in your notebook)<a class="headerlink" href="#3-allocation-back-in-your-notebook" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>What</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Load the processed inputs</td>
+<td><code>load_allocation_data()</code> in <code>library/notebook_helpers.py</code></td>
+</tr>
+<tr>
+<td>Expand the parameter grid, run every approach</td>
+<td><code>run_all_allocations()</code> in <code>library/notebook_helpers.py</code>, which calls <code>run_allocation()</code> in <code>library/allocations/manager.py</code></td>
+</tr>
+<tr>
+<td>Approach registry (name to function)</td>
+<td><code>get_allocation_functions()</code> in <code>library/allocations/manager.py</code></td>
+</tr>
+<tr>
+<td>Budget approaches</td>
+<td><code>library/allocations/budgets/per_capita.py</code></td>
+</tr>
+<tr>
+<td>Pathway approaches</td>
+<td><code>library/allocations/pathways/</code></td>
+</tr>
+<tr>
+<td>Shared maths (adjustments, convergence)</td>
+<td><code>library/utils/math/</code></td>
+</tr>
+<tr>
+<td>Save results with metadata</td>
+<td><code>library/allocations/results/</code></td>
+</tr>
+</tbody>
+</table>
+<p>Results land in <code>output/&lt;source-id&gt;/allocations/&lt;allocation_folder&gt;/</code> as parquet and wide CSV, together with the run's <code>CITATIONS.md</code>.
+The column meanings are in <a href="../output-schema/">Output Schema</a>.</p>
+<h3 id="4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api">4. Remaining budgets and annual pathways (notebook 601 and the Python API)<a class="headerlink" href="#4-remaining-budgets-and-annual-pathways-notebook-601-and-the-python-api" title="Permanent link">&para;</a></h3>
+<p>Notebook 601 goes two steps further than the allocation itself.
+Section 5 subtracts each country's observed emissions from its allocated budget, which gives the budget remaining from the year after the last observed year. A run nets every part through the last year that all its parts observe: 2025 for <code>co2-ffi</code> on the default sources (remaining from 2026), and 2024 for <code>all-ghg</code>, whose land-use data end in 2024 (remaining from 2025).
+Section 6 spreads each remaining budget into an annual pathway to 2100.
+The same two steps are available without the notebook through <code>calculate_allocation_timeseries()</code> in <code>library/python_api.py</code> (<a href="../../api/python-api/">Python API</a>).
+A test (<code>tests/integration/test_python_api_reproduces_notebook.py</code>) checks that the notebook and the API give the same numbers.</p>
+<h2 id="the-iam-region-route-400-series">The IAM-region route (400 series)<a class="headerlink" href="#the-iam-region-route-400-series" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Does</th>
+<th>Writes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>400_data_preprocess_scenario_for_allocation</code></td>
+<td>Reads a raw IAMC scenario file, adds regional history for emissions, population and GDP, builds <code>Emissions|Covered</code></td>
+<td><code>output/iamc/iamc_covered.xlsx</code></td>
+</tr>
+<tr>
+<td><code>401_custom_iamc_allocation</code></td>
+<td>Your own IAM-region allocation; also exports a model-ready budget</td>
+<td><code>output/iamc/...</code></td>
+</tr>
+<tr>
+<td><code>402_example_iamc_budget_allocations</code>, <code>403_example_iamc_pathway_allocations</code></td>
+<td>Worked examples</td>
+<td><code>output/iamc/...</code></td>
+</tr>
+<tr>
+<td><code>405_one_region_remaining_budget</code></td>
+<td>Fair-share targets for one region of countries (such as EU27), for a model without rest-of-world data: a CO2 budget (total or fossil only, with its land-use condition) and, for all-GHG, an annual non-CO2 pathway, in the model's variable names, for the region and each member. Allocates between countries and sums the members</td>
+<td><code>output/405_&lt;label&gt;/</code> (tidy CSV, IAMC xlsx)</td>
+</tr>
+</tbody>
+</table>
+<p>The history back-fill lives in <code>library/iamc_historical/</code>.
+These notebooks run outside Snakemake. Run 400 before 401 to 403; 405 needs no IAMC input.</p>
+<h2 id="reproductions-of-published-studies-600-series">Reproductions of published studies (600 series)<a class="headerlink" href="#reproductions-of-published-studies-600-series" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Notebook</th>
+<th>Study</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>601_reproduce_esabcc_2023</code></td>
+<td>ESABCC (2023) and the underlying IIASA study, Pelz, Rogelj and Riahi (2023)</td>
+<td>Same approaches and parameters, current data.</td>
+</tr>
+<tr>
+<td><code>602_reproduce_dekker_2025</code></td>
+<td>Dekker et al. (2025)</td>
+<td>Four of six approaches, expressed in library terms</td>
+</tr>
+<tr>
+<td><code>604_reproduce_vandenberg_2020</code></td>
+<td>van den Berg et al. (2020)</td>
+<td>Effort-sharing approaches, expressed in library terms</td>
+</tr>
+<tr>
+<td><code>605_reproduce_matthews_2016</code></td>
+<td>Gignac and Matthews (2015), Matthews (2016)</td>
+<td>Carbon-debt formulation, expressed in library terms</td>
+</tr>
+</tbody>
+</table>
+<p>These notebooks show that the library can express each study's method.
+Each one lists the input differences that would have to be removed before its numbers could match the study's published figures.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../data-sources/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Data &amp; licences">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Data & licences
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../api/python-api/" class="md-footer__link md-footer__link--next" aria-label="Next: Python API">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Python API
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+  
+    
+  
+
+
+  
+    
+  
+
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they search for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="analytics" checked>
+          <span class="task-list-indicator"></span>
+          Google Analytics
+        </label>
+      </li>
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        </label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tooltips"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+      
+    
+  </body>
+</html>

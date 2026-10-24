@@ -1,0 +1,2914 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="How fair-shares reads budget labels and picks the scenarios behind each scenario-derived budget term">
+      
+      
+        <meta name="author" content="The fair-shares Contributors">
+      
+      
+        <link rel="canonical" href="https://setupelz.github.io/fair-shares/science/scenario-sets/">
+      
+      
+        <link rel="prev" href="../parameter-effects/">
+      
+      
+        <link rel="next" href="../other-operations/">
+      
+      
+      <link rel="icon" href="../../assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.5.49">
+    
+    
+      
+        <title>Scenario sets - fair-shares</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.6f8fc17f.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.06af60db.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/_mkdocstrings.css">
+    
+      <link rel="stylesheet" href="../../stylesheets/extra.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+  
+
+
+  
+  
+
+<script id="__analytics">function __md_analytics(){function e(){dataLayer.push(arguments)}window.dataLayer=window.dataLayer||[],e("js",new Date),e("config",""),document.addEventListener("DOMContentLoaded",(function(){document.forms.search&&document.forms.search.query.addEventListener("blur",(function(){this.value&&e("event","search",{search_term:this.value})}));document$.subscribe((function(){var t=document.forms.feedback;if(void 0!==t)for(var a of t.querySelectorAll("[type=submit]"))a.addEventListener("click",(function(a){a.preventDefault();var n=document.location.pathname,d=this.getAttribute("data-md-value");e("event","feedback",{page:n,data:d}),t.firstElementChild.disabled=!0;var r=t.querySelector(".md-feedback__note [data-md-value='"+d+"']");r&&(r.hidden=!1)})),t.hidden=!1})),location$.subscribe((function(t){e("config","",{page_path:t.pathname})}))}));var t=document.createElement("script");t.async=!0,t.src="https://www.googletagmanager.com/gtag/js?id=",document.getElementById("__analytics").insertAdjacentElement("afterEnd",t)}</script>
+  
+    <script>if("undefined"!=typeof __md_analytics){var consent=__md_get("__consent");consent&&consent.analytics&&__md_analytics()}</script>
+  
+
+    
+    
+    
+  </head>
+  
+  
+    
+    
+      
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#scenario-sets" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+      <div data-md-color-scheme="default" data-md-component="outdated" hidden>
+        
+      </div>
+    
+    
+      
+
+<header class="md-header" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="fair-shares" class="md-header__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            fair-shares
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Scenario sets
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+        <form class="md-header__option" data-md-component="palette">
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme)" data-md-color-scheme="default" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to dark mode"  type="radio" name="__palette" id="__palette_0">
+    
+      <label class="md-header__button md-icon" title="Switch to dark mode" for="__palette_1" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="m14.3 16-.7-2h-3.2l-.7 2H7.8L11 7h2l3.2 9zM20 8.69V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12zm-9.15 3.96h2.3L12 9z"/></svg>
+      </label>
+    
+  
+    
+    
+    
+    <input class="md-option" data-md-color-media="(prefers-color-scheme: dark)" data-md-color-scheme="slate" data-md-color-primary="indigo" data-md-color-accent="indigo"  aria-label="Switch to light mode"  type="radio" name="__palette" id="__palette_1">
+    
+      <label class="md-header__button md-icon" title="Switch to light mode" for="__palette_0" hidden>
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a4 4 0 0 0-4 4 4 4 0 0 0 4 4 4 4 0 0 0 4-4 4 4 0 0 0-4-4m0 10a6 6 0 0 1-6-6 6 6 0 0 1 6-6 6 6 0 0 1 6 6 6 6 0 0 1-6 6m8-9.31V4h-4.69L12 .69 8.69 4H4v4.69L.69 12 4 15.31V20h4.69L12 23.31 15.31 20H20v-4.69L23.31 12z"/></svg>
+      </label>
+    
+  
+</form>
+      
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      <label class="md-header__button md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+      </label>
+      <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+          <a href="javascript:void(0)" class="md-search__icon md-icon" title="Share" aria-label="Share" data-clipboard data-clipboard-text="" data-md-component="search-share" tabindex="-1">
+            
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9a3 3 0 0 0-3 3 3 3 0 0 0 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.15c-.05.21-.08.43-.08.66 0 1.61 1.31 2.91 2.92 2.91s2.92-1.3 2.92-2.91A2.92 2.92 0 0 0 18 16.08"/></svg>
+          </a>
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+            
+<nav class="md-tabs" aria-label="Tabs" data-md-component="tabs">
+  <div class="md-grid">
+    <ul class="md-tabs__list">
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../.." class="md-tabs__link">
+          
+  
+    
+  
+  Get started
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/" class="md-tabs__link">
+          
+  
+    
+  
+  How-to
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../user-guide/approach-catalog/" class="md-tabs__link">
+          
+  
+    
+  
+  Reference
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+    
+  
+  
+    
+    
+      <li class="md-tabs__item md-tabs__item--active">
+        <a href="../" class="md-tabs__link">
+          
+  
+    
+  
+  Science
+
+        </a>
+      </li>
+    
+  
+
+      
+        
+  
+  
+  
+    
+    
+      <li class="md-tabs__item">
+        <a href="../../dev-guide/" class="md-tabs__link">
+          
+  
+    
+  
+  Develop
+
+        </a>
+      </li>
+    
+  
+
+      
+    </ul>
+  </div>
+</nav>
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+  
+
+
+<nav class="md-nav md-nav--primary md-nav--lifted" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="fair-shares" class="md-nav__button md-logo" aria-label="fair-shares" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    fair-shares
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/setupelz/fair-shares" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 6.7.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2024 Fonticons, Inc.--><path d="M439.55 236.05 244 40.45a28.87 28.87 0 0 0-40.81 0l-40.66 40.63 51.52 51.52c27.06-9.14 52.68 16.77 43.39 43.68l49.66 49.66c34.23-11.8 61.18 31 35.47 56.69-26.49 26.49-70.21-2.87-56-37.34L240.22 199v121.85c25.3 12.54 22.26 41.85 9.08 55a34.34 34.34 0 0 1-48.55 0c-17.57-17.6-11.07-46.91 11.25-56v-123c-20.8-8.51-24.6-30.74-18.64-45L142.57 101 8.45 235.14a28.86 28.86 0 0 0 0 40.81l195.61 195.6a28.86 28.86 0 0 0 40.8 0l194.69-194.69a28.86 28.86 0 0 0 0-40.81"/></svg>
+  </div>
+  <div class="md-source__repository">
+    setupelz/fair-shares
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_1" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../.." class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Get started
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_1" id="__nav_1_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_1_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_1">
+            <span class="md-nav__icon md-icon"></span>
+            Get started
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Install & data
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+          
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_2" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../user-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    How-to
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_2" id="__nav_2_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_2">
+            <span class="md-nav__icon md-icon"></span>
+            How-to
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/country-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Country fair shares
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/iamc-regional-fair-shares/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    IAM model regions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/update-data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Updating data each year
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reproductions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Reproduce a published study
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/eu-budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    The ESABCC presets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Reference
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            Reference
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/approach-catalog/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Approach catalog
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-schema/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Outputs
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/output-columns/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Output columns
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/data-sources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data & licences
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../user-guide/pipeline-map/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pipeline map
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/python-api/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Python API
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../api/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    API
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_3_7" id="__nav_3_7_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="2" aria-labelledby="__nav_3_7_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7">
+            <span class="md-nav__icon md-icon"></span>
+            API
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_2" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_2" id="__nav_3_7_2_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Allocations
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_2_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_2">
+            <span class="md-nav__icon md-icon"></span>
+            Allocations
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Budget Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/pathways/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Pathway Functions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/allocations/manager/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation Manager
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_3" id="__nav_3_7_3_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Utilities
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_3">
+            <span class="md-nav__icon md-icon"></span>
+            Utilities
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/core/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Core
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/data/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data Processing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/math/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Math
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/adjustments/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adjustments
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/utils/validation/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    
+    
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3_7_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_3_7_4" id="__nav_3_7_4_label" tabindex="0">
+            
+  
+  <span class="md-ellipsis">
+    Validation
+  </span>
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="3" aria-labelledby="__nav_3_7_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3_7_4">
+            <span class="md-nav__icon md-icon"></span>
+            Validation
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/validation/convergence/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Convergence
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../api/config/models/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Configuration
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+        
+        
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_4" checked>
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Science
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_4" id="__nav_4_label" tabindex="">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            Science
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../remaining-carbon-budgets/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Remaining carbon budgets
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../greenhouse-gases/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Greenhouse gases
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../allocations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Allocation approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../principle-to-code/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    From principle to code
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../parameter-effects/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Parameter effects
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  <span class="md-ellipsis">
+    Scenario sets
+  </span>
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  <span class="md-ellipsis">
+    Scenario sets
+  </span>
+  
+
+      </a>
+      
+        
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-budget-label-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      What a budget label means
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#role-matched-scenario-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Role-matched scenario sets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Role-matched scenario sets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budget-from-2020" class="md-nav__link">
+    <span class="md-ellipsis">
+      Budget from 2020
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ar6-category-pools" class="md-nav__link">
+    <span class="md-ellipsis">
+      AR6 category pools
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AR6 category pools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#net-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      Net zero
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-budget-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario sets of the default budgets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bunker-share" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bunker share
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario sources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scenario sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#non-co2-basis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Non-CO₂ basis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ar6-reanalysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      AR6 reanalysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-compass" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario Compass
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenariomip" class="md-nav__link">
+    <span class="md-ellipsis">
+      ScenarioMIP
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario labels
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full-year accounting
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../other-operations/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Data processing
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../glossary/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Glossary
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../references/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    References
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+      
+        
+          
+        
+      
+        
+      
+        
+      
+        
+      
+        
+      
+    
+    
+      
+      
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          
+          <div class="md-nav__link md-nav__container">
+            <a href="../../dev-guide/" class="md-nav__link ">
+              
+  
+  <span class="md-ellipsis">
+    Develop
+  </span>
+  
+
+            </a>
+            
+              
+              <label class="md-nav__link " for="__nav_5" id="__nav_5_label" tabindex="0">
+                <span class="md-nav__icon md-icon"></span>
+              </label>
+            
+          </div>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            Develop
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/docs-conventions/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Docs conventions
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/architecture-walkthrough/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Architecture
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-approaches/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding approaches
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../dev-guide/adding-data-sources/" class="md-nav__link">
+        
+  
+  <span class="md-ellipsis">
+    Adding data sources
+  </span>
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+  
+
+<nav class="md-nav md-nav--secondary" aria-label="On this page">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      On this page
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-a-budget-label-means" class="md-nav__link">
+    <span class="md-ellipsis">
+      What a budget label means
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#role-matched-scenario-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Role-matched scenario sets
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Role-matched scenario sets">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#budget-from-2020" class="md-nav__link">
+    <span class="md-ellipsis">
+      Budget from 2020
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#ar6-category-pools" class="md-nav__link">
+    <span class="md-ellipsis">
+      AR6 category pools
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="AR6 category pools">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#net-zero" class="md-nav__link">
+    <span class="md-ellipsis">
+      Net zero
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#default-budget-sets" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario sets of the default budgets
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#bunker-share" class="md-nav__link">
+    <span class="md-ellipsis">
+      Bunker share
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-sources" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario sources
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Scenario sources">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#non-co2-basis" class="md-nav__link">
+    <span class="md-ellipsis">
+      Non-CO₂ basis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ar6-reanalysis" class="md-nav__link">
+    <span class="md-ellipsis">
+      AR6 reanalysis
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenario-compass" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario Compass
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scenariomip" class="md-nav__link">
+    <span class="md-ellipsis">
+      ScenarioMIP
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#scenario-labels" class="md-nav__link">
+    <span class="md-ellipsis">
+      Scenario labels
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accounting" class="md-nav__link">
+    <span class="md-ellipsis">
+      Full-year accounting
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+  
+  
+
+
+<h1 id="scenario-sets">Scenario sets<a class="headerlink" href="#scenario-sets" title="Permanent link">&para;</a></h1>
+<p>Some budget terms need future emissions: the land-use term, the convention gap, the bunker deduction after the last observation and the non-CO₂ pathway.
+fair-shares takes these from published scenarios.
+This page explains how it reads a budget label and picks the scenarios for each term.
+<a href="../remaining-carbon-budgets/">Remaining carbon budgets</a> explains the terms themselves.</p>
+<p><strong>In short:</strong></p>
+<ul>
+<li>A budget label names the warming when CO₂ reaches net zero and a likelihood. What the likelihood covers depends on the source.</li>
+<li>Each scenario-derived term takes the set that matches its role: a volume-matched set for land use, the convention gap and bunkers, and a temperature-matched set for the non-CO₂ pathway.</li>
+<li>Terms that need the national-inventory land-use split come from the AR6 reanalysis. The non-CO₂ pathway comes from the scenario database the budget was built on, which is AR6 for every shipped budget.</li>
+<li>The AR6 budgets take the matching AR6 category (C1, C3 or C4) for every term.</li>
+<li>The bunker share pools every scenario that reports bunkers in AR6, Scenario Compass and ScenarioMIP, balanced across model families.</li>
+<li>Every cumulative counts full years to an interpolated net-zero crossing.</li>
+</ul>
+<hr />
+<h2 id="what-a-budget-label-means">What a budget label means<a class="headerlink" href="#what-a-budget-label-means" title="Permanent link">&para;</a></h2>
+<p>A label <code>TpL</code> names a warming level <span class="arithmatex">\(T\)</span> and a likelihood <span class="arithmatex">\(L\)</span>.
+Each budget runs from its start year to net-zero CO₂.
+<span class="arithmatex">\(T\)</span> is the warming when CO₂ reaches net zero. It equals peak warming when the zero-emissions commitment (ZEC) is zero.
+<a href="https://doi.org/10.1038/s41558-023-01848-5">Lamboll 2023</a> defines <span class="arithmatex">\(T\)</span> as peak warming.</p>
+<p>The likelihood of AR6 WGI and of the IGCC updates covers the uncertainty of the transient climate response to cumulative emissions (TCRE) only.
+The likelihood of Lamboll et al. covers TCRE, ZEC and Earth-system feedbacks (ESF).
+Every published budget assumes the median non-CO₂ warming of scenarios at <span class="arithmatex">\(T\)</span>, for every likelihood.</p>
+<table>
+<thead>
+<tr>
+<th>Source key</th>
+<th>Likelihood covers</th>
+<th><span class="arithmatex">\(T\)</span> measures</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>ar6_2020</code></td>
+<td>TCRE only</td>
+<td>Warming at net zero</td>
+</tr>
+<tr>
+<td><code>ar6_wg1_2021</code></td>
+<td>TCRE only</td>
+<td>Warming at net zero</td>
+</tr>
+<tr>
+<td><code>lamboll_2023</code></td>
+<td>TCRE, ZEC, ESF</td>
+<td>Peak warming</td>
+</tr>
+<tr>
+<td><code>forster_2024</code></td>
+<td>TCRE only</td>
+<td>Warming at net zero</td>
+</tr>
+<tr>
+<td><code>forster_2026</code></td>
+<td>TCRE only</td>
+<td>Warming at net zero</td>
+</tr>
+</tbody>
+</table>
+<p>Each source records <code>likelihood_scope</code> and <code>budget_metric</code> in <code>rcbs.yaml</code>, and the processed budget files carry both.</p>
+<p><code>forster_2024</code> and <code>ar6_2020</code> publish 67% budgets under the label <code>2p67</code>.
+The label <code>2p66</code> reads as <code>2p67</code> for these two sources, with a deprecation warning.
+Lamboll et al. publish 66%, so <code>lamboll_2023</code> keeps <code>2p66</code>.</p>
+<hr />
+<h2 id="role-matched-scenario-sets">Role-matched scenario sets<a class="headerlink" href="#role-matched-scenario-sets" title="Permanent link">&para;</a></h2>
+<p>Each scenario-derived term of a budget takes the scenario set that matches its role.
+This is the default rule, <code>scenario_selection: role-matched</code>.</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Set</th>
+<th>Rule</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Land-use term (<code>co2-ffi</code>)</td>
+<td>Volume-matched</td>
+<td>Reaches net-zero CO₂ by 2100; cumulative net CO₂ from 2020 to net zero within ±<code>volume_tolerance_gt</code> (50 Gt) of the budget from 2020</td>
+<td>The term integrates to net zero, so its scenarios spend the budget's volume</td>
+</tr>
+<tr>
+<td>Convention gap (<code>co2</code>)</td>
+<td>Volume-matched</td>
+<td>Same</td>
+<td>Same</td>
+</tr>
+<tr>
+<td>Bunkers after the last observed year</td>
+<td>Volume-matched, times the bunker share</td>
+<td>Median net CO₂ of the set from the year after the last observed year to net zero, times the share <span class="arithmatex">\(s\)</span></td>
+<td>Few scenarios report bunkers and <span class="arithmatex">\(s\)</span> therefore pools every scenario that does (<a href="#bunker-share">Bunker share</a>)</td>
+</tr>
+<tr>
+<td>Non-CO₂ pathway</td>
+<td>Temperature-matched</td>
+<td>Net-zero year; median warming at net zero in <span class="arithmatex">\([T - 0.05,\; T + 0.05)\)</span>, for every likelihood</td>
+<td>Published budgets assume the median non-CO₂ warming at <span class="arithmatex">\(T\)</span></td>
+</tr>
+</tbody>
+</table>
+<p>Every set needs a net-zero year, in the AR6 convention (<a href="#net-zero">Net zero</a>).</p>
+<p>A set below <code>min_scenarios</code> (10) raises a <code>ConfigurationError</code> that names the budget.
+The settings sit at the top of <code>rcbs.yaml</code>.
+The selection logic is in <code>src/fair_shares/library/utils/data/scenario_sets.py</code>.</p>
+<h3 id="budget-from-2020">Budget from 2020<a class="headerlink" href="#budget-from-2020" title="Permanent link">&para;</a></h3>
+<p>The volume-matched set compares each scenario with the budget from the start of 2020.
+That is the published value plus observed global net CO₂ from 2020 to the year before the baseline.
+Observed net CO₂ is fossil CO₂ (including bunkers) minus the cement carbonation sink plus bookkeeping land-use CO₂.
+It comes from the Global Carbon Budget 2025 workbook (<code>gcb-2025-global</code>, <a href="https://doi.org/10.18160/GCP-2025">GCP 2026</a>).
+The workbook ends in 2024, so <code>forster_2026</code> takes the 2024 value for 2025 (<code>rebase_fill_max_years</code>).</p>
+<details class="info">
+<summary>Consistency record</summary>
+<p><code>rcb_scenario_adjustments.yaml</code> records per budget:</p>
+<ul>
+<li>the label as published, the likelihood scope and the metric;</li>
+<li>the rule and size of each set, its median cumulative CO₂, and its median and 67<sup>th</sup>-percentile warming at net zero;</li>
+<li>a check of the two sets: their overlap and the volume gap of the temperature-matched set (its median cumulative CO₂ minus the budget from 2020).</li>
+</ul>
+<p>For a p50 budget the two sets describe one budget, so a small gap supports the pairing.</p>
+</details>
+<hr />
+<h2 id="ar6-category-pools">AR6 category pools<a class="headerlink" href="#ar6-category-pools" title="Permanent link">&para;</a></h2>
+<p><code>ar6_2020</code> and <code>ar6_wg1_2021</code> set <code>scenario_selection: ar6-category</code>.
+Their labels with an AR6 WGIII category take that category for every term: <code>1.5p50</code> C1, <code>2p67</code> C3, <code>2p50</code> C4.</p>
+<ul>
+<li>C1 limits warming to 1.5 °C (&gt;50%) with no or limited overshoot.</li>
+<li>C3 limits warming to 2 °C (&gt;67%).</li>
+<li>C4 limits warming to 2 °C (&gt;50%).</li>
+</ul>
+<p>These definitions come from <a href="https://doi.org/10.1017/9781009157926.022">IPCC 2022 Annex III</a>, Table 14.
+C2 returns warming to 1.5 °C (&gt;50%) by 2100 after a high overshoot. Its warming peaks above 1.5 °C and a budget counts emissions to peak warming, so C2 stays outside every budget label.
+The integral terms use the category members that reach net zero. The non-CO₂ pathway uses every member.
+The bunker term applies the same bunker share to the net CO₂ of the category set.
+The other labels of these sources use the role-matched sets.</p>
+<h3 id="net-zero">Net zero<a class="headerlink" href="#net-zero" title="Permanent link">&para;</a></h3>
+<p>A scenario reaches net-zero CO₂ in the first full year from 2020 at which its harmonised climate-assessment CO₂, linear between reported years, is at or below zero.
+A scenario without such a year still counts when its harmonised or reported CO₂ falls below 100 Mt CO₂/yr by 2100. Its net-zero year is the first such year.
+This is the count of AR6 WGIII: "Pathways were counted when at least one of the two profiles fell below 100 MtCO2 yr–1 until 2100" (<a href="https://doi.org/10.1017/9781009157926.001">IPCC 2022 SPM</a>, Table SPM.2, note j).
+<code>net_zero_years()</code> in <code>src/fair_shares/library/utils/data/scenario_sources.py</code> applies the rule.</p>
+<p>The AR6 metadata give a net-zero year to the same 591 of the 914 AR6 scenarios.
+For 72 of them, which reach net zero only under the 100 Mt rule, the AR6 warming at net zero holds the 2100 value.
+fair-shares therefore derives the net-zero year and the warming at net zero of every AR6 scenario from the AR6 Scenarios Database series (<code>ipcc_ar6_climate</code>).
+On the other 519 scenarios the derived warming matches the AR6 metadata within 0.013 °C.</p>
+<hr />
+<h2 id="default-budget-sets">Scenario sets of the default budgets<a class="headerlink" href="#default-budget-sets" title="Permanent link">&para;</a></h2>
+<p>Two readings follow from the sets of the default budgets:</p>
+<ul>
+<li>The volume-matched sets of 1.5 and 1.7 °C p67 budgets have a 67<sup>th</sup>-percentile warming at net zero 0.08 to 0.18 °C above <span class="arithmatex">\(T\)</span>; for p83 and p90 budgets at 1.7 °C the difference is 0.00 to 0.02 °C. For 2 °C p66 and p67 the difference is within 0.02 °C. The budget likelihood covers TCRE only, and the MAGICC percentile covers more uncertainty.</li>
+<li>The AR6 budgets use the AR6 category pools, whose scenarios spend less than the budget to net zero: the C4 median is 1153 Gt against 1350 Gt (<code>2p50</code>), and the C3 median 834 Gt against 1150 Gt (<code>2p67</code>).</li>
+</ul>
+<details class="info">
+<summary>Set statistics per default budget</summary>
+<p>Counts from the AR6 reanalysis of Gidden et al. (2023), 914 scenarios.
+Budgets from 2020 and set statistics in Gt CO₂. Warming is MAGICCv7.5.3 at net zero.</p>
+<table>
+<thead>
+<tr>
+<th>Budget</th>
+<th>From 2020</th>
+<th>Integral-term set</th>
+<th>n</th>
+<th>Median cumulative</th>
+<th>Median / P67 warming</th>
+<th>Non-CO₂ set n</th>
+<th>Overlap</th>
+<th>Volume gap</th>
+<th>Set net CO₂ 2025 to NZ</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>lamboll_2023</code> <code>1.5p50</code></td>
+<td>371</td>
+<td>volume</td>
+<td>14</td>
+<td>391</td>
+<td>1.52 / 1.63</td>
+<td>32</td>
+<td>10</td>
+<td>+79</td>
+<td>226</td>
+</tr>
+<tr>
+<td><code>lamboll_2023</code> <code>2p50</code></td>
+<td>1341</td>
+<td>volume</td>
+<td>21</td>
+<td>1328</td>
+<td>1.96 / 2.13</td>
+<td>43</td>
+<td>11</td>
+<td>+28</td>
+<td>1128</td>
+</tr>
+<tr>
+<td><code>lamboll_2023</code> <code>2p66</code></td>
+<td>1061</td>
+<td>volume</td>
+<td>41</td>
+<td>1040</td>
+<td>1.83 / 1.99</td>
+<td>43</td>
+<td>0</td>
+<td>+308</td>
+<td>851</td>
+</tr>
+<tr>
+<td><code>lamboll_2023</code> <code>2p90</code></td>
+<td>621</td>
+<td>volume</td>
+<td>59</td>
+<td>623</td>
+<td>1.64 / 1.77</td>
+<td>43</td>
+<td>0</td>
+<td>+748</td>
+<td>445</td>
+</tr>
+<tr>
+<td><code>forster_2024</code> <code>1.5p50</code></td>
+<td>363</td>
+<td>volume</td>
+<td>15</td>
+<td>390</td>
+<td>1.52 / 1.63</td>
+<td>32</td>
+<td>11</td>
+<td>+87</td>
+<td>225</td>
+</tr>
+<tr>
+<td><code>forster_2024</code> <code>1.7p50</code></td>
+<td>713</td>
+<td>volume</td>
+<td>64</td>
+<td>719</td>
+<td>1.69 / 1.83</td>
+<td>156</td>
+<td>43</td>
+<td>+49</td>
+<td>530</td>
+</tr>
+<tr>
+<td><code>forster_2024</code> <code>2p50</code></td>
+<td>1263</td>
+<td>volume</td>
+<td>23</td>
+<td>1268</td>
+<td>1.94 / 2.11</td>
+<td>43</td>
+<td>6</td>
+<td>+106</td>
+<td>1068</td>
+</tr>
+<tr>
+<td><code>forster_2024</code> <code>2p67</code></td>
+<td>1063</td>
+<td>volume</td>
+<td>39</td>
+<td>1042</td>
+<td>1.83 / 2.00</td>
+<td>43</td>
+<td>0</td>
+<td>+306</td>
+<td>853</td>
+</tr>
+<tr>
+<td><code>ar6_2020</code> <code>1.5p50</code></td>
+<td>500</td>
+<td>C1</td>
+<td>70</td>
+<td>473</td>
+<td>1.55 / 1.68</td>
+<td>70</td>
+<td>70</td>
+<td>-27</td>
+<td>293</td>
+</tr>
+<tr>
+<td><code>ar6_2020</code> <code>2p50</code></td>
+<td>1350</td>
+<td>C4</td>
+<td>100</td>
+<td>1153</td>
+<td>1.89 / 2.05</td>
+<td>137</td>
+<td>100</td>
+<td>-197</td>
+<td>962</td>
+</tr>
+<tr>
+<td><code>ar6_2020</code> <code>2p67</code></td>
+<td>1150</td>
+<td>C3</td>
+<td>192</td>
+<td>834</td>
+<td>1.72 / 1.88</td>
+<td>231</td>
+<td>192</td>
+<td>-316</td>
+<td>651</td>
+</tr>
+<tr>
+<td><code>forster_2026</code> <code>1.5p50</code></td>
+<td>378</td>
+<td>volume</td>
+<td>19</td>
+<td>403</td>
+<td>1.54 / 1.67</td>
+<td>32</td>
+<td>10</td>
+<td>+72</td>
+<td>234</td>
+</tr>
+<tr>
+<td><code>forster_2026</code> <code>1.7p50</code></td>
+<td>748</td>
+<td>volume</td>
+<td>54</td>
+<td>744</td>
+<td>1.70 / 1.84</td>
+<td>156</td>
+<td>36</td>
+<td>+14</td>
+<td>559</td>
+</tr>
+<tr>
+<td><code>forster_2026</code> <code>2p50</code></td>
+<td>1298</td>
+<td>volume</td>
+<td>26</td>
+<td>1305</td>
+<td>1.93 / 2.12</td>
+<td>43</td>
+<td>10</td>
+<td>+71</td>
+<td>1106</td>
+</tr>
+<tr>
+<td><code>forster_2026</code> <code>2p67</code></td>
+<td>1108</td>
+<td>volume</td>
+<td>35</td>
+<td>1130</td>
+<td>1.86 / 2.02</td>
+<td>43</td>
+<td>0</td>
+<td>+261</td>
+<td>932</td>
+</tr>
+<tr>
+<td><code>ar6_wg1_2021</code> <code>1.7p50</code></td>
+<td>850</td>
+<td>volume</td>
+<td>78</td>
+<td>848</td>
+<td>1.75 / 1.89</td>
+<td>156</td>
+<td>40</td>
+<td>-88</td>
+<td>662</td>
+</tr>
+</tbody>
+</table>
+<p>The adjustments file of every run holds the rows of the other labels.
+<a href="../remaining-carbon-budgets/#budgets-outside-the-defaults">Budgets outside the defaults</a> lists the labels left out and why.</p>
+</details>
+<hr />
+<h2 id="bunker-share">Bunker share<a class="headerlink" href="#bunker-share" title="Permanent link">&para;</a></h2>
+<p>Few scenarios report international aviation and shipping.
+The bunker term therefore uses one share <span class="arithmatex">\(s\)</span> of net CO₂, taken from every scenario that reports bunkers.
+<a href="../remaining-carbon-budgets/#bunker-deduction">Bunker deduction</a> shows how the budget applies it.</p>
+<p>Each scenario that reports bunkers and reaches net zero gives a ratio <span class="arithmatex">\(r_k\)</span>: its cumulative bunkers over its own net CO₂ (the model's <code>Emissions|CO2</code>).
+Both run from the year after the last observed bunker year to the scenario's net-zero crossing.
+The share is family-balanced: the median of the per-family medians, <span class="arithmatex">\(s = \text{median}_f\, \text{median}_{k \in f}\, r_k\)</span>.
+A family counts only with at least <code>bunkers.min_runs_per_family</code> (3) scenarios.
+A family is the energy-model stem without version or coupling: <code>IMAGE 3.2</code> and <code>IMAGE 3.3</code> are IMAGE, and <code>REMIND-MAgPIE 3.2-4.6</code> is REMIND.</p>
+<p>With <code>gcb-2025</code> bunkers (last observed year 2024) the share runs from 2025.
+The default pool is AR6, Scenario Compass v2.0 and ScenarioMIP v0.1.
+156 scenarios that report bunkers reach net zero: 22 from AR6, 92 from Scenario Compass and 42 from ScenarioMIP.</p>
+<table>
+<thead>
+<tr>
+<th>Family</th>
+<th>Family median</th>
+<th>Scenarios</th>
+<th>Counts</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>IMAGE</td>
+<td>0.072</td>
+<td>57</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>REMIND</td>
+<td>0.071</td>
+<td>46</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>MESSAGE</td>
+<td>0.074</td>
+<td>13</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>WITCH</td>
+<td>0.051</td>
+<td>12</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>GCAM</td>
+<td>0.078</td>
+<td>10</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>AIM</td>
+<td>0.060</td>
+<td>7</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>COFFEE</td>
+<td>0.033</td>
+<td>6</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>IMACLIM</td>
+<td>0.106</td>
+<td>5</td>
+<td>yes</td>
+</tr>
+<tr>
+<td>GEM-E3</td>
+<td>0.053</td>
+<td>2</td>
+<td>no</td>
+</tr>
+<tr>
+<td>McKinsey</td>
+<td>0.097</td>
+<td>2</td>
+<td>no</td>
+</tr>
+<tr>
+<td>POLES</td>
+<td>0.054</td>
+<td>2</td>
+<td>no</td>
+</tr>
+<tr>
+<td>LUT-ESTM</td>
+<td>0.191</td>
+<td>1</td>
+<td>no</td>
+</tr>
+</tbody>
+</table>
+<p>The family-balanced share is <span class="arithmatex">\(s = 0.072\)</span>.
+The median over all 156 scenarios is 0.072 (interquartile range 0.060 to 0.081).
+PROMETHEUS reports bunkers, and its runs end in 2050 without net zero.</p>
+<details class="info">
+<summary>Rules and checks</summary>
+<ul>
+<li>The scenarios come from every source in <code>bunkers.scenario_sources</code> (default <code>[ar6, sci, scenariomip]</code>). A run carried over from another listed source counts once: Scenario Compass flags its AR6 and ScenarioMIP runs.</li>
+<li>Each scenario reaches net zero by its own net CO₂, in the AR6 convention (<a href="#net-zero">Net zero</a>). The climate emulator behind a source therefore does not enter the share. ScenarioMIP uses MAGICC v7.6.0a3 and AR6 uses MAGICCv7.5.3.</li>
+<li>No historical vetting applies to these scenarios. Vetting tests 2010 to 2025 totals, and the share needs the ratio within each model run.</li>
+<li><code>model_families</code> in <code>src/fair_shares/conf/scenario_sources.yaml</code> lists every model. A scenario from an unlisted model is a configuration error.</li>
+<li>Fewer than <code>bunkers.min_reporters</code> (10) scenarios or <code>bunkers.min_families</code> (3) families, counted after the per-family filter, raise a <code>ConfigurationError</code> that names the count per scenario source.</li>
+<li>A source whose data file is absent is left out with a warning.</li>
+<li>Scenarios of both sources enter with their own emissions and the same accounting.</li>
+<li>The record lists the excluded families with their medians and counts.</li>
+</ul>
+<p>The function is <code>bunker_share()</code> in <code>src/fair_shares/library/utils/data/scenario_sets.py</code>.</p>
+</details>
+<details class="info">
+<summary>Bunker series of each scenario source</summary>
+<p><strong>AR6.</strong> The AR6 Scenarios Database (<a href="https://doi.org/10.5281/zenodo.5886911">Byers 2022</a>) has no bunker variable.
+It reports <code>Emissions|CO2|Energy|Demand|Transportation|Aviation</code>, which covers domestic and international flights, and <code>...|Transportation|Maritime</code>.
+AR6 bunkers are 0.6 times aviation plus maritime.
+The factor 0.6 is the international share of aviation CO₂ that <a href="https://doi.org/10.1038/s41467-026-69078-9">Weber 2026</a> takes from IEA data (58% to 62%).
+Maritime counts whole as international shipping, as in Weber et al.
+The series come from the public AR6 Scenarios Database (<code>ipcc_ar6_bunkers</code>).
+39 of the 914 Gidden et al. scenarios report both variables for 2020 to 2100, all from IMAGE, and 22 of these reach net-zero CO₂ by 2100.</p>
+<p><strong>Scenario Compass.</strong> The ensemble reports <code>Emissions|CO2|Energy|Demand|Bunkers</code> and its international aviation and shipping parts directly, so it takes no aviation share.
+A scenario takes the total where reported, else the sum of both parts.
+Of the 1,977 scenarios of v2.0, 262 report bunkers with a net CO₂ series. 194 remain once the AR6 and ScenarioMIP runs count under their own source.</p>
+<p><strong>ScenarioMIP.</strong> The workbook reports bunkers like Scenario Compass. Its 68 model runs of 7 models all report them. The <code>Ensemble</code> envelope rows are left out.</p>
+</details>
+<hr />
+<h2 id="scenario-sources">Scenario sources<a class="headerlink" href="#scenario-sources" title="Permanent link">&para;</a></h2>
+<p>A scenario source is an entry in <code>src/fair_shares/conf/scenario_sources.yaml</code>.
+Each term takes the source that suits it:</p>
+<table>
+<thead>
+<tr>
+<th>Term</th>
+<th>Scenario source</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Land-use term (<code>co2-ffi</code>), convention gap (<code>co2</code>)</td>
+<td>AR6 reanalysis</td>
+<td>The only scenarios with the national-inventory land-use split (<code>AFOLU\|Direct</code>, <code>AFOLU\|Indirect</code>)</td>
+</tr>
+<tr>
+<td>Net CO₂ behind the bunker term</td>
+<td>AR6 reanalysis, the same volume-matched set</td>
+<td>One set per budget for every integral term</td>
+</tr>
+<tr>
+<td>Bunker share <span class="arithmatex">\(s\)</span></td>
+<td>AR6, Scenario Compass and ScenarioMIP</td>
+<td>A ratio within each scenario: no climate model and no land-use split enter, and more reporters and model families make it robust</td>
+</tr>
+<tr>
+<td>Non-CO₂ pathway</td>
+<td>The budget's <code>non_co2_basis</code>: AR6 for every shipped budget</td>
+<td>A budget assumes the non-CO₂ pathway of the database it was built on (<a href="#non-co2-basis">Non-CO₂ basis</a>)</td>
+</tr>
+<tr>
+<td>AR6 category budgets (<code>ar6_2020</code>, <code>ar6_wg1_2021</code>)</td>
+<td>AR6 categories C1, C3 and C4</td>
+<td>They were built on the SR1.5 database, which fair-shares does not hold</td>
+</tr>
+<tr>
+<td><code>pathway</code> target</td>
+<td>AR6 C1, C3 and C4 medians</td>
+<td>One scenario population for every category, so <code>co2</code> is <code>co2-ffi</code> plus land use</td>
+</tr>
+</tbody>
+</table>
+<h3 id="non-co2-basis">Non-CO₂ basis<a class="headerlink" href="#non-co2-basis" title="Permanent link">&para;</a></h3>
+<p><code>non_co2_basis</code> under each budget source in <code>rcbs.yaml</code> names the scenario database the budget was built on (default <code>ar6</code>).
+The temperature-matched non-CO₂ set of each of its budgets comes from that database.
+<a href="../references/">Lamboll 2023</a> takes the non-CO₂ contribution from the AR6 scenario database with MAGICC v7.5.3 and FaIR, <a href="../references/">Forster 2024</a> follows that method, and <a href="../references/">Forster 2026</a> uses the AR6 WGIII scenarios that reach net-zero CO₂.
+Non-CO₂ from another database would pair a budget with a pathway it did not assume. The MAGICC update from v7.5.1 to v7.5.3 alone lowered the 1.5 °C (50%) budget by over 100 Gt CO₂ (<a href="../references/">Lamboll 2023</a>).
+A basis other than the active scenario source (AR6) raises a <code>ConfigurationError</code>. Scenario Compass supplies the non-CO₂ term, read on its AR6 workflow (MAGICC v7.5.3), for a budget source built on it once one is added.</p>
+<h3 id="ar6-reanalysis">AR6 reanalysis<a class="headerlink" href="#ar6-reanalysis" title="Permanent link">&para;</a></h3>
+<p>The default source (<code>ar6</code>) is the reanalysis of the AR6 scenarios by Gidden et al. (2023), 914 scenarios (<a href="https://doi.org/10.5281/zenodo.10158920">Gidden 2023</a>).
+It supplies net CO₂, the land-use fluxes (<code>AFOLU|Direct</code>, <code>AFOLU|Indirect</code>), the non-CO₂ pathways, the net-zero years and the warming at net zero (MAGICCv7.5.3).
+The aviation and maritime series for the AR6 scenarios that report bunkers come from the AR6 Scenarios Database (<a href="https://doi.org/10.5281/zenodo.5886911">Byers 2022</a>).</p>
+<h3 id="scenario-compass">Scenario Compass<a class="headerlink" href="#scenario-compass" title="Permanent link">&para;</a></h3>
+<p>The Scenario Compass Initiative pathways ensemble (<a href="https://doi.org/10.5281/zenodo.23232097">Huppmann 2026b</a>, v2.0 of 8 October 2026; manuscript <a href="https://doi.org/10.21203/rs.3.rs-8891091/v1">Riahi 2026</a>) is the scenario source <code>sci</code>.
+Release v1.0 (<a href="https://doi.org/10.5281/zenodo.18598251">Huppmann 2026</a>) stays selectable through the <code>version</code> key, and each release names its own file and columns.
+Its terms and download are in <a href="../../user-guide/data-sources/#scenario-compass-ensemble-manual">Data &amp; licences</a>.</p>
+<p>v2.0 holds 1,977 scenarios: the 1,214 AR6 carry-overs, the 68 ScenarioMIP v0.1 runs and later submissions.
+524 scenarios pass the SCI 2025 historical vetting (criteria release v2026.08.03).
+The climate assessment comes in three workflows. fair-shares reads the AR6 workflow (MAGICC v7.5.3), the one behind the AR6 metadata.
+The metadata carry only peak warming and warming in 2100 and fair-shares therefore derives warming at net zero itself.</p>
+<details class="info">
+<summary>Warming at net zero for Scenario Compass and ScenarioMIP</summary>
+<p>Their metadata hold peak and 2100 warming only.
+<code>warming_at_net_zero()</code> takes the net-zero year of <a href="#net-zero">Net zero</a> from the harmonised climate-assessment CO₂ and the model's reported CO₂.
+The warming at net zero is the median and 67<sup>th</sup>-percentile GSAT in that year. Without net zero by 2100, it is the 2100 warming.
+This follows the convention of the AR6 metadata.
+On the 914 AR6 scenarios that Scenario Compass carries over, it gives the same net-zero years as the AR6 series, and the AR6 metadata warming within 0.013 °C where the AR6 metadata hold the warming at net zero.
+A source without warming at net zero in its metadata declares a <code>derived_warming</code> block in <code>scenario_sources.yaml</code>.</p>
+</details>
+<p>Scenario Compass enters the bunker share. Its non-CO₂, the harmonised-infilled Kyoto gases minus CO₂, is the non-CO₂ term for a budget source built on it (<a href="#non-co2-basis">Non-CO₂ basis</a>).
+It has no national-inventory land-use split, so it supplies no land-use or convention-gap term.</p>
+<h3 id="scenariomip">ScenarioMIP<a class="headerlink" href="#scenariomip" title="Permanent link">&para;</a></h3>
+<p>ScenarioMIP-CMIP7 v0.1 (<a href="https://doi.org/10.5281/zenodo.22296051">Riahi 2026b</a>) holds 68 model runs of 7 models, with the climate assessment of MAGICC v7.6.0a3.
+It is the scenario source <code>scenariomip</code> and enters the bunker share only. Its warming is on MAGICC v7.6.0a3, not the AR6 calibration of the budgets' scenario database, so it supplies no non-CO₂ term. Its terms are in <a href="../../user-guide/data-sources/#scenariomip-cmip7-ensemble-manual">Data &amp; licences</a>.</p>
+<p><a href="../../dev-guide/adding-data-sources/#scenario-sources-and-budgets">Adding data sources</a> lists what a new budget or scenario source needs.</p>
+<hr />
+<h2 id="scenario-labels">Scenario labels<a class="headerlink" href="#scenario-labels" title="Permanent link">&para;</a></h2>
+<p>Notebook 104 maps the categories of each scenario source to clean <code>climate-assessment</code> names and <code>quantile</code> fields.
+All downstream code, including the non-CO₂ pathways, then reads one format.
+AR6 categories map as:</p>
+<ul>
+<li>C1 → <code>climate-assessment="1.5C"</code>, <code>quantile=0.5</code></li>
+<li>C3 → <code>climate-assessment="2C"</code>, <code>quantile=0.67</code></li>
+<li>C4 → <code>climate-assessment="2C"</code>, <code>quantile=0.5</code></li>
+</ul>
+<p>C2 stays out of the map for the reason given in <a href="#ar6-category-pools">AR6 category pools</a>.
+A new scenario source defines its own mapping into the same format.
+Inside notebook 104, combined labels (e.g. "1.5p50") keep C3 and C4 apart during the median step and map to the clean format at output.
+The map follows the AR6 WGIII category definitions (<a href="#ar6-category-pools">AR6 category pools</a>).</p>
+<hr />
+<h2 id="accounting">Full-year accounting<a class="headerlink" href="#accounting" title="Permanent link">&para;</a></h2>
+<p>Budgets run from the start of 2020, so a cumulative counts every year in full.
+A scenario series is linear between its reported years, and the value of a year is its flow over that whole year.
+The net-zero year is the zero crossing of that line, interpolated between the last positive and the first non-positive point.
+A cumulative to net zero sums the full years from its start to the year before the crossing and adds the fraction of the crossing year (the trapezoid of the line within that year).
+The same accounting applies to the volume that selects the set, the land-use term, the convention gap and the bunker term.
+The functions are <code>net_zero_crossing()</code> and <code>integrate()</code> in <code>src/fair_shares/library/utils/data/rcb.py</code>.</p>
+<p>Each scenario integrates to its own net-zero crossing <span class="arithmatex">\(t_{\text{nz},i}\)</span>, where its total CO₂ (<code>Emissions|CO2</code>) first reaches zero.
+This keeps negative emissions after net zero out of the corrections.
+<code>Emissions|CO2</code> in IAM scenario databases is fossil plus BM land-use CO₂ by convention. This is a property of how scenarios report total CO₂.
+Every integral-term set holds only scenarios that reach net zero by 2100: the volume-matched set by its rule, and an AR6 category pool by keeping its members that reach net zero (192 of the 231 C3 scenarios).</p>
+<details class="info">
+<summary>Files written per budget</summary>
+<p>Notebook 104 keys each budget as <code>source:label</code> in <code>rcb_scenario_adjustments.yaml</code>, with the scalars and the consistency record.
+It also writes:</p>
+<ul>
+<li><code>scenario_set_{source}_{label}.csv</code>: the members of the integral-term set, with their net-zero crossings and net CO₂ from each possible start year;</li>
+<li><code>bunker_share_reporters.csv</code>: each scenario's cumulative bunkers and net CO₂ from every possible start year.</li>
+</ul>
+<p>The processed budget files carry <code>published_label</code>, <code>likelihood_scope</code>, <code>budget_metric</code>, <code>scenario_selection</code>, <code>budget_2020_gt</code>, the rule and size of both sets and <code>nz_year_median</code>.
+They also carry the bunker columns: <code>bunker_share</code>, <code>bunker_share_pooled</code>, the interquartile range of the ratios, the family medians and counts (<code>bunker_share_families</code>), the scenario counts by source and the set's net CO₂ after the last observed year (<code>bunker_set_co2_after_mt</code>).</p>
+</details>
+<p>The sources cited here are on the <a href="../references/">References</a> page.</p>
+
+
+
+
+
+
+
+  
+  
+
+
+
+  
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+          <button type="button" class="md-top md-icon" data-md-component="top" hidden>
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M13 20h-2V8l-5.5 5.5-1.42-1.42L12 4.16l7.92 7.92-1.42 1.42L13 8z"/></svg>
+  Back to top
+</button>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../parameter-effects/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Parameter effects">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Parameter effects
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../other-operations/" class="md-footer__link md-footer__link--next" aria-label="Next: Data processing">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Data processing
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+      <div class="md-progress" data-md-component="progress" role="progressbar"></div>
+    
+    
+      <div class="md-consent" data-md-component="consent" id="__consent" hidden>
+        <div class="md-consent__overlay"></div>
+        <aside class="md-consent__inner">
+          <form class="md-consent__form md-grid md-typeset" name="consent">
+            
+
+  
+    
+  
+
+
+  
+    
+  
+
+
+
+
+  
+
+<h4>Cookie consent</h4>
+<p>We use cookies to recognize your repeated visits and preferences, as well as to measure the effectiveness of our documentation and whether users find what they search for. With your consent, you're helping us to make our documentation better.</p>
+<input class="md-toggle" type="checkbox" id="__settings" checked>
+<div class="md-consent__settings">
+  <ul class="task-list">
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="analytics" checked>
+          <span class="task-list-indicator"></span>
+          Google Analytics
+        </label>
+      </li>
+    
+      
+      
+        
+        
+      
+      <li class="task-list-item">
+        <label class="task-list-control">
+          <input type="checkbox" name="github" checked>
+          <span class="task-list-indicator"></span>
+          GitHub
+        </label>
+      </li>
+    
+  </ul>
+</div>
+<div class="md-consent__controls">
+  
+    
+      <button class="md-button md-button--primary">Accept</button>
+    
+    
+    
+  
+    
+    
+      <button type="reset" class="md-button md-button--primary">Reject</button>
+    
+    
+  
+</div>
+          </form>
+        </aside>
+      </div>
+      <script>var consent=__md_get("__consent");if(consent)for(var input of document.forms.consent.elements)input.name&&(input.checked=consent[input.name]||!1);else"file:"!==location.protocol&&setTimeout((function(){document.querySelector("[data-md-component=consent]").hidden=!1}),250);var form=document.forms.consent;for(var action of["submit","reset"])form.addEventListener(action,(function(e){if(e.preventDefault(),"reset"===e.type)for(var n of document.forms.consent.elements)n.name&&(n.checked=!1);__md_set("__consent",Object.fromEntries(Array.from(new FormData(form).keys()).map((function(e){return[e,!0]})))),location.hash="",location.reload()}))</script>
+    
+    <script id="__config" type="application/json">{"base": "../..", "features": ["navigation.instant", "navigation.instant.progress", "navigation.tabs", "navigation.sections", "navigation.expand", "navigation.top", "navigation.footer", "navigation.indexes", "navigation.tracking", "toc.follow", "search.suggest", "search.highlight", "search.share", "content.code.copy", "content.code.annotate", "content.tooltips"], "search": "../../assets/javascripts/workers/search.6ce7567c.min.js", "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": {"provider": "mike"}}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.88dd0f4e.min.js"></script>
+      
+        <script src="../../javascripts/mathjax.js"></script>
+      
+        <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
+      
+    
+  </body>
+</html>
