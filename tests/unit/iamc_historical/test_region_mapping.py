@@ -31,12 +31,7 @@ def test_region_for_case_insensitive() -> None:
 
 def test_unknown_country_raises_clear_error(tmp_path: Path) -> None:
     bad = tmp_path / "bad.yml"
-    bad.write_text(
-        "- BAD:\n"
-        "  - BAD|X:\n"
-        "      countries:\n"
-        "        - Fictionland\n"
-    )
+    bad.write_text("- BAD:\n  - BAD|X:\n      countries:\n        - Fictionland\n")
     with pytest.raises(ConfigurationError, match="Could not resolve ISO3"):
         RegionMapping.from_nomenclature_yaml(bad)
 
@@ -61,7 +56,10 @@ def test_aggregate_sums_countries_to_regions() -> None:
     out_by_region = out.set_index("region")[[1990, 2000]].sort_index()
     assert out_by_region.loc["TINY 1.0|BRA-only"].tolist() == [100.0, 150.0]
     # India + USA sum
-    assert out_by_region.loc["TINY 1.0|IND-USA"].tolist() == [500.0 + 4000.0, 800.0 + 5000.0]
+    assert out_by_region.loc["TINY 1.0|IND-USA"].tolist() == [
+        500.0 + 4000.0,
+        800.0 + 5000.0,
+    ]
 
 
 def test_aggregate_drops_unmapped_and_warns(caplog: pytest.LogCaptureFixture) -> None:

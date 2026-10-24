@@ -12,7 +12,8 @@ of a budget comes from the set that matches its role:
 - temperature-matched set (non-CO2 pathway): scenarios that reach net-zero CO2
   and whose median warming at net zero lies in [T - w, T + w), for every
   likelihood, because published budgets assume the median non-CO2 warming of
-  scenarios at T
+  scenarios at T. The scenarios come from the database the budget source was
+  built on (``non_co2_basis``)
 - AR6 category pool (rule "ar6-category"): the AR6 category paired with the
   label, for every term
 - bunker share: bunkers after the last observed year are a share of the net
@@ -58,7 +59,8 @@ DEFAULT_BUNKER_MIN_RUNS_PER_FAMILY = 3
 # Start years of the bunker-share window (the year after the last observed bunker year).
 SHARE_START_YEARS = tuple(range(2021, 2032))
 DEFAULT_BUNKER_SOURCES = ("ar6", "sci", "scenariomip")
-DEFAULT_NON_CO2_SOURCES = ("ar6",)
+# Scenario database a budget source was built on, which supplies its non-CO2 set.
+DEFAULT_NON_CO2_BASIS = "ar6"
 DEFAULT_OBSERVED_CO2_PATH = (
     "data/emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx"
 )
@@ -81,6 +83,7 @@ class BudgetSpec:
     likelihood_scope: str | None
     budget_metric: str | None
     rule: str
+    non_co2_basis: str = DEFAULT_NON_CO2_BASIS
 
     @property
     def key(self) -> str:
@@ -118,12 +121,28 @@ def budget_specs(rcb_yaml: dict) -> list[BudgetSpec]:
     """
     Return every budget of a loaded rcbs.yaml, with renamed labels applied.
 
-    Each source may record ``likelihood_scope`` (tcre-only, tcre-zec-esf) and
-    ``budget_metric`` (warming-at-net-zero, peak-warming).
+    Each source may record ``likelihood_scope`` (tcre-only, tcre-zec-esf),
+    ``budget_metric`` (warming-at-net-zero, peak-warming) and
+    ``non_co2_basis``: the scenario database the budget was built on, which
+    supplies its non-CO2 set (default ``ar6``).
+
+    Raises
+    ------
+    ConfigurationError
+        If a ``non_co2_basis`` does not supply the non-co2 term
     """
+    from fair_shares.library.utils.data.scenario_sources import get_scenario_source
+
     specs = []
     for source, data in rcb_yaml["rcb_data"].items():
         rule = resolve_scenario_selection(source, data.get("scenario_selection"))
+        basis = data.get("non_co2_basis", DEFAULT_NON_CO2_BASIS)
+        if "non-co2" not in get_scenario_source(basis)["terms"]:
+            raise ConfigurationError(
+                f"RCB source '{source}': non_co2_basis '{basis}' is a scenario "
+                f"source whose entry in scenario_sources.yaml does not supply the "
+                f"non-co2 term."
+            )
         scope = _checked(
             source, "likelihood_scope", data.get("likelihood_scope"), LIKELIHOOD_SCOPES
         )
@@ -146,6 +165,7 @@ def budget_specs(rcb_yaml: dict) -> list[BudgetSpec]:
                     likelihood_scope=scope,
                     budget_metric=metric,
                     rule=rule,
+                    non_co2_basis=basis,
                 )
             )
     return specs
@@ -157,27 +177,20 @@ def scenario_set_settings(rcb_yaml: dict) -> dict:
 
     Keys: volume_tolerance_gt, min_scenarios, temperature_half_width (the
     deprecated ``band_half_width`` is read as it), bunkers (min_reporters,
-    min_families, min_runs_per_family, scenario_sources), non_co2
-    (scenario_sources: the sources pooled into the temperature-matched non-CO2
-    set, default ["ar6"]) and observed_co2_path.
+    min_families, min_runs_per_family, scenario_sources) and observed_co2_path.
 
     Raises
     ------
     ConfigurationError
-        If a non-CO2 source does not list "non-co2" in its registry terms
+        If rcbs.yaml holds a removed setting
     """
-    from fair_shares.library.utils.data.scenario_sources import get_scenario_source
-
+    if "non_co2" in rcb_yaml:
+        raise ConfigurationError(
+            "rcbs.yaml: non_co2.scenario_sources was removed. A budget takes its "
+            "non-CO2 set from the scenario database its source was built on: set "
+            "non_co2_basis under that source in rcb_data (default ar6)."
+        )
     tolerance = float(rcb_yaml.get("volume_tolerance_gt", DEFAULT_VOLUME_TOLERANCE_GT))
-    non_co2_sources = list(
-        (rcb_yaml.get("non_co2") or {}).get("scenario_sources", DEFAULT_NON_CO2_SOURCES)
-    )
-    for name in non_co2_sources:
-        if "non-co2" not in get_scenario_source(name)["terms"]:
-            raise ConfigurationError(
-                f"rcbs.yaml: non_co2.scenario_sources lists '{name}', whose entry "
-                f"in scenario_sources.yaml does not supply the non-co2 term."
-            )
     bunkers = rcb_yaml.get("bunkers") or {}
     removed = sorted(
         {"fallback", "volume_tolerance_gt", "min_scenarios"} & set(bunkers)
@@ -211,7 +224,6 @@ def scenario_set_settings(rcb_yaml: dict) -> dict:
                 bunkers.get("scenario_sources", DEFAULT_BUNKER_SOURCES)
             ),
         },
-        "non_co2": {"scenario_sources": non_co2_sources},
         "observed_co2_path": rcb_yaml.get(
             "observed_co2_path", DEFAULT_OBSERVED_CO2_PATH
         ),
@@ -393,6 +405,7 @@ def build_budget_sets(
     observed_gt: pd.Series,
     columns: dict,
     max_fill_years: int = 1,
+    active_source: str = DEFAULT_NON_CO2_BASIS,
 ) -> dict[str, dict]:
     """
     Select the scenario sets of every budget in a loaded rcbs.yaml.
@@ -412,6 +425,8 @@ def build_budget_sets(
         volume-matched, temperature-matched or category terms set
     max_fill_years : int, optional
         Trailing observed years that may take the last value (default: 1)
+    active_source : str, optional
+        Scenario source of ``metadata`` (default: "ar6")
 
     Returns
     -------
@@ -419,6 +434,11 @@ def build_budget_sets(
         Keyed by ``BudgetSpec.key``: "spec", "budget_2020_gt", "terms" (the
         members behind the integral terms), "non_co2" (the members behind the
         non-CO2 pathway), "category" and "record" (the provenance)
+
+    Raises
+    ------
+    ConfigurationError
+        If a budget's ``non_co2_basis`` is not ``active_source``
     """
     settings = scenario_set_settings(rcb_yaml)
     min_n = settings["min_scenarios"]
@@ -426,6 +446,14 @@ def build_budget_sets(
     reaches = metadata[columns["net_zero_year"]].notna()
     sets = {}
     for spec in budget_specs(rcb_yaml):
+        # The per-budget medians of every category (the Snakefile reads co2-ffi
+        # and all-ghg-ex-co2-lulucf) come from the active source's pathways.
+        if spec.non_co2_basis != active_source:
+            raise ConfigurationError(
+                f"Budget '{spec.key}': non_co2_basis '{spec.non_co2_basis}' is not "
+                f"the active scenario source '{active_source}'. Non-CO2 sets from "
+                f"another scenario database are not built."
+            )
         budget_2020, observed_added = budget_from_2020(
             spec, observed_gt, max_fill_years
         )
@@ -477,6 +505,7 @@ def build_budget_sets(
             "likelihood_scope": spec.likelihood_scope,
             "budget_metric": spec.budget_metric,
             "scenario_selection": "ar6-category" if spec.category else "role-matched",
+            "non_co2_basis": spec.non_co2_basis,
             "budget_published_gt": round(spec.value_gt, 1),
             "baseline_year": spec.baseline_year,
             "observed_2020_to_baseline_gt": round(observed_added, 1),
@@ -501,60 +530,6 @@ def build_budget_sets(
             "record": record,
         }
     return sets
-
-
-def add_source_non_co2_members(
-    budget_sets: dict[str, dict],
-    source: str,
-    metadata: pd.DataFrame,
-    columns: dict,
-    half_width: float,
-) -> dict[str, int]:
-    """
-    Add the temperature-matched scenarios of another source to the non-CO2 sets.
-
-    Applies the temperature-matched rule of ``select_temperature_matched`` to
-    ``metadata`` (one row per scenario of ``source``) for every role-matched
-    budget. AR6-category budgets keep their category pool. The provenance
-    record of each set counts the added scenarios under "added_by_source".
-
-    Parameters
-    ----------
-    budget_sets : dict[str, dict]
-        Output of ``build_budget_sets``, changed in place
-    source : str
-        Name of the added scenario source
-    metadata : pd.DataFrame
-        Metadata of the source, indexed by (Model, Scenario)
-    columns : dict
-        Metadata column names "net_zero_year" and "warming_median"
-    half_width : float
-        Half-width of the temperature-matched set, in degrees C
-
-    Returns
-    -------
-    dict[str, int]
-        Budget key -> number of scenarios added
-    """
-    added_counts = {}
-    for key, entry in budget_sets.items():
-        if entry["category"] is not None:
-            continue
-        added = select_temperature_matched(
-            metadata,
-            key,
-            entry["spec"].temperature,
-            columns["warming_median"],
-            columns["net_zero_year"],
-            half_width,
-            0,
-        ).difference(entry["non_co2"])
-        entry["non_co2"] = entry["non_co2"].append(added)
-        record = entry["record"]["non_co2_set"]
-        record["n"] = len(entry["non_co2"])
-        record.setdefault("added_by_source", {})[source] = len(added)
-        added_counts[key] = len(added)
-    return added_counts
 
 
 def bunker_share_table(

@@ -66,9 +66,9 @@ class TestAllocationManager:
             assert is_budget_approach(approach), f"{approach} should be budget approach"
 
         for approach in pathway_approaches:
-            assert not is_budget_approach(
-                approach
-            ), f"{approach} should not be budget approach"
+            assert not is_budget_approach(approach), (
+                f"{approach} should not be budget approach"
+            )
 
     def test_is_pathway_approach(self):
         """Test identification of pathway approaches."""
@@ -87,14 +87,14 @@ class TestAllocationManager:
         ]
 
         for approach in pathway_approaches:
-            assert is_pathway_approach(
-                approach
-            ), f"{approach} should be pathway approach"
+            assert is_pathway_approach(approach), (
+                f"{approach} should be pathway approach"
+            )
 
         for approach in budget_approaches:
-            assert not is_pathway_approach(
-                approach
-            ), f"{approach} should not be pathway approach"
+            assert not is_pathway_approach(approach), (
+                f"{approach} should not be pathway approach"
+            )
 
     @pytest.mark.parametrize(
         "approach",

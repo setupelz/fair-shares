@@ -46,9 +46,7 @@ def _ensure_loaded() -> None:
     """Populate the lazy module-level release registries from disk."""
     cfg = _load_unified_config()
     globals()["IAMC_HISTORICAL_RELEASES"] = cfg.get("iamc_historical", {})
-    globals()["LATEST_IAMC_HISTORICAL_RELEASE"] = cfg.get(
-        "active_iamc_historical", ""
-    )
+    globals()["LATEST_IAMC_HISTORICAL_RELEASE"] = cfg.get("active_iamc_historical", "")
 
 
 def __getattr__(name: str):

@@ -8,9 +8,10 @@ the bunker variables. A new scenario source plugs in as a new entry.
 
 The AR6 bunker series come from the public AR6 Scenarios Database, read
 anonymously through pyam (``fetch_ar6_bunkers``). The Scenario Compass (SCI)
-and ScenarioMIP workbooks are manual downloads (``bunker_reporter_series``,
-``derived_source_inputs``). Their metadata carry no warming at net zero;
-``warming_at_net_zero`` derives it from their GSAT percentile series.
+and ScenarioMIP workbooks are manual downloads (``bunker_reporter_series``;
+``derived_source_inputs`` for SCI's non-CO2). Their metadata carry no warming
+at net zero; ``warming_at_net_zero`` derives it from their GSAT percentile
+series.
 """
 
 from __future__ import annotations
@@ -549,11 +550,11 @@ def derived_source_inputs(
     """
     Return the metadata and non-CO2 pathways of a source with derived warming.
 
-    For a registry entry with a ``derived_warming`` block (SCI, ScenarioMIP):
-    keeps the scenarios that pass its ``vetting`` and are not in
-    ``exclude_models``, derives the at-net-zero columns with
-    ``warming_at_net_zero`` and takes non-CO2 as Kyoto gases minus CO2 of
-    its ``non_co2`` block.
+    For a registry entry with a ``derived_warming`` block that supplies the
+    non-co2 term (SCI): keeps the scenarios that pass its ``vetting`` and are
+    not in ``exclude_models``, derives the at-net-zero columns with
+    ``warming_at_net_zero`` and takes non-CO2 as Kyoto gases minus CO2 of its
+    ``non_co2`` block.
 
     Returns
     -------
@@ -566,13 +567,17 @@ def derived_source_inputs(
     Raises
     ------
     ConfigurationError
-        If the entry has no ``derived_warming`` block
+        If the entry has no ``derived_warming`` block or no non-co2 term
     """
     source = get_scenario_source(name)
     derived = source.get("derived_warming")
     if derived is None:
         raise ConfigurationError(
             f"Scenario source '{name}' declares no derived_warming block."
+        )
+    if "non-co2" not in source["terms"]:
+        raise ConfigurationError(
+            f"Scenario source '{name}' does not supply the non-co2 term."
         )
     path = source_data_path(source, data_dir)
     if not path.exists():

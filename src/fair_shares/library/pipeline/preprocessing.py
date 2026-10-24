@@ -106,7 +106,7 @@ class DataPreprocessor:
         self._extract_config_parameters()
 
     def _setup_paths(self) -> None:
-        """Setup intermediate directory paths."""
+        """Set up the intermediate directory paths."""
         base = self.output_dir / self.source_id / "intermediate"
 
         self.emiss_intermediate_dir = base / "emissions"

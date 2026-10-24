@@ -234,9 +234,7 @@ root_intermediate_dir.mkdir(parents=True, exist_ok=True)
 # for LULUCF-affected categories when active_lulucf_source is set.
 emissions_data = {}
 for category in final_categories:
-    emiss_path = emissions_path(
-        emiss_intermediate_dir, category, active_lulucf_source
-    )
+    emiss_path = emissions_path(emiss_intermediate_dir, category, active_lulucf_source)
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])

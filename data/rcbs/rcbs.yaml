@@ -14,6 +14,9 @@
 #     use peak warming.
 #   - scenarios: label -> published value
 #   - scenario_selection (optional): role-matched (default) or ar6-category.
+#   - non_co2_basis (optional): the scenario database the budget was built on,
+#     which supplies its non-CO2 set (default ar6). A budget assumes the
+#     non-CO2 pathway of that database, so its non-CO2 set comes from it too.
 #
 # Scenario sets (src/fair_shares/library/utils/data/scenario_sets.py):
 #   - volume-matched set, for the land-use deduction (co2-ffi), the convention
@@ -74,12 +77,6 @@ bunkers:
   min_families: 3
   min_runs_per_family: 3
 
-# Sources pooled into the temperature-matched non-CO2 set. SCI and ScenarioMIP
-# add their vetted scenarios that are not AR6 carry-overs, with warming at net
-# zero derived from their GSAT series (warming_at_net_zero).
-non_co2:
-  scenario_sources: [ar6]
-
 # Observed global net CO2 behind the budget from 2020 (registry: gcb-2025-global).
 observed_co2_path: "data/emissions/gcb-2025/Global_Carbon_Budget_2025_v1.0.xlsx"
 
@@ -93,11 +90,13 @@ rebase_fill_max_years: 1
 rcb_data:
   # Lamboll et al. (2023), Nature Climate Change 13, 1360-1367,
   # "https://doi.org/10.1038/s41558-023-01848-5". From January 2023.
+  # Non-CO2 from the AR6 scenario database (MAGICC v7.5.3 and FaIR).
   lamboll_2023:
     baseline_year: 2023
     unit: "Gt * CO2"
     likelihood_scope: tcre-zec-esf
     budget_metric: peak-warming
+    non_co2_basis: ar6
     scenarios:
       "1.5p50": 250
       "2p50": 1220
@@ -105,12 +104,14 @@ rcb_data:
       "2p90": 500
 
   # Forster et al. (2024), IGCC 2023, Table 8, "https://doi.org/10.5194/essd-16-2625-2024".
-  # From the start of 2024.
+  # From the start of 2024. Non-CO2 from the AR6 WGIII scenario database, by
+  # the method of Lamboll et al. (2023).
   forster_2024:
     baseline_year: 2024
     unit: "Gt * CO2"
     likelihood_scope: tcre-only
     budget_metric: warming-at-net-zero
+    non_co2_basis: ar6
     scenarios:
       "1.5p50": 200
       "1.7p50": 550
@@ -121,12 +122,15 @@ rcb_data:
       "2p83": 750
 
   # IPCC AR6 WGI, Table SPM.2, "https://www.ipcc.ch/report/ar6/wg1/". From 2020.
+  # Built on the SR1.5 scenario database, which fair-shares does not hold; the
+  # AR6 category pools stand in.
   ar6_2020:
     baseline_year: 2020
     unit: "Gt * CO2"
     likelihood_scope: tcre-only
     budget_metric: warming-at-net-zero
     scenario_selection: ar6-category
+    non_co2_basis: ar6
     scenarios:
       "1.5p50": 500
       "2p50": 1350
@@ -135,11 +139,13 @@ rcb_data:
 
   # Forster et al (2026), IGCC 2025, ESSD 18, 3889-3933, Table 8,
   # "https://doi.org/10.5194/essd-18-3889-2026". Budgets from the start of 2026.
+  # Non-CO2 from the AR6 WGIII scenarios aligned with net-zero CO2 (Sect. 9).
   forster_2026:
     baseline_year: 2026
     unit: "Gt * CO2"
     likelihood_scope: tcre-only
     budget_metric: warming-at-net-zero
+    non_co2_basis: ar6
     scenarios:
       "1.5p50": 130
       "1.7p50": 500
@@ -152,13 +158,15 @@ rcb_data:
       "2p90": 600
 
   # IPCC AR6 WGI (2021), Table SPM.2, "https://doi.org/10.1017/9781009157896.001".
-  # Budgets from the start of 2020.
+  # Budgets from the start of 2020. Built on the SR1.5 scenario database, which
+  # fair-shares does not hold; the AR6 category pools stand in.
   ar6_wg1_2021:
     baseline_year: 2020
     unit: "Gt * CO2"
     likelihood_scope: tcre-only
     budget_metric: warming-at-net-zero
     scenario_selection: ar6-category
+    non_co2_basis: ar6
     scenarios:
       "1.5p50": 500
       "1.5p67": 400

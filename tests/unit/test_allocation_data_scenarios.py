@@ -40,9 +40,9 @@ class TestAllocationDataScenarios:
         )
 
         # Test result type
-        assert isinstance(
-            result, PathwayAllocationResult
-        ), "Result should be PathwayAllocationResult"
+        assert isinstance(result, PathwayAllocationResult), (
+            "Result should be PathwayAllocationResult"
+        )
 
         # Test approach and parameters are correctly stored
         assert result.approach == "per-capita-adjusted"
@@ -54,14 +54,14 @@ class TestAllocationDataScenarios:
 
         # Test that result has data for years beyond GDP availability
         future_years = [col for col in shares_df.columns if int(col) > 2020]
-        assert (
-            len(future_years) > 0
-        ), "Should produce results for years beyond GDP availability"
+        assert len(future_years) > 0, (
+            "Should produce results for years beyond GDP availability"
+        )
 
         # Test that shares have correct MultiIndex structure
-        assert isinstance(
-            shares_df.index, pd.MultiIndex
-        ), "Shares should have MultiIndex"
+        assert isinstance(shares_df.index, pd.MultiIndex), (
+            "Shares should have MultiIndex"
+        )
         assert shares_df.index.names == [
             "iso3c",
             "unit",
@@ -72,12 +72,12 @@ class TestAllocationDataScenarios:
         emission_category = shares_df.index.get_level_values(
             "emission-category"
         ).unique()
-        assert (
-            len(emission_category) == 1
-        ), f"Should have exactly one emission category, got: {emission_category}"
-        assert (
-            emission_category == STANDARD_EMISSION_CATEGORY
-        ), f"Unexpected emission category: {emission_category}"
+        assert len(emission_category) == 1, (
+            f"Should have exactly one emission category, got: {emission_category}"
+        )
+        assert emission_category == STANDARD_EMISSION_CATEGORY, (
+            f"Unexpected emission category: {emission_category}"
+        )
 
     def test_mixed_units_handling(self, mixed_units_data):
         """Test that functions handle different units correctly."""
@@ -96,9 +96,9 @@ class TestAllocationDataScenarios:
         )
 
         # Test result type
-        assert isinstance(
-            result, PathwayAllocationResult
-        ), "Result should be PathwayAllocationResult"
+        assert isinstance(result, PathwayAllocationResult), (
+            "Result should be PathwayAllocationResult"
+        )
 
         # Get shares data - validation is done automatically by result class
         shares_df = result.relative_shares_pathway_emissions
@@ -111,9 +111,9 @@ class TestAllocationDataScenarios:
         assert len(units) > 0, "Should have at least one unit"
 
         # Test that data structure is valid
-        assert isinstance(
-            shares_df.index, pd.MultiIndex
-        ), "Shares should have MultiIndex"
+        assert isinstance(shares_df.index, pd.MultiIndex), (
+            "Shares should have MultiIndex"
+        )
         assert shares_df.index.names == [
             "iso3c",
             "unit",
@@ -146,12 +146,12 @@ class TestAllocationDataScenarios:
         # Test absolute emissions calculation using result class method
         absolute_emissions = pathway_result.get_absolute_emissions(pathway_emissions)
 
-        assert isinstance(
-            absolute_emissions, pd.DataFrame
-        ), "Absolute emissions should be DataFrame"
-        assert isinstance(
-            absolute_emissions.index, pd.MultiIndex
-        ), "Absolute emissions should have MultiIndex"
+        assert isinstance(absolute_emissions, pd.DataFrame), (
+            "Absolute emissions should be DataFrame"
+        )
+        assert isinstance(absolute_emissions.index, pd.MultiIndex), (
+            "Absolute emissions should have MultiIndex"
+        )
 
         # Test budget allocation absolute calculation
         from fair_shares.library.allocations.budgets import equal_per_capita_budget
@@ -169,18 +169,18 @@ class TestAllocationDataScenarios:
         # Test absolute budgets calculation using result class method
         absolute_budgets = budget_result.get_absolute_budgets(single_year_emissions)
 
-        assert isinstance(
-            absolute_budgets, pd.DataFrame
-        ), "Absolute budgets should be DataFrame"
-        assert isinstance(
-            absolute_budgets.index, pd.MultiIndex
-        ), "Absolute budgets should have MultiIndex"
+        assert isinstance(absolute_budgets, pd.DataFrame), (
+            "Absolute budgets should be DataFrame"
+        )
+        assert isinstance(absolute_budgets.index, pd.MultiIndex), (
+            "Absolute budgets should have MultiIndex"
+        )
 
         # Test that budget has only one year column
         year_cols = [col for col in absolute_budgets.columns if str(col).isdigit()]
-        assert (
-            len(year_cols) == 1
-        ), f"Budget should have exactly one year column, got: {year_cols}"
-        assert (
-            int(year_cols[0]) == allocation_year
-        ), f"Budget year should match allocation year {allocation_year}"
+        assert len(year_cols) == 1, (
+            f"Budget should have exactly one year column, got: {year_cols}"
+        )
+        assert int(year_cols[0]) == allocation_year, (
+            f"Budget year should match allocation year {allocation_year}"
+        )

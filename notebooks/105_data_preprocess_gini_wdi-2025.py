@@ -183,7 +183,9 @@ print(gini_filtered["year"].value_counts().sort_index())
 gini_processed = gini_filtered[["iso3c", "gini"]].copy()
 gini_processed["gini"] = gini_processed["gini"] / 100.0
 
-out_of_range = gini_processed[(gini_processed["gini"] < 0) | (gini_processed["gini"] > 1)]
+out_of_range = gini_processed[
+    (gini_processed["gini"] < 0) | (gini_processed["gini"] > 1)
+]
 if not out_of_range.empty:
     raise ValueError(f"Gini values outside 0-1 after conversion:\n{out_of_range}")
 

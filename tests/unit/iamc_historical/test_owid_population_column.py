@@ -34,9 +34,7 @@ def _owid_csv(tmp_path, population_column: str):
     return path
 
 
-@pytest.mark.parametrize(
-    "column", ["Population", "Population (historical estimates)"]
-)
+@pytest.mark.parametrize("column", ["Population", "Population (historical estimates)"])
 def test_both_known_owid_spellings_load(tmp_path, column) -> None:
     wide = _load_population(_owid_csv(tmp_path, column), unit="million")
 
@@ -53,5 +51,11 @@ def test_unknown_column_fails_with_diagnostic(tmp_path) -> None:
 
 
 def test_newest_spelling_wins_when_both_present() -> None:
-    columns = ["Entity", "Code", "Year", "Population (historical estimates)", "Population"]
+    columns = [
+        "Entity",
+        "Code",
+        "Year",
+        "Population (historical estimates)",
+        "Population",
+    ]
     assert owid_population_column(columns) == "Population"

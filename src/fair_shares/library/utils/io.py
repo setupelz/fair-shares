@@ -342,6 +342,5 @@ def create_param_manifest(
     manifest_path = output_dir / "param_manifest.csv"
     manifest_df.to_csv(manifest_path, index=False)
     print(
-        f"Saved parameter manifest with {len(manifest_df)} rows to "
-        f"{manifest_path.name}"
+        f"Saved parameter manifest with {len(manifest_df)} rows to {manifest_path.name}"
     )

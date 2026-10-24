@@ -59,9 +59,9 @@ class TestCalculateExponentialDecayPathway:
             )
 
             relative_error = abs(pathway.sum() - budget) / budget
-            assert (
-                relative_error < 1e-6
-            ), f"Budget {budget}: sum {pathway.sum():.2f}, error {relative_error:.2e}"
+            assert relative_error < 1e-6, (
+                f"Budget {budget}: sum {pathway.sum():.2f}, error {relative_error:.2e}"
+            )
 
     def test_start_value_preserved(self):
         """Test that first year emission matches start_value."""
@@ -111,9 +111,9 @@ class TestCalculateExponentialDecayPathway:
         # All values should be >= 0 (final year is exactly zero)
         assert (pathway >= 0).all(), "Pathway contains negative values"
         # All values except the last should be positive
-        assert (
-            pathway[:-1] > 0
-        ).all(), "Pathway contains non-positive values before final year"
+        assert (pathway[:-1] > 0).all(), (
+            "Pathway contains non-positive values before final year"
+        )
         # Final year should be zero
         assert abs(pathway.iloc[-1]) < 1e-10, f"Final year not zero: {pathway.iloc[-1]}"
 
@@ -126,9 +126,9 @@ class TestCalculateExponentialDecayPathway:
             end_year=2100,
         )
 
-        assert (
-            abs(pathway.iloc[-1]) < 1e-10
-        ), f"Final year emissions should be zero, got {pathway.iloc[-1]:.2e}"
+        assert abs(pathway.iloc[-1]) < 1e-10, (
+            f"Final year emissions should be zero, got {pathway.iloc[-1]:.2e}"
+        )
         assert pathway.index[-1] == "2100", "Final year index incorrect"
 
     def test_year_index_as_strings(self):
@@ -142,9 +142,9 @@ class TestCalculateExponentialDecayPathway:
             end_year=2030,
         )
 
-        assert all(
-            isinstance(idx, str) for idx in pathway.index
-        ), "Year indices should be strings"
+        assert all(isinstance(idx, str) for idx in pathway.index), (
+            "Year indices should be strings"
+        )
         assert pathway.index[0] == "2020"
         assert pathway.index[-1] == "2030"
 
@@ -161,9 +161,9 @@ class TestCalculateExponentialDecayPathway:
         )
 
         expected_years = end_year - start_year + 1
-        assert (
-            len(pathway) == expected_years
-        ), f"Expected {expected_years} years, got {len(pathway)}"
+        assert len(pathway) == expected_years, (
+            f"Expected {expected_years} years, got {len(pathway)}"
+        )
 
     def test_invalid_negative_budget(self):
         """Test that negative budget raises AllocationError."""

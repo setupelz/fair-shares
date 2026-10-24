@@ -59,9 +59,7 @@ def test_cumulative_end_year_distinguishes_budget_runs():
 
 
 def test_year_params_render_without_decimal():
-    df = pd.DataFrame(
-        [_base_row(**{"capability-reference-year": 2014})]
-    )
+    df = pd.DataFrame([_base_row(**{"capability-reference-year": 2014})])
     short = build_approach_short_column(df)
     assert "cref2014" in short.iloc[0]
     assert "cref2014.0" not in short.iloc[0]

@@ -53,25 +53,23 @@ from .pipeline_validation import (
 )
 
 __all__ = [
-    # Pydantic models
     "AllocationInputs",
     "AllocationOutputs",
-    # Pipeline validation
+    "validate_adjustment_data_requirements",
     "validate_all_datasets_totals",
-    # Allocation validation
     "validate_allocation_parameters",
     "validate_allocation_year_for_co2",
     "validate_allocation_years_against_harmonisation",
+    "validate_country_data_present",
+    "validate_country_world_consistency",
     "validate_dataset_totals",
     "validate_emission_category_match",
     "validate_emissions_data",
-    # Output validation
     "validate_exactly_one_year_column",
     "validate_function_parameters",
     "validate_gdp_data",
     "validate_gini_data",
     "validate_gini_range",
-    # Input validation
     "validate_has_year_columns",
     "validate_incremental_annual_timeseries",
     "validate_index_structure",
@@ -79,21 +77,17 @@ __all__ = [
     "validate_population_data",
     "validate_positive_values",
     "validate_scenarios_data",
+    "validate_share_calculation",
     "validate_shares_sum_to_one",
     "validate_single_emission_category",
     "validate_stationary_dataframe",
+    "validate_sufficient_time_horizon",
     "validate_target_source_compatibility",
     "validate_timeseries_values",
-    "validate_world_data_present",
-    "validate_year_in_data",
-    "validate_years_match",
-    # Convergence validation
-    "validate_adjustment_data_requirements",
-    "validate_country_data_present",
-    "validate_country_world_consistency",
-    "validate_share_calculation",
-    "validate_sufficient_time_horizon",
     "validate_weights",
+    "validate_world_data_present",
     "validate_world_emissions_present",
     "validate_world_weights_aligned",
+    "validate_year_in_data",
+    "validate_years_match",
 ]

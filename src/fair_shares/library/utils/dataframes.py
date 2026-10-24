@@ -31,22 +31,18 @@ if TYPE_CHECKING:
     pass
 
 __all__ = [
-    # Type definition
     "TimeseriesDataFrame",
-    # Year column utilities
-    "ensure_string_year_columns",
-    "get_year_columns",
-    "last_year_column",
-    # Path validation
-    "validate_path_exists",
-    # Data processing
     "convert_country_name_to_iso3c",
     "determine_processing_categories",
+    "ensure_string_year_columns",
     "filter_function_parameters",
+    "get_year_columns",
     "groupby_except_robust",
+    "last_year_column",
     "normalize_metadata_column",
     "process_iamc_zip",
     "set_post_net_zero_emissions_to_nan",
+    "validate_path_exists",
 ]
 
 _COUNTRY_CONVERTER = coco.CountryConverter()
@@ -204,13 +200,14 @@ def validate_path_exists(path_str: str, file_type: str = "data file") -> str:
     ------
     ConfigurationError: If the path does not exist
 
-    With ``FAIR_SHARES_TRUST_CACHE=1`` the check is skipped: cached outputs are
-    reused as they are, so raw inputs are neither read nor fetched.
+    With ``FAIR_SHARES_TRUST_CACHE=1``, or inside
+    :func:`~fair_shares.library.utils.data.provenance.raw_path_checks_suspended`,
+    the check is skipped: raw inputs are neither read nor fetched.
     """
     # Imported here: provenance sits below utils in the import graph.
-    from fair_shares.library.utils.data.provenance import trust_cache_enabled
+    from fair_shares.library.utils.data.provenance import raw_path_checks_enabled
 
-    if trust_cache_enabled():
+    if not raw_path_checks_enabled():
         return path_str
     if path_str.startswith("/") or ":" in path_str:  # Absolute path
         path = Path(path_str)

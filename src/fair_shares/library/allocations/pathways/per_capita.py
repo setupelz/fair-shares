@@ -108,10 +108,14 @@ def _capability_snapshot(
         # no longer carry it, so the snapshot comes from the raw inputs with
         # the same unit processing as the main capability path.
         gdp_full = set_single_unit(gdp_ts, unit_level, ur=ur)
-        gdp_full = convert_unit_robust(gdp_full, "million", unit_level=unit_level, ur=ur)
+        gdp_full = convert_unit_robust(
+            gdp_full, "million", unit_level=unit_level, ur=ur
+        )
         gdp_full = gdp_full.droplevel(unit_level)
         pop_full = set_single_unit(population_ts, unit_level, ur=ur)
-        pop_full = convert_unit_robust(pop_full, "million", unit_level=unit_level, ur=ur)
+        pop_full = convert_unit_robust(
+            pop_full, "million", unit_level=unit_level, ur=ur
+        )
         pop_full = pop_full.droplevel(unit_level)
 
         gdp_all = {int(c): c for c in gdp_full.columns}
@@ -133,8 +137,12 @@ def _capability_snapshot(
     if gini_s is not None:
         gini_lookup = create_gini_lookup_dict(gini_s, group_level)
         gdp_at_ref = apply_gini_adjustment(
-            gdp_at_ref, pop_at_ref, gini_lookup,
-            income_floor, max_gini_adjustment, group_level,
+            gdp_at_ref,
+            pop_at_ref,
+            gini_lookup,
+            income_floor,
+            max_gini_adjustment,
+            group_level,
         )
     if capability_per_capita:
         return gdp_at_ref.divide(pop_at_ref)
@@ -407,12 +415,22 @@ def _per_capita_core(
             capability_metric_dynamic = None
             if use_capability and capability_window is not None:
                 # Cumulative-window mode: one value per country, broadcast like the snapshot.
-                window_values = calculate_capability_window_data(
-                    population_ts, gdp_ts, capability_window, capability_per_capita,
-                    group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
-                ).reindex(
-                    base_population.index.get_level_values(group_level)
-                ).to_numpy()
+                window_values = (
+                    calculate_capability_window_data(
+                        population_ts,
+                        gdp_ts,
+                        capability_window,
+                        capability_per_capita,
+                        group_level,
+                        unit_level,
+                        ur,
+                        gini_s,
+                        income_floor,
+                        max_gini_adjustment,
+                    )
+                    .reindex(base_population.index.get_level_values(group_level))
+                    .to_numpy()
+                )
                 capability_metric_dynamic = pd.DataFrame(
                     {c: window_values for c in population_numeric.columns},
                     index=base_population.index,
@@ -425,9 +443,18 @@ def _per_capita_core(
                 )
                 gdp_numeric = gdp_single_unit.droplevel(unit_level)
                 snapshot = _capability_snapshot(
-                    gdp_ts, population_ts, gdp_numeric, population_numeric,
-                    capability_reference_year, capability_per_capita, gini_s,
-                    income_floor, max_gini_adjustment, group_level, unit_level, ur,
+                    gdp_ts,
+                    population_ts,
+                    gdp_numeric,
+                    population_numeric,
+                    capability_reference_year,
+                    capability_per_capita,
+                    gini_s,
+                    income_floor,
+                    max_gini_adjustment,
+                    group_level,
+                    unit_level,
+                    ur,
                 ).reindex(base_population.index)
                 capability_metric_dynamic = pd.DataFrame(
                     {c: snapshot for c in population_numeric.columns}
@@ -449,8 +476,12 @@ def _per_capita_core(
                 if gini_s is not None:
                     gini_lookup = create_gini_lookup_dict(gini_s, group_level)
                     gdp_common = apply_gini_adjustment(
-                        gdp_common, pop_common, gini_lookup,
-                        income_floor, max_gini_adjustment, group_level,
+                        gdp_common,
+                        pop_common,
+                        gini_lookup,
+                        income_floor,
+                        max_gini_adjustment,
+                        group_level,
                     )
 
                 if capability_per_capita:
@@ -522,15 +553,14 @@ def _per_capita_core(
             responsibility_adjustment = calculate_relative_adjustment(
                 responsibility_data,
                 functional_form=pre_allocation_responsibility_functional_form,
-                exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
+                exponent=normalized_pre_allocation_responsibility_weight
+                * pre_allocation_responsibility_exponent,
                 inverse=True,
                 indicator="responsibility",
             )
             base_population = base_population.mul(responsibility_adjustment, axis=0)
 
-        total_adjusted_population = groupby_except_robust(
-            base_population, group_level
-        )
+        total_adjusted_population = groupby_except_robust(base_population, group_level)
         res = base_population.divide(total_adjusted_population)
 
         # Apply deviation constraint if provided
@@ -547,12 +577,22 @@ def _per_capita_core(
         def _capability_at_ta(gini_s):
             capability_metric_at_ta = None
             if use_capability and capability_window is not None:
-                window_values = calculate_capability_window_data(
-                    population_ts, gdp_ts, capability_window, capability_per_capita,
-                    group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
-                ).reindex(
-                    base_population_at_ta.index.get_level_values(group_level)
-                ).to_numpy()
+                window_values = (
+                    calculate_capability_window_data(
+                        population_ts,
+                        gdp_ts,
+                        capability_window,
+                        capability_per_capita,
+                        group_level,
+                        unit_level,
+                        ur,
+                        gini_s,
+                        income_floor,
+                        max_gini_adjustment,
+                    )
+                    .reindex(base_population_at_ta.index.get_level_values(group_level))
+                    .to_numpy()
+                )
                 capability_metric_at_ta = pd.Series(
                     window_values, index=base_population_at_ta.index
                 )
@@ -564,9 +604,18 @@ def _per_capita_core(
                 )
                 gdp_numeric = gdp_single_unit.droplevel(unit_level)
                 capability_metric_at_ta = _capability_snapshot(
-                    gdp_ts, population_ts, gdp_numeric, population_numeric,
-                    capability_reference_year, capability_per_capita, gini_s,
-                    income_floor, max_gini_adjustment, group_level, unit_level, ur,
+                    gdp_ts,
+                    population_ts,
+                    gdp_numeric,
+                    population_numeric,
+                    capability_reference_year,
+                    capability_per_capita,
+                    gini_s,
+                    income_floor,
+                    max_gini_adjustment,
+                    group_level,
+                    unit_level,
+                    ur,
                 ).reindex(base_population_at_ta.index)
             elif use_capability:
                 gdp_filtered = filter_time_columns(gdp_ts, first_allocation_year)
@@ -581,8 +630,12 @@ def _per_capita_core(
                 if gini_s is not None:
                     gini_lookup = create_gini_lookup_dict(gini_s, group_level)
                     gdp_at_ta = apply_gini_adjustment(
-                        gdp_at_ta, population_at_ta, gini_lookup,
-                        income_floor, max_gini_adjustment, group_level,
+                        gdp_at_ta,
+                        population_at_ta,
+                        gini_lookup,
+                        income_floor,
+                        max_gini_adjustment,
+                        group_level,
                     )
 
                 if capability_per_capita:
@@ -635,7 +688,8 @@ def _per_capita_core(
             responsibility_adjustment = calculate_relative_adjustment(
                 responsibility_data,
                 functional_form=pre_allocation_responsibility_functional_form,
-                exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
+                exponent=normalized_pre_allocation_responsibility_weight
+                * pre_allocation_responsibility_exponent,
                 inverse=True,
                 indicator="responsibility",
             )

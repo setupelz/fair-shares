@@ -356,7 +356,7 @@ print(f"\n{label}:\n")
 print(f"{'Region':8s} {'Share':>10s}")
 print("-" * 20)
 for region in sorted(shares.index):
-    print(f"{region:8s} {shares[region]*100:9.2f}%")
+    print(f"{region:8s} {shares[region] * 100:9.2f}%")
 
 print("\n" + "=" * 70)
 print("ALLOCATION COMPLETED SUCCESSFULLY!")
@@ -474,7 +474,7 @@ else:
     print(f"  First timestep: {FIRST_MODEL_TIMESTEP} ({TIMESTEP_LENGTH}-year period)")
     print(f"  Period starts:  {FIRST_PERIOD_START}")
     print(f"  Allocation starts: {allocation_year}")
-    print(f"  Subtract emissions: {allocation_year}-{FIRST_PERIOD_START-1}")
+    print(f"  Subtract emissions: {allocation_year}-{FIRST_PERIOD_START - 1}")
 
 # %%
 if PREPARE_MODEL_INPUT and allocation_type == "budget":
@@ -516,11 +516,13 @@ if PREPARE_MODEL_INPUT and allocation_type == "budget":
     print(f"{'Region':8s} {'Share':>10s} {'Budget (Gt)':>12s}")
     print("-" * 32)
     for region in sorted(shares.index):
-        print(f"{region:8s} {shares[region]*100:9.2f}% {starting_alloc[region]:11.2f}")
+        print(
+            f"{region:8s} {shares[region] * 100:9.2f}% {starting_alloc[region]:11.2f}"
+        )
 
     # Calculate actual emissions from allocation_year to (FIRST_PERIOD_START - 1)
     print("\n" + "=" * 70)
-    print(f"STEP 2: Actual Emissions ({allocation_year}-{FIRST_PERIOD_START-1})")
+    print(f"STEP 2: Actual Emissions ({allocation_year}-{FIRST_PERIOD_START - 1})")
     print("=" * 70)
     print("\nThese emissions have ALREADY OCCURRED. They must be subtracted.\n")
 

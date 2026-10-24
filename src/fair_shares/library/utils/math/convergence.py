@@ -532,7 +532,7 @@ def evolve_shares_sine_deviation(
     first_allocation_year: int,
 ) -> pd.DataFrame:
     """
-    Iterative sine-deviation convergence solver.
+    Solve the sine-deviation convergence iteratively.
 
     Computes year-by-year allocations that deviate from a PCC baseline using
     a sine-shaped correction, front-loading the adjustment toward cumulative

@@ -151,7 +151,9 @@ _dropped_codes = sorted(
     set(historical_df.loc[~(_iso3_mask | _world_mask), "Code"].dropna())
 )
 if _dropped_codes:
-    print(f"Dropping {len(_dropped_codes)} non-ISO3 aggregate code(s): {_dropped_codes}")
+    print(
+        f"Dropping {len(_dropped_codes)} non-ISO3 aggregate code(s): {_dropped_codes}"
+    )
 historical_df = historical_df[_iso3_mask | _world_mask]
 
 # Filter the data to start from 1850
@@ -195,7 +197,7 @@ print(f"Available headers: {projected_df.columns}")
 # Melt the dataframe to convert year columns to rows
 # First, identify year columns (these should be numeric and represent years)
 year_columns = [
-    col for col in projected_df.columns if isinstance(col, (int, float)) and col >= 1850
+    col for col in projected_df.columns if isinstance(col, int | float) and col >= 1850
 ]
 
 # Keep relevant columns plus year columns - include both ISO3 and region name columns

@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -54,7 +56,7 @@ def _make_historical(
     if extra_years is None:
         extra_years = list(range(2010, anchor_year + 1))
 
-    years = sorted(set(extra_years + [anchor_year]))
+    years = sorted(set([*extra_years, anchor_year]))
     data = {str(y): [value] for y in years}
     df = pd.DataFrame(data)
     # Minimal single-row index (no MultiIndex needed for harmonization helper)
@@ -166,7 +168,7 @@ class TestCalculateEmissionDifference:
 class TestHarmoniseAndMedianAr6Pathways:
     """Tests for harmonise_and_median_ar6_pathways()."""
 
-    _PATHWAY_INDEX_COLS = [
+    _PATHWAY_INDEX_COLS: ClassVar[list[str]] = [
         "climate-assessment",
         "model",
         "scenario",

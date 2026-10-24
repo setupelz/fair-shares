@@ -169,9 +169,7 @@ responsibility_extra_categories: tuple[str, ...] = tuple(
     and cat not in final_categories
 )
 if responsibility_extra_categories:
-    print(
-        f"  Responsibility-only extras for save: {responsibility_extra_categories}"
-    )
+    print(f"  Responsibility-only extras for save: {responsibility_extra_categories}")
 
 # Extract GDP parameters
 gdp_data_parameters = config["gdp"][active_gdp_source]["data_parameters"]
@@ -228,9 +226,7 @@ root_intermediate_dir.mkdir(parents=True, exist_ok=True)
 # categories) so the corresponding processed CSV is written alongside.
 emissions_data = {}
 for category in list(final_categories) + list(responsibility_extra_categories):
-    emiss_path = emissions_path(
-        emiss_intermediate_dir, category, active_lulucf_source
-    )
+    emiss_path = emissions_path(emiss_intermediate_dir, category, active_lulucf_source)
     if emiss_path.exists():
         emiss_df = pd.read_csv(emiss_path)
         emiss_df = emiss_df.set_index(["iso3c", "unit", "emission-category"])
@@ -358,9 +354,7 @@ _alignment_cats = (
 # without full coverage land in ROW via the intersection.
 emiss_analysis_countries = {}
 for category in _alignment_cats:
-    emiss_path = emissions_path(
-        emiss_intermediate_dir, category, active_lulucf_source
-    )
+    emiss_path = emissions_path(emiss_intermediate_dir, category, active_lulucf_source)
     if emiss_path.exists():
         if category in emissions_data:
             emiss_df = emissions_data[category]
@@ -395,8 +389,10 @@ for category in emiss_analysis_countries:
     analysis_countries = analysis_countries & emiss_analysis_countries[category]
 
 if alignment_categories:
-    print(f"  Decomposition alignment: {len(analysis_countries)} countries "
-          f"from intersection of {_alignment_cats}")
+    print(
+        f"  Decomposition alignment: {len(analysis_countries)} countries "
+        f"from intersection of {_alignment_cats}"
+    )
 
 # %% [markdown]
 # ## Create data coverage summary
@@ -928,7 +924,7 @@ if net_negative_metadata_dict:
             return {k: convert_to_native_types(v) for k, v in obj.items()}
         elif isinstance(obj, list):
             return [convert_to_native_types(item) for item in obj]
-        elif isinstance(obj, (np.integer, np.floating)):
+        elif isinstance(obj, np.integer | np.floating):
             return obj.item()
         elif isinstance(obj, np.ndarray):
             return obj.tolist()

@@ -54,6 +54,82 @@ def test_components_name_what_changed(tmp_path):
     ]
 
 
+def test_windows_line_endings_stamp_like_lf(tmp_path):
+    pkg, repo, data = _tree(tmp_path)
+    lf = provenance.compute_components(CONFIG, repo, data, package_root=pkg)
+    for path in [
+        *tmp_path.rglob("*.py"),
+        *tmp_path.rglob("*.yaml"),
+        repo / "Snakefile",
+    ]:
+        path.write_bytes(path.read_bytes().replace(b"\n", b"\r\n"))
+    crlf = provenance.compute_components(CONFIG, repo, data, package_root=pkg)
+    assert provenance.changed_components(lf, crlf) == []
+
+
+def test_lulucf_source_stamps_only_land_use_categories(tmp_path):
+    pkg, repo, data = _tree(tmp_path)
+
+    def stamp(category, lulucf):
+        config = {
+            **CONFIG,
+            "emission_category": category,
+            "active_lulucf_source": lulucf,
+            "lulucf": {lulucf: {"path": f"data/lulucf/{lulucf}/x.csv"}},
+        }
+        return provenance.compute_components(config, repo, data, package_root=pkg)
+
+    # Fossil CO2 never reads the LULUCF source, so either basis shares a stamp.
+    assert stamp("co2-ffi", "gcb-2025-luc") == stamp("co2-ffi", "melo-2026-v4")
+    assert stamp("co2", "gcb-2025-luc") != stamp("co2", "melo-2026-v4")
+
+
+def test_binary_files_hash_byte_for_byte(tmp_path):
+    blob = tmp_path / "inputs.nc"
+    blob.write_bytes(b"a\nb")
+    lf = provenance._sha256_file(blob)
+    blob.write_bytes(b"a\r\nb")
+    assert provenance._sha256_file(blob) != lf
+
+
+def test_suspended_path_checks_skip_missing_raw_inputs(monkeypatch):
+    from fair_shares.library.exceptions import ConfigurationError
+    from fair_shares.library.utils.dataframes import validate_path_exists
+
+    monkeypatch.delenv(provenance.TRUST_CACHE_ENV, raising=False)
+    missing = "/no/such/dir/raw.nc"
+    with provenance.raw_path_checks_suspended():
+        assert validate_path_exists(missing) == missing
+    with pytest.raises(ConfigurationError):
+        validate_path_exists(missing)
+
+
+def test_validate_data_source_config_checks_no_raw_inputs(monkeypatch):
+    # The notebooks validate before setup_data; a ready-made folder must pass
+    # without raw inputs, and validation must not fetch them.
+    from fair_shares.library.utils.data import config as config_mod
+
+    raw_checks = []
+
+    def fake_build(**kw):
+        raw_checks.append(provenance.raw_path_checks_enabled())
+        return None, "sid"
+
+    monkeypatch.setattr(config_mod, "build_data_config", fake_build)
+    monkeypatch.delenv(provenance.TRUST_CACHE_ENV, raising=False)
+    sources = {
+        "emissions": "primap-202609",
+        "gdp": "wdi-2025",
+        "population": "un-owid-2025",
+        "gini": "wdi-2025",
+        "target": "rcbs",
+    }
+    result = config_mod.validate_data_source_config("co2-ffi", sources, verbose=False)
+    assert result["valid"]
+    assert raw_checks == [False]
+    assert provenance.raw_path_checks_enabled()
+
+
 class _Config:
     def model_dump(self, mode="json"):
         return CONFIG
@@ -66,9 +142,10 @@ def harness(tmp_path, monkeypatch):
     processed = base_dir / "intermediate" / "processed"
     processed.mkdir(parents=True)
     (processed / "present.csv").write_text("x\n")
-    state = {"components": {"run_config": "a"}, "builds": []}
+    state = {"components": {"run_config": "a"}, "builds": [], "raw_checks": []}
 
-    def fake_resolve(**_):
+    def fake_resolve(**kw):
+        state["raw_checks"].append(kw.get("check_raw_paths", True))
         return {
             "paths": {"base_dir": base_dir, "processed_dir": processed},
             "config": _Config(),
@@ -113,6 +190,8 @@ def test_matching_stamp_reuses(harness):
     provenance.write_stamp(harness["base_dir"], {"run_config": "a"})
     _run()
     assert harness["builds"] == []
+    # A current folder is resolved once, without checking raw inputs.
+    assert harness["raw_checks"] == [False]
 
 
 def test_changed_component_rebuilds_and_is_named(harness, caplog):
@@ -122,6 +201,8 @@ def test_changed_component_rebuilds_and_is_named(harness, caplog):
         _run()
     assert harness["builds"] == [True]
     assert "repo:notebooks/101_emiss.py" in caplog.text
+    # The build re-resolves with raw inputs checked (and fetched).
+    assert harness["raw_checks"] == [False, True]
 
 
 def test_trust_cache_opt_out(harness, monkeypatch):

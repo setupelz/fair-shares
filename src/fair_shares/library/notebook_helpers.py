@@ -345,12 +345,34 @@ def run_all_allocations(
 
     if return_allocations:
         allocations_df = (
-            pd.concat(absolute_frames, ignore_index=True)
+            concat_allocation_frames(absolute_frames)
             if absolute_frames
             else pd.DataFrame()
         )
         return param_manifest_rows, allocations_df
     return param_manifest_rows
+
+
+def concat_allocation_frames(frames: list[pd.DataFrame]) -> pd.DataFrame:
+    """Stack allocation frames, each column typed by the frames that fill it.
+
+    Approaches carry different parameter columns, so a column one approach
+    fills is all-NA in another's frame. pandas deprecates leaving such
+    entries out when it sets the result dtype; they are dropped here first,
+    which keeps today's dtypes, and the column order and set are restored.
+    """
+    columns = list(dict.fromkeys(c for frame in frames for c in frame.columns))
+    filled = {c for frame in frames for c in frame.columns if frame[c].notna().any()}
+    trimmed = [
+        frame.drop(
+            columns=[c for c in frame.columns if c in filled and frame[c].isna().all()]
+        )
+        for frame in frames
+        if not frame.empty
+    ]
+    if not trimmed:
+        return pd.concat(frames, ignore_index=True)
+    return pd.concat(trimmed, ignore_index=True).reindex(columns=columns)
 
 
 def print_results_summary(

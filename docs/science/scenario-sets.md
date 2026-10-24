@@ -14,8 +14,9 @@ This page explains how it reads a budget label and picks the scenarios for each 
 
 - A budget label names the warming when CO₂ reaches net zero and a likelihood. What the likelihood covers depends on the source.
 - Each scenario-derived term takes the set that matches its role: a volume-matched set for land use, the convention gap and bunkers, and a temperature-matched set for the non-CO₂ pathway.
+- Terms that need the national-inventory land-use split come from the AR6 reanalysis. The non-CO₂ pathway comes from the scenario database the budget was built on, which is AR6 for every shipped budget.
 - The AR6 budgets take the matching AR6 category (C1, C3 or C4) for every term.
-- The bunker share pools every scenario that reports bunkers, balanced across model families.
+- The bunker share pools every scenario that reports bunkers in AR6, Scenario Compass and ScenarioMIP, balanced across model families.
 - Every cumulative counts full years to an interpolated net-zero crossing.
 
 ---
@@ -219,6 +220,24 @@ PROMETHEUS reports bunkers, and its runs end in 2050 without net zero.
 ## Scenario sources {#scenario-sources}
 
 A scenario source is an entry in `src/fair_shares/conf/scenario_sources.yaml`.
+Each term takes the source that suits it:
+
+| Term | Scenario source | Why |
+| ---- | --------------- | --- |
+| Land-use term (`co2-ffi`), convention gap (`co2`) | AR6 reanalysis | The only scenarios with the national-inventory land-use split (`AFOLU\|Direct`, `AFOLU\|Indirect`) |
+| Net CO₂ behind the bunker term | AR6 reanalysis, the same volume-matched set | One set per budget for every integral term |
+| Bunker share $s$ | AR6, Scenario Compass and ScenarioMIP | A ratio within each scenario: no climate model and no land-use split enter, and more reporters and model families make it robust |
+| Non-CO₂ pathway | The budget's `non_co2_basis`: AR6 for every shipped budget | A budget assumes the non-CO₂ pathway of the database it was built on ([Non-CO₂ basis](#non-co2-basis)) |
+| AR6 category budgets (`ar6_2020`, `ar6_wg1_2021`) | AR6 categories C1, C3 and C4 | They were built on the SR1.5 database, which fair-shares does not hold |
+| `pathway` target | AR6 C1, C3 and C4 medians | One scenario population for every category, so `co2` is `co2-ffi` plus land use |
+
+### Non-CO₂ basis {#non-co2-basis}
+
+`non_co2_basis` under each budget source in `rcbs.yaml` names the scenario database the budget was built on (default `ar6`).
+The temperature-matched non-CO₂ set of each of its budgets comes from that database.
+[Lamboll 2023](references.md) takes the non-CO₂ contribution from the AR6 scenario database with MAGICC v7.5.3 and FaIR, [Forster 2024](references.md) follows that method, and [Forster 2026](references.md) uses the AR6 WGIII scenarios that reach net-zero CO₂.
+Non-CO₂ from another database would pair a budget with a pathway it did not assume. The MAGICC update from v7.5.1 to v7.5.3 alone lowered the 1.5 °C (50%) budget by over 100 Gt CO₂ ([Lamboll 2023](references.md)).
+A basis other than the active scenario source (AR6) raises a `ConfigurationError`. Scenario Compass supplies the non-CO₂ term, read on its AR6 workflow (MAGICC v7.5.3), for a budget source built on it once one is added.
 
 ### AR6 reanalysis {#ar6-reanalysis}
 
@@ -246,17 +265,13 @@ The metadata carry only peak warming and warming in 2100 and fair-shares therefo
     On the 914 AR6 scenarios that Scenario Compass carries over, it gives the same net-zero years as the AR6 series, and the AR6 metadata warming within 0.013 °C where the AR6 metadata hold the warming at net zero.
     A source without warming at net zero in its metadata declares a `derived_warming` block in `scenario_sources.yaml`.
 
-`non_co2.scenario_sources` in `rcbs.yaml` (default `[ar6]`) lists the sources pooled into the temperature-matched non-CO₂ set.
-Scenario Compass adds its vetted scenarios that are not AR6 carry-overs: 84 in v2.0, of which 33 reach net zero.
-Their non-CO₂ is the harmonised-infilled Kyoto gases minus CO₂, harmonised to the historical non-CO₂.
-With a pooled source, the non-CO₂ pathway of a budget is the median of the per-scenario non-CO₂ over the set.
-The AR6 category budgets keep their AR6 category pool.
-The volume-matched land-use and convention-gap terms need the NGHGI reanalysis split, so they stay AR6 only.
+Scenario Compass enters the bunker share. Its non-CO₂, the harmonised-infilled Kyoto gases minus CO₂, is the non-CO₂ term for a budget source built on it ([Non-CO₂ basis](#non-co2-basis)).
+It has no national-inventory land-use split, so it supplies no land-use or convention-gap term.
 
 ### ScenarioMIP {#scenariomip}
 
 ScenarioMIP-CMIP7 v0.1 ([Riahi 2026b](https://doi.org/10.5281/zenodo.22296051)) holds 68 model runs of 7 models, with the climate assessment of MAGICC v7.6.0a3.
-It is the scenario source `scenariomip`, on by default for the bunker share and off for the non-CO₂ set. Its terms are in [Data & licences](../user-guide/data-sources.md#scenariomip-cmip7-ensemble-manual).
+It is the scenario source `scenariomip` and enters the bunker share only. Its warming is on MAGICC v7.6.0a3, not the AR6 calibration of the budgets' scenario database, so it supplies no non-CO₂ term. Its terms are in [Data & licences](../user-guide/data-sources.md#scenariomip-cmip7-ensemble-manual).
 
 [Adding data sources](../dev-guide/adding-data-sources.md#scenario-sources-and-budgets) lists what a new budget or scenario source needs.
 

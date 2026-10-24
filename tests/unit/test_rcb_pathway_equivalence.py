@@ -256,9 +256,9 @@ class TestRCBPathwayEquivalence:
         year_cols = get_year_columns(result.relative_shares_pathway_emissions)
         for year in year_cols:
             year_sum = result.relative_shares_pathway_emissions[year].sum()
-            assert (
-                abs(year_sum - 1.0) < 1e-10
-            ), f"Year {year} shares sum to {year_sum}, not 1.0"
+            assert abs(year_sum - 1.0) < 1e-10, (
+                f"Year {year} shares sum to {year_sum}, not 1.0"
+            )
 
     @pytest.mark.parametrize(
         "pre_allocation_responsibility_weight,capability_weight",

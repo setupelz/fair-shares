@@ -17,7 +17,7 @@ Two questions decide it.
 | **A pathway**         | `303_example_templates_pathway_allocations`   | run `400` once, then `403_example_iamc_pathway_allocations`  |
 | **Your own settings** | `301_custom_fair_share_allocation`            | run `400` once, then `401_custom_iamc_allocation`            |
 | **One region, model has no rest-of-world data** | | `405_one_region_remaining_budget` ([One region of countries](iamc-regional-fair-shares.md#one-region-of-countries)) |
-| **Reproduce a published study** | `601` to `605` (see [Reproductions](../reproductions/index.md)) | |
+| **Reproduce a published study** | `601`, `602`, `604` and `605` (see [Reproductions](../reproductions/index.md)) | |
 
 The 302, 303, 402 and 403 notebooks run unchanged.
 You configure 301 and 401 yourself. 401 also exports a model-ready remaining budget.

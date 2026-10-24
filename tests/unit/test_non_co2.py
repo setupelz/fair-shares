@@ -40,7 +40,7 @@ def _make_primap_df(
         row_values = values[country]
         rows.append((country, unit, category, *row_values))
 
-    columns = ["iso3c", "unit", "emission-category"] + years
+    columns = ["iso3c", "unit", "emission-category", *years]
     df = pd.DataFrame(rows, columns=columns)
     df = df.set_index(["iso3c", "unit", "emission-category"])
     return df

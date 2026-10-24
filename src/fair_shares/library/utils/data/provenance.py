@@ -12,6 +12,10 @@ stamp with a fresh one. A missing or different stamp forces Snakemake to
 rebuild the folder, and the log line names the components that changed. Set
 ``FAIR_SHARES_TRUST_CACHE=1`` (or pass ``trust_cache=True``) to reuse a folder
 without the check.
+
+Text files hash with CRLF line endings read as LF, so a Windows checkout
+(``* text=auto``) stamps the same as a macOS or Linux one and a folder built on
+one platform stays current on the other.
 """
 
 from __future__ import annotations
@@ -19,12 +23,26 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+from collections.abc import Iterator
+from contextlib import contextmanager
+from contextvars import ContextVar
 from pathlib import Path
 from typing import Any
 
 STAMP_FILENAME = ".provenance_stamp.json"
 TRUST_CACHE_ENV = "FAIR_SHARES_TRUST_CACHE"
 STAMP_VERSION = 1
+
+#: Files hashed with CRLF normalised to LF. Git rewrites their line endings on
+#: a Windows checkout; binary inputs (.nc, .xlsx, .zip) are left byte for byte.
+TEXT_SUFFIXES: frozenset[str] = frozenset(
+    {".py", ".yaml", ".yml", ".csv", ".json", ".md", ".txt"}
+)
+TEXT_FILENAMES: frozenset[str] = frozenset({"Snakefile"})
+
+_RAW_PATH_CHECKS: ContextVar[bool] = ContextVar(
+    "fair_shares_raw_path_checks", default=True
+)
 
 # Package-relative globs for code and config that preprocessing imports.
 LIBRARY_GLOBS: tuple[str, ...] = (
@@ -67,11 +85,37 @@ def trust_cache_enabled(trust_cache: bool | None = None) -> bool:
     return value in {"1", "true", "yes"}
 
 
+@contextmanager
+def raw_path_checks_suspended() -> Iterator[None]:
+    """Build a config without checking, or fetching, its raw input paths.
+
+    :func:`~fair_shares.library.utils.data.setup.setup_data` resolves a run this
+    way first, so a folder whose processed files are complete and current needs
+    no raw inputs at all. Raw inputs are checked once a build has to run.
+    """
+    token = _RAW_PATH_CHECKS.set(False)
+    try:
+        yield
+    finally:
+        _RAW_PATH_CHECKS.reset(token)
+
+
+def raw_path_checks_enabled() -> bool:
+    """Whether configured raw input paths must exist (and may be fetched)."""
+    return _RAW_PATH_CHECKS.get() and not trust_cache_enabled()
+
+
 def _sha256_bytes(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def _is_text(path: Path) -> bool:
+    return path.suffix.lower() in TEXT_SUFFIXES or path.name in TEXT_FILENAMES
+
+
 def _sha256_file(path: Path) -> str:
+    if _is_text(path):
+        return _sha256_bytes(path.read_bytes().replace(b"\r\n", b"\n"))
     digest = hashlib.sha256()
     with path.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
@@ -99,6 +143,26 @@ def _collect_data_paths(node: Any, found: set[str]) -> None:
     elif isinstance(node, list | tuple):
         for value in node:
             _collect_data_paths(value, found)
+
+
+def stamped_config(config_dump: dict[str, Any]) -> dict[str, Any]:
+    """Return the part of a composed config that shapes the output folder.
+
+    A category without land-use CO₂ never reads the LULUCF source: the
+    Snakefile skips the land-use step and :func:`build_source_id` leaves the
+    source out of the folder name. The stamp leaves it out too, so the runs
+    that share such a folder (notebook 405 on either land-use basis, notebook
+    601) do not rebuild it for one another.
+    """
+    from fair_shares.library.preprocessing.paths import LULUCF_CATEGORIES
+
+    if config_dump.get("emission_category") in LULUCF_CATEGORIES:
+        return config_dump
+    return {
+        key: value
+        for key, value in config_dump.items()
+        if key not in ("lulucf", "active_lulucf_source")
+    }
 
 
 def active_data_paths(config_dump: dict[str, Any]) -> list[str]:
@@ -166,6 +230,7 @@ def compute_components(
     if package_root is None:
         package_root = Path(fair_shares.__file__).parent
 
+    config_dump = stamped_config(config_dump)
     components: dict[str, str] = {
         "package_version": str(getattr(fair_shares, "__version__", "unknown")),
         "run_config": _sha256_bytes(

@@ -26,9 +26,7 @@ if TYPE_CHECKING:
     from fair_shares.library.utils.dataframes import TimeseriesDataFrame
 
 
-def raise_on_missing_years(
-    data: pd.DataFrame, group_level: str, what: str
-) -> None:
+def raise_on_missing_years(data: pd.DataFrame, group_level: str, what: str) -> None:
     """Raise if any group lacks a value in a year the calculation reads.
 
     A sum that skips missing years would treat a country with a short series as
@@ -173,10 +171,7 @@ def calculate_responsibility_adjustment_data(
         reference_year = allocation_year - 1
         years = pd.to_numeric(responsibility_columns, errors="coerce")
         discount_weights = pd.Series(
-            [
-                (1 - historical_discount_rate) ** (reference_year - y)
-                for y in years
-            ],
+            [(1 - historical_discount_rate) ** (reference_year - y) for y in years],
             index=responsibility_columns,
         )
         history_countries = history_countries.mul(discount_weights, axis=1)
@@ -199,7 +194,9 @@ def calculate_responsibility_adjustment_data(
         )
         pop_columns = pop_numeric.columns[pop_mask].tolist()
         if not pop_columns:
-            raise AllocationError("No population data found for pre-allocation responsibility window.")
+            raise AllocationError(
+                "No population data found for pre-allocation responsibility window."
+            )
 
         pop_numeric = pop_numeric[pop_columns]
         raise_on_missing_years(
@@ -233,7 +230,9 @@ def calculate_responsibility_adjustment_data(
         responsibility_data = responsibility_data / population_totals
 
     if responsibility_data.sum() <= 0:
-        raise AllocationError("Pre-allocation responsibility metric sums to non-positive.")
+        raise AllocationError(
+            "Pre-allocation responsibility metric sums to non-positive."
+        )
 
     return responsibility_data
 
@@ -376,10 +375,7 @@ def calculate_responsibility_adjustment_data_convergence(
         reference_year = first_allocation_year
         years = pd.to_numeric(responsibility_columns, errors="coerce")
         discount_weights = pd.Series(
-            [
-                (1 - historical_discount_rate) ** (reference_year - y)
-                for y in years
-            ],
+            [(1 - historical_discount_rate) ** (reference_year - y) for y in years],
             index=responsibility_columns,
         )
         history_countries = history_countries.mul(discount_weights, axis=1)
@@ -746,8 +742,12 @@ def calculate_capability_window_data(
 
     if gini_s is not None:
         gdp = apply_gini_adjustment(
-            gdp, population, create_gini_lookup_dict(gini_s, group_level),
-            income_floor, max_gini_adjustment, group_level,
+            gdp,
+            population,
+            create_gini_lookup_dict(gini_s, group_level),
+            income_floor,
+            max_gini_adjustment,
+            group_level,
         )
 
     gdp_by_group = gdp.sum(axis=1).groupby(level=group_level).sum()

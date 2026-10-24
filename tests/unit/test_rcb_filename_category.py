@@ -124,9 +124,9 @@ class TestRCBCategorySpecificFilenames:
         )
 
         expected_path = tmp_path / "rcbs_co2-ffi.csv"
-        assert (
-            expected_path.exists()
-        ), f"Expected {expected_path} to exist, but it does not"
+        assert expected_path.exists(), (
+            f"Expected {expected_path} to exist, but it does not"
+        )
 
     def test_two_categories_produce_separate_files(self, tmp_path):
         """Two different emission categories produce separate RCB files (core BUG 1 fix)."""
@@ -168,6 +168,6 @@ class TestRCBCategorySpecificFilenames:
         )
 
         old_path = tmp_path / "rcbs.csv"
-        assert (
-            not old_path.exists()
-        ), "rcbs.csv should not be created — only rcbs_{category}.csv"
+        assert not old_path.exists(), (
+            "rcbs.csv should not be created — only rcbs_{category}.csv"
+        )

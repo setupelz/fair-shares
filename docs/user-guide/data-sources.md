@@ -166,7 +166,7 @@ Huppmann, D., Riahi, K., Clarke, L., Hasegawa, T., et al. (2026). Scenario Compa
 
 **Location:** `data/scenarios/sci-2026-v2.0/SCI-2026_v2.0_pathways_ensemble_global.xlsx` (`sci-2026`, download from the Scenario Compass platform with a login). Release v1.0 sits at `data/scenarios/sci-2025-v1.0/` (`sci-2025`). The `version` key of the `sci` entry in `scenario_sources.yaml` selects the release.
 
-**Provides:** scenarios that report bunkers, for the bunker share, and, opt-in, scenarios for the non-CO2 set. [Scenario sets](../science/scenario-sets.md#scenario-compass) gives what it contributes and how its warming at net zero is derived.
+**Provides:** scenarios that report bunkers, for the bunker share. Its non-CO2 term serves a budget source built on it (`non_co2_basis: sci`); no shipped budget is. [Scenario sets](../science/scenario-sets.md#scenario-compass) gives what it contributes and how its warming at net zero is derived.
 
 ### ScenarioMIP-CMIP7 ensemble (manual)
 
@@ -176,7 +176,7 @@ Riahi, K., van Vuuren, D., et al. (2026). Scenario data of the 'Socioeconomic, E
 
 **Location:** `data/scenarios/scenariomip-v0.1/ScenarioMIP_v0.1_global.xlsx` (`scenariomip-cmip7`, download from the [ScenarioMIP Explorer](https://scenariomip.apps.ece.iiasa.ac.at) after registration).
 
-**Provides:** runs with international aviation and shipping CO2, in the default bunker-share pool, and opt-in scenarios for the non-CO2 set ([Bunker share](../science/scenario-sets.md#bunker-share)).
+**Provides:** runs with international aviation and shipping CO2, in the default bunker-share pool ([Bunker share](../science/scenario-sets.md#bunker-share)).
 
 ### CMIP7 ScenarioMIP historical (IAM regions)
 

@@ -76,7 +76,9 @@ class TestResponsibilityWindowBoundary:
 
         budget_shares = budget_result.relative_shares_cumulative_emission
         year_col = budget_shares.columns[0]
-        budget_order = budget_shares[year_col].sort_values(ascending=False).index.tolist()
+        budget_order = (
+            budget_shares[year_col].sort_values(ascending=False).index.tolist()
+        )
         pathway_order = (
             pathway_result.relative_shares_pathway_emissions["2020"]
             .sort_values(ascending=False)

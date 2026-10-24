@@ -1,14 +1,16 @@
 """The ``fair-shares`` command line entry point.
 
-Two subcommands. ``fetch-data`` is the supported way to obtain the pipeline's
-inputs, and ``cite`` prints what to cite for a run::
+``fetch-data`` is the supported way to obtain the pipeline's inputs, ``cite``
+prints what to cite for a run, and ``build-datapack`` is for maintainers::
 
     fair-shares fetch-data                 # everything a standard run needs
+    fair-shares fetch-data --pack          # or: this release's processed inputs
     fair-shares fetch-data --all           # plus the large optional sources
     fair-shares fetch-data --source wiid   # one source
     fair-shares fetch-data --list          # what exists, and under what licence
     fair-shares fetch-data --verify        # re-hash what is present, fetch nothing
     fair-shares cite                       # software and data citations for a run
+    fair-shares build-datapack --out DIR   # build the release's datapack
 
 If you script against this, the exit codes matter: ``--verify`` exits non-zero
 when a file fails its fixed checksum, and zero when a file from an unversioned
@@ -223,6 +225,25 @@ def _cmd_cite(
     return 0
 
 
+def _cmd_fetch_pack(output_dir: str | None, version: str | None, force: bool) -> int:
+    from fair_shares.library.datapack import PACK_LICENSE, fetch_datapack
+
+    written = fetch_datapack(version=version, output_dir=output_dir, force=force)
+    print(
+        f"\n{len(written)} folder(s) unpacked. The datapack is {PACK_LICENSE}; "
+        "output/datapack-<version>/CITATIONS.md lists what to cite."
+    )
+    return 0
+
+
+def _cmd_build_pack(out: str) -> int:
+    from fair_shares.library.datapack import build_datapack
+
+    path = build_datapack(out)
+    print(f"Wrote {path}\nWrote {path.parent / 'SHA256SUMS'}")
+    return 0
+
+
 def build_parser() -> argparse.ArgumentParser:
     """Build the ``fair-shares`` argument parser."""
     parser = argparse.ArgumentParser(
@@ -269,6 +290,34 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Re-hash present files without downloading.",
     )
+    fetch.add_argument(
+        "--pack",
+        action="store_true",
+        help=(
+            "Download this release's datapack, the processed inputs of every "
+            "user-facing notebook, instead of the raw data."
+        ),
+    )
+    fetch.add_argument(
+        "--pack-version",
+        default=None,
+        help="With --pack: the release whose datapack to fetch (default: installed).",
+    )
+    fetch.add_argument(
+        "--output-dir",
+        default=None,
+        help="With --pack: where to unpack (default: the resolved output directory).",
+    )
+
+    build_pack = subparsers.add_parser(
+        "build-datapack",
+        help="Build the release's datapack (maintainers).",
+        description=(
+            "Build every datapack folder from raw inputs in this checkout and "
+            "write the zip and SHA256SUMS for the GitHub release."
+        ),
+    )
+    build_pack.add_argument("--out", required=True, help="Directory to write into.")
 
     cite = subparsers.add_parser(
         "cite",
@@ -307,6 +356,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         if args.command == "cite":
             return _cmd_cite(args.sources, args.bibtex, args.emission_category)
+        if args.command == "build-datapack":
+            return _cmd_build_pack(args.out)
+        if args.pack:
+            return _cmd_fetch_pack(args.output_dir, args.pack_version, args.force)
         if args.list:
             return _cmd_list(args.data_dir)
         if args.verify:

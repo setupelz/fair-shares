@@ -117,9 +117,9 @@ class TestConfigParameterExpansion:
                     param_manifest_rows.append(row)
 
         # Verify parameter expansion worked correctly
-        assert (
-            len(param_manifest_rows) > 0
-        ), "Parameter expansion should create at least one row"
+        assert len(param_manifest_rows) > 0, (
+            "Parameter expansion should create at least one row"
+        )
 
         # Check that all parameters are scalar, not lists
         for row in param_manifest_rows:
@@ -131,9 +131,9 @@ class TestConfigParameterExpansion:
                     "income_floor",
                     "max_gini_adjustment",
                 ]:
-                    assert not isinstance(
-                        value, list
-                    ), f"Parameter {key} should be scalar, got list: {value}"
+                    assert not isinstance(value, list), (
+                        f"Parameter {key} should be scalar, got list: {value}"
+                    )
 
         # Test specific combinations we expect
         per_capita_adjusted_rows = [
@@ -144,12 +144,12 @@ class TestConfigParameterExpansion:
 
         # Check sample parameter values are scalar
         sample_row = per_capita_adjusted_rows[0]
-        assert isinstance(
-            sample_row["capability_exponent"], (int, float)
-        ), f"Capability exponent should be scalar, got: {type(sample_row['capability_exponent'])}"
-        assert isinstance(
-            sample_row["capability_functional_form"], str
-        ), f"Capability functional form should be string, got: {type(sample_row['capability_functional_form'])}"
+        assert isinstance(sample_row["capability_exponent"], int | float), (
+            f"Capability exponent should be scalar, got: {type(sample_row['capability_exponent'])}"
+        )
+        assert isinstance(sample_row["capability_functional_form"], str), (
+            f"Capability functional form should be string, got: {type(sample_row['capability_functional_form'])}"
+        )
 
     def test_allocation_execution_with_expanded_parameters(
         self, sample_config_with_lists
@@ -184,9 +184,8 @@ class TestConfigParameterExpansion:
         )
 
         # Verify result contains scalar parameters, not lists
-        assert isinstance(result.parameters["capability_exponent"], (int, float))
+        assert isinstance(result.parameters["capability_exponent"], int | float)
         assert isinstance(result.parameters["capability_functional_form"], str)
-
 
     def test_config_with_manager_integration_now_works_with_lists(
         self, sample_config_with_lists
@@ -208,7 +207,7 @@ class TestConfigParameterExpansion:
 
         # Verify the scalar value was used, not the list
         assert result.parameters["capability_exponent"] == 1.5
-        assert isinstance(result.parameters["capability_exponent"], (int, float))
+        assert isinstance(result.parameters["capability_exponent"], int | float)
 
     def test_original_error_scenario_now_fixed(self, sample_config_with_lists):
         """Test that reproduces the original error scenario from the notebook."""
@@ -237,5 +236,5 @@ class TestConfigParameterExpansion:
         # This should succeed and use scalar values, not lists
         assert result.parameters["capability_exponent"] == 1.0
         assert result.parameters["capability_functional_form"] == "power"
-        assert isinstance(result.parameters["capability_exponent"], (int, float))
+        assert isinstance(result.parameters["capability_exponent"], int | float)
         assert isinstance(result.parameters["capability_functional_form"], str)

@@ -16,7 +16,7 @@ This page explains how the library combines them.
 - The library holds no single greenhouse-gas budget. A multi-gas result is a CO₂ budget plus a non-CO₂ annual pathway.
 - The non-CO₂ pathway comes from scenarios at the budget's warming level, and the same equity approach allocates both parts.
 - The budget depends on the methane pathway it assumes ([Weber 2026b](https://doi.org/10.1038/s43247-026-03832-1)). The pairing keeps the two consistent.
-- Categories with land-use CO₂ (`co2`, `all-ghg`) start in 2000 or later.
+- Categories with land-use CO₂ (`co2`, `all-ghg`) start in 2000 or later with national-inventory land-use data, and from 1850 with the bookkeeping source `gcb-2025-luc`.
 
 ---
 
@@ -25,9 +25,9 @@ This page explains how the library combines them.
 | Category | Covers | CO₂ part | Earliest history |
 | -------- | ------ | -------- | ---------------- |
 | `co2-ffi` | CO₂ from fossil fuels and industry | Itself | 1850 |
-| `co2` | `co2-ffi` plus land-use CO₂ in the national-inventory (NGHGI) convention | Itself | 2000 |
+| `co2` | `co2-ffi` plus land-use CO₂ on the basis of the LULUCF source: national inventory (NGHGI, default) or bookkeeping models | Itself | 2000 (inventory), 1850 (bookkeeping) |
 | `all-ghg-ex-co2-lulucf` | All greenhouse gases without land-use CO₂ | `co2-ffi` | 1850 |
-| `all-ghg` | All greenhouse gases including land-use CO₂ | `co2` | 2000 |
+| `all-ghg` | All greenhouse gases including land-use CO₂ | `co2` | 2000 (inventory), 1850 (bookkeeping) |
 
 Both all-GHG categories convert non-CO₂ gases to CO₂-equivalent with GWP100 values from AR6.
 `non-co2` is the non-CO₂ part of the two all-GHG categories.
@@ -145,7 +145,8 @@ Harmonisation to the 2020 historical value removes the level difference to the h
 ## Start-year limits {#start-year-limits}
 
 NGHGI land-use CO₂ data start in 2000.
-`co2` and `all-ghg` therefore take allocation years from 2000 onward.
+With an inventory source (`melo-2026-v4`, the default, or `melo-2026`), `co2` and `all-ghg` therefore take allocation years from 2000 onward.
+The bookkeeping source `gcb-2025-luc` runs from 1850, so on the model basis they can start from 1850.
 `co2-ffi` and `all-ghg-ex-co2-lulucf` hold no land-use CO₂, and their history starts in 1850.
 An allocation year before the first year of the data raises an error that names the first available year.
 [Allocation years other than 2020](remaining-carbon-budgets.md#allocation-year) explains why the land-use series starts in 2000.

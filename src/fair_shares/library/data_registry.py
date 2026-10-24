@@ -133,9 +133,7 @@ class Source(BaseModel):
     @model_validator(mode="after")
     def _check_shape(self) -> Source:
         if self.tier == "manual" and not self.manual_instructions:
-            raise ValueError(
-                "a manual-tier source must carry `manual_instructions`"
-            )
+            raise ValueError("a manual-tier source must carry `manual_instructions`")
         if self.tier == "bundled":
             urls = [d.url for d in self.downloads if d.url]
             if urls:

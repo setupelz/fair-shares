@@ -113,9 +113,7 @@ def _build_emissions_df(
     return ensure_string_year_columns(df)
 
 
-def _compute_country_total_at_year(
-    profiles: dict, year: int
-) -> float:
+def _compute_country_total_at_year(profiles: dict, year: int) -> float:
     """Compute the sum of all country emissions at a given year."""
     total = 0.0
     for _, (_, emiss_2020, _, trend) in profiles.items():
@@ -258,9 +256,7 @@ class TestSharesValidity:
         shares = result.relative_shares_pathway_emissions
 
         min_val = shares.min().min()
-        assert min_val >= -1e-10, (
-            f"Found negative share: {min_val:.10f}"
-        )
+        assert min_val >= -1e-10, f"Found negative share: {min_val:.10f}"
 
     def test_all_countries_present_in_output(self, realistic_data):
         """Output must contain shares for every input country.
@@ -271,9 +267,7 @@ class TestSharesValidity:
         result = _run_sine_deviation(realistic_data)
         shares = result.relative_shares_pathway_emissions
 
-        output_countries = set(
-            shares.index.get_level_values("iso3c")
-        )
+        output_countries = set(shares.index.get_level_values("iso3c"))
         expected_countries = set(COUNTRY_PROFILES.keys())
         assert output_countries == expected_countries, (
             f"Missing countries: {expected_countries - output_countries}"
@@ -369,12 +363,8 @@ class TestEquityDirection:
         result = _run_sine_deviation(realistic_data, convergence_year=conv_year)
         shares = result.relative_shares_pathway_emissions
 
-        ind_share = float(
-            shares.xs("IND", level="iso3c")[str(conv_year)].iloc[0]
-        )
-        usa_share = float(
-            shares.xs("USA", level="iso3c")[str(conv_year)].iloc[0]
-        )
+        ind_share = float(shares.xs("IND", level="iso3c")[str(conv_year)].iloc[0])
+        usa_share = float(shares.xs("USA", level="iso3c")[str(conv_year)].iloc[0])
         assert ind_share > usa_share, (
             f"At convergence year {conv_year}, IND share ({ind_share:.4f}) "
             f"should exceed USA share ({usa_share:.4f}) due to larger population"
@@ -386,9 +376,7 @@ class TestConvergenceYearVariation:
     trajectories."""
 
     @pytest.mark.parametrize("conv_year", [2040, 2050, 2080])
-    def test_valid_shares_at_each_convergence_year(
-        self, realistic_data, conv_year
-    ):
+    def test_valid_shares_at_each_convergence_year(self, realistic_data, conv_year):
         """Each convergence year should produce shares that sum to 1.0 and
         are non-negative.
 
@@ -418,12 +406,8 @@ class TestConvergenceYearVariation:
         If conv_year=2080, it has ~60 years. The near-term adjustment should
         be steeper with earlier convergence.
         """
-        result_early = _run_sine_deviation(
-            realistic_data, convergence_year=2040
-        )
-        result_late = _run_sine_deviation(
-            realistic_data, convergence_year=2080
-        )
+        result_early = _run_sine_deviation(realistic_data, convergence_year=2040)
+        result_late = _run_sine_deviation(realistic_data, convergence_year=2080)
 
         shares_early = result_early.relative_shares_pathway_emissions
         shares_late = result_late.relative_shares_pathway_emissions
@@ -432,15 +416,11 @@ class TestConvergenceYearVariation:
         check_year = "2035"
 
         # USA near-term change should be larger with early convergence
-        usa_start = float(
-            shares_early.xs("USA", level="iso3c")[start_col].iloc[0]
-        )
+        usa_start = float(shares_early.xs("USA", level="iso3c")[start_col].iloc[0])
         usa_early_2035 = float(
             shares_early.xs("USA", level="iso3c")[check_year].iloc[0]
         )
-        usa_late_2035 = float(
-            shares_late.xs("USA", level="iso3c")[check_year].iloc[0]
-        )
+        usa_late_2035 = float(shares_late.xs("USA", level="iso3c")[check_year].iloc[0])
 
         change_early = abs(usa_start - usa_early_2035)
         change_late = abs(usa_start - usa_late_2035)
@@ -471,9 +451,7 @@ class TestComparisonWithMinimumSpeed:
                 assert abs(year_sums[col] - 1.0) < 1e-8, (
                     f"{label}, year {col}: sum={year_sums[col]}"
                 )
-            assert (shares >= -1e-10).all().all(), (
-                f"{label}: found negative shares"
-            )
+            assert (shares >= -1e-10).all().all(), f"{label}: found negative shares"
 
     def test_same_directional_equity(self, realistic_data):
         """Both methods should agree on the direction of share movement:
@@ -531,12 +509,8 @@ class TestComparisonWithMinimumSpeed:
         if check_col in common_cols:
             diffs = []
             for iso in common_countries:
-                s_val = float(
-                    shares_sine.xs(iso, level="iso3c")[check_col].iloc[0]
-                )
-                m_val = float(
-                    shares_ms.xs(iso, level="iso3c")[check_col].iloc[0]
-                )
+                s_val = float(shares_sine.xs(iso, level="iso3c")[check_col].iloc[0])
+                m_val = float(shares_ms.xs(iso, level="iso3c")[check_col].iloc[0])
                 diffs.append(abs(s_val - m_val))
 
             max_diff = max(diffs)
@@ -558,8 +532,8 @@ class TestNumericalStabilitySmallCountries:
         """
         small_profiles = {
             **COUNTRY_PROFILES,
-            "FJI": (0.9, 2.5, 0.005, 0.002),    # Fiji-like
-            "MHL": (0.06, 0.2, 0.010, 0.001),    # Marshall Islands-like
+            "FJI": (0.9, 2.5, 0.005, 0.002),  # Fiji-like
+            "MHL": (0.06, 0.2, 0.010, 0.001),  # Marshall Islands-like
         }
 
         pop = _build_population_df(small_profiles, YEARS)
@@ -581,14 +555,10 @@ class TestNumericalStabilitySmallCountries:
         in poorly guarded solvers. The Marshall Islands at 0.06M people is
         ~23,000x smaller than China.
         """
-        result = _run_sine_deviation(
-            data_with_small_countries, convergence_year=2060
-        )
+        result = _run_sine_deviation(data_with_small_countries, convergence_year=2060)
         shares = result.relative_shares_pathway_emissions
 
-        assert not shares.isna().any().any(), (
-            "Found NaN values in shares output"
-        )
+        assert not shares.isna().any().any(), "Found NaN values in shares output"
 
     def test_small_countries_get_valid_shares(self, data_with_small_countries):
         """Small countries should have small but positive shares.
@@ -597,9 +567,7 @@ class TestNumericalStabilitySmallCountries:
         proportional to their population. A zero share would mean the country
         gets no emissions budget at all.
         """
-        result = _run_sine_deviation(
-            data_with_small_countries, convergence_year=2060
-        )
+        result = _run_sine_deviation(data_with_small_countries, convergence_year=2060)
         shares = result.relative_shares_pathway_emissions
 
         for iso in ["FJI", "MHL"]:
@@ -607,9 +575,7 @@ class TestNumericalStabilitySmallCountries:
             # Should be small but positive at every year
             for col in iso_shares.columns:
                 val = float(iso_shares[col].iloc[0])
-                assert val > 0, (
-                    f"{iso} share at {col} is {val:.10f}, expected positive"
-                )
+                assert val > 0, f"{iso} share at {col} is {val:.10f}, expected positive"
 
     def test_shares_still_sum_to_one_with_small_countries(
         self, data_with_small_countries
@@ -619,9 +585,7 @@ class TestNumericalStabilitySmallCountries:
         WHY: If tiny-share countries cause rounding drift in the normalization
         step, the overall sum could deviate. This is a precision check.
         """
-        result = _run_sine_deviation(
-            data_with_small_countries, convergence_year=2060
-        )
+        result = _run_sine_deviation(data_with_small_countries, convergence_year=2060)
         shares = result.relative_shares_pathway_emissions
 
         year_sums = shares.sum(axis=0)

@@ -310,12 +310,12 @@ from fair_shares.library.presets import (
 allocation_folder = "601_esabcc_2023"
 
 active_sources = {
-    "target": "rcbs",              # Remaining carbon budgets; filtered to RCB_ANCHOR below
+    "target": "rcbs",  # Remaining carbon budgets; filtered to RCB_ANCHOR below
     "emissions": "primap-202609",  # Historical emissions (PRIMAP-hist v2.8, to 2025) — allocation shares and § 5 netting actuals
-    "gdp": "wdi-2025",             # GDP per capita — capability-adjusted approaches
+    "gdp": "wdi-2025",  # GDP per capita — capability-adjusted approaches
     "population": "un-owid-2025",  # Population — per-capita and cumulative-per-capita shares, § 6 base-year weighting
-    "gini": "wdi-2025",      # Gini — required by the data-source schema; no approach run here uses it
-    "lulucf": "melo-2026-v4",      # NGHGI LULUCF (LULUCF Data Hub v4.0.0) — used only for the all-ghg category
+    "gini": "wdi-2025",  # Gini — required by the data-source schema; no approach run here uses it
+    "lulucf": "melo-2026-v4",  # NGHGI LULUCF (LULUCF Data Hub v4.0.0) — used only for the all-ghg category
 }
 
 # Data source note: PRR2023 used GCB 2022 national fossil emissions for country
@@ -371,9 +371,33 @@ PLOT_START_YEAR = 2015  # first year on the § 4 example-result plot x-axis
 # EU27 members (PRR2023 Table 17); aggregated into an EU27 row in the § 5.1
 # preview table.
 EU27 = [
-    "AUT", "BEL", "BGR", "CYP", "CZE", "DEU", "DNK", "ESP", "EST", "FIN",
-    "FRA", "GRC", "HRV", "HUN", "IRL", "ITA", "LTU", "LUX", "LVA", "MLT",
-    "NLD", "POL", "PRT", "ROU", "SVK", "SVN", "SWE",
+    "AUT",
+    "BEL",
+    "BGR",
+    "CYP",
+    "CZE",
+    "DEU",
+    "DNK",
+    "ESP",
+    "EST",
+    "FIN",
+    "FRA",
+    "GRC",
+    "HRV",
+    "HUN",
+    "IRL",
+    "ITA",
+    "LTU",
+    "LUX",
+    "LVA",
+    "MLT",
+    "NLD",
+    "POL",
+    "PRT",
+    "ROU",
+    "SVK",
+    "SVN",
+    "SWE",
 ]
 
 # Approach grid per category from the named PRR2023 preset (Decisions 3-5, 8).
@@ -601,11 +625,27 @@ anchor = remaining_all[
 eu27 = (
     anchor[anchor["iso3c"].isin(EU27)]
     .groupby(
-        [c for c in anchor.columns if c not in ("iso3c", "allocated-total",
-         "consumed-actuals", "remaining-budget", "historical-deviation")],
+        [
+            c
+            for c in anchor.columns
+            if c
+            not in (
+                "iso3c",
+                "allocated-total",
+                "consumed-actuals",
+                "remaining-budget",
+                "historical-deviation",
+            )
+        ],
         dropna=False,
-    )[["allocated-total", "consumed-actuals", "remaining-budget",
-       "historical-deviation"]]
+    )[
+        [
+            "allocated-total",
+            "consumed-actuals",
+            "remaining-budget",
+            "historical-deviation",
+        ]
+    ]
     .sum(min_count=1)
     .reset_index()
 )
@@ -615,20 +655,22 @@ preview = pd.concat(
     [eu27, anchor[anchor["iso3c"].isin(EXAMPLE_COUNTRIES)]], ignore_index=True
 )
 
-pivot = (
-    preview.pivot_table(
-        index=["category", "emission-category", "approach", "allocation-year",
-               "pre-allocation-responsibility-year",
-               "pre-allocation-responsibility-exponent",
-               "pre-allocation-responsibility-per-capita",
-               "capability-exponent",
-               "preserve-allocation-year-shares"],
-        columns="iso3c",
-        values="remaining-budget",
-        dropna=False,
-    )
-    .round(0)
-)
+pivot = preview.pivot_table(
+    index=[
+        "category",
+        "emission-category",
+        "approach",
+        "allocation-year",
+        "pre-allocation-responsibility-year",
+        "pre-allocation-responsibility-exponent",
+        "pre-allocation-responsibility-per-capita",
+        "capability-exponent",
+        "preserve-allocation-year-shares",
+    ],
+    columns="iso3c",
+    values="remaining-budget",
+    dropna=False,
+).round(0)
 with pd.option_context("display.max_rows", 200, "display.width", 250):
     print(pivot.to_string())
 
@@ -932,8 +974,7 @@ for row_i, iso in enumerate((creditor, debtor)):
         (dist_cat["iso3c"] == iso) & (dist_cat["deviation-end-year"] == 2100)
     ]
     non_part = dist_cat[
-        (dist_cat["iso3c"] == iso)
-        & (dist_cat["emission-category"] == "non-co2")
+        (dist_cat["iso3c"] == iso) & (dist_cat["emission-category"] == "non-co2")
     ].iloc[0]
 
     ax = axes[row_i, 0]
@@ -941,12 +982,28 @@ for row_i, iso in enumerate((creditor, debtor)):
         g = sub[(sub["shape"] == shape) & (sub["nonco2-debt-mode"] == "co2-debit")]
         co2_part = g[g["emission-category"] == "co2-ffi"].iloc[0]
         comb_part = g[g["emission-category"] == "combined"].iloc[0]
-        ax.plot(yrs_int, comb_part[fwd_years].astype(float) / 1000, ls,
-                color="tab:blue", label=f"combined ({shape})")
-        ax.plot(yrs_int, co2_part[fwd_years].astype(float) / 1000, ls,
-                color="tab:orange", alpha=0.7, label=f"co2-ffi ({shape})")
-    ax.plot(yrs_int, non_part[fwd_years].astype(float) / 1000, ":",
-            color="tab:green", label="non-co2 (allocated, both modes)")
+        ax.plot(
+            yrs_int,
+            comb_part[fwd_years].astype(float) / 1000,
+            ls,
+            color="tab:blue",
+            label=f"combined ({shape})",
+        )
+        ax.plot(
+            yrs_int,
+            co2_part[fwd_years].astype(float) / 1000,
+            ls,
+            color="tab:orange",
+            alpha=0.7,
+            label=f"co2-ffi ({shape})",
+        )
+    ax.plot(
+        yrs_int,
+        non_part[fwd_years].astype(float) / 1000,
+        ":",
+        color="tab:green",
+        label="non-co2 (allocated, both modes)",
+    )
     ax.axhline(0, color="black", lw=0.5)
     ax.set_title(f"{iso} — annual under co2-debit, dev-year 2100")
     ax.set_ylabel("Gt CO2e / yr")
@@ -963,10 +1020,17 @@ for row_i, iso in enumerate((creditor, debtor)):
         ax.plot(
             yrs_int,
             g[fwd_years].astype(float).cumsum() / 1000,
-            "-", color=color, label=f"cumulative combined ({mode})",
+            "-",
+            color=color,
+            label=f"cumulative combined ({mode})",
         )
-        ax.axhline(g["adjusted-target"] / 1000, color=color, ls="--",
-                   alpha=0.8, label=f"target ({mode})")
+        ax.axhline(
+            g["adjusted-target"] / 1000,
+            color=color,
+            ls="--",
+            alpha=0.8,
+            label=f"target ({mode})",
+        )
     dev_val = combined_rem.loc[iso, "historical-deviation"] / 1000
     dev_note = (
         "past non-CO2 over-use, charged to CO2 space under co2-debit"

@@ -24,8 +24,10 @@ from fair_shares.library.allocations.results.metadata import (
     get_all_metadata_columns,
 )
 from fair_shares.library.exceptions import DataProcessingError
-from fair_shares.library.utils.dataframes import ensure_string_year_columns
-from fair_shares.library.utils.dataframes import TimeseriesDataFrame
+from fair_shares.library.utils.dataframes import (
+    TimeseriesDataFrame,
+    ensure_string_year_columns,
+)
 
 logger = logging.getLogger(__name__)
 

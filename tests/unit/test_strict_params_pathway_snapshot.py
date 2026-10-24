@@ -197,12 +197,11 @@ class TestPathwayCapabilitySnapshot:
             preserve_allocation_year_shares=True,
             **common,
         )
-        pathway_shares = (
-            self._shares(pathway)["2020"].droplevel(["unit", "emission-category"])
+        pathway_shares = self._shares(pathway)["2020"].droplevel(
+            ["unit", "emission-category"]
         )
-        budget_shares = (
-            budget.relative_shares_cumulative_emission["2020"]
-            .droplevel(["unit", "emission-category"])
+        budget_shares = budget.relative_shares_cumulative_emission["2020"].droplevel(
+            ["unit", "emission-category"]
         )
         pd.testing.assert_series_equal(
             pathway_shares.sort_index(),
@@ -235,12 +234,11 @@ class TestPathwayCapabilitySnapshot:
             preserve_allocation_year_shares=True,
             **common,
         )
-        pathway_shares = (
-            self._shares(pathway)["2020"].droplevel(["unit", "emission-category"])
+        pathway_shares = self._shares(pathway)["2020"].droplevel(
+            ["unit", "emission-category"]
         )
-        budget_shares = (
-            budget.relative_shares_cumulative_emission["2020"]
-            .droplevel(["unit", "emission-category"])
+        budget_shares = budget.relative_shares_cumulative_emission["2020"].droplevel(
+            ["unit", "emission-category"]
         )
         pd.testing.assert_series_equal(
             pathway_shares.sort_index(),
@@ -267,9 +265,10 @@ class TestPathwayCapabilitySnapshot:
             emission_category=STANDARD_EMISSION_CATEGORY,
         )
         year_cols = [c for c in self._shares(snap).columns if str(c).isdigit()]
-        ratio = self._shares(snap)[year_cols].to_numpy() / self._shares(epc)[
-            year_cols
-        ].to_numpy()
+        ratio = (
+            self._shares(snap)[year_cols].to_numpy()
+            / self._shares(epc)[year_cols].to_numpy()
+        )
         # Shares renormalise each year, so compare each year's ratio pattern
         # to the first year's after scaling out the yearly normaliser.
         first = ratio[:, [0]]
@@ -359,6 +358,7 @@ class TestConvergenceStrictCheck:
             capability_weight=0.5,
         )
         assert result is not None
+
 
 class TestGiniDefaultParity:
     """Gini parameter defaults match across budget and pathway approaches,

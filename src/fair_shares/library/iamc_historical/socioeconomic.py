@@ -168,7 +168,6 @@ def _single_unit(scenario: pyam.IamDataFrame, variable: str) -> str:
     return units[0]
 
 
-
 # OWID rewrites its population export in place with no version identifier,
 # so the value column name is not stable -- it has already changed once
 # (from "Population (historical estimates)" to "Population"). Newest name
@@ -197,7 +196,9 @@ def _load_population(source: SourceLike, *, unit: str) -> pd.DataFrame:
     long = long[long["Code"].astype(str).str.match(_ISO3_RE, na=False)]
     pop_col = owid_population_column(long.columns)
     wide = (
-        long.rename(columns={"Code": "region", "Year": "year"})[["region", "year", pop_col]]
+        long.rename(columns={"Code": "region", "Year": "year"})[
+            ["region", "year", pop_col]
+        ]
         .pivot_table(
             index="region",
             columns="year",
@@ -230,11 +231,9 @@ def _load_gdp(source: SourceLike, *, unit: str) -> pd.DataFrame:
 def _resolve_path(source: SourceLike, *, default: str) -> Path:
     if source is None:
         return resolve_source_path(default)
-    if isinstance(source, (str, Path)):
+    if isinstance(source, str | Path):
         return Path(source)
-    raise ConfigurationError(
-        f"Unsupported source type: {type(source).__name__}"
-    )
+    raise ConfigurationError(f"Unsupported source type: {type(source).__name__}")
 
 
 def _aggregate_and_label(
@@ -249,9 +248,9 @@ def _aggregate_and_label(
     # to get the regional total.
     agg = mapping.aggregate(wide, country_col="region")
     year_cols_present = [y for y in year_range if y in agg.columns]
-    summed = agg.groupby(
-        ["region", "variable", "unit"], as_index=False
-    )[year_cols_present].sum()
+    summed = agg.groupby(["region", "variable", "unit"], as_index=False)[
+        year_cols_present
+    ].sum()
     return summed.assign(model=model, scenario=scenario)
 
 

@@ -31,9 +31,13 @@ def _idf_all_ghg_ex_lulucf(region: str = "R1") -> pyam.IamDataFrame:
     return pyam.IamDataFrame(
         pd.DataFrame(
             [
-                _row(region, 2020,
-                     "Emissions|CO2|Energy and Industrial Processes",
-                     "Mt CO2/yr", 1000.0),
+                _row(
+                    region,
+                    2020,
+                    "Emissions|CO2|Energy and Industrial Processes",
+                    "Mt CO2/yr",
+                    1000.0,
+                ),
                 _row(region, 2020, "Emissions|CH4", "Mt CH4/yr", 100.0),
                 _row(region, 2020, "Emissions|N2O", "kt N2O/yr", 500.0),
             ]
@@ -77,9 +81,13 @@ def test_build_covered_missing_component_raises() -> None:
     scen = pyam.IamDataFrame(
         pd.DataFrame(
             [
-                _row("R1", 2020,
-                     "Emissions|CO2|Energy and Industrial Processes",
-                     "Mt CO2/yr", 1000.0),
+                _row(
+                    "R1",
+                    2020,
+                    "Emissions|CO2|Energy and Industrial Processes",
+                    "Mt CO2/yr",
+                    1000.0,
+                ),
                 _row("R1", 2020, "Emissions|CH4", "Mt CH4/yr", 100.0),
                 # no N2O
             ]
@@ -110,9 +118,13 @@ def test_backfill_and_build_covered_errors_when_components_missing() -> None:
     scen = pyam.IamDataFrame(
         pd.DataFrame(
             [
-                _row("R1", 2020,
-                     "Emissions|CO2|Energy and Industrial Processes",
-                     "Mt CO2/yr", 1000.0),
+                _row(
+                    "R1",
+                    2020,
+                    "Emissions|CO2|Energy and Industrial Processes",
+                    "Mt CO2/yr",
+                    1000.0,
+                ),
             ]
         )
     )

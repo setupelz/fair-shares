@@ -333,10 +333,10 @@ class TestIAMCLoaderErrors:
 
     def test_iamc_region_missing_start_year_error(self, minimal_iamc_df):
         """A region without its own start-year value raises, even with annual expansion."""
+        import pyam
+
         from fair_shares.library.exceptions import IAMCDataError
         from fair_shares.library.utils.data.iamc import load_iamc_data
-
-        import pyam
 
         data = minimal_iamc_df.data
         usa_2010 = data[(data["region"] == "USA") & (data["year"] == 2030)].assign(

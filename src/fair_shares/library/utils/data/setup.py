@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import subprocess
+from contextlib import nullcontext
 from pathlib import Path
 from typing import Any
 
@@ -25,6 +26,7 @@ from fair_shares.library.utils.data.provenance import (
     clear_stamp,
     compute_components,
     describe_changes,
+    raw_path_checks_suspended,
     read_stamp,
     trust_cache_enabled,
     write_stamp,
@@ -341,6 +343,7 @@ def resolve_data_setup(
     harmonisation_year: int | None = None,
     output_dir: Path | str | None = None,
     data_dir: Path | str | None = None,
+    check_raw_paths: bool = True,
 ) -> dict[str, Any]:
     """
     Resolve configuration, paths and file state for a fair share allocation.
@@ -378,6 +381,10 @@ def resolve_data_setup(
         (see :mod:`fair_shares.library.paths`). When given, they seed
         process-wide resolution so the config's own relative ``path:`` values
         resolve against them too.
+    check_raw_paths : bool, default True
+        ``False`` builds the config without checking or fetching the raw input
+        files, for a caller that first wants to know whether the processed
+        folder is already complete and current.
 
     Returns
     -------
@@ -409,9 +416,10 @@ def resolve_data_setup(
         )
 
     # Build and validate configuration
-    data_config, source_id = build_data_config(
-        emission_category, active_sources, harmonisation_year=harmonisation_year
-    )
+    with nullcontext() if check_raw_paths else raw_path_checks_suspended():
+        data_config, source_id = build_data_config(
+            emission_category, active_sources, harmonisation_year=harmonisation_year
+        )
 
     resolved_output = resolve_output_dir(output_dir)
 
@@ -579,7 +587,9 @@ def setup_data(
     date. The stamp hashes the code, config and input data that shape the
     folder (see :mod:`fair_shares.library.utils.data.provenance`). A mismatch
     reruns all preprocessing for the folder with ``--forceall`` and logs the
-    changed components. A current tree costs no Snakemake startup.
+    changed components. A current tree costs no Snakemake startup and needs no
+    raw input files: they are checked, and fetched if missing, only when a
+    build runs. A datapack (``fair-shares fetch-data --pack``) relies on this.
 
     The check needs a checkout, because the notebooks live there. An installed
     wheel pointed at a prebuilt tree reuses it as it is and never needs the
@@ -627,18 +637,23 @@ def setup_data(
         )
         repo_root = Path(project_root)
 
+    resolve_kwargs: dict[str, Any] = {
+        "emission_category": emission_category,
+        "active_sources": active_sources,
+        "harmonisation_year": harmonisation_year,
+        "output_dir": output_dir,
+        "data_dir": data_dir,
+    }
+    # Raw inputs are not needed to decide whether a build is needed.
     setup_info = resolve_data_setup(
-        emission_category=emission_category,
-        active_sources=active_sources,
-        verbose=verbose,
-        harmonisation_year=harmonisation_year,
-        output_dir=output_dir,
-        data_dir=data_dir,
+        verbose=verbose, check_raw_paths=False, **resolve_kwargs
     )
 
     needs_build = not setup_info["verification"]["all_files_exist"]
     force, components = _check_provenance(setup_info, repo_root, trust_cache)
     if needs_build or force:
+        # A build reads the raw inputs: check them now, fetching what is missing.
+        setup_info = resolve_data_setup(verbose=False, **resolve_kwargs)
         base_dir = setup_info["paths"]["base_dir"]
         if components is not None:
             clear_stamp(base_dir)

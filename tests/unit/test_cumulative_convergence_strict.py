@@ -217,9 +217,9 @@ class TestStrictFalseMode:
         ].sum(axis=1)
 
         # Verify cumulative shares are non-negative (sanity check after adjustment)
-        assert (
-            cumulative_shares >= 0
-        ).all(), "Cumulative shares should be non-negative"
+        assert (cumulative_shares >= 0).all(), (
+            "Cumulative shares should be non-negative"
+        )
 
         for iso3c, warning in result_adjusted.country_warnings.items():
             factor = float(warning.split(":")[1])

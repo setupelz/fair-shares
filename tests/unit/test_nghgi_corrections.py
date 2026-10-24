@@ -19,7 +19,10 @@ import pandas as pd
 import pytest
 
 from fair_shares.library.exceptions import DataLoadingError, DataProcessingError
-from fair_shares.library.preprocessing.rcbs import _resolve_adjustment_scalars
+from fair_shares.library.preprocessing.rcbs import (
+    _provenance_columns,
+    _resolve_adjustment_scalars,
+)
 from fair_shares.library.utils.data.nghgi import (
     build_world_co2_timeseries,
     compute_bunker_deduction,
@@ -670,3 +673,14 @@ class TestResolveAdjustmentScalars:
         assert self._resolve(bm_from, "co2", False, 2023)[1] == -4000.0
         with pytest.raises(DataLoadingError, match="baseline year 2024"):
             self._resolve(bm_from, "co2-ffi", True, 2024)
+
+
+@pytest.mark.parametrize(
+    ("category", "expected"),
+    [("co2", "bookkeeping"), ("all-ghg", "bookkeeping"), ("co2-ffi", None)],
+)
+def test_lulucf_basis_label_only_where_land_use_counts(category, expected):
+    # co2-ffi takes BM LULUCF from the scenarios on either basis, so the label
+    # stays empty and runs on either basis can share its folder.
+    columns = _provenance_columns({"lulucf_basis": "bookkeeping"}, category)
+    assert columns["lulucf_basis"] == expected

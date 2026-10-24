@@ -222,3 +222,52 @@ class TestSourceIdWithGenerator:
             "rcb-pathways-exponential-decay_co2-ffi"
         )
         assert source_id == expected_source_id
+
+
+PATHWAY_SOURCES = {
+    "emissions": "primap-202503",
+    "gdp": "wdi-2025",
+    "population": "un-owid-2025",
+    "gini": "wdi-2025",
+    "target": "rcb-pathways",
+}
+
+
+class TestSourceIdWithHarmonisationYear:
+    """A non-default harmonisation year gets its own folder; the default does not."""
+
+    def test_default_year_keeps_the_plain_name(self):
+        _, unset = build_data_config("co2-ffi", PATHWAY_SOURCES)
+        _, explicit = build_data_config(
+            "co2-ffi", PATHWAY_SOURCES, harmonisation_year=2020
+        )
+        assert unset == explicit
+        assert not unset.endswith("_h2020")
+
+    def test_other_year_gets_its_own_folder(self):
+        _, plain = build_data_config("co2-ffi", PATHWAY_SOURCES)
+        _, other = build_data_config(
+            "co2-ffi", PATHWAY_SOURCES, harmonisation_year=2021
+        )
+        assert other == f"{plain}_h2021"
+
+    def test_snakefile_and_config_agree(self):
+        # The Snakefile only receives an explicitly given year; build_data_config
+        # resolves None to the default. Both must name the same folder.
+        from fair_shares.library.utils.data.config import configured_harmonisation_year
+
+        for given in (None, 2020, 2021):
+            _, from_config = build_data_config(
+                "co2-ffi", PATHWAY_SOURCES, harmonisation_year=given
+            )
+            from_snakefile = build_source_id(
+                emissions="primap-202503",
+                gdp="wdi-2025",
+                population="un-owid-2025",
+                gini="wdi-2025",
+                target="rcb-pathways",
+                emission_category="co2-ffi",
+                harmonisation_year=given,
+                default_harmonisation_year=configured_harmonisation_year(),
+            )
+            assert from_config == from_snakefile

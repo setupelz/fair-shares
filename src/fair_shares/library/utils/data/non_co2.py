@@ -69,8 +69,7 @@ def derive_non_co2_country_timeseries(
     all_ghg_ex_co2_lulucf: TimeseriesDataFrame,
     co2_ffi: TimeseriesDataFrame,
 ) -> TimeseriesDataFrame:
-    """Derive country-level non-CO2 GHG timeseries by subtracting CO2-FFI from
-    all-GHG-ex-CO2-LULUCF.
+    """Derive country-level non-CO2 GHG timeseries.
 
     Non-CO2 is not a standalone emissions category — it is computed as:
         non_co2 = all_ghg_ex_co2_lulucf - co2_ffi

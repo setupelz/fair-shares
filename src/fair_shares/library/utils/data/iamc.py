@@ -205,8 +205,7 @@ def load_iamc_data(
     # Guard: require exactly one model/scenario combination
     if len(df.model) > 1 or len(df.scenario) > 1:
         lines = [
-            f"Data contains {len(df.model)} model(s) × "
-            f"{len(df.scenario)} scenario(s):",
+            f"Data contains {len(df.model)} model(s) × {len(df.scenario)} scenario(s):",
         ]
         for m in df.model:
             for s in df.scenario:
@@ -220,8 +219,7 @@ def load_iamc_data(
         lines.append("Or use pyam directly:")
         lines.append('    df = pyam.IamDataFrame("your_file.xlsx")')
         lines.append(
-            f'    df = df.filter(model="{df.model[0]}", '
-            f'scenario="{df.scenario[0]}")'
+            f'    df = df.filter(model="{df.model[0]}", scenario="{df.scenario[0]}")'
         )
         raise IAMCDataError("\n".join(lines))
 
@@ -415,7 +413,7 @@ def _iamc_to_timeseries(
     ts = ts.reset_index()
 
     # Keep only region, unit, and year columns
-    year_cols = [c for c in ts.columns if isinstance(c, (int, float))]
+    year_cols = [c for c in ts.columns if isinstance(c, int | float)]
     ts = ts[["region", "unit", *year_cols]]
 
     # Set MultiIndex with our level names

@@ -16,7 +16,7 @@ A new release of a source the library already uses is simpler: see [Updating dat
 | `gini` | Inequality within countries | World Bank WDI (default), UNU-WIDER WIID |
 | `lulucf` | National-inventory land-use CO₂ | Melo et al. (2026): `melo-2026-v4` (default), `melo-2026` |
 | `targets` | Global limits | AR6 scenarios, remaining carbon budgets |
-| scenario sources | Scenario-derived budget terms | `ar6`, `sci` in `src/fair_shares/conf/scenario_sources.yaml` |
+| scenario sources | Scenario-derived budget terms | `ar6`, `sci`, `scenariomip` in `src/fair_shares/conf/scenario_sources.yaml` |
 
 ## 1. Place the raw data
 
@@ -160,6 +160,7 @@ Every scenario source maps its categories to the normalised `climate-assessment`
 A new scenario source is an entry in `src/fair_shares/conf/scenario_sources.yaml` that declares the world variables, metadata columns and bunker variables notebook 104 reads, and the budget terms it supplies.
 
 An all-GHG budget run splits into a CO₂ budget and a non-CO₂ pathway. Notebook 104 builds the non-CO₂ pathway of each budget from its own scenario set (the temperature-matched set, or the AR6 category under `scenario_selection: ar6-category`), and non-CO₂ rows carry the budget's source key.
+A new budget source sets `non_co2_basis` to the scenario database it was built on; a basis other than the active scenario source (AR6) needs notebook 104 to build that source's per-budget medians first ([Non-CO₂ basis](../science/scenario-sets.md#non-co2-basis)).
 A new budget label needs at least `min_scenarios` scenarios in each of its sets, or notebook 104 raises a `ConfigurationError` that names it. `data/rcbs/rcbs.yaml` lists the labels left out of the defaults and why ([Decomposition](../science/greenhouse-gases.md#decomposition-rules); [Architecture](architecture-walkthrough.md#composite-category-decomposition)).
 
 ## Normative implications

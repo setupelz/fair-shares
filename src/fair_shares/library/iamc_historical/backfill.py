@@ -44,6 +44,7 @@ def _iamc_historical_model_label(version: str) -> str:
         return f"{title} ({resolved})"
     return f"IAMC historical ({resolved})"
 
+
 logger = logging.getLogger(__name__)
 
 RegionMappingLike = RegionMapping | str | Path
@@ -232,7 +233,7 @@ def _resolve_mapping(
         )
     if isinstance(region_mapping, RegionMapping):
         return region_mapping
-    if isinstance(region_mapping, (str, Path)):
+    if isinstance(region_mapping, str | Path):
         return RegionMapping.from_nomenclature_yaml(region_mapping)
     raise ConfigurationError(
         f"Unsupported region_mapping type: {type(region_mapping).__name__}"
@@ -256,9 +257,7 @@ def _verify_region_coverage(
     scen_regions = set(scenario.region)
     hist_regions = set(history_slim["region"])
     unmapped = sorted(
-        r
-        for r in (scen_regions - hist_regions)
-        if r.strip().lower() != "world"
+        r for r in (scen_regions - hist_regions) if r.strip().lower() != "world"
     )
     if not unmapped:
         return
@@ -269,9 +268,9 @@ def _verify_region_coverage(
     covered_vars = set(history_slim["variable"])
     join_covered = join[join["variable"].isin(covered_vars)]
     total_abs = join_covered["value"].abs().sum()
-    missing_abs = join_covered.loc[
-        join_covered["region"].isin(unmapped), "value"
-    ].abs().sum()
+    missing_abs = (
+        join_covered.loc[join_covered["region"].isin(unmapped), "value"].abs().sum()
+    )
     share = (missing_abs / total_abs) if total_abs > 0 else 0.0
     if share > threshold:
         raise DataProcessingError(
@@ -355,5 +354,3 @@ def _emit_continuity_warnings(
             row["value"],
             row["hist"],
         )
-
-

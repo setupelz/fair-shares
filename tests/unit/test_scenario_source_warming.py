@@ -12,6 +12,7 @@ import yaml
 from fair_shares.library.exceptions import ConfigurationError, DataProcessingError
 from fair_shares.library.utils.data.scenario_sets import (
     NET_ZERO_CROSSING,
+    budget_specs,
     bunker_share_table,
     scenario_set_settings,
 )
@@ -65,17 +66,22 @@ def test_warming_at_the_first_full_year_at_or_below_zero():
     assert result.loc[("m", "never"), "w50"] == pytest.approx(1.64)
 
 
-@pytest.mark.parametrize("name", ["sci", "scenariomip"])
-def test_derived_sources_declare_warming_non_co2_and_terms(name):
+@pytest.mark.parametrize(
+    ("name", "terms"),
+    [("sci", {"bunkers", "non-co2"}), ("scenariomip", {"bunkers"})],
+)
+def test_derived_sources_declare_warming_and_terms(name, terms):
     source = get_scenario_source(name)
-    assert set(source["terms"]) == {"bunkers", "non-co2"}
+    assert set(source["terms"]) == terms
     assert set(source["derived_warming"]["gsat"]) == {"warming_median", "warming_p67"}
     assert set(source["metadata_columns"]) == {
         "net_zero_year",
         "warming_median",
         "warming_p67",
     }
-    assert {"kyoto", "co2_variables"} <= set(source["non_co2"])
+    assert ("non_co2" in source) == ("non-co2" in terms)
+    if "non-co2" in terms:
+        assert {"kyoto", "co2_variables"} <= set(source["non_co2"])
     registry = yaml.safe_load(
         (REPO_ROOT / "src/fair_shares/conf/data_registry.yaml").read_text()
     )
@@ -93,16 +99,19 @@ def test_derived_sources_declare_warming_non_co2_and_terms(name):
     assert citation.exists()
 
 
-def test_default_pools_for_non_co2_and_the_bunker_share():
+def test_bunker_pool_and_the_non_co2_basis_of_every_shipped_budget():
     settings = scenario_set_settings({})
-    assert settings["non_co2"]["scenario_sources"] == ["ar6"]
+    assert "non_co2" not in settings
     assert settings["bunkers"]["scenario_sources"] == ["ar6", "sci", "scenariomip"]
     rcb_yaml = yaml.safe_load((REPO_ROOT / "data/rcbs/rcbs.yaml").read_text())
     shipped = scenario_set_settings(rcb_yaml)
-    assert shipped["non_co2"]["scenario_sources"] == ["ar6"]
     assert shipped["bunkers"]["scenario_sources"] == ["ar6", "sci", "scenariomip"]
-    on = scenario_set_settings({"non_co2": {"scenario_sources": ["ar6", "sci"]}})
-    assert on["non_co2"]["scenario_sources"] == ["ar6", "sci"]
+    assert {spec.non_co2_basis for spec in budget_specs(rcb_yaml)} == {"ar6"}
+    assert "non-co2" not in get_scenario_source("scenariomip")["terms"]
+    with pytest.raises(
+        ConfigurationError, match=r"non_co2\.scenario_sources was removed"
+    ):
+        scenario_set_settings({"non_co2": {"scenario_sources": ["ar6", "sci"]}})
 
 
 def test_threshold_counts_as_net_zero_in_the_first_year_below_100_mt():

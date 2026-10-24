@@ -23,6 +23,7 @@
 # Import shared logic from Python modules (single source of truth)
 from fair_shares.library.utils.data.config import (
     build_source_id,
+    configured_harmonisation_year,
     get_bunkers_source,
     get_emission_preprocessing_categories,
     get_emissions_data_parameters,
@@ -89,6 +90,8 @@ SOURCE_ID = build_source_id(
     target=active_target_source or "unknown",
     emission_category=emission_category,
     rcb_generator=rcb_generator,
+    harmonisation_year=harmonisation_year,
+    default_harmonisation_year=configured_harmonisation_year(),
 )
 
 OUTPUT_DIR = f"output/{SOURCE_ID}"

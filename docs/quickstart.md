@@ -46,6 +46,28 @@ If the processed files are missing, they rebuild them with Snakemake, which need
 pip install "fair-shares[pipeline] @ git+https://github.com/setupelz/fair-shares"
 ```
 
+## Ready-made inputs
+
+Each release has a datapack: the processed inputs for every combination of the shipped emissions, land-use, GDP, population and Gini sources, targets and emission categories, which includes the defaults of every country notebook (301 to 303, 405, 601 to 605).
+Allocation settings (approach, weights, years, income floor) are applied on top of these files, so any of them runs from the pack.
+With it a run needs no raw data:
+
+```bash
+uv run fair-shares fetch-data --pack
+```
+
+The command downloads the pack of your installed version from its GitHub release, checks its hash and unpacks it into `output/`.
+A folder you already have is kept; `--force` overwrites the pack's files in it and leaves your results alone.
+`output/datapack-<version>/` holds the pack's README, licence and `CITATIONS.md`.
+
+A folder is used as it is while it matches your code and configuration.
+Edit either, or choose a harmonisation year other than the default and the notebooks', and that folder is rebuilt from raw inputs, which the next section covers.
+The IAMC notebooks (400 to 403) read your own scenario file and need no pack.
+
+The datapack is CC BY-NC-SA 4.0, because most of its folders derive from PRIMAP-hist v2.8, and results built on it carry the same terms.
+For CC BY results, build the `primap-202503` or `gcb-2025` folders from raw inputs.
+It holds pooled scenario statistics only (bunker shares, set medians and counts), never one row per scenario.
+
 ## Getting the input data
 
 Most inputs are third-party datasets.
@@ -88,6 +110,7 @@ uv run fair-shares fetch-data --source ipcc_ar6_climate
 A run reads the optional manual inputs only when its configuration selects them:
 
 - `sci-2025` and `sci-2026`: the Scenario Compass ensembles. They add scenarios that report bunkers to the bunker share. Access is on request, and their embargo terms apply until Riahi et al. is published.
+- `gcb-2025-luc`: Global Carbon Budget 2025 national land-use change CO2 from bookkeeping models, behind the ICOS licence page. It is the land-use source on the model basis, which notebook 405 uses by default.
 - `scenariomip-cmip7`: the ScenarioMIP-CMIP7 scenarios, an alternative scenario source.
 - `gcb-2024`: the Global Carbon Budget 2024 national workbook, an older source of observed bunkers.
 

@@ -75,7 +75,6 @@ from pyprojroot import here
 
 from fair_shares.library.exceptions import (
     DataLoadingError,
-    DataProcessingError,
 )
 from fair_shares.library.utils import (
     build_source_id,
@@ -183,9 +182,9 @@ intermediate_dir.mkdir(parents=True, exist_ok=True)
 emissions_config = config["emissions"][active_emissions_source]
 emissions_world_key = emissions_config["data_parameters"].get("world_key")
 # The non-CO2 categories need all-ghg-ex-co2-lulucf from the emissions source.
-has_non_co2_input = "all-ghg-ex-co2-lulucf" in emissions_config[
-    "data_parameters"
-].get("available_categories", [])
+has_non_co2_input = "all-ghg-ex-co2-lulucf" in emissions_config["data_parameters"].get(
+    "available_categories", []
+)
 
 print(f"Active LULUCF source: {active_lulucf_source}")
 print(f"LULUCF data path: {lulucf_file}")
@@ -263,7 +262,9 @@ print(f"  Countries: {len(lulucf_countries)}")
 # %%
 # Save the world row as world_co2-lulucf_timeseries.csv
 # Format: single-row DataFrame with source index (matches expected loader format)
-wrd_data = lulucf_all.loc[lulucf_all.index.get_level_values("iso3c") == emissions_world_key]
+wrd_data = lulucf_all.loc[
+    lulucf_all.index.get_level_values("iso3c") == emissions_world_key
+]
 world_values = wrd_data.reset_index(level=["unit", "emission-category"], drop=True)
 lulucf_world_output = pd.DataFrame(
     world_values.values,
@@ -473,13 +474,19 @@ if has_non_co2_input:
 # (BM co2 - co2-ffi) from the BM total CO2 file below; not every pipeline
 # configuration produces a standalone BM emiss_co2-lulucf_timeseries.csv.
 bm_co2_path = intermediate_dir / "emiss_co2_timeseries.csv"
-print(f"\n=== {active_emissions_source} (implied) vs {lulucf_basis} LULUCF at world level ===")
+print(
+    f"\n=== {active_emissions_source} (implied) vs {lulucf_basis} LULUCF at world level ==="
+)
 if bm_co2_path.exists():
     bm_co2 = ensure_string_year_columns(
         pd.read_csv(bm_co2_path).set_index(["iso3c", "unit", "emission-category"])
     )
-    bm_world_co2 = bm_co2.loc[bm_co2.index.get_level_values("iso3c") == emissions_world_key]
-    ffi_world = co2_ffi.loc[co2_ffi.index.get_level_values("iso3c") == emissions_world_key]
+    bm_world_co2 = bm_co2.loc[
+        bm_co2.index.get_level_values("iso3c") == emissions_world_key
+    ]
+    ffi_world = co2_ffi.loc[
+        co2_ffi.index.get_level_values("iso3c") == emissions_world_key
+    ]
     shared = sorted(
         set(bm_world_co2.columns) & set(ffi_world.columns) & set(lulucf_year_cols)
     )
@@ -487,7 +494,9 @@ if bm_co2_path.exists():
     for y in shared[-5:]:
         lulucf_val = lulucf_world_output[y].iloc[0]
         bm_implied = bm_world_co2[y].iloc[0] - ffi_world[y].iloc[0]
-        print(f"{y:>6} {lulucf_val:>12.1f} {bm_implied:>15.1f} {lulucf_val - bm_implied:>10.1f}")
+        print(
+            f"{y:>6} {lulucf_val:>12.1f} {bm_implied:>15.1f} {lulucf_val - bm_implied:>10.1f}"
+        )
 else:
     print(f"BM co2 file not found at {bm_co2_path}; skipping comparison.")
 
@@ -509,6 +518,7 @@ for y in lulucf_year_cols[-5:]:
 # %% [markdown]
 # ## Plots
 
+
 # %%
 def _plot_world(ax, df, world_key, *, title, ylabel, label):
     world_df = df.loc[df.index.get_level_values("iso3c") == world_key]
@@ -528,26 +538,34 @@ n_rows = 2 if has_non_co2_input else 1
 fig, axes = plt.subplots(n_rows, 2, figsize=(16, 6 * n_rows), squeeze=False)
 
 _plot_world(
-    axes[0, 0], lulucf_all, emissions_world_key,
+    axes[0, 0],
+    lulucf_all,
+    emissions_world_key,
     title=f"co2-lulucf: World ({lulucf_basis})",
     ylabel="MtCO2/yr",
     label=lulucf_release,
 )
 _plot_world(
-    axes[0, 1], co2, emissions_world_key,
+    axes[0, 1],
+    co2,
+    emissions_world_key,
     title=f"co2: World (FFI + LULUCF, {lulucf_basis})",
     ylabel="MtCO2/yr",
     label=f"co2 ({lulucf_basis})",
 )
 if has_non_co2_input:
     _plot_world(
-        axes[1, 0], non_co2, emissions_world_key,
+        axes[1, 0],
+        non_co2,
+        emissions_world_key,
         title="non-co2: World (CH4 + N2O + F-gases)",
         ylabel="MtCO2e/yr",
         label="non-co2",
     )
     _plot_world(
-        axes[1, 1], all_ghg, emissions_world_key,
+        axes[1, 1],
+        all_ghg,
+        emissions_world_key,
         title=f"all-ghg: World (co2 + non-co2, {lulucf_basis})",
         ylabel="MtCO2e/yr",
         label=f"all-ghg ({lulucf_basis})",

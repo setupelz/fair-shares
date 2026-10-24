@@ -61,7 +61,9 @@ def test_platformdirs_skipped_when_absent(monkeypatch, tmp_path):
     assert paths.data_dir() == repo / "data"
 
 
-def test_repo_autodetect_is_the_zero_config_path(monkeypatch, tmp_path, no_platform_dirs):
+def test_repo_autodetect_is_the_zero_config_path(
+    monkeypatch, tmp_path, no_platform_dirs
+):
     monkeypatch.delenv(paths.DATA_DIR_ENV, raising=False)
     monkeypatch.delenv(paths.OUTPUT_DIR_ENV, raising=False)
     repo = _make_fake_repo(tmp_path)
@@ -123,7 +125,10 @@ def test_output_prefix_resolves_against_the_output_dir(tmp_path):
         data_dir=tmp_path / "d",
         output_dir=tmp_path / "o",
     )
-    assert resolved == tmp_path / "o" / "src-id" / "intermediate" / "emissions" / "bunkers.csv"
+    assert (
+        resolved
+        == tmp_path / "o" / "src-id" / "intermediate" / "emissions" / "bunkers.csv"
+    )
 
 
 def test_prefixless_relative_path_is_data_relative(tmp_path):
@@ -170,7 +175,10 @@ def test_configure_seeds_resolution_for_deep_callers(
     assert paths.resolve_source_path("data/regions/map.csv") == (
         tmp_path / "d" / "regions" / "map.csv"
     )
-    assert paths.resolve_source_path("output/sid/x.csv") == tmp_path / "o" / "sid" / "x.csv"
+    assert (
+        paths.resolve_source_path("output/sid/x.csv")
+        == tmp_path / "o" / "sid" / "x.csv"
+    )
 
 
 def test_configure_ignores_none(monkeypatch, tmp_path):

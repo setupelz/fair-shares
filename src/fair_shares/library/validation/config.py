@@ -176,7 +176,7 @@ def validate_allocation_year_for_co2(
         for params in params_list:
             params_snake = {k.replace("-", "_"): v for k, v in params.items()}
             years = params_snake.get(year_param, [])
-            if not isinstance(years, (list, tuple)):
+            if not isinstance(years, list | tuple):
                 years = [years]
 
             for year in years:
@@ -189,7 +189,7 @@ def validate_allocation_year_for_co2(
             hist_year = params_snake.get("pre_allocation_responsibility_year")
             if hist_year is not None:
                 hist_years = (
-                    hist_year if isinstance(hist_year, (list, tuple)) else [hist_year]
+                    hist_year if isinstance(hist_year, list | tuple) else [hist_year]
                 )
                 for hy in hist_years:
                     if responsibility_min_year is not None:
@@ -252,7 +252,7 @@ def validate_allocation_years_against_harmonisation(
             if year_param in params_snake:
                 years = params_snake[year_param]
                 # Convert to list if single value
-                if not isinstance(years, (list, tuple)):
+                if not isinstance(years, list | tuple):
                     years = [years]
 
                 # Check each year

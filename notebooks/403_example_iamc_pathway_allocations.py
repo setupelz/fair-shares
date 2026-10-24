@@ -161,7 +161,7 @@ print(f"{'Region':8s} {' '.join([f'{y:>7s}' for y in sample_years])}")
 print("-" * (8 + len(sample_years) * 8))
 for region in sorted(shares_epc.index.get_level_values("iso3c").unique()):
     region_data = shares_epc[shares_epc.index.get_level_values("iso3c") == region]
-    values = [f"{region_data[y].values[0]*100:6.2f}%" for y in sample_years]
+    values = [f"{region_data[y].values[0] * 100:6.2f}%" for y in sample_years]
     print(f"{region:8s} {' '.join(values)}")
 
 # Verify shares sum to 100%
@@ -171,7 +171,7 @@ print("-" * 70)
 for year in sample_years:
     total_share = shares_epc[year].sum()
     print(
-        f"  {year}: {total_share*100:.4f}% {'Yes' if abs(total_share - 1.0) < 0.0001 else 'No'}"
+        f"  {year}: {total_share * 100:.4f}% {'Yes' if abs(total_share - 1.0) < 0.0001 else 'No'}"
     )
 
 # Show absolute emissions for one year as example
@@ -187,7 +187,7 @@ for region in sorted(shares_epc.index.get_level_values("iso3c").unique()):
     share = region_data[sample_years[2]].values[0]
     allocation = share * world_total
     regional_total += allocation
-    print(f"  {region:8s}: {allocation:8.2f} Mt CO2e/yr ({share*100:5.2f}%)")
+    print(f"  {region:8s}: {allocation:8.2f} Mt CO2e/yr ({share * 100:5.2f}%)")
 print(f"  {'TOTAL':8s}: {regional_total:8.2f} Mt CO2e/yr")
 print(
     f"\nAllocations sum to world total: {'Yes' if abs(regional_total - world_total) < 0.01 else 'No'}"
@@ -227,7 +227,7 @@ print(f"{'Region':8s} {' '.join([f'{y:>7s}' for y in sample_years])}")
 print("-" * (8 + len(sample_years) * 8))
 for region in sorted(shares_cap.index.get_level_values("iso3c").unique()):
     region_data = shares_cap[shares_cap.index.get_level_values("iso3c") == region]
-    values = [f"{region_data[y].values[0]*100:6.2f}%" for y in sample_years]
+    values = [f"{region_data[y].values[0] * 100:6.2f}%" for y in sample_years]
     print(f"{region:8s} {' '.join(values)}")
 
 # %% [markdown]
@@ -264,7 +264,7 @@ print(f"{'Region':8s} {' '.join([f'{y:>7s}' for y in sample_years])}")
 print("-" * (8 + len(sample_years) * 8))
 for region in sorted(shares_conv.index.get_level_values("iso3c").unique()):
     region_data = shares_conv[shares_conv.index.get_level_values("iso3c") == region]
-    values = [f"{region_data[y].values[0]*100:6.2f}%" for y in sample_years]
+    values = [f"{region_data[y].values[0] * 100:6.2f}%" for y in sample_years]
     print(f"{region:8s} {' '.join(values)}")
 
 # %% [markdown]

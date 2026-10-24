@@ -267,7 +267,9 @@ class TestSineDeviationCumulativeBudgets:
         total_emissions = world_values.sum()
 
         # Weighted cumulative shares = sum(share_t * global_t) / sum(global_t)
-        weighted_cumulative = (shares * world_values.values).sum(axis=1) / total_emissions
+        weighted_cumulative = (shares * world_values.values).sum(
+            axis=1
+        ) / total_emissions
 
         # These should sum to 1.0
         assert abs(weighted_cumulative.sum() - 1.0) < 1e-6
@@ -381,7 +383,7 @@ class TestEvolveSharesSineDeviationUnit:
             sine_prev = math.sin(((t - 1 - t_a) / (t_conv - t_a)) * math.pi)
             assert sine_correct > sine_prev, (
                 f"Sine should increase in first half: "
-                f"year {t} ({sine_correct:.6f}) <= year {t-1} ({sine_prev:.6f})"
+                f"year {t} ({sine_correct:.6f}) <= year {t - 1} ({sine_prev:.6f})"
             )
 
         # At t_a (start), sine should be 0

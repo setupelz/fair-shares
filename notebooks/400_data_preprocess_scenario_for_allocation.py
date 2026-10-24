@@ -68,8 +68,8 @@ from fair_shares.library.utils.units import get_default_unit_registry
 # %%
 EMISSION_CATEGORY = "all-ghg-ex-co2-lulucf"
 MODEL_NAME = "MESSAGEix-GLOBIOM 2.1-R12"
-START_YEAR = 1990       # back-fill to here
-GWP = "AR6GWP100"       # can switch to AR4GWP100 for the older common-definitions convention
+START_YEAR = 1990  # back-fill to here
+GWP = "AR6GWP100"  # can switch to AR4GWP100 for the older common-definitions convention
 
 SCENARIO_FILE = here() / "data/scenarios/iamc_example/iamc_reporting_example.xlsx"
 OUTPUT_FILE = here() / "output/iamc/iamc_covered.xlsx"
@@ -140,8 +140,8 @@ print(f"Output models: {sorted(out.model)}")
 # %% [markdown]
 # ## Back-fill Population and GDP|PPP
 #
-# Allocation notebooks need the full history span. The scenario typically 
-# starts at the IAM's base year; UN+OWID population and World Bank WDI GDP 
+# Allocation notebooks need the full history span. The scenario typically
+# starts at the IAM's base year; UN+OWID population and World Bank WDI GDP
 # cover 1970+ at country level and aggregate up to the same regions via `mapping`.
 
 # %%
@@ -197,8 +197,11 @@ for ax, region in zip(axes, PLOT_REGIONS, strict=True):
             hist_part["year"], hist_part["value_co2e"], linestyle="--", alpha=0.7
         )
         ax.plot(
-            scen_part["year"], scen_part["value_co2e"],
-            linestyle="-", color=line.get_color(), label=variable,
+            scen_part["year"],
+            scen_part["value_co2e"],
+            linestyle="-",
+            color=line.get_color(),
+            label=variable,
         )
     ax.axvline(scen_first_year, color="grey", linewidth=0.6, alpha=0.5)
     ax.axhline(0, color="black", linewidth=0.4, alpha=0.4)
@@ -217,6 +220,7 @@ plt.show()
 
 # %% [markdown]
 # ### Aggregation check
+
 
 # %%
 def _recompute_covered_per_region(idf, category: str, region: str) -> pd.DataFrame:
@@ -260,17 +264,33 @@ for ax, region in zip(axes2, PLOT_REGIONS, strict=True):
         .rename(columns={"value": "adapter"})
     )
     merged = covered.merge(recomputed, on="year")
-    ax.plot(merged["year"], merged["adapter"], color=BLUE, linewidth=2,
-            label="adapter Emissions|Covered")
-    ax.plot(merged["year"], merged["recomputed"],
-            linewidth=1, linestyle=":", label="independent recompute")
+    ax.plot(
+        merged["year"],
+        merged["adapter"],
+        color=BLUE,
+        linewidth=2,
+        label="adapter Emissions|Covered",
+    )
+    ax.plot(
+        merged["year"],
+        merged["recomputed"],
+        linewidth=1,
+        linestyle=":",
+        label="independent recompute",
+    )
     ax.set_title(region.split("|", 1)[1], fontsize=10)
     ax.set_ylabel("Mt CO2e/yr")
     ax.grid(alpha=0.3)
     max_abs_diff = (merged["adapter"] - merged["recomputed"]).abs().max()
     ax.text(
-        0.98, 0.05, f"max |Δ| = {max_abs_diff:.2e}", transform=ax.transAxes,
-        ha="right", va="bottom", fontsize=8, alpha=0.6,
+        0.98,
+        0.05,
+        f"max |Δ| = {max_abs_diff:.2e}",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=8,
+        alpha=0.6,
     )
 axes2[0].legend(loc="upper left", fontsize=8, frameon=False)
 axes2[-1].set_xlabel("Year")

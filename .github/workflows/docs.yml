@@ -9,6 +9,7 @@ on:
     paths:
       - "docs/**"
       - "mkdocs.yml"
+      - "mkdocs_hooks.py"
       - "src/**"
       - "README.md"
   workflow_dispatch:

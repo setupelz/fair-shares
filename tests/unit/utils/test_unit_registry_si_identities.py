@@ -18,7 +18,6 @@ import pytest
 
 from fair_shares.library.utils.units import get_default_unit_registry
 
-
 REL = 1e-12
 
 
@@ -54,9 +53,7 @@ def test_Gt_equals_Pg_si_identity() -> None:
     assert (1 * ur("Gt")).to("Pg").magnitude == pytest.approx(1.0, rel=REL)
 
 
-@pytest.mark.parametrize(
-    "unit", ["g", "kg", "t", "kt", "Mt", "Gt", "Gg", "Tg", "Pg"]
-)
+@pytest.mark.parametrize("unit", ["g", "kg", "t", "kt", "Mt", "Gt", "Gg", "Tg", "Pg"])
 def test_cross_registry_consistency_with_openscm(unit: str) -> None:
     """The fair-shares registry must agree with stock openscm-units on every
     mass unit on the SI / tonne ladder."""

@@ -29,9 +29,9 @@ class TestAR6Co2YAMLConfig:
         ar6_categories = data_sources_config["scenarios"]["ar6"]["data_parameters"][
             "available_categories"
         ]
-        assert (
-            "co2" in ar6_categories
-        ), f"'co2' not found in AR6 available_categories: {ar6_categories}"
+        assert "co2" in ar6_categories, (
+            f"'co2' not found in AR6 available_categories: {ar6_categories}"
+        )
 
     def test_co2_ffi_still_in_ar6_available_categories(self, data_sources_config):
         """co2-ffi must remain in AR6 available_categories (regression)."""
@@ -69,9 +69,9 @@ class TestPydanticModelAcceptsCo2:
         emission_cat_type = hints["emission_category"]
         # Extract Literal args
         args = typing.get_args(emission_cat_type)
-        assert (
-            "co2" in args
-        ), f"'co2' not in DataSourcesConfig.emission_category Literal: {args}"
+        assert "co2" in args, (
+            f"'co2' not in DataSourcesConfig.emission_category Literal: {args}"
+        )
 
     def test_existing_categories_still_valid(self):
         """Existing categories must remain valid (regression)."""
@@ -81,6 +81,6 @@ class TestPydanticModelAcceptsCo2:
         emission_cat_type = hints["emission_category"]
         args = typing.get_args(emission_cat_type)
         for expected in ["co2-ffi", "all-ghg", "all-ghg-ex-co2-lulucf"]:
-            assert (
-                expected in args
-            ), f"'{expected}' missing from emission_category Literal: {args}"
+            assert expected in args, (
+                f"'{expected}' missing from emission_category Literal: {args}"
+            )

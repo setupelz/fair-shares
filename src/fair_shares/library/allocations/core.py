@@ -78,7 +78,9 @@ def validate_weight_constraints(
         If weights are negative or sum exceeds 1.0.
     """
     if pre_allocation_responsibility_weight < 0:
-        raise AllocationError("pre_allocation_responsibility_weight must be non-negative.")
+        raise AllocationError(
+            "pre_allocation_responsibility_weight must be non-negative."
+        )
     if capability_weight < 0:
         raise AllocationError("capability_weight must be non-negative.")
     if pre_allocation_responsibility_weight + capability_weight > 1.0:

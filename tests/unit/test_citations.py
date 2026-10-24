@@ -90,9 +90,9 @@ class TestSourceResolution:
         assert "World Bank" in text
         assert "CC-BY-4.0" in text
         assert "DOI: none issued; cite by name as written above" in text
-        assert not _dois_in(
-            text.split("### wdi-2025")[1].split("###")[0]
-        ), "no DOI may be invented for the World Bank entry"
+        assert not _dois_in(text.split("### wdi-2025")[1].split("###")[0]), (
+            "no DOI may be invented for the World Bank entry"
+        )
 
     def test_a_run_on_the_default_gini_source_has_no_special_terms_to_flag(self):
         """WIID's non-commercial terms are the reason for the swap."""

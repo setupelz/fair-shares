@@ -301,7 +301,7 @@ E_{\text{world}}(t) = E_{\text{fossil}}(t) + \text{LULUCF}(t)
 $$
 
 NGHGI land-use data start in 2000: LULUCF Data Hub v4.0.0 (`melo-2026-v4`, default, 2000 to 2024) or v3.1.1 (`melo-2026`, opt-in, 2000 to 2023).
-Categories with land-use CO₂ therefore start in 2000 or later ([Start-year limits](greenhouse-gases.md#start-year-limits)).
+On this basis categories with land-use CO₂ start in 2000 or later. The bookkeeping source `gcb-2025-luc` (model basis, 1850 to 2024) allows earlier years ([Start-year limits](greenhouse-gases.md#start-year-limits)).
 An allocation year before the first year of the world series raises an error that names the first available year.
 `calculate_budget_from_rcb` then works the same way for `co2-ffi` and `co2`.
 `build_world_co2_timeseries()` and the preprocessing notebooks build the same series.

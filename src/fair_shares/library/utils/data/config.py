@@ -167,6 +167,8 @@ def build_source_id(
     emission_category: str,
     lulucf: str | None = None,
     rcb_generator: str | None = None,
+    harmonisation_year: int | None = None,
+    default_harmonisation_year: int | None = None,
 ) -> str:
     """Construct standardized source identifier used for output directories.
 
@@ -178,6 +180,11 @@ def build_source_id(
 
     The emission_category is always included in the source_id to ensure
     unique output directories for different emission scopes.
+
+    A harmonisation year other than the configured default is appended as
+    ``h<year>`` (notebook 602 harmonises to 2021), so runs harmonised to
+    different years do not overwrite one folder. Runs on the default keep the
+    plain name.
 
     Parameters
     ----------
@@ -198,6 +205,10 @@ def build_source_id(
         LULUCF source identifier (e.g., "melo-2026-v4")
     rcb_generator : str | None, optional
         RCB pathway generator name (only used for target="rcb-pathways")
+    harmonisation_year : int | None, optional
+        The run's harmonisation year, if one is set.
+    default_harmonisation_year : int | None, optional
+        The configured default (:func:`configured_harmonisation_year`).
 
     Returns
     -------
@@ -224,7 +235,32 @@ def build_source_id(
     if lulucf and emission_category in _LULUCF_DEPENDENT:
         parts.append(lulucf)
     parts.extend([target_with_generator, emission_category])
+    if (
+        harmonisation_year is not None
+        and harmonisation_year != default_harmonisation_year
+    ):
+        parts.append(f"h{int(harmonisation_year)}")
     return "_".join(parts)
+
+
+def unified_config_path(config_path: Path | None = None) -> Path:
+    """Return the unified data-sources YAML in use.
+
+    An explicit path, then ``FAIR_SHARES_CONFIG``, then the copy packaged
+    inside the wheel.
+    """
+    if config_path is None:
+        from_env = os.environ.get(CONFIG_ENV)
+        config_path = Path(from_env) if from_env else None
+    if config_path is None:
+        return packaged_config("data_sources/data_sources_unified.yaml")
+    return config_path
+
+
+def configured_harmonisation_year(config_path: Path | None = None) -> int | None:
+    """Return the harmonisation year a run uses when it sets none."""
+    with unified_config_path(config_path).open() as f:
+        return (yaml.safe_load(f) or {}).get("harmonisation_year")
 
 
 def build_data_config(
@@ -282,16 +318,7 @@ def build_data_config(
     ConfigurationError
         If rcb_generator specified for non-rcb-pathways target or invalid generator
     """
-    # Determine config source: explicit argument, then FAIR_SHARES_CONFIG,
-    # then the copy packaged inside the wheel.
-    if config_path is None:
-        from_env = os.environ.get(CONFIG_ENV)
-        config_path = Path(from_env) if from_env else None
-
-    if config_path is None:
-        config_source = packaged_config("data_sources/data_sources_unified.yaml")
-    else:
-        config_source = config_path
+    config_source = unified_config_path(config_path)
 
     # Load unified YAML
     if not config_source.exists():
@@ -472,6 +499,8 @@ def build_data_config(
         target=target,
         emission_category=emission_category,
         rcb_generator=rcb_generator,
+        harmonisation_year=final_harmonisation_year,
+        default_harmonisation_year=full_config.get("harmonisation_year"),
     )
 
     return validated_config, source_id
@@ -557,6 +586,9 @@ def validate_data_source_config(
     3. All required source keys are present
     4. Returns compatible allocation approaches
 
+    Raw input files are not checked or fetched here: ``setup_data`` does that
+    when a folder must be built, so a ready-made folder validates without them.
+
     Parameters
     ----------
     emission_category : str
@@ -601,14 +633,18 @@ def validate_data_source_config(
     if missing_keys:
         issues.append(f"Missing required keys in active_sources: {missing_keys}")
 
-    # Try to build config to validate paths and emission category
+    # Build the config to validate the sources and the emission category
     if not missing_keys:
+        from fair_shares.library.utils.data.provenance import (
+            raw_path_checks_suspended,
+        )
+
         try:
-            # This validates paths exist and emission category is available
-            config, source_id = build_data_config(
-                emission_category=emission_category,
-                active_sources=active_sources,
-            )
+            with raw_path_checks_suspended():
+                config, source_id = build_data_config(
+                    emission_category=emission_category,
+                    active_sources=active_sources,
+                )
             if verbose:
                 print("[OK] Configuration loaded successfully")
                 print(f"  Source ID: {source_id}")

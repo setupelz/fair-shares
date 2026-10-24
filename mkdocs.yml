@@ -43,6 +43,9 @@ theme:
         icon: material/brightness-7
         name: Switch to light mode
 
+hooks:
+  - mkdocs_hooks.py
+
 plugins:
   - search:
       lang: en

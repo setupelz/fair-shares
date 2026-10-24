@@ -36,7 +36,6 @@ from fair_shares.library.utils.data.rcb import (
 from fair_shares.library.utils.data.scenario_sets import (
     CUMULATIVE_CO2,
     NET_ZERO_CROSSING,
-    add_source_non_co2_members,
     budget_from_2020,
     budget_specs,
     build_budget_sets,
@@ -267,32 +266,27 @@ def test_role_matched_and_category_sets_of_each_budget():
     }
 
 
-def test_other_sources_join_the_non_co2_set_of_role_matched_budgets():
-    """SCI scenarios at T with net zero join role-matched non-CO2 sets only."""
+def test_each_budget_takes_its_non_co2_set_from_its_own_basis():
+    """The non-CO2 set comes from the database the budget source was built on."""
     metadata = _metadata(
         {"a": ("C1", 300.0, 1.50, 2045), "b": ("C1", 300.0, 1.40, 2045)}
     )
     rcb_yaml = {
         "min_scenarios": 1,
-        "rcb_data": {
-            "band": {"baseline_year": 2020, "scenarios": {"1.5p50": 300}},
-            "ar6": {
-                "baseline_year": 2020,
-                "scenario_selection": "ar6-category",
-                "scenarios": {"1.5p50": 300},
-            },
-        },
+        "rcb_data": {"band": {"baseline_year": 2020, "scenarios": {"1.5p50": 300}}},
     }
     sets = build_budget_sets(rcb_yaml, metadata, OBSERVED, COLUMNS)
-    sci = pd.DataFrame(
-        {"nz_year": [2050, None, 2050], "w50": [1.52, 1.50, 1.70]},
-        index=pd.MultiIndex.from_tuples([("s", "in"), ("s", "no-nz"), ("s", "warm")]),
-    )
-    added = add_source_non_co2_members(sets, "sci", sci, COLUMNS, 0.05)
-    assert added == {"band:1.5p50": 1}
-    assert sorted(sets["band:1.5p50"]["non_co2"]) == [("m", "a"), ("s", "in")]
-    assert sets["band:1.5p50"]["record"]["non_co2_set"]["n"] == 2
-    assert list(sets["ar6:1.5p50"]["non_co2"]) == [("m", "a"), ("m", "b")]
+    assert sets["band:1.5p50"]["spec"].non_co2_basis == "ar6"
+    assert sets["band:1.5p50"]["record"]["non_co2_basis"] == "ar6"
+    assert list(sets["band:1.5p50"]["non_co2"]) == [("m", "a")]
+
+    band = rcb_yaml["rcb_data"]["band"]
+    band["non_co2_basis"] = "scenariomip"
+    with pytest.raises(ConfigurationError, match="'scenariomip'.*non-co2"):
+        build_budget_sets(rcb_yaml, metadata, OBSERVED, COLUMNS)
+    band["non_co2_basis"] = "sci"
+    with pytest.raises(ConfigurationError, match="non_co2_basis 'sci'.*'ar6'"):
+        build_budget_sets(rcb_yaml, metadata, OBSERVED, COLUMNS)
 
 
 def test_corrected_ar6_category_map_and_removed_rules():

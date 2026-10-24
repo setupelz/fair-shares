@@ -264,9 +264,10 @@ class RegionMapping:
             if tmp.exists():
                 tmp.unlink()
             try:
-                with urllib.request.urlopen(url, timeout=30) as response, tmp.open(
-                    "wb"
-                ) as out:
+                with (
+                    urllib.request.urlopen(url, timeout=30) as response,
+                    tmp.open("wb") as out,
+                ):
                     while chunk := response.read(1 << 16):
                         out.write(chunk)
             except (TimeoutError, urllib.error.URLError) as exc:
@@ -405,9 +406,7 @@ class RegionMapping:
 # helpers
 
 
-def _parse_region_blocks(
-    blocks: list[Any], *, source: str
-) -> dict[str, list[str]]:
+def _parse_region_blocks(blocks: list[Any], *, source: str) -> dict[str, list[str]]:
     """Extract the region -> country-name list mapping from nomenclature YAML."""
     out: dict[str, list[str]] = {}
     if not isinstance(blocks, list):
@@ -450,18 +449,18 @@ def _get_coco() -> coco.CountryConverter:
     return _coco_converter
 
 
-def _names_to_iso3(
-    names: list[str], *, region: str, source: str
-) -> list[str]:
+def _names_to_iso3(names: list[str], *, region: str, source: str) -> list[str]:
     """Convert a list of country names to lowercase ISO3 codes."""
     cc = _get_coco()
     iso3 = cc.pandas_convert(pd.Series(names), to="ISO3")
-    bad = [n for n, c in zip(names, iso3, strict=True) if not isinstance(c, str) or c in {"not found", ""}]
+    bad = [
+        n
+        for n, c in zip(names, iso3, strict=True)
+        if not isinstance(c, str) or c in {"not found", ""}
+    ]
     if bad:
         raise ConfigurationError(
             f"Could not resolve ISO3 for countries in region '{region}' "
             f"(source={source}): {bad}"
         )
     return [c.lower() for c in iso3]
-
-

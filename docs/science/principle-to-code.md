@@ -85,7 +85,7 @@ allocations = {
 ```
 
 Cumulative population from 1990 sets the shares, so emissions since 1990 count in full and remaining budgets can be negative.
-Emissions from 1950 to 1989 then rescale the shares, absolute by default. High historical emitters get proportionally less.
+Emissions per person from 1950 to 1989 then rescale the shares (per capita by default). High historical emitters get proportionally less.
 This is the polluter-pays principle through [both mechanisms](allocations.md#building-blocks).
 
 ### 3. Capability

@@ -354,7 +354,8 @@ def _cumulative_per_capita_convergence_core(
         responsibility_adjustment = calculate_relative_adjustment(
             responsibility_data,
             functional_form=pre_allocation_responsibility_functional_form,
-            exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
+            exponent=normalized_pre_allocation_responsibility_weight
+            * pre_allocation_responsibility_exponent,
             inverse=True,
             indicator="responsibility",
         )
@@ -391,15 +392,19 @@ def _cumulative_per_capita_convergence_core(
         # Unadjusted metric: a reference that does not move with the floor
         capability_reference = None
         if gini_s is not None:
-            capability_reference = calculate_capability_adjustment_data(
-                population_ts=population_ts,
-                gdp_ts=gdp_ts,
-                first_allocation_year=first_allocation_year,
-                capability_per_capita=capability_per_capita,
-                group_level=group_level,
-                unit_level=unit_level,
-                ur=ur,
-            ).reindex(cmltv_pop_by_group.index).median()
+            capability_reference = (
+                calculate_capability_adjustment_data(
+                    population_ts=population_ts,
+                    gdp_ts=gdp_ts,
+                    first_allocation_year=first_allocation_year,
+                    capability_per_capita=capability_per_capita,
+                    group_level=group_level,
+                    unit_level=unit_level,
+                    ur=ur,
+                )
+                .reindex(cmltv_pop_by_group.index)
+                .median()
+            )
         capability_adjustment = calculate_relative_adjustment(
             capability_data,
             functional_form=capability_functional_form,
@@ -453,12 +458,8 @@ def _cumulative_per_capita_convergence_core(
         # Compute PCC baseline shares (linear blend from GF to EPC)
         from fair_shares.library.utils import groupby_except_robust
 
-        population_filtered = filter_time_columns(
-            population_ts, first_allocation_year
-        )
-        population_single_unit = set_single_unit(
-            population_filtered, unit_level, ur=ur
-        )
+        population_filtered = filter_time_columns(population_ts, first_allocation_year)
+        population_single_unit = set_single_unit(population_filtered, unit_level, ur=ur)
         pop_year_to_label = {int(c): c for c in population_single_unit.columns}
         pop_allocation = population_single_unit[
             pop_year_to_label[first_allocation_year]

@@ -121,9 +121,7 @@ def test_missing_region_raises(global_pathway, regions):
         )
 
 
-def test_invalid_deviation_end_year_raises(
-    global_pathway, regions, remaining_budgets
-):
+def test_invalid_deviation_end_year_raises(global_pathway, regions, remaining_budgets):
     for bad_year in (2026, 2150):
         with pytest.raises(AllocationError, match="deviation_end_year"):
             distribute_remaining_budgets_pathways(

@@ -91,7 +91,7 @@ def validate_exactly_one_year_column(
         # Show a more readable error message for long year lists
         if len(year_cols) > 10:
             year_range = (
-                f"{min(year_cols)}-{max(year_cols)} " f"({len(year_cols)} years total)"
+                f"{min(year_cols)}-{max(year_cols)} ({len(year_cols)} years total)"
             )
         else:
             year_range = str(year_cols)

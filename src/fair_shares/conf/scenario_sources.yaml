@@ -5,8 +5,8 @@
 # a budget (co2_variables, summed), and the bunker variables. `terms` lists the
 # budget terms the source can supply. Notebook 104 processes the active source
 # for every term. Another source enters the bunker share when listed in
-# bunkers.scenario_sources of rcbs.yaml, and the temperature-matched non-CO2
-# set when listed in non_co2.scenario_sources (default: [ar6]).
+# bunkers.scenario_sources of rcbs.yaml. The non-CO2 set of a budget comes from
+# the source its RCB source names as non_co2_basis in rcbs.yaml (default ar6).
 version: 2
 
 # Energy-model family of every model that enters the bunker share. The share
@@ -84,7 +84,8 @@ sources:
     # the fields that differ between releases; set this key to switch.
     version: "v2.0"
     # Without NGHGI land-use CO2, SCI supplies no land-use or convention-gap
-    # term. Non-CO2 enters only through non_co2.scenario_sources.
+    # term. Its non-CO2 term is for a budget source built on SCI
+    # (non_co2_basis: sci), read on the AR6 workflow (MAGICC v7.5.3).
     terms: [bunkers, non-co2]
     # Derived by warming_at_net_zero from co2_variables and the GSAT series,
     # in the convention of the AR6 metadata columns (matches them on the 914
@@ -158,13 +159,14 @@ sources:
       ScenarioMIP-CMIP7 IAM scenarios (global workbook, release v0.1), with
       the climate assessment of MAGICC v7.6.0a3. Research use under the
       database licence; redistribution of substantial parts is prohibited.
-      Never committed or redistributed. In the default bunker-share pool; off
-      by default for non-CO2.
+      Never committed or redistributed. In the default bunker-share pool.
     version: "v0.1"
     path: "data/scenarios/scenariomip-{version}/ScenarioMIP_{version}_global.xlsx"
     registry_source: "scenariomip-cmip7"
-    # No NGHGI land-use CO2 split, so no land-use or convention-gap term.
-    terms: [bunkers, non-co2]
+    # No NGHGI land-use CO2 split, so no land-use or convention-gap term. No
+    # non-CO2 term: its warming is on MAGICC v7.6.0a3, not the AR6 calibration
+    # (MAGICC v7.5.3) of the budgets' scenario database.
+    terms: [bunkers]
     # Ensemble [Max]/[Min] rows are envelopes, not model runs.
     exclude_models: ["Ensemble"]
     co2_variables:
@@ -178,10 +180,6 @@ sources:
       gsat:
         warming_median: "Climate Assessment|Surface Temperature (GSAT)|Median [MAGICC v7.6.0a3]"
         warming_p67: "Climate Assessment|Surface Temperature (GSAT)|67th Percentile [MAGICC v7.6.0a3]"
-    non_co2:
-      kyoto: "Climate Assessment|Harmonized and Infilled|Emissions|Kyoto Gases [AR6GWP100]"
-      co2_variables:
-        - "Climate Assessment|Harmonized and Infilled|Emissions|CO2"
     bunkers:
       total: "Emissions|CO2|Energy|Demand|Bunkers"
       share_co2_variables: ["Emissions|CO2"]

@@ -15,6 +15,8 @@ Verifies:
 
 from __future__ import annotations
 
+from typing import ClassVar
+
 import pytest
 
 from fair_shares.library.exceptions import ConfigurationError
@@ -103,7 +105,7 @@ class TestNeedsDecomposition:
 class TestBuildSourceIdAllghg:
     """build_source_id() generates correct IDs with emission_category always included."""
 
-    _BASE = dict(
+    _BASE: ClassVar[dict[str, str]] = dict(
         emissions="primap-202503",
         gdp="wdi-2025",
         population="un-owid-2025",
@@ -247,7 +249,7 @@ class TestGetCompatibleApproachesAllghg:
 class TestValidateDataSourceConfigAllghg:
     """validate_data_source_config() correctly classifies target types."""
 
-    _SOURCES = {
+    _SOURCES: ClassVar[dict[str, str]] = {
         "emissions": "primap-202503",
         "gdp": "wdi-2025",
         "population": "un-owid-2025",

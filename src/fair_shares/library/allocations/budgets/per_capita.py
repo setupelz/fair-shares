@@ -303,7 +303,9 @@ def _per_capita_budget_core(
     population_filtered = filter_time_columns(population_ts, allocation_year)
     if cumulative_end_year is not None:
         numeric_cols = pd.to_numeric(population_filtered.columns, errors="coerce")
-        population_filtered = population_filtered.loc[:, numeric_cols <= cumulative_end_year]
+        population_filtered = population_filtered.loc[
+            :, numeric_cols <= cumulative_end_year
+        ]
     population_single_unit = set_single_unit(population_filtered, unit_level, ur=ur)
 
     # Map integer year to actual column label
@@ -329,8 +331,16 @@ def _per_capita_budget_core(
         if use_capability and capability_window is not None:
             # Cumulative-window mode: one value per country, broadcast like the snapshot.
             window_metric = calculate_capability_window_data(
-                population_ts, gdp_ts, capability_window, capability_per_capita,
-                group_level, unit_level, ur, gini_s, income_floor, max_gini_adjustment,
+                population_ts,
+                gdp_ts,
+                capability_window,
+                capability_per_capita,
+                group_level,
+                unit_level,
+                ur,
+                gini_s,
+                income_floor,
+                max_gini_adjustment,
             )
             window_values = window_metric.reindex(
                 population_numeric.index.get_level_values(group_level)
@@ -348,7 +358,9 @@ def _per_capita_budget_core(
             gdp_numeric = gdp_single_unit.droplevel(unit_level)
 
             # Find common years between GDP and population
-            common_columns = population_numeric.columns.intersection(gdp_numeric.columns)
+            common_columns = population_numeric.columns.intersection(
+                gdp_numeric.columns
+            )
             gdp_common = gdp_numeric[common_columns]
             population_common = population_numeric[common_columns]
 
@@ -403,8 +415,11 @@ def _per_capita_budget_core(
                     # Normal case: ref_year is within the allocation window, already
                     # present in capability_metric_common (which was computed from the
                     # allocation_year-filtered inputs).
-                    ref_label = [c for c in capability_metric_common.columns
-                                 if int(c) == ref_year][0]
+                    ref_label = next(
+                        c
+                        for c in capability_metric_common.columns
+                        if int(c) == ref_year
+                    )
                     snapshot = capability_metric_common[ref_label]
                 elif gdp_filtered_years and ref_year > max(gdp_filtered_years):
                     # User-requested ffill past end-of-series: take the last column.
@@ -429,7 +444,9 @@ def _per_capita_budget_core(
                     )
                     gdp_full_numeric = gdp_full_single_unit.droplevel(unit_level)
 
-                    pop_full_single_unit = set_single_unit(population_ts, unit_level, ur=ur)
+                    pop_full_single_unit = set_single_unit(
+                        population_ts, unit_level, ur=ur
+                    )
                     pop_full_single_unit = convert_unit_robust(
                         pop_full_single_unit, "million", unit_level=unit_level, ur=ur
                     )
@@ -449,13 +466,17 @@ def _per_capita_budget_core(
                             f"population data range [{min(pop_all_years)}, "
                             f"{max(pop_all_years)}]."
                         )
-                    gdp_ref_label = [c for c in gdp_full_numeric.columns
-                                     if int(c) == ref_year][0]
-                    pop_ref_label = [c for c in pop_full_numeric.columns
-                                     if int(c) == ref_year][0]
+                    gdp_ref_label = next(
+                        c for c in gdp_full_numeric.columns if int(c) == ref_year
+                    )
+                    pop_ref_label = next(
+                        c for c in pop_full_numeric.columns if int(c) == ref_year
+                    )
 
                     gdp_at_ref = gdp_full_numeric[gdp_ref_label]
-                    pop_at_ref = pop_full_numeric[pop_ref_label].reindex(gdp_at_ref.index)
+                    pop_at_ref = pop_full_numeric[pop_ref_label].reindex(
+                        gdp_at_ref.index
+                    )
 
                     # Which input the snapshot is read from is a plumbing detail,
                     # so the Gini adjustment applies here as it does in the other
@@ -535,7 +556,8 @@ def _per_capita_budget_core(
         responsibility_adjustment = calculate_relative_adjustment(
             responsibility_data,
             functional_form=pre_allocation_responsibility_functional_form,
-            exponent=normalized_pre_allocation_responsibility_weight * pre_allocation_responsibility_exponent,
+            exponent=normalized_pre_allocation_responsibility_weight
+            * pre_allocation_responsibility_exponent,
             inverse=True,
             indicator="responsibility",
         )

@@ -413,7 +413,13 @@ ecpc_allocations = {
     ],
 }
 
-ecpc_output_dir = project_root / "output" / ecpc_setup["source_id"] / "allocations" / "602_dekker_2025_ecpc"
+ecpc_output_dir = (
+    project_root
+    / "output"
+    / ecpc_setup["source_id"]
+    / "allocations"
+    / "602_dekker_2025_ecpc"
+)
 
 ecpc_context = {
     "source-id": ecpc_setup["source_id"],
@@ -440,9 +446,13 @@ print()
 print(f"ECPC entitlements written to: {ecpc_output_dir}")
 print("To match Dekker's full ECPC (Eqs. 5–8):")
 print("  1. Load the entitlements from the parquet above")
-print("  2. Subtract each country's actual cumulative emissions (t_hist to present) — Eq. 6")
+print(
+    "  2. Subtract each country's actual cumulative emissions (t_hist to present) — Eq. 6"
+)
 print("  3. Negative remainders = historical debt")
-print("  4. Distribute the remaining budget over time via sine-deviation convergence — Eqs. 7–8")
+print(
+    "  4. Distribute the remaining budget over time via sine-deviation convergence — Eqs. 7–8"
+)
 
 # %% [markdown]
 # ---

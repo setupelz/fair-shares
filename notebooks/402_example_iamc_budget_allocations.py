@@ -135,7 +135,7 @@ print("Regional Budget Shares (ECPC from 2015):\n")
 print(f"{'Region':8s} {'Share':>10s}")
 print("-" * 20)
 for region in sorted(shares_epc.index):
-    print(f"{region:8s} {shares_epc[region]*100:9.2f}%")
+    print(f"{region:8s} {shares_epc[region] * 100:9.2f}%")
 
 # %% [markdown]
 # ---
@@ -169,7 +169,7 @@ print("Regional Budget Shares (Capability-only):\n")
 print(f"{'Region':8s} {'Share':>10s}")
 print("-" * 20)
 for region in sorted(shares_cap.index):
-    print(f"{region:8s} {shares_cap[region]*100:9.2f}%")
+    print(f"{region:8s} {shares_cap[region] * 100:9.2f}%")
 
 # %% [markdown]
 # ---

@@ -309,7 +309,10 @@ else:
     harmonisation_year = None
 
 # %%
-from fair_shares.library.utils.data.config import build_data_config, get_final_categories
+from fair_shares.library.utils.data.config import (
+    build_data_config,
+    get_final_categories,
+)
 from fair_shares.library.utils.data.setup import build_data_paths
 
 try:
@@ -327,7 +330,9 @@ try:
     final_categories = setup_info["final_categories"]
     harmonisation_year = setup_info["config"].harmonisation_year
 except Exception as e:
-    print(f"Snakemake pipeline failed ({type(e).__name__}), checking for existing data...")
+    print(
+        f"Snakemake pipeline failed ({type(e).__name__}), checking for existing data..."
+    )
     data_config, source_id = build_data_config(
         emission_category, active_sources, harmonisation_year=harmonisation_year
     )
@@ -439,7 +444,13 @@ ecpc_allocations = {
     ],
 }
 
-ecpc_output_dir = project_root / "output" / ecpc_setup["source_id"] / "allocations" / "604_vandenberg_2020_ecpc"
+ecpc_output_dir = (
+    project_root
+    / "output"
+    / ecpc_setup["source_id"]
+    / "allocations"
+    / "604_vandenberg_2020_ecpc"
+)
 
 ecpc_context = {
     "source-id": ecpc_setup["source_id"],

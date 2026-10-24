@@ -1,6 +1,6 @@
 [project]
 name = "fair-shares"
-version = "0.6.0"
+version = "0.7.0"
 description = "Python package for calculating fair shares of global climate mitigation effort."
 authors = [
     { name = "Setu Pelz" },
@@ -151,6 +151,9 @@ ignore = [
     "D400", # First line should end with a period
     "E501", # Line too long (many LaTeX equations exceed 88 chars)
 ]
+# Ranges (1990–2013), minus signs and multiplication in docstrings, strings and
+# comments are deliberate; the docstrings render on the docs site.
+allowed-confusables = ["–", "−", "×"]
 
 [tool.ruff.lint.per-file-ignores]
 "test*.py" = ["D", "E501"]
@@ -191,6 +194,11 @@ markers = [
 ]
 doctest_optionflags = [
     "NORMALIZE_WHITESPACE",  # treat whitespace sanely
+]
+filterwarnings = [
+    # jupyter_client's notice about jupyter_core v6 moving to platformdirs;
+    # nothing in fair-shares sets Jupyter paths.
+    "ignore:Jupyter is migrating its paths:DeprecationWarning",
 ]
 
 # uv installs the `dev` group on a bare `uv sync`, so pulling the three extras

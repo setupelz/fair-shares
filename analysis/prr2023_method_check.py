@@ -141,9 +141,14 @@ def validate_port(root, inp, pop_proj) -> pd.DataFrame:
         val = ours.at[p["r11eu27"], label_to_ind[p["indicator"]]]
         rows.append(
             {
-                "file": p["file"], "region": p["r11eu27"], "indicator": p["indicator"],
-                "basis": basis, "allocation_year": year, "pf": p["pf"],
-                "published_gt": p["rcb"], "port_gt": val,
+                "file": p["file"],
+                "region": p["r11eu27"],
+                "indicator": p["indicator"],
+                "basis": basis,
+                "allocation_year": year,
+                "pf": p["pf"],
+                "published_gt": p["rcb"],
+                "port_gt": val,
                 "rel_diff": abs(val - p["rcb"]) / abs(p["rcb"]),
             }
         )
@@ -157,17 +162,27 @@ def ts(df: pd.DataFrame, unit: str, extra: dict | None = None) -> pd.DataFrame:
     """Wrap a region x year frame as a fair_shares TimeseriesDataFrame."""
     df = df.copy()
     df.columns = [str(c) for c in df.columns]
-    df.index.name = "iso3c"  # input validation requires this level name; values are R11+EU27 codes
-    df = df.assign(unit=unit, **(extra or {})).set_index(["unit", *(extra or {})], append=True)
+    df.index.name = (
+        "iso3c"  # input validation requires this level name; values are R11+EU27 codes
+    )
+    df = df.assign(unit=unit, **(extra or {})).set_index(
+        ["unit", *(extra or {})], append=True
+    )
     return df
 
 
 def library_inputs(inp, pop_proj, year):
     """Build library inputs: PRR historical population before `year`, PRR projection from it."""
     ind = inp["ind"]
-    pop = pd.concat([inp["popr"].loc[:, 1850 : year - 1], pop_proj.loc[:, year:2050]], axis=1)
-    emis = pd.DataFrame(0.0, index=ind.index, columns=range(1850, 2051))  # validation needs the allocation year present
-    emis[1850] = ind["RES_emiss_1850co2_1989"] * 1e3  # lump sums: only window totals matter
+    pop = pd.concat(
+        [inp["popr"].loc[:, 1850 : year - 1], pop_proj.loc[:, year:2050]], axis=1
+    )
+    emis = pd.DataFrame(
+        0.0, index=ind.index, columns=range(1850, 2051)
+    )  # validation needs the allocation year present
+    emis[1850] = (
+        ind["RES_emiss_1850co2_1989"] * 1e3
+    )  # lump sums: only window totals matter
     emis[1990] = ind["RES_emiss_1990co2_2014"] * 1e3
     gdp = pd.DataFrame(
         {y: ind[f"CAP_gdp2017pppcapita_{y}"] * pop[y] / 1e6 for y in (1990, 2014)}
@@ -182,7 +197,9 @@ def library_inputs(inp, pop_proj, year):
 def library_allocate(pop, emis, gdp, year, basis, exponent) -> pd.DataFrame:
     """Run fair_shares budget functions for every testable indicator; return GtCO2."""
     common = dict(
-        population_ts=pop, allocation_year=year, emission_category="co2-ffi",
+        population_ts=pop,
+        allocation_year=year,
+        emission_category="co2-ffi",
         group_level="iso3c",
         preserve_allocation_year_shares=(basis == "EPC"),
         cumulative_end_year=None if basis == "EPC" else 2050,
@@ -210,8 +227,11 @@ def library_allocate(pop, emis, gdp, year, basis, exponent) -> pd.DataFrame:
             )
         else:
             out[col] = per_capita_adjusted_budget(
-                **common, gdp_ts=gdp, capability_weight=1.0,
-                capability_functional_form="power", capability_exponent=exponent,
+                **common,
+                gdp_ts=gdp,
+                capability_weight=1.0,
+                capability_functional_form="power",
+                capability_exponent=exponent,
                 capability_per_capita=True,
                 capability_reference_year=1990 if year == 1990 else 2014,
             )
@@ -231,17 +251,27 @@ def method_fidelity(inp, pop_proj) -> tuple[pd.DataFrame, pd.DataFrame]:
         for basis in ("EPC", "ECPC"):
             for pf, e in PF.items():
                 port = prr_allocate(inp["ind"], pop_proj, year, basis, e)
-                with warnings.catch_warnings(), contextlib.redirect_stdout(io.StringIO()):
+                with (
+                    warnings.catch_warnings(),
+                    contextlib.redirect_stdout(io.StringIO()),
+                ):
                     warnings.simplefilter("ignore")
-                    lib = library_allocate(*library_inputs(inp, pop_proj, year), year, basis, e)
+                    lib = library_allocate(
+                        *library_inputs(inp, pop_proj, year), year, basis, e
+                    )
                 for col in lib.columns:
                     for r in REGIONS:
                         a, b = port.at[r, col], lib.at[r, col]
                         detail.append(
                             {
-                                "allocation_year": year, "basis": basis, "pf": pf,
-                                "indicator": col, "region": r, "port_gt": a,
-                                "library_gt": b, "rel_diff": abs(b - a) / abs(a),
+                                "allocation_year": year,
+                                "basis": basis,
+                                "pf": pf,
+                                "indicator": col,
+                                "region": r,
+                                "port_gt": a,
+                                "library_gt": b,
+                                "rel_diff": abs(b - a) / abs(a),
                             }
                         )
     detail = pd.DataFrame(detail)
@@ -269,7 +299,10 @@ def library_data_by_region(isorgn, aggregate: bool = True) -> tuple:
 
     return (
         agg("country_population_timeseries.csv", ["iso3c", "unit"]),
-        agg("country_emissions_co2-ffi_timeseries.csv", ["iso3c", "unit", "emission-category"]),
+        agg(
+            "country_emissions_co2-ffi_timeseries.csv",
+            ["iso3c", "unit", "emission-category"],
+        ),
         agg("country_gdp_timeseries.csv", ["iso3c", "unit"]),
     )
 
@@ -281,7 +314,9 @@ def eu27_data_gap(inp, pop_proj) -> pd.DataFrame:
     d = pd.read_parquet(RESULTS_601)
     d = d[d["quantile"].astype(float) == 0.5].copy()
     d["region"] = d["iso3c"].map(inp["isorgn"].set_index("iso3c")["r11eu27"])
-    d["share"] = np.where(d["allocation-year"].astype(int) == 1990, d["1990"], d["2015"])
+    d["share"] = np.where(
+        d["allocation-year"].astype(int) == 1990, d["1990"], d["2015"]
+    )
     reg_inputs = library_data_by_region(inp["isorgn"])
     cty_inputs = library_data_by_region(inp["isorgn"], aggregate=False)
     eu_iso = inp["isorgn"].loc[inp["isorgn"]["r11eu27"] == "EU27", "iso3c"]
@@ -307,10 +342,22 @@ def eu27_data_gap(inp, pop_proj) -> pd.DataFrame:
                     continue
                 elif spec[1] == "res":
                     m = sub[
-                        (sub["pre-allocation-responsibility-weight"].astype(float) == 1.0)
-                        & (sub["pre-allocation-responsibility-year"].astype(float) == spec[2])
-                        & (sub["pre-allocation-responsibility-per-capita"].astype(str) == str(spec[3]))
-                        & (sub["pre-allocation-responsibility-exponent"].astype(float) == e)
+                        (
+                            sub["pre-allocation-responsibility-weight"].astype(float)
+                            == 1.0
+                        )
+                        & (
+                            sub["pre-allocation-responsibility-year"].astype(float)
+                            == spec[2]
+                        )
+                        & (
+                            sub["pre-allocation-responsibility-per-capita"].astype(str)
+                            == str(spec[3])
+                        )
+                        & (
+                            sub["pre-allocation-responsibility-exponent"].astype(float)
+                            == e
+                        )
                     ]
                 else:
                     m = sub[
@@ -324,15 +371,20 @@ def eu27_data_gap(inp, pop_proj) -> pd.DataFrame:
                 eu_rerun = cty.loc[cty.index.isin(eu_iso), col].sum()
                 rows.append(
                     {
-                        "allocation_year": year, "basis": basis, "indicator": col,
-                        "pf": pf if spec else "-", "prr2023_eu27_share": port.at["EU27", col],
+                        "allocation_year": year,
+                        "basis": basis,
+                        "indicator": col,
+                        "pf": pf if spec else "-",
+                        "prr2023_eu27_share": port.at["EU27", col],
                         "fair_shares_region_level_eu27_share": reg.at["EU27", col],
                         "fair_shares_601_eu27_share": eu,
-                        "data_gap_pp": 100 * (reg.at["EU27", col] - port.at["EU27", col]),
+                        "data_gap_pp": 100
+                        * (reg.at["EU27", col] - port.at["EU27", col]),
                         "granularity_gap_pp": 100 * (eu - reg.at["EU27", col]),
                         "total_diff_pp": 100 * (eu - port.at["EU27", col]),
                         "rerun_minus_601_pp": 100 * (eu_rerun - eu),
-                        "row_group_share": m.loc[m["iso3c"] == "ROW", "share"].sum() / world,
+                        "row_group_share": m.loc[m["iso3c"] == "ROW", "share"].sum()
+                        / world,
                         "n_countries": int(m["iso3c"].nunique()),
                     }
                 )
@@ -354,8 +406,12 @@ def main(arg: str) -> None:
     gap = eu27_data_gap(inp, pop_proj)
     gap.to_csv(OUT / "eu27_data_gap.csv", index=False)
 
-    print(f"Port vs published: {len(port_val)} values, max rel diff {port_val.rel_diff.max():.2e}")
-    print(f"Library vs port: {len(detail)} values, max rel diff {detail.rel_diff.max():.2e}")
+    print(
+        f"Port vs published: {len(port_val)} values, max rel diff {port_val.rel_diff.max():.2e}"
+    )
+    print(
+        f"Library vs port: {len(detail)} values, max rel diff {detail.rel_diff.max():.2e}"
+    )
     print(summary.to_string(index=False))
     if not gap.empty:
         print(gap.round(4).to_string(index=False))

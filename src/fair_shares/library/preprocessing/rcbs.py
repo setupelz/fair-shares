@@ -34,6 +34,7 @@ from fair_shares.library.exceptions import (
     DataLoadingError,
 )
 from fair_shares.library.paths import resolve_source_path
+from fair_shares.library.preprocessing.paths import LULUCF_CATEGORIES
 from fair_shares.library.utils import (
     ensure_string_year_columns,
     parse_rcb_scenario,
@@ -147,8 +148,13 @@ def _set_co2_after(scenarios_dir: Path, file_key: str, first_year: int) -> float
     return float(members[column].median())
 
 
-def _provenance_columns(adjustment: dict) -> dict:
-    """Columns that record how the scenario sets of a budget were chosen."""
+def _provenance_columns(adjustment: dict, emission_category: str) -> dict:
+    """Columns that record how the scenario sets of a budget were chosen.
+
+    ``lulucf_basis`` is empty for a category without land-use CO₂: its budget
+    takes BM LULUCF from the scenarios on either basis, so no basis applies,
+    and runs on either basis share its output folder.
+    """
     terms = adjustment.get("terms_set") or {}
     non_co2 = adjustment.get("non_co2_set") or {}
     return {
@@ -157,7 +163,11 @@ def _provenance_columns(adjustment: dict) -> dict:
         "budget_metric": adjustment.get("budget_metric"),
         "scenario_selection": adjustment.get("scenario_selection"),
         "budget_2020_gt": adjustment.get("budget_2020_gt"),
-        "lulucf_basis": adjustment.get("lulucf_basis"),
+        "lulucf_basis": (
+            adjustment.get("lulucf_basis")
+            if emission_category in LULUCF_CATEGORIES
+            else None
+        ),
         "terms_set_rule": terms.get("rule"),
         "terms_set_n": terms.get("n"),
         "nz_year_median": terms.get("net_zero_year_median"),
@@ -531,7 +541,7 @@ def load_and_process_rcbs(
                 "correction_lulucf_convention_mt": result[
                     "correction_lulucf_convention_mt"
                 ],
-                **_provenance_columns(rcb_adjustments[budget_key]),
+                **_provenance_columns(rcb_adjustments[budget_key], emission_category),
                 "bunker_share": round(share["share"], 5),
                 "bunker_share_q25": round(share["q25"], 5),
                 "bunker_share_q75": round(share["q75"], 5),

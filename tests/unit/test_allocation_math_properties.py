@@ -91,12 +91,12 @@ class TestAllocationMathProperties:
         max_share = shares_df.max().max()
         min_share = shares_df.min().min()
 
-        assert (
-            min_share >= 0
-        ), f"{allocation_function.__name__} produced shares < 0: {min_share}"
-        assert (
-            max_share <= 1
-        ), f"{allocation_function.__name__} produced shares > 1: {max_share}"
+        assert min_share >= 0, (
+            f"{allocation_function.__name__} produced shares < 0: {min_share}"
+        )
+        assert max_share <= 1, (
+            f"{allocation_function.__name__} produced shares > 1: {max_share}"
+        )
 
     @pytest.mark.parametrize(
         "allocation_function,call_kwargs", get_core_allocation_functions()
@@ -119,9 +119,9 @@ class TestAllocationMathProperties:
         for year in shares_df.columns:
             if str(year).isdigit():  # Only check numeric year columns
                 shares_sum = shares_df[year].sum()
-                assert (
-                    abs(shares_sum - 1.0) < 1e-10
-                ), f"{allocation_function.__name__} shares don't sum to 1 at year {year}: {shares_sum}"
+                assert abs(shares_sum - 1.0) < 1e-10, (
+                    f"{allocation_function.__name__} shares don't sum to 1 at year {year}: {shares_sum}"
+                )
 
     @pytest.mark.parametrize(
         "allocation_function,call_kwargs", get_core_allocation_functions()
@@ -136,25 +136,25 @@ class TestAllocationMathProperties:
 
         # Test result type
         if is_budget_function:
-            assert isinstance(
-                result, BudgetAllocationResult
-            ), f"{allocation_function.__name__} should return BudgetAllocationResult"
+            assert isinstance(result, BudgetAllocationResult), (
+                f"{allocation_function.__name__} should return BudgetAllocationResult"
+            )
             shares_df = result.relative_shares_cumulative_emission
         else:
-            assert isinstance(
-                result, PathwayAllocationResult
-            ), f"{allocation_function.__name__} should return PathwayAllocationResult"
+            assert isinstance(result, PathwayAllocationResult), (
+                f"{allocation_function.__name__} should return PathwayAllocationResult"
+            )
             shares_df = result.relative_shares_pathway_emissions
 
         # Test DataFrame structure
-        assert isinstance(
-            shares_df, pd.DataFrame
-        ), f"{allocation_function.__name__} should return DataFrame"
+        assert isinstance(shares_df, pd.DataFrame), (
+            f"{allocation_function.__name__} should return DataFrame"
+        )
 
         # Test MultiIndex structure
-        assert isinstance(
-            shares_df.index, pd.MultiIndex
-        ), f"{allocation_function.__name__} should have MultiIndex"
+        assert isinstance(shares_df.index, pd.MultiIndex), (
+            f"{allocation_function.__name__} should have MultiIndex"
+        )
 
         expected_index_names = ["iso3c", "unit", "emission-category"]
         assert shares_df.index.names == expected_index_names, (
@@ -167,29 +167,29 @@ class TestAllocationMathProperties:
         expected_countries = len(
             test_data["population"].index.get_level_values("iso3c").unique()
         )
-        assert (
-            num_countries == expected_countries
-        ), f"{allocation_function.__name__} should have same number of countries as input"
+        assert num_countries == expected_countries, (
+            f"{allocation_function.__name__} should have same number of countries as input"
+        )
 
         # Test emission category
         emission_category = shares_df.index.get_level_values(
             "emission-category"
         ).unique()
-        assert (
-            len(emission_category) == 1
-        ), f"{allocation_function.__name__} should have exactly one emission category"
-        assert emission_category == call_kwargs.get(
-            "emission_category"
-        ), f"{allocation_function.__name__} should have correct emission category"
+        assert len(emission_category) == 1, (
+            f"{allocation_function.__name__} should have exactly one emission category"
+        )
+        assert emission_category == call_kwargs.get("emission_category"), (
+            f"{allocation_function.__name__} should have correct emission category"
+        )
 
         # Test units
         units = shares_df.index.get_level_values("unit").unique()
-        assert (
-            len(units) == 1
-        ), f"{allocation_function.__name__} should have exactly one unit"
-        assert (
-            units[0] == "dimensionless"
-        ), f"{allocation_function.__name__} should have dimensionless units"
+        assert len(units) == 1, (
+            f"{allocation_function.__name__} should have exactly one unit"
+        )
+        assert units[0] == "dimensionless", (
+            f"{allocation_function.__name__} should have dimensionless units"
+        )
 
     @pytest.mark.parametrize(
         "allocation_function,call_kwargs", get_core_allocation_functions()
@@ -203,35 +203,35 @@ class TestAllocationMathProperties:
         result = allocation_function(**func_kwargs)
 
         # Test that approach is correctly set
-        assert hasattr(
-            result, "approach"
-        ), f"{allocation_function.__name__} result missing approach attribute"
-        assert isinstance(
-            result.approach, str
-        ), f"{allocation_function.__name__} approach should be string"
+        assert hasattr(result, "approach"), (
+            f"{allocation_function.__name__} result missing approach attribute"
+        )
+        assert isinstance(result.approach, str), (
+            f"{allocation_function.__name__} approach should be string"
+        )
 
         # Test that parameters are correctly set
-        assert hasattr(
-            result, "parameters"
-        ), f"{allocation_function.__name__} result missing parameters attribute"
-        assert isinstance(
-            result.parameters, dict
-        ), f"{allocation_function.__name__} parameters should be dict"
+        assert hasattr(result, "parameters"), (
+            f"{allocation_function.__name__} result missing parameters attribute"
+        )
+        assert isinstance(result.parameters, dict), (
+            f"{allocation_function.__name__} parameters should be dict"
+        )
 
         # Test specific parameter requirements
         if is_budget_function:
-            assert (
-                "allocation_year" in result.parameters
-            ), f"{allocation_function.__name__} should have allocation_year in parameters"
+            assert "allocation_year" in result.parameters, (
+                f"{allocation_function.__name__} should have allocation_year in parameters"
+            )
         else:
-            assert (
-                "first_allocation_year" in result.parameters
-            ), f"{allocation_function.__name__} should have first_allocation_year in parameters"
+            assert "first_allocation_year" in result.parameters, (
+                f"{allocation_function.__name__} should have first_allocation_year in parameters"
+            )
 
         # Test emission category is in parameters
-        assert (
-            "emission_category" in result.parameters
-        ), f"{allocation_function.__name__} should have emission_category in parameters"
+        assert "emission_category" in result.parameters, (
+            f"{allocation_function.__name__} should have emission_category in parameters"
+        )
 
     @pytest.mark.parametrize(
         "allocation_function,call_kwargs", get_core_allocation_functions()
@@ -252,17 +252,17 @@ class TestAllocationMathProperties:
             shares_df = result.relative_shares_cumulative_emission
             # Budget allocations should have exactly one year column
             year_cols = [col for col in shares_df.columns if str(col).isdigit()]
-            assert (
-                len(year_cols) == 1
-            ), f"{allocation_function.__name__} budget should have exactly one year column"
+            assert len(year_cols) == 1, (
+                f"{allocation_function.__name__} budget should have exactly one year column"
+            )
         else:
             assert isinstance(result, PathwayAllocationResult)
             shares_df = result.relative_shares_pathway_emissions
             # Pathway allocations should have multiple year columns
             year_cols = [col for col in shares_df.columns if str(col).isdigit()]
-            assert (
-                len(year_cols) > 1
-            ), f"{allocation_function.__name__} pathway should have multiple year columns"
+            assert len(year_cols) > 1, (
+                f"{allocation_function.__name__} pathway should have multiple year columns"
+            )
 
     def test_result_absolute_calculation_methods(self, test_data):
         """Test that result objects can calculate absolute values."""
@@ -350,12 +350,12 @@ class TestAllocationMathProperties:
 
         # Verify results are not NaN
         assert isinstance(absolute_budgets, pd.DataFrame)
-        assert (
-            not absolute_budgets.isna().any().any()
-        ), "get_absolute_budgets should not return NaN values due to column dtype mismatch"
-        assert (
-            absolute_budgets.sum().sum() > 0
-        ), "Absolute budgets should have positive values"
+        assert not absolute_budgets.isna().any().any(), (
+            "get_absolute_budgets should not return NaN values due to column dtype mismatch"
+        )
+        assert absolute_budgets.sum().sum() > 0, (
+            "Absolute budgets should have positive values"
+        )
 
     def test_cumulative_per_capita_equal_allocation_per_person(self, test_data):
         """Test base cumulative-per-capita-convergence gives equal cumulative per-capita
